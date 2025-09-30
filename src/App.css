@@ -1,0 +1,70 @@
+/* Highlight veggie button when ready to harvest */
+.veggie-selector button.ready {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 8px #ffd700;
+}
+.progress-bar {
+  height: 24px;
+  background: #eee;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, #a8e063, #56ab2f);
+  transition: width 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.game-title {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  font-size: 1.5rem; /* About half the default h1 size */
+  font-weight: bold;
+  margin: 0;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
