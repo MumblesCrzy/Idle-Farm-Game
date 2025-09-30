@@ -59,14 +59,14 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ## Roadmap
 
 - Add an Archie bonus.
--- The Archie bonus is triggered by clicking an icon that very infrequently pops up at a randomized intervals.
--- It gives a major growth and speed bonuses while also auto harvesting all unlocked veggies for a short time after.
+  - The Archie bonus is triggered by clicking an icon that very infrequently pops up at a randomized intervals.
+  - It gives a major growth and speed bonuses while also auto harvesting all unlocked veggies for a short time after.
 - Reset the upgrades section per new farm purchase, but base price on max number of plots.
 - Add Farm manager who can auto purchase Fertilizer and Better Seeds as an upgrade.
 - Add Mechanic who can auto purchase auto harvesters and harvest speed upgrades.
 - Add a display of the stash on the left side of the screen that keeps track of individual veggie amounts.
 - Add Canning skill which unlocks a new progress bar.
--- Canning will take one veggie from the stash and turn it into a canned version which sells for 2x amount.
+  - Canning will take one veggie from the stash and turn it into a canned version which sells for 2x amount.
 - Add a Canning speed upgrade to make canning faster.
 - Add a spring "Farmer's market" event where all items sell for 3x their normal price.
 - Add a weather and event log to the game so it can be tracked.
