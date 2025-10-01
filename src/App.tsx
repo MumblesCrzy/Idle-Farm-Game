@@ -7,8 +7,8 @@ function getVeggieGrowthBonus(
   irrigationOwned: boolean
 ): number {
   let growthAmount = v.growthRate;
-  // Fertilizer bonus
-  growthAmount += v.fertilizerLevel * 0.1;
+  // Fertilizer bonus - 5% multiplicative increase per level
+  growthAmount *= (1 + v.fertilizerLevel * 0.05);
   // Season bonus
   const bonusSeasons = veggieSeasonBonuses[v.name] || [];
   if (bonusSeasons.includes(season)) {
@@ -62,7 +62,7 @@ const STORM_CHANCES: Record<string, number> = {
 // Weather types
 const WEATHER_TYPES = ['Clear', 'Rain', 'Drought', 'Storm', 'Heatwave', 'Snow'] as const;
 type WeatherType = typeof WEATHER_TYPES[number];
-import { useEffect, useRef, useState, createContext, useContext } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useMemo } from 'react';
 import ProgressBar from './components/ProgressBar';
 import './App.css';
 
@@ -288,7 +288,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const newFarmTier = farmTier + 1;
     // Save current state of irrigation
     // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
-    // Reset game state, but keep moneyKept, newMaxPlots, newFarmTier and irrigation
+    // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
     setVeggies(initialVeggies.map(v => ({ ...v })));
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(0);
@@ -302,7 +302,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setHeirloomOwned(false);
     setMaxPlots(newMaxPlots);
     setFarmTier(newFarmTier);
-    setIrrigationOwned(irrigationOwned); // Preserve irrigation state
+    setIrrigationOwned(false); // Preserve irrigation state
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
     // Save to localStorage
     saveGameState({
@@ -510,6 +510,13 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
+  // Memoize harvester speed levels to avoid unnecessary effect re-runs
+  const harvesterSpeedLevelsString = veggies.map(v => v.harvesterSpeedLevel ?? 0).join(',');
+  const harvesterSpeedLevels = useMemo(() => 
+    veggies.map(v => v.harvesterSpeedLevel ?? 0), 
+    [harvesterSpeedLevelsString]
+  );
+
   // Auto Harvester timer for each veggie
   useEffect(() => {
     let intervalId: number | null = null;
@@ -587,7 +594,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         intervalId = null;
       }
     };
-  }, [almanacLevel, farmTier, experience, maxPlots]);
+  }, [almanacLevel, farmTier, experience, maxPlots, harvesterSpeedLevels]);
 
   // Shared harvest logic for a veggie index
   const harvestVeggie = (index: number) => {
@@ -1111,47 +1118,48 @@ function App() {
             >
             {veggies.map((v, i) => (
               v.unlocked ? (
-                <button
-                  key={v.name}
-                  className={[ 
-                    i === activeVeggie ? 'active' : '',
-                    v.growth >= 100 ? 'ready' : ''
-                  ].filter(Boolean).join(' ')}
-                  onClick={() => setActiveVeggie(i)}
-                  aria-label={`Select ${v.name}`}
-                  disabled={i === activeVeggie}
-                  style={{ minWidth: '90px' }}
-                >
-                  {v.name}
-                </button>
+              <button
+                key={v.name}
+                className={[ 
+                i === activeVeggie ? 'active' : '',
+                v.growth >= 100 ? 'ready' : ''
+                ].filter(Boolean).join(' ')}
+                onClick={() => setActiveVeggie(i)}
+                aria-label={`Select ${v.name}`}
+                disabled={i === activeVeggie}
+                style={{ minWidth: '90px' }}
+              >
+                {v.name}
+              </button>
               ) : (
-                <button key={v.name} disabled aria-label={`Locked veggie`} style={{ minWidth: '90px' }}>
-                  Exp: {i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}
-                  {totalPlotsUsed >= maxPlots && (
-                  <span style={{ color: '#e44', fontWeight: 'bold', marginLeft: 4 }}>Max Plots</span>
-                  )}
-                </button>
+              <button key={v.name} disabled aria-label={`Locked veggie`} style={{ minWidth: '90px' }}>
+                {totalPlotsUsed >= maxPlots ? (
+                <span style={{ color: '#e44', fontWeight: 'bold' }}>Max Plots</span>
+                ) : (
+                `Exp: ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}`
+                )}
+              </button>
               )
             ))}
+            </div>
           </div>
-        </div>
-        <div style={{ marginBottom: '2rem' }} />
-        <div className="veggie-panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+          <div style={{ marginBottom: '2rem' }} />
+          <div className="veggie-panel">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
             <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <img
-                src={`/${veggies[activeVeggie].name}.png`}
-                alt={veggies[activeVeggie].name}
-                style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
+              src={`/${veggies[activeVeggie].name}.png`}
+              alt={veggies[activeVeggie].name}
+              style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
               />
               {veggies[activeVeggie].name}
               <span style={{ fontWeight: 'bold', color: '#228833', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
               <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
-                (~{daysToGrow} days to grow)
+              (~{daysToGrow} days to grow)
               </span>
               {/* Seasonal Bonus Indicator inline */}
               <span style={{ color: '#228833', fontSize: '0.95rem', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <span style={{ fontWeight: 'bold' }}>Bonus Growth:</span>
+              <span style={{ fontWeight: 'bold' }}>Bonus Growth:</span>
                 {(() => {
                   const bonuses = veggieSeasonBonuses[veggies[activeVeggie].name] || [];
                   if (bonuses.length === 0) return <span style={{ color: '#888', marginLeft: '0.2rem' }}>None</span>;
@@ -1242,7 +1250,7 @@ function App() {
               >
                 {veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel
                   ? 'MAX'
-                  : `+1% speed ($${veggies[activeVeggie].fertilizerCost})`}
+                  : `+5% speed ($${veggies[activeVeggie].fertilizerCost})`}
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
