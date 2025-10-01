@@ -276,7 +276,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [irrigationOwned, setIrrigationOwned] = useState(loaded?.irrigationOwned ?? false);
   // Farm purchase/reset logic
   const FARM_BASE_COST = 500;
-  const [farmCost, setFarmCost] = useState<number>(FARM_BASE_COST);
+  const [farmCost, setFarmCost] = useState<number>(
+    loaded?.farmCost ?? Math.ceil(FARM_BASE_COST * Math.pow(1.85, (loaded?.farmTier ?? 1) - 1))
+  );
   const handleBuyLargerFarm = () => {
     // Only allow if enough money and maxPlots reached
     if (money < farmCost || totalPlotsUsed < maxPlots) return;
@@ -319,6 +321,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       almanacCost: 10,
       maxPlots: newMaxPlots,
       farmTier: newFarmTier,
+      farmCost: Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)),
       irrigationOwned: irrigationOwned,
       currentWeather: 'Clear' // Reset weather when resetting
     });
@@ -365,6 +368,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setGreenhouseOwned(false);
   setHeirloomOwned(false);
   setCurrentWeather('Clear');
+  setFarmCost(FARM_BASE_COST);
   // Also force experience to 0 in localStorage
   saveGameState({
     farmTier: 1,
@@ -381,6 +385,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     autoSellOwned: false,
     greenhouseOwned: false,
     heirloomOwned: false,
+    farmCost: FARM_BASE_COST,
     currentWeather: 'Clear'
   });
   };
@@ -461,10 +466,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     almanacCost,
     maxPlots,
     farmTier,
+    farmCost,
     irrigationOwned,
     currentWeather
   });
-  }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned, currentWeather]);
+  }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned, currentWeather, farmCost]);
   // Auto Sell timer effect
   useEffect(() => {
     // AutoSell timer logic removed (setAutoSellTimer not defined)
@@ -862,15 +868,15 @@ function App() {
   const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather } = useGame();
 
   // Debug: Add $15 to money
-  const handleAddDebugMoney = () => {
-    setMoney((prev) => prev + 15);
-  };
-  const handleAddDebugExperience = () => {
-    setExperience((prev) => prev + 10);
-  }
-  const handleAddDebugKnowledge = () => {
-    setKnowledge((prev) => prev + 10);
-  }
+  // const handleAddDebugMoney = () => {
+  //   setMoney((prev) => prev + 15);
+  // };
+  // const handleAddDebugExperience = () => {
+  //   setExperience((prev) => prev + 10);
+  // }
+  // const handleAddDebugKnowledge = () => {
+  //   setKnowledge((prev) => prev + 10);
+  // }
   const season = getSeason(day);
   // Calculate totalPlotsUsed for UI
   const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
@@ -995,7 +1001,7 @@ function App() {
           >
             Reset
           </button>
-          <button
+          {/* <button
             onClick={handleAddDebugMoney}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
             title="Add $15 (Debug)"
@@ -1015,7 +1021,7 @@ function App() {
             title="Add 10 Kn (Debug)"
           >
             Add 10 Kn (Debug)
-          </button>
+          </button> */}
           <button
             onClick={handleExportSave}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: 'auto', background: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
@@ -1033,14 +1039,14 @@ function App() {
         </div>
         <div className="day-counter">Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
           <img
-            src={`/${season.toLowerCase()}.png`}
+            src={`./${season.toLowerCase()}.png`}
             alt={season}
             style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
           />
           {season}
           <span style={{ marginLeft: '1rem'}}></span>
           <img
-            src={`/${currentWeather}.png`}
+            src={`./${currentWeather}.png`}
             alt={currentWeather}
             style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
           />
@@ -1049,19 +1055,19 @@ function App() {
         <div style={{ marginBottom: '1rem' }} />
         <div className="stats under-title" style={{ display: 'inline-flex', verticalAlign: 'middle', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', fontSize: '1.0rem', marginBottom: '1rem' }}>
             <span>
-            <img src="/Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+            <img src="./Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
             Plots: {totalPlotsUsed} / {maxPlots}
             </span>
             <span>
-            <img src="/Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+            <img src="./Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
             Money: ${money.toFixed(2)}
             </span>
             <span>
-            <img src="/Experience.png" alt="Experience" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+            <img src="./Experience.png" alt="Experience" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
             Experience: {experience.toFixed(2)}
             </span>
             <span>
-            <img src="/Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+            <img src="./Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
             Knowledge: {knowledge.toFixed(2)}
             </span>
         </div>
@@ -1148,7 +1154,7 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
             <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <img
-              src={`/${veggies[activeVeggie].name}.png`}
+              src={`./${veggies[activeVeggie].name}.png`}
               alt={veggies[activeVeggie].name}
               style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
               />
@@ -1240,7 +1246,7 @@ function App() {
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                <img src="/Fertilizer.png" alt="Fertilizer" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
+                <img src="./Fertilizer.png" alt="Fertilizer" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
                 Fertilizer <span style={{ color: '#888', fontWeight: 'normal' }}>Lvl {veggies[activeVeggie].fertilizerLevel}</span>
               </span>
               <button
@@ -1255,7 +1261,7 @@ function App() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                <img src="/Better Seeds.png" alt="Better Seeds" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
+                <img src="./Better Seeds.png" alt="Better Seeds" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
                 Better Seeds <span style={{ color: '#888', fontWeight: 'normal' }}>Lvl {veggies[activeVeggie].betterSeedsLevel}</span>
               </span>
               <button
@@ -1268,7 +1274,7 @@ function App() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                <img src="/Additional Plot.png" alt="Additional Plot" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
+                <img src="./Additional Plot.png" alt="Additional Plot" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
                 Additional Plot <span style={{ color: '#888', fontWeight: 'normal' }}>Lvl {veggies[activeVeggie].additionalPlotLevel}</span>
               </span>
               <button
@@ -1281,7 +1287,7 @@ function App() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                <img src="/Auto Harvester.png" alt="Auto Harvester" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
+                <img src="./Auto Harvester.png" alt="Auto Harvester" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
                 Auto Harvester
               </span>
               <button
@@ -1295,7 +1301,7 @@ function App() {
             {veggies[activeVeggie].harvesterOwned && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5em' }}>
-                  <img src="/Harvester Speed.png" alt="Harvester Speed" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
+                  <img src="./Harvester Speed.png" alt="Harvester Speed" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain', verticalAlign: 'middle' }} />
                   Harvester Speed <span style={{ color: '#888', fontWeight: 'normal' }}>Lvl {veggies[activeVeggie].harvesterSpeedLevel ?? 0}</span>
                 </span>
                 <button
@@ -1357,7 +1363,7 @@ function App() {
         {/* Farmer's Almanac Upgrade - above Merchant */}
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
-            <img src="/Farmer's Almanac.png" alt="Farmer's Almanac" style={{ width: 22, height: 22, marginRight: 0 }} />
+            <img src="./Farmer's Almanac.png" alt="Farmer's Almanac" style={{ width: 22, height: 22, marginRight: 0 }} />
             <strong>Farmer's Almanac</strong>
             <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '1.02rem' }}>+{(almanacLevel * 10).toFixed(0)}%</span>
           </div>
@@ -1385,7 +1391,7 @@ function App() {
         {/* Irrigation Upgrade */}
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
-            <img src="/Irrigation.png" alt="Irrigation" style={{ width: 22, height: 22, marginRight: 4 }} />
+            <img src="./Irrigation.png" alt="Irrigation" style={{ width: 22, height: 22, marginRight: 4 }} />
             <strong>Irrigation</strong>
           </div>
           <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
@@ -1411,7 +1417,7 @@ function App() {
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
-            <img src="/Merchant.png" alt="Merchant" style={{ width: 22, height: 22, marginRight: 0 }} />
+            <img src="./Merchant.png" alt="Merchant" style={{ width: 22, height: 22, marginRight: 0 }} />
             <strong>Merchant</strong>
           </div>
           <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
@@ -1437,7 +1443,7 @@ function App() {
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
-            <img src="/Greenhouse.png" alt="Greenhouse" style={{ width: 22, height: 22, marginRight: 0 }} />
+            <img src="./Greenhouse.png" alt="Greenhouse" style={{ width: 22, height: 22, marginRight: 0 }} />
             <strong>Greenhouse</strong>
           </div>
           <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
@@ -1463,7 +1469,7 @@ function App() {
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
-            <img src="/Heirloom Seeds.png" alt="Heirloom Seeds" style={{ width: 22, height: 22, marginRight: 0 }} />
+            <img src="./Heirloom Seeds.png" alt="Heirloom Seeds" style={{ width: 22, height: 22, marginRight: 0 }} />
             <strong>Heirloom Seeds</strong>
           </div>
           <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
