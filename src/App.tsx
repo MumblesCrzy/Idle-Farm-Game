@@ -106,14 +106,65 @@ const veggieSeasonBonuses: Record<string, string[]> = {
 };
 
 // Calculate experience requirements using exponential scaling
+// Cost configuration for different upgrade types
+type CostConfig = {
+  baseValue: number;
+  firstVeggieDiscount: number; // Multiplier for first veggie (< 1 means cheaper)
+  scalingFactor: number; // How fast costs increase per veggie tier
+  levelScalingFactor: number; // How fast costs increase per upgrade level
+};
+
+const COST_CONFIGS: Record<string, CostConfig> = {
+  fertilizer: {
+    baseValue: 10,
+    firstVeggieDiscount: 0.5, // First veggie pays 50% of base
+    scalingFactor: 1.4,
+    levelScalingFactor: 1.25
+  },
+  harvester: {
+    baseValue: 15,
+    firstVeggieDiscount: 0.53, // ~8 for first veggie
+    scalingFactor: 1.5,
+    levelScalingFactor: 1.0 // Harvester doesn't scale with level
+  },
+  betterSeeds: {
+    baseValue: 10,
+    firstVeggieDiscount: 0.5,
+    scalingFactor: 1.4,
+    levelScalingFactor: 1.5
+  },
+  harvesterSpeed: {
+    baseValue: 50,
+    firstVeggieDiscount: 0.5,
+    scalingFactor: 1.5,
+    levelScalingFactor: 1.25
+  },
+  additionalPlot: {
+    baseValue: 40,
+    firstVeggieDiscount: 0.5,
+    scalingFactor: 1.4,
+    levelScalingFactor: 1.5
+  }
+};
+
 const calculateExpRequirement = (index: number): number => {
   if (index === 0) return 0; // First veggie is free
-  // Base: 50, Multiplier: 1.8, Power: position
   return Math.floor(50 * Math.pow(1.8, index));
 };
 
+const calculateInitialCost = (type: keyof typeof COST_CONFIGS, index: number): number => {
+  const config = COST_CONFIGS[type];
+  const baseMultiplier = index === 0 ? config.firstVeggieDiscount : 1;
+  return Math.floor(config.baseValue * baseMultiplier * Math.pow(config.scalingFactor, index));
+};
+
+const calculateUpgradeCost = (type: keyof typeof COST_CONFIGS, currentLevel: number, baseCost: number): number => {
+  const config = COST_CONFIGS[type];
+  return Math.ceil(baseCost * Math.pow(config.levelScalingFactor, currentLevel) + 5 * currentLevel);
+};
+
 const initialVeggies: Veggie[] = [
-  { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: 10, harvesterOwned: false, harvesterCost: 15, harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: 10, harvesterSpeedLevel: 0, harvesterSpeedCost: 50, additionalPlotLevel: 0, additionalPlotCost: 40, fertilizerMaxLevel: 97 },
+  { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97 },
   { name: 'Lettuce', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(1), fertilizerLevel: 0, fertilizerCost: 20, harvesterOwned: false, harvesterCost: 30, harvesterTimer: 0, salePrice: 2, betterSeedsLevel: 0, betterSeedsCost: 20, harvesterSpeedLevel: 0, harvesterSpeedCost: 100, additionalPlotLevel: 0, additionalPlotCost: 80, fertilizerMaxLevel: 99 },
   { name: 'Green Beans', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(2), fertilizerLevel: 0, fertilizerCost: 30, harvesterOwned: false, harvesterCost: 60, harvesterTimer: 0, salePrice: 3, betterSeedsLevel: 0, betterSeedsCost: 30, harvesterSpeedLevel: 0, harvesterSpeedCost: 200, additionalPlotLevel: 0, additionalPlotCost: 120, fertilizerMaxLevel: 98 },
   { name: 'Zucchini', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(3), fertilizerLevel: 0, fertilizerCost: 40, harvesterOwned: false, harvesterCost: 120, harvesterTimer: 0, salePrice: 4, betterSeedsLevel: 0, betterSeedsCost: 40, harvesterSpeedLevel: 0, harvesterSpeedCost: 400, additionalPlotLevel: 0, additionalPlotCost: 160, fertilizerMaxLevel: 98 },
@@ -176,6 +227,8 @@ type GameState = {
   setFarmTier: React.Dispatch<React.SetStateAction<number>>;
 };
 
+const FARM_BASE_COST = 500;
+
 const GameContext = createContext<GameState | undefined>(undefined);
 
 const getSeason = (day: number) => {
@@ -223,7 +276,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [irrigationOwned, setIrrigationOwned] = useState(loaded?.irrigationOwned ?? false);
   // Farm purchase/reset logic
   const FARM_BASE_COST = 500;
-  const [farmCost, setFarmCost] = useState(FARM_BASE_COST);
+  const [farmCost, setFarmCost] = useState<number>(FARM_BASE_COST);
   const handleBuyLargerFarm = () => {
     // Only allow if enough money and maxPlots reached
     if (money < farmCost || totalPlotsUsed < maxPlots) return;
@@ -233,8 +286,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const moneyKept = money - farmCost;
     // Calculate new farm tier
     const newFarmTier = farmTier + 1;
-  // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
-    // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
+    // Save current state of irrigation
+    // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
+    // Reset game state, but keep moneyKept, newMaxPlots, newFarmTier and irrigation
     setVeggies(initialVeggies.map(v => ({ ...v })));
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(0);
@@ -248,6 +302,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setHeirloomOwned(false);
     setMaxPlots(newMaxPlots);
     setFarmTier(newFarmTier);
+    setIrrigationOwned(irrigationOwned); // Preserve irrigation state
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
     // Save to localStorage
     saveGameState({
@@ -263,7 +318,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       almanacLevel: 0,
       almanacCost: 10,
       maxPlots: newMaxPlots,
-      farmTier: newFarmTier
+      farmTier: newFarmTier,
+      irrigationOwned: irrigationOwned,
+      currentWeather: 'Clear' // Reset weather when resetting
     });
   };
   // Removed duplicate loaded declaration and invalid farmTier type usage
@@ -307,6 +364,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setAutoSellOwned(false);
   setGreenhouseOwned(false);
   setHeirloomOwned(false);
+  setCurrentWeather('Clear');
   // Also force experience to 0 in localStorage
   saveGameState({
     farmTier: 1,
@@ -323,6 +381,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     autoSellOwned: false,
     greenhouseOwned: false,
     heirloomOwned: false,
+    currentWeather: 'Clear'
   });
   };
   // Prestige mechanic: max plots
@@ -336,7 +395,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const updated = [...prev];
         const v2 = { ...updated[index] };
         v2.harvesterSpeedLevel = (v2.harvesterSpeedLevel ?? 0) + 1;
-        v2.harvesterSpeedCost = Math.ceil((v2.harvesterSpeedCost ?? 50) * 1.25 + 5 * v2.harvesterSpeedLevel);
+        v2.harvesterSpeedCost = calculateUpgradeCost('harvesterSpeed', v2.harvesterSpeedLevel, calculateInitialCost('harvesterSpeed', index));
         updated[index] = v2;
         return updated;
       });
@@ -356,7 +415,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         v2.betterSeedsLevel += 1;
         const multiplier = heirloomOwned ? 1.5 : 1.25;
         v2.salePrice = +(v2.salePrice * multiplier).toFixed(2);
-        v2.betterSeedsCost = Math.ceil(cost * 1.5 + 10 * v2.betterSeedsLevel);
+        v2.betterSeedsCost = calculateUpgradeCost('betterSeeds', v2.betterSeedsLevel, calculateInitialCost('betterSeeds', index));
         updated[index] = v2;
         return updated;
       });
@@ -402,33 +461,44 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     almanacCost,
     maxPlots,
     farmTier,
-    irrigationOwned
+    irrigationOwned,
+    currentWeather
   });
-  }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned]);
+  }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned, currentWeather]);
   // Auto Sell timer effect
   useEffect(() => {
     // AutoSell timer logic removed (setAutoSellTimer not defined)
   }, [autoSellOwned]);
   const timerRef = useRef<number | null>(null);
-  const dayTimerRef = useRef<number | null>(null);
-
   // Growth timer for all unlocked veggies
   useEffect(() => {
+    // Memoize season calculation outside the interval
+    const season = getSeason(day);
+    
     timerRef.current = window.setInterval(() => {
       setVeggies((prev) => {
-        const season = getSeason(day);
-        return prev.map((v) => {
+        let needsUpdate = false;
+        const newVeggies = prev.map((v) => {
           if (!v.unlocked || v.growth >= 100) return v;
           const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned);
-          return {
-            ...v,
-            growth: Math.min(100, v.growth + growthAmount),
-          };
+          const newGrowth = Math.min(100, v.growth + growthAmount);
+          if (newGrowth !== v.growth) {
+            needsUpdate = true;
+            return { ...v, growth: newGrowth };
+          }
+          return v;
         });
+        // Only return new array if there were actual changes
+        return needsUpdate ? newVeggies : prev;
       });
     }, 1000);
+
+    // Cleanup function
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [day, greenhouseOwned, currentWeather, irrigationOwned]);
   // Greenhouse upgrade purchase handler
@@ -442,62 +512,83 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   // Auto Harvester timer for each veggie
   useEffect(() => {
-    const interval = setInterval(() => {
+    let intervalId: number | null = null;
+    
+    const harvestTick = () => {
       setVeggies((prev) => {
-        let updated = [...prev];
-        let totalPlotsUsed = updated.filter(vg => vg.unlocked).length + updated.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
+        let needsUpdate = false;
+        const newVeggies = prev.map((v) => {
+          if (!v.harvesterOwned) return v;
+          
+          const speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
+          const timerMax = Math.max(1, Math.round(50 / speedMultiplier));
+          let newV = v;
 
-        return updated.map((v) => {
-          if (v.harvesterOwned) {
-            const speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
-            const timerMax = Math.max(1, Math.round(50 / speedMultiplier));
-            // If timer is primed and veggie is ready, harvest
-            if (v.harvesterTimer >= timerMax && v.growth >= 100) {
-              const almanacMultiplier = 1 + (almanacLevel * 0.10);
-              setKnowledge((k: number) => k + 0.5 * almanacMultiplier + (1.25 * (farmTier - 1)));
-              const harvestAmount = 1 + (v.additionalPlotLevel || 0);
-              setExperience((exp: number) => exp + 1);
+          // If timer is primed and veggie is ready, harvest
+          if (v.harvesterTimer >= timerMax && v.growth >= 100) {
+            const almanacMultiplier = 1 + (almanacLevel * 0.10);
+            const harvestAmount = 1 + (v.additionalPlotLevel || 0);
+            
+            // Batch state updates using refs to avoid closure issues
+            setKnowledge((k: number) => k + 0.5 * almanacMultiplier + (1.25 * (farmTier - 1)));
+            setExperience((exp: number) => exp + 1);
 
-              // Check for unlocks after harvest
-              updated.forEach((veg, idx) => {
-                if (!veg.unlocked && experience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
-                  updated[idx].unlocked = true;
-                  totalPlotsUsed++;
-                }
-              });
-
-              return {
-                ...v,
-                stash: v.stash + harvestAmount,
-                growth: 0,
-                harvesterTimer: 0,
-                salePrice: v.salePrice
-              };
-            }
-            // If timer is primed but veggie is not ready, keep timer at max
-            if (v.harvesterTimer >= timerMax && v.growth < 100) {
-              return {
-                ...v,
-                harvesterTimer: timerMax,
-              };
-            }
-            // If timer is not primed, increment
-            if (v.harvesterTimer < timerMax) {
-              return {
-                ...v,
-                harvesterTimer: v.harvesterTimer + 1,
-              };
+            needsUpdate = true;
+            newV = {
+              ...v,
+              stash: v.stash + harvestAmount,
+              growth: 0,
+              harvesterTimer: 0,
+            };
+          } 
+          // If timer is primed but veggie is not ready, keep timer at max
+          else if (v.harvesterTimer >= timerMax && v.growth < 100) {
+            if (v.harvesterTimer !== timerMax) {
+              needsUpdate = true;
+              newV = { ...v, harvesterTimer: timerMax };
             }
           }
-          return v;
-        });
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [day]);
+          // If timer is not primed, increment
+          else if (v.harvesterTimer < timerMax) {
+            needsUpdate = true;
+            newV = { ...v, harvesterTimer: v.harvesterTimer + 1 };
+          }
 
-  // ...existing code...
-  
+          return newV;
+        });
+
+        // Only update state if something changed
+        if (!needsUpdate) return prev;
+
+        // Handle unlocks after all harvests are processed
+        let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
+          newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
+
+        // Check for unlocks
+        let unlocksHappened = false;
+        newVeggies.forEach((veg, idx) => {
+          if (!veg.unlocked && experience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
+            newVeggies[idx] = { ...veg, unlocked: true };
+            totalPlotsUsed++;
+            unlocksHappened = true;
+          }
+        });
+
+        return unlocksHappened ? newVeggies : newVeggies;
+      });
+    };
+
+    intervalId = window.setInterval(harvestTick, 1000);
+
+    // Cleanup function
+    return () => {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+  }, [almanacLevel, farmTier, experience, maxPlots]);
+
   // Shared harvest logic for a veggie index
   const harvestVeggie = (index: number) => {
     let didHarvest = false;
@@ -551,7 +642,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const updated = [...prev];
         const v2 = { ...updated[index] };
         v2.additionalPlotLevel += 1;
-        v2.additionalPlotCost = Math.ceil(v2.additionalPlotCost * 1.5 + 10 * v2.additionalPlotLevel);
+        v2.additionalPlotCost = calculateUpgradeCost('additionalPlot', v2.additionalPlotLevel, calculateInitialCost('additionalPlot', index));
         updated[index] = v2;
         return updated;
       });
@@ -565,7 +656,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const updated = [...prev];
         const v2 = { ...updated[index] };
         v2.fertilizerLevel += 1;
-        v2.fertilizerCost = Math.ceil(v2.fertilizerCost * 1.25 + 5 * v2.fertilizerLevel);
+        v2.fertilizerCost = calculateUpgradeCost('fertilizer', v2.fertilizerLevel, calculateInitialCost('fertilizer', index));
         updated[index] = v2;
         return updated;
       });
@@ -587,15 +678,56 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  // Day counter timer
+  // Day counter timer combined with weather system
   useEffect(() => {
-    dayTimerRef.current = window.setInterval(() => {
-  setDay((d: number) => (d + 1) % 366);
-    }, 1000);
-    return () => {
-      if (dayTimerRef.current) clearInterval(dayTimerRef.current);
+    let dayIntervalId: number | null = null;
+    
+    const updateDay = () => {
+      setDay((d: number) => {
+        const newDay = (d + 1) % 366;
+        // Handle weather changes inline with day changes to reduce state updates
+        const newSeason = getSeason(newDay);
+        handleWeatherChange(newSeason);
+        return newDay;
+      });
     };
-  }, []);
+
+    const handleWeatherChange = (season: string) => {
+      // Only calculate new weather if needed
+      if (currentWeather === 'Clear') {
+        const rainChance = RAIN_CHANCES[season] ?? 0.2;
+        const droughtChance = DROUGHT_CHANCES[season] ?? 0.03;
+        const stormChance = STORM_CHANCES[season] ?? 0.03;
+        const heatwaveChance = 0.01;
+        
+        const roll = Math.random();
+        let newWeather: WeatherType = 'Clear';
+        
+        if (roll < rainChance) {
+          newWeather = season === 'Winter' ? 'Snow' : 'Rain';
+        } else if (roll < rainChance + droughtChance) {
+          newWeather = 'Drought';
+        } else if (roll < rainChance + droughtChance + stormChance) {
+          newWeather = 'Storm';
+        } else if (roll < rainChance + droughtChance + stormChance + heatwaveChance) {
+          newWeather = 'Heatwave';
+        }
+        
+        if (newWeather !== currentWeather) {
+          setCurrentWeather(newWeather);
+        }
+      }
+    };
+
+    dayIntervalId = window.setInterval(updateDay, 1000);
+
+    return () => {
+      if (dayIntervalId !== null) {
+        clearInterval(dayIntervalId);
+        dayIntervalId = null;
+      }
+    };
+  }, [currentWeather]);
 
   // Sell handler
   const handleSell = () => {
@@ -662,9 +794,12 @@ function App() {
         setHeirloomOwned(data.heirloomOwned ?? false);
         setMaxPlots(data.maxPlots ?? 4);
         setFarmTier(data.farmTier ?? 1);
-        setFarmCost(data.farmCost ?? 500);
+        setFarmCost(data.farmCost ?? FARM_BASE_COST);
         setIrrigationOwned(data.irrigationOwned ?? false);
         setCurrentWeather(data.currentWeather ?? 'Clear');
+        // Update farm cost based on tier
+        const newFarmCost = Math.ceil(FARM_BASE_COST * Math.pow(1.85, (data.farmTier ?? 1) - 1));
+        setFarmCost(newFarmCost);
         alert("Save imported successfully!");
       } catch {
         alert("Failed to import save file.");
