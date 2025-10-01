@@ -62,7 +62,7 @@ const STORM_CHANCES: Record<string, number> = {
 // Weather types
 const WEATHER_TYPES = ['Clear', 'Rain', 'Drought', 'Storm', 'Heatwave', 'Snow'] as const;
 type WeatherType = typeof WEATHER_TYPES[number];
-import { useEffect, useRef, useState, createContext, useContext, useMemo } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback } from 'react';
 import ProgressBar from './components/ProgressBar';
 import './App.css';
 
@@ -471,10 +471,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     currentWeather
   });
   }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned, currentWeather, farmCost]);
-  // Auto Sell timer effect
-  useEffect(() => {
-    // AutoSell timer logic removed (setAutoSellTimer not defined)
-  }, [autoSellOwned]);
+
   const timerRef = useRef<number | null>(null);
   // Growth timer for all unlocked veggies
   useEffect(() => {
@@ -691,6 +688,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
+  // Sell handler - memoized to prevent useEffect re-runs
+  const handleSell = useCallback(() => {
+    let total = 0;
+    setVeggies((prev) => {
+      total = prev.reduce((sum, v) => sum + v.stash * v.salePrice, 0);
+      return prev.map((v) => ({ ...v, stash: 0 }));
+    });
+    setMoney((m: number) => m + total);
+  }, [setVeggies, setMoney]);
+
   // Day counter timer combined with weather system
   useEffect(() => {
     let dayIntervalId: number | null = null;
@@ -701,6 +708,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         // Handle weather changes inline with day changes to reduce state updates
         const newSeason = getSeason(newDay);
         handleWeatherChange(newSeason);
+        
+        // Auto-sell logic for merchant (every 7 days)
+        if (autoSellOwned && newDay % 7 === 0) {
+          // Trigger auto-sell using the existing handleSell function
+          setTimeout(() => {
+            handleSell();
+          }, 100); // Small delay to ensure state is updated
+        }
+        
         return newDay;
       });
     };
@@ -740,17 +756,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         dayIntervalId = null;
       }
     };
-  }, [currentWeather]);
+  }, [currentWeather, autoSellOwned, handleSell]);
 
-  // Sell handler
-  const handleSell = () => {
-    let total = 0;
-    setVeggies((prev) => {
-      total = prev.reduce((sum, v) => sum + v.stash * v.salePrice, 0);
-      return prev.map((v) => ({ ...v, stash: 0 }));
-    });
-  setMoney((m: number) => m + total);
-  };
+
 
   return (
   <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather }}>
@@ -1326,10 +1334,10 @@ function App() {
           </div>
           {/* Merchant Progress Bar: only show if purchased */}
           {autoSellOwned && (
-            <div style={{ width: '100%', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '1rem' }}>Merchant: Next sale in {7 - (day % 7)} days</span>
-              <div style={{ position: 'relative', width: '100%', height: '18px', marginTop: '0.2rem' }}>
-                <ProgressBar value={day % 7} max={7} height={18} color="#ffb300" />
+            <div style={{ width: '100%', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {7 - (day % 7)} days</span>
+              <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
+                <ProgressBar value={day % 7} max={7} height={12} color="#ffb300" />
                 <span style={{
                   position: 'absolute',
                   left: 0,
@@ -1341,7 +1349,7 @@ function App() {
                   justifyContent: 'center',
                   fontWeight: 'bold',
                   color: '#222',
-                  fontSize: '0.95rem',
+                  fontSize: '0.75rem',
                   pointerEvents: 'none',
                   userSelect: 'none',
                 }}>{Math.floor((day % 7) / 7 * 100)}%</span>
