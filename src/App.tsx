@@ -286,6 +286,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const newMaxPlots = maxPlots + Math.floor(experience / 100);
     // Calculate money to keep
     const moneyKept = money - farmCost;
+    // Calculate knowledge to keep (quarter of current)
+    const knowledgeKept = Math.floor(knowledge / 4);
     // Calculate new farm tier
     const newFarmTier = farmTier + 1;
     // Save current state of irrigation
@@ -294,7 +296,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setVeggies(initialVeggies.map(v => ({ ...v })));
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(0);
-    setKnowledge(0);
+    setKnowledge(knowledgeKept);
     setActiveVeggie(0);
     setDay(0);
     setGreenhouseOwned(false);
@@ -311,7 +313,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       veggies: initialVeggies.map(v => ({ ...v })),
       money: moneyKept > 0 ? moneyKept : 0,
       experience: 0,
-      knowledge: 0,
+      knowledge: knowledgeKept,
       activeVeggie: 0,
       day: 0,
       greenhouseOwned: false,
@@ -527,6 +529,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const harvestTick = () => {
       setVeggies((prev) => {
         let needsUpdate = false;
+        
         const newVeggies = prev.map((v) => {
           if (!v.harvesterOwned) return v;
           
@@ -534,22 +537,29 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           const timerMax = Math.max(1, Math.round(50 / speedMultiplier));
           let newV = v;
 
-          // If timer is primed and veggie is ready, harvest
+          // If timer is primed and veggie is ready, harvest immediately
           if (v.harvesterTimer >= timerMax && v.growth >= 100) {
-            const almanacMultiplier = 1 + (almanacLevel * 0.10);
             const harvestAmount = 1 + (v.additionalPlotLevel || 0);
+            const almanacMultiplier = 1 + (almanacLevel * 0.10);
+            const knowledgeGain = 0.5; // Auto harvest knowledge gain
             
-            // Batch state updates using refs to avoid closure issues
-            setKnowledge((k: number) => k + 0.5 * almanacMultiplier + (1.25 * (farmTier - 1)));
-            setExperience((exp: number) => exp + 1);
-
-            needsUpdate = true;
+            // Perform the harvest
             newV = {
               ...v,
               stash: v.stash + harvestAmount,
               growth: 0,
-              harvesterTimer: 0,
+              harvesterTimer: 0
             };
+            
+            // Update experience and knowledge immediately
+            setTimeout(() => {
+              if (day >= 0 && day <= 365) {
+                setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
+                setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
+              }
+            }, 0);
+            
+            needsUpdate = true;
           } 
           // If timer is primed but veggie is not ready, keep timer at max
           else if (v.harvesterTimer >= timerMax && v.growth < 100) {
@@ -567,24 +577,21 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           return newV;
         });
 
-        // Only update state if something changed
-        if (!needsUpdate) return prev;
-
         // Handle unlocks after all harvests are processed
-        let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
-          newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
+        if (needsUpdate) {
+          let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
+            newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
 
-        // Check for unlocks
-        let unlocksHappened = false;
-        newVeggies.forEach((veg, idx) => {
-          if (!veg.unlocked && experience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
-            newVeggies[idx] = { ...veg, unlocked: true };
-            totalPlotsUsed++;
-            unlocksHappened = true;
-          }
-        });
+          // Check for unlocks
+          newVeggies.forEach((veg, idx) => {
+            if (!veg.unlocked && experience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
+              newVeggies[idx] = { ...veg, unlocked: true };
+              totalPlotsUsed++;
+            }
+          });
+        }
 
-        return unlocksHappened ? newVeggies : newVeggies;
+        return needsUpdate ? newVeggies : prev;
       });
     };
 
@@ -599,20 +606,33 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     };
   }, [almanacLevel, farmTier, experience, maxPlots, harvesterSpeedLevels]);
 
-  // Shared harvest logic for a veggie index
-  const harvestVeggie = (index: number) => {
-    let didHarvest = false;
+  // Unified harvest logic for both auto and manual harvest
+  const harvestVeggie = (index: number, isAutoHarvest: boolean = false) => {
+    // Calculate harvest amount before the state update
+    const v = veggies[index];
+    if (v.growth < 100) return; // Early exit if not ready to harvest
+    
+    const harvestAmount = 1 + (v.additionalPlotLevel || 0);
+    
+    // Since we already checked growth >= 100, we know we'll harvest
+    const almanacMultiplier = 1 + (almanacLevel * 0.10);
+    const knowledgeGain = isAutoHarvest ? 0.5 : 1;
+    
     setVeggies((prev) => {
       const updated = [...prev];
-      const v = { ...updated[index] };
-      v.salePrice = updated[index].salePrice;
-      if (v.growth >= 100) {
-        const harvestAmount = 1 + (v.additionalPlotLevel || 0);
-        v.stash += harvestAmount;
-        v.growth = 0;
-        didHarvest = true;
+      const veggie = { ...updated[index] };
+      veggie.salePrice = updated[index].salePrice;
+      
+      // Perform the harvest
+      veggie.stash += harvestAmount;
+      veggie.growth = 0;
+      
+      // Reset harvester timer if this is an auto harvest
+      if (isAutoHarvest) {
+        veggie.harvesterTimer = 0;
       }
-      updated[index] = v;
+      
+      updated[index] = veggie;
 
       // Unlock all eligible veggies after harvest
       let totalPlotsUsed = updated.filter(vg => vg.unlocked).length + updated.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
@@ -626,18 +646,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
       return updated;
     });
-    setTimeout(() => {
-      if (didHarvest && day >= 0 && day <= 365) {
-        const almanacMultiplier = 1 + (almanacLevel * 0.10);
-        setKnowledge((k: number) => k + 1 * almanacMultiplier + (1.25 * (farmTier - 1)));
-      }
-    }, 0);
-    setExperience((exp: number) => exp + 1 + knowledge * 0.01);
+    
+    // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
+    if (day >= 0 && day <= 365) {
+      setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
+      setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
+    }
   };
 
-  // Manual harvest button uses shared logic
+  // Manual harvest button uses unified logic
   const handleHarvest = () => {
-    harvestVeggie(activeVeggie);
+    harvestVeggie(activeVeggie, false);
   }
 
   // Fertilizer upgrade purchase
@@ -779,6 +798,13 @@ export { GameProvider };
 function App() {
   // Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Info overlay state
+  const [showInfoOverlay, setShowInfoOverlay] = useState(false);
+  const [selectedInfoCategory, setSelectedInfoCategory] = useState('seasons');
+  
+  // Settings overlay state
+  const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
 
   // Import save handler: triggers file input
   const handleImportSave = () => {
@@ -1002,13 +1028,6 @@ function App() {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
           <h1 className="game-title" style={{ marginRight: '1rem' }}>Farm Idle Game</h1>
-          <button
-            onClick={handleResetGame}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '-0.5rem', background: '#e44', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Reset Game"
-          >
-            Reset
-          </button>
           {/* <button
             onClick={handleAddDebugMoney}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
@@ -1031,18 +1050,18 @@ function App() {
             Add 10 Kn (Debug)
           </button> */}
           <button
-            onClick={handleExportSave}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: 'auto', background: '#1976d2', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Export Save"
+            onClick={() => setShowInfoOverlay(true)}
+            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: 'auto', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
+            title="Info - Game Help"
           >
-            Export Save
+            Info
           </button>
           <button
-            onClick={handleImportSave}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#8819d2ff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Import Save"
+            onClick={() => setShowSettingsOverlay(true)}
+            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
+            title="Settings"
           >
-            Import Save
+            Settings
           </button>
         </div>
         <div className="day-counter">Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
@@ -1094,7 +1113,7 @@ function App() {
                 fontSize: '1.0rem', 
                 borderRadius: '8px', 
                 textAlign: 'center', 
-                maxWidth: 950,
+                maxWidth: 765,
                 border: money >= farmCost ? '1px solid #ffeb3b' : 'none',
                 boxShadow: money >= farmCost ? '0 0 4px 1px #ffe066' : 'none',
                 cursor: money >= farmCost ? 'pointer' : 'not-allowed',
@@ -1102,14 +1121,16 @@ function App() {
                 marginTop: '0.5rem',
                 marginBottom: '0.5rem',
                 transition: 'box-shadow 0.2s, border 0.2s',
-              }}
+              }} aria-label="Buy Larger Farm"
             >
             <span style={{ color: '#444', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
               Buy Larger Farm
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {maxPlots + Math.floor(experience / 100)}
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge bonus:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
               <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Farm cost:</span> ${farmCost?.toLocaleString()}
+              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {maxPlots + Math.floor(experience / 100)}
+              <div />
+              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge bonus:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
               <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money kept:</span> ${money > farmCost ? (money - farmCost).toLocaleString() : 0}
+              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge kept:</span> {knowledge / 4 > 0 ? (Math.floor(knowledge / 4)).toLocaleString() : 0}Kn
             </span>
             </button>
           </div>
@@ -1504,6 +1525,457 @@ function App() {
         {/* Future global upgrades can be added here */}
       </div>
     </div>
+    
+    {/* Info Overlay */}
+    {showInfoOverlay && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          backgroundColor: '#ffffffff',
+          borderRadius: '8px',
+          padding: '20px',
+          maxWidth: '800px',
+          maxHeight: '600px',
+          width: '90%',
+          height: '80%',
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'hidden'
+        }}>
+          {/* Category Navigation */}
+          <div style={{
+            width: '200px',
+            borderRight: '2px solid #e0e0e0',
+            paddingRight: '15px',
+            marginRight: '15px'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#333' }}>Game Help</h3>
+            {[
+              { id: 'seasons', label: 'Seasons & Weather' },
+              { id: 'farm', label: 'Farm & Experience' },
+              { id: 'veggies', label: 'Veggie Upgrades' },
+              { id: 'upgrades', label: 'Farm Upgrades' }
+            ].map(category => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedInfoCategory(category.id)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '10px',
+                  marginBottom: '5px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: selectedInfoCategory === category.id ? '#007bff' : '#f8f9fa',
+                  color: selectedInfoCategory === category.id ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Content Area */}
+          <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ margin: 0, color: '#333' }}>
+                {selectedInfoCategory === 'seasons' && 'Seasons & Weather'}
+                {selectedInfoCategory === 'farm' && 'Farm & Experience'}
+                {selectedInfoCategory === 'veggies' && 'Veggie Upgrades'}
+                {selectedInfoCategory === 'upgrades' && 'Farm Upgrades'}
+              </h3>
+              <button
+                onClick={() => setShowInfoOverlay(false)}
+                style={{
+                  padding: '5px 10px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: '#dc3545',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Close
+              </button>
+            </div>
+            
+            {/* Content based on selected category */}
+            <div style={{ lineHeight: '1.6', color: '#555', textAlign: 'left' }}>
+              {selectedInfoCategory === 'seasons' && (
+                <div>
+                  <h4>🌱 Seasons</h4>
+                  <p>The game cycles through four seasons: <strong>Spring → Summer → Fall → Winter</strong>. Each season lasts ~90 days and affects how your vegetables grow.</p>
+                  
+                  <h5>Season Effects:</h5>
+                  <ul>
+                    <li><strong>Winter:</strong> 90% growth penalty (only 10% normal speed) unless you own a Greenhouse</li>
+                    <li><strong>Spring/Summer/Fall:</strong> Normal growth rates</li>
+                    <li><strong>Seasonal Bonuses:</strong> All vegetables get +10% growth during their preferred seasons</li>
+                  </ul>
+                  
+                  <h5>Seasonal Vegetable Bonuses (+10% growth):</h5>
+                  <ul>
+                    <li><strong>Spring:</strong> Radish, Lettuce, Carrots, Cabbage, Onions</li>
+                    <li><strong>Summer:</strong> Green Beans, Zucchini, Cucumbers, Tomatoes, Peppers</li>
+                    <li><strong>Fall:</strong> Radish, Lettuce, Carrots, Broccoli, Cabbage</li>
+                    <li><strong>Winter:</strong> No bonuses</li>
+                  </ul>
+                  
+                  <h4>🌦️ Weather System</h4>
+                  <p>Weather changes randomly each day with different probabilities by season:</p>
+                  
+                  <h5>Weather Effects:</h5>
+                  <ul>
+                    <li><strong>Clear:</strong> Normal growth (no bonus/penalty)</li>
+                    <li><strong>Rain:</strong> +20% growth boost for all vegetables</li>
+                    <li><strong>Storm:</strong> +10% growth boost for all vegetables</li>
+                    <li><strong>Drought:</strong> -50% growth penalty unless you have Irrigation</li>
+                    <li><strong>Heatwave:</strong> -30% growth penalty (no protection available)</li>
+                    <li><strong>Snow:</strong> 100% growth penalty (plants stop growing) unless you have a Greenhouse</li>
+                  </ul>
+                  
+                  <h5>Weather Probabilities by Season:</h5>
+                  <ul>
+                    <li><strong>Rain Chances:</strong> Spring: 20% • Summer: 16% • Fall: 14% • Winter: 10%</li>
+                    <li><strong>Drought Chances:</strong> Spring: 1.2% • Summer: 1.2% • Fall: 1.6% • Winter: 0.4%</li>
+                    <li><strong>Storm Chances:</strong> Spring: 4% • Summer: 6% • Fall: 3% • Winter: 1%</li>
+                    <li><strong>Heatwave Chances:</strong> Spring: 2% • Summer: 5% • Fall: 1% • Winter: 0%</li>
+                  </ul>
+                  
+                  <h4>💡 Strategy Tips:</h4>
+                  <ul>
+                    <li><strong>Irrigation:</strong> Protects against Drought events</li>
+                    <li><strong>Greenhouse:</strong> Essential upgrade! Eliminates Winter and Snow penalties</li>
+                  </ul>
+                </div>
+              )}
+              {selectedInfoCategory === 'farm' && (
+                <div>
+                  <h4>🎓 Experience System</h4>
+                  <p>Experience is earned every time you harvest any vegetable. Each vegetable requires a certain amount of experience to unlock:</p>
+                  
+                  <h5>Vegetable Unlock Requirements:</h5>
+                  <ul>
+                    <li><strong>Radish:</strong> 0 exp (starting vegetable)</li>
+                    <li><strong>Lettuce:</strong> 90 exp</li>
+                    <li><strong>Green Beans:</strong> 162 exp</li>
+                    <li><strong>Zucchini:</strong> 292 exp</li>
+                    <li><strong>Cucumbers:</strong> 525 exp</li>
+                    <li><strong>Tomatoes:</strong> 945 exp</li>
+                    <li><strong>Peppers:</strong> 1,701 exp</li>
+                    <li><strong>Carrots:</strong> 3,062 exp</li>
+                    <li><strong>Broccoli:</strong> 5,512 exp</li>
+                    <li><strong>Onions:</strong> 9,921 exp</li>
+                  </ul>
+                  <p><em>Formula: 50 × 1.8^(index) for each vegetable</em></p>
+                  
+                  <h4>🧠 Knowledge Currency</h4>
+                  <p>Knowledge is a secondary currency earned from harvesting vegetables:</p>
+                  
+                  <h5>Knowledge Earning:</h5>
+                  <ul>
+                    <li><strong>Auto Harvest:</strong> +0.5 Knowledge per vegetable harvested</li>
+                    <li><strong>Manual Harvest:</strong> +1 Knowledge per vegetable harvested</li>
+                    <li><strong>Farm Tier Bonus:</strong> +1.25 Knowledge per harvest per farm tier</li>
+                    <li><strong>Farmer's Almanac:</strong> Multiplies ALL knowledge gains by (1 + level)</li>
+                  </ul>
+                  
+                  <h5>Knowledge Uses:</h5>
+                  <ul>
+                    <li><strong>Current Knowledge:</strong> Current knowledge multiplies gained experience per harvest by 1%</li>
+                    <li><strong>Better Seeds:</strong> Increases sale price (1.25x per level, 1.5x with Heirloom Seeds)</li>
+                    <li><strong>Irrigation:</strong> 50 Knowledge + $500 (protects against Drought)</li>
+                    <li><strong>Heirloom Seeds:</strong> 2,000 Knowledge + $25,000 (improves Better Seeds bonus)</li>
+                  </ul>
+                  
+                  <h4>🏡 Plot System</h4>
+                  <p>Each vegetable can have multiple plots. More plots = more simultaneous growing!</p>
+                  
+                  <h5>Plot Limitations:</h5>
+                  <ul>
+                    <li><strong>Starting Plots:</strong> 4 total plots across ALL vegetables</li>
+                    <li><strong>Additional Plots:</strong> Buy more plots per vegetable (costs money)</li>
+                    <li><strong>Max Plots:</strong> Total plots cannot exceed your farm limit</li>
+                  </ul>
+                  
+                  <h4>🚜 Farm Expansion (Prestige)</h4>
+                  <p>When you've used all available plots, you can buy a larger farm to reset progress but gain permanent bonuses:</p>
+                  
+                  <h5>Farm Purchase Requirements:</h5>
+                  <ul>
+                    <li><strong>Condition:</strong> Must have used ALL available plots</li>
+                    <li><strong>Cost:</strong> $500 × 1.85^(farm tier) (exponential scaling)</li>
+                    <li><strong>Base Cost:</strong> First farm costs $500, second costs $925, etc.</li>
+                  </ul>
+                  
+                  <h5>What You Keep:</h5>
+                  <ul>
+                    <li><strong>Money:</strong> Leftover money after paying farm cost</li>
+                    <li><strong>Knowledge:</strong> 25% of current knowledge (1/4 retention)</li>
+                    <li><strong>Max Plots:</strong> Previous max + (experience ÷ 100) new plots</li>
+                    <li><strong>Farm Tier:</strong> Permanent progression level</li>
+                  </ul>
+                  
+                  <h5>What Resets:</h5>
+                  <ul>
+                    <li><strong>Experience:</strong> Back to 0 (must re-unlock vegetables)</li>
+                    <li><strong>All Upgrades:</strong> Fertilizer, Harvesters, Speed, Better Seeds reset to 0</li>
+                    <li><strong>Global Upgrades:</strong> Greenhouse, Irrigation, Almanac, Auto-Sell, Heirloom reset</li>
+                    <li><strong>Current Progress:</strong> All growing vegetables and stashes cleared</li>
+                  </ul>
+                  
+                  <h4>💡 Strategy Tips:</h4>
+                  <ul>
+                    <li><strong>Prestige Timing:</strong> Buy a new farm when you have excess money, experience and knowledge</li>
+                    <li><strong>Knowledge Planning:</strong> Don't spend knowledge right away, as it boosts experience gain</li>
+                    <li><strong>Focus on One Veggie:</strong> Usually better to max one vegetable than spread upgrades around</li>
+                    <li><strong>Experience Scaling:</strong> Experience determines how many plots your new farm has so stockpile it before prestige</li>
+                  </ul>
+                </div>
+              )}
+              {selectedInfoCategory === 'veggies' && (
+                <div>
+                  <h4>🌱 Per-Vegetable Upgrades</h4>
+                  <p>Each vegetable has its own individual upgrades that only affect that specific crop:</p>
+                  
+                  <h5>🧪 Fertilizer (Growth Speed)</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> +5% multiplicative growth rate per level</li>
+                    <li><strong>Base Cost:</strong> $5 for Radish, scales by 1.4× per vegetable</li>
+                    <li><strong>Level Scaling:</strong> Cost increases by 1.25× per level</li>
+                    <li><strong>Max Levels:</strong> ~97-99 depending on vegetable</li>
+                    <li><strong>Example:</strong> Level 10 = +50% growth (1.5× speed)</li>
+                  </ul>
+                  
+                  <h5>🤖 Auto Harvester</h5>
+                  <ul>
+                    <li><strong>Function:</strong> Automatically harvests when vegetables reach 100% growth</li>
+                    <li><strong>Base Timer:</strong> 50 seconds between harvest attempts</li>
+                    <li><strong>Base Cost:</strong> $8 for Radish, scales by 1.5× per vegetable</li>
+                    <li><strong>One-Time Purchase:</strong> No levels, just owned/not owned</li>
+                    <li><strong>Knowledge:</strong> Auto harvest gives +0.5 Knowledge vs +1 for manual</li>
+                  </ul>
+                  
+                  <h5>⚡ Harvester Speed</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> +5% harvester speed per level</li>
+                    <li><strong>Formula:</strong> Timer = 50 ÷ (1 + level × 0.05) ticks</li>
+                    <li><strong>Base Cost:</strong> $25 for Radish, scales by 1.5× per vegetable</li>
+                    <li><strong>Level Scaling:</strong> Cost increases by 1.25× per level</li>
+                    <li><strong>Example:</strong> Level 10 = 33 seconds between harvests</li>
+                  </ul>
+                  
+                  <h5>📦 Additional Plots</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Each level adds +1 plot for that vegetable</li>
+                    <li><strong>Harvesting:</strong> Each plot harvests +1 additional vegetable</li>
+                    <li><strong>Base Cost:</strong> $20 for Radish, scales by 1.4× per vegetable</li>
+                    <li><strong>Level Scaling:</strong> Cost increases by 1.5× per level</li>
+                    <li><strong>Plot Limit:</strong> Total plots across ALL vegetables cannot exceed farm limit</li>
+                  </ul>
+                  
+                  <h5>🌟 Better Seeds (Knowledge Upgrade)</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Increases sale price by 1.25× per level (1.5× with Heirloom Seeds)</li>
+                    <li><strong>Currency:</strong> Costs Knowledge, not money</li>
+                    <li><strong>Base Cost:</strong> 5 Knowledge for Radish, scales by 1.4× per vegetable</li>
+                    <li><strong>Level Scaling:</strong> Cost increases by 1.5× per level</li>
+                    <li><strong>Example:</strong> Level 3 Better Seeds = 1.95× sale price (2.92× with Heirloom)</li>
+                  </ul>
+                  
+                  <h4>💡 Strategy Tips:</h4>
+                  <ul>
+                    <li><strong>Fertilizer Priority:</strong> Most cost-effective upgrade for increasing income</li>
+                    <li><strong>Harvester First:</strong> Essential for idle gameplay and knowledge generation</li>
+                    <li><strong>Plots vs New Vegetables:</strong> Buy more plots for a lower tier vegetable is often more beneficial than waiting for higher tier vegetables</li>
+                    <li><strong>Better Seeds Timing:</strong> Save knowledge for the experience boost rather than immediate upgrades</li>
+                    <li><strong>Focus Strategy:</strong> Usually better to max one vegetable than spread upgrades around</li>
+                  </ul>
+                </div>
+              )}
+              {selectedInfoCategory === 'upgrades' && (
+                <div>
+                  <h4>🏗️ Global Farm Upgrades</h4>
+                  <p>These upgrades affect your entire farm and apply to all vegetables:</p>
+                  
+                  <h5>📚 Farmer's Almanac (Knowledge Multiplier)</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> +10% to ALL knowledge gains per level</li>
+                    <li><strong>Formula:</strong> Knowledge × (1 + almanac level × 0.10)</li>
+                    <li><strong>Base Cost:</strong> $10</li>
+                    <li><strong>Level Scaling:</strong> Cost = previous cost × 1.15 + $5</li>
+                    <li><strong>Example:</strong> Level 5 Almanac = +50% knowledge from all sources</li>
+                    <li><strong>Progression:</strong> $10 → $17 → $25 → $34 → $44...</li>
+                  </ul>
+                  
+                  <h5>💧 Irrigation System</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Complete immunity to Drought weather penalty</li>
+                    <li><strong>Cost:</strong> $500 + 50 Knowledge (one-time purchase, per farm)</li>
+                    <li><strong>Weather Protection:</strong> Prevents -50% growth penalty during Drought</li>
+                    <li><strong>Value:</strong> Essential for consistent growth rates</li>
+                    <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
+                  </ul>
+
+                  <h5>🏪 Merchant (Auto-Sell)</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Automatically sells vegetables from stash every day</li>
+                    <li><strong>Cost:</strong> $1,000 + 100 Knowledge (one-time purchase, per farm)</li>
+                    <li><strong>Timing:</strong> Triggers once per day at day transition</li>
+                    <li><strong>Convenience:</strong> No need to manually click Sell All</li>
+                    <li><strong>Value:</strong> Essential for idle gameplay progression</li>
+                    <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
+                  </ul>
+
+                  <h5>🏠 Greenhouse</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Complete immunity to Winter and Snow penalties</li>
+                    <li><strong>Cost:</strong> $10,000 + 1,000 Knowledge (one-time purchase, per farm)</li>
+                    <li><strong>Winter Protection:</strong> Prevents -90% growth penalty in Winter</li>
+                    <li><strong>Snow Protection:</strong> Prevents -100% growth penalty during Snow</li>
+                    <li><strong>Value:</strong> Transforms Winter from terrible to normal growing season</li>
+                    <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
+                  </ul>
+                  
+                  <h5>🌟 Heirloom Seeds</h5>
+                  <ul>
+                    <li><strong>Effect:</strong> Improves Better Seeds upgrade from 1.25× to 1.5× per level</li>
+                    <li><strong>Cost:</strong> $25,000 + 2,000 Knowledge (one-time purchase, per farm)</li>
+                    <li><strong>Calculation:</strong> Each Better Seeds level gives 1.5× price instead of 1.25×</li>
+                    <li><strong>Example:</strong> Better Seeds Level 3 = 1.95× without vs 3.375× with Heirloom</li>
+                    <li><strong>Value:</strong> Massive late-game money multiplier</li>
+                    <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
+                  </ul>
+                  
+                  <h4>💡 Strategy Tips:</h4>
+                  <ul>
+                    <li><strong>Knowledge Management:</strong> Knowledge factors into experience gain, so don't spend all of it at once.</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* Settings Overlay */}
+    {showSettingsOverlay && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          backgroundColor: '#ffffffff',
+          borderRadius: '8px',
+          padding: '20px',
+          maxWidth: '500px',
+          width: '90%',
+          maxHeight: '400px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, color: '#333' }}>Settings</h3>
+            <button
+              onClick={() => setShowSettingsOverlay(false)}
+              style={{
+                padding: '5px 10px',
+                border: 'none',
+                borderRadius: '4px',
+                backgroundColor: '#dc3545',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Close
+            </button>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div>
+              <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Save Management</h4>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button
+                  onClick={handleExportSave}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    backgroundColor: '#1976d2',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Export Save
+                </button>
+                <button
+                  onClick={handleImportSave}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    backgroundColor: '#8819d2ff',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Import Save
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Game Actions</h4>
+              <button
+                onClick={() => {
+                  setShowSettingsOverlay(false);
+                  handleResetGame();
+                }}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: '#dc3545',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Reset Game
+              </button>
+              <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
+                This will permanently delete all progress!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   </>
   );
 }
