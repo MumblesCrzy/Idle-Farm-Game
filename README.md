@@ -5,7 +5,20 @@ Grow, upgrade, and master the seasons—build your farming empire one plot at a 
 
 Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and sell a variety of veggies, unlock powerful upgrades, and weather the changing seasons. Expand your farm, prestige for bigger rewards, and see how far your green thumb can take you!
 
-The game features persistent progress, a prestige system, farm expansion, weather events, and a variety of upgrades to optimize your farm.
+The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, and a variety of upgrades to optimize your farm.
+
+## ✨ Latest Updates (v2.0)
+
+### 🎮 Enhanced User Experience
+- **📚 Complete In-Game Help System**: New Info overlay with detailed guides covering seasons, upgrades, strategy, and game mechanics
+- **⚙️ Organized Settings Panel**: Streamlined interface with dedicated Settings overlay for save management and game actions
+- **🔧 Unified Harvest System**: Improved reliability and consistency between manual and auto harvesting
+- **💾 Enhanced Save System**: Export saves with timestamps, import validation, and safety confirmations
+
+### 🐛 Critical Bug Fixes
+- Fixed experience not being awarded on harvest
+- Resolved auto harvester reliability issues
+- Improved state management and timing for all harvest operations
 
 ## Gameplay Overview
 
@@ -39,22 +52,44 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 - **Unlock System:** Gain experience by harvesting to unlock new veggies in a set order. Experience and knowledge are displayed rounded to two decimal places.
 - **Seasons & Weather:** Seasons change automatically, affecting growth rates. Random weather events (Rain, Drought, Storm, Heatwave, Snow) can boost or penalize growth. Irrigation negates drought penalties, and a Greenhouse negates winter and snow penalties.
-- **Prestige System:** Earn knowledge points for every veggie harvested (manual or auto) during the year. Spend points on permanent upgrades like Better Seeds. Farm tier increases your knowledge multiplier bonus.
-- **Persistent Save:** Game progress is automatically saved and loaded using localStorage. Refreshing the page will not reset your progress. Farm tier, max plots, and irrigation status are all saved.
-- **Modern UI:** Clean, responsive interface with clear feedback and upgrade icons. Purchasable upgrades are highlighted for convenience.
+- **Prestige System:** Earn knowledge points for every veggie harvested (manual or auto) during the year. Manual harvesting grants 1.0 knowledge while auto harvesting grants 0.5 knowledge, rewarding active play. Spend points on permanent upgrades like Better Seeds. Farm tier increases your knowledge multiplier bonus.
+- **Persistent Save:** Game progress is automatically saved and loaded using localStorage. Export/import functionality allows backup and sharing saves. Refreshing the page will not reset your progress. Farm tier, max plots, and irrigation status are all saved.
+- **Modern UI:** Clean, responsive interface with comprehensive help system, organized settings panel, and clear feedback. Purchasable upgrades are highlighted for convenience.
 
 ## Features
 
+### 🌱 Core Gameplay
 - Grow a variety of veggies with different growth rates and seasonal bonuses
-- Unlock new veggies by gaining experience
-- Fertilizer, Auto Harvester, Harvester Speed, and Additional Plot upgrades for each veggie
-- Prestige/Knowledge system: earn and spend knowledge points on permanent upgrades
-- Global upgrades: Farmer's Almanac, Irrigation, Greenhouse, Heirloom Seeds, Auto Sell, Merchant
-- Seasonal effects and random weather events
-- Persistent save/load (localStorage)
-- Modern, concise UI with progress bars and upgrade icons
+- Unlock new veggies by gaining experience through harvesting
+- Differentiated knowledge rewards: Manual harvesting (1.0x) vs Auto harvesting (0.5x)
+- Unified harvest system ensuring consistent behavior across all harvesting methods
+
+### 🔧 Upgrade Systems
+- **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, and Additional Plot upgrades
+- **Global Upgrades**: Farmer's Almanac, Irrigation, Greenhouse, Heirloom Seeds, Auto Sell, Merchant
+- **Prestige/Knowledge System**: Earn and spend knowledge points on permanent upgrades
+
+### 🌦️ Environmental Systems
+- Dynamic seasonal effects with specific veggie bonuses
+- Random weather events affecting growth rates
+- Environmental protection upgrades (Irrigation for drought, Greenhouse for winter)
+
+### 💾 Save & Settings Management
+- **Persistent Progress**: Automatic localStorage saving with full game state preservation
+- **Export/Import**: Timestamped save exports with import validation
+- **Settings Panel**: Organized interface for save management and game actions
+- **Safety Features**: Confirmation dialogs for destructive actions
+
+### 📚 Player Experience
+- **Complete In-Game Documentation**: Comprehensive help system with strategic guides
+- **Four Help Categories**: Seasons & Weather, Farm & Experience, Veggie Upgrades, Farm Upgrades
+- **Beginner-Friendly**: Detailed explanations of complex mechanics and optimal strategies
+- **Modern UI**: Clean, responsive interface with intuitive navigation
+
+### 🏆 Progression Systems
 - Farm expansion and prestige mechanic with permanent bonuses
-- Merchant and auto sell upgrades for passive income
+- Experience-based unlocking system with plot limitations
+- Merchant and auto sell upgrades for passive income generation
 
 ## Roadmap
 
@@ -73,7 +108,34 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 ## Getting Started
 
-1. Install dependencies: `npm install`
-2. Start the development server: `npm run dev`
+1. **Install dependencies**: `npm install`
+2. **Start the development server**: `npm run dev`
+3. **Build for production**: `npm run build`
 
-Enjoy building your farming empire!
+### 🎮 New Player Guide
+
+1. **Start Simple**: Begin with Radish and focus on Fertilizer upgrades for faster growth
+2. **Use the Help System**: Click the "Info" button for comprehensive guides on all game mechanics
+3. **Manual vs Auto**: Manual harvesting gives double knowledge - balance active play with idle progression
+4. **Weather Awareness**: Check the weather icon and plan around seasonal bonuses for your vegetables
+5. **Save Management**: Use the Settings panel to export saves regularly as backups
+
+### 🔧 For Developers
+
+- **React + TypeScript**: Modern React with full TypeScript support
+- **Vite Build System**: Fast development and optimized production builds
+- **State Management**: Centralized game state with localStorage persistence
+- **Component Architecture**: Modular overlay system for easy feature expansion
+
+## 📋 Recent Changes (v2.0)
+
+See `RELEASE_NOTES_v2.0.md` for detailed changelog including:
+- Unified harvest system improvements
+- Complete in-game help documentation
+- Enhanced UI/UX with Settings overlay
+- Critical bug fixes for experience gain and auto harvesting
+- Improved save/load functionality
+
+---
+
+Enjoy building your farming empire! 🚜🌾
