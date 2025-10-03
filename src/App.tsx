@@ -64,6 +64,7 @@ const WEATHER_TYPES = ['Clear', 'Rain', 'Drought', 'Storm', 'Heatwave', 'Snow'] 
 type WeatherType = typeof WEATHER_TYPES[number];
 import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback } from 'react';
 import ProgressBar from './components/ProgressBar';
+import ArchieIcon from './components/ArchieIcon';
 import './App.css';
 
 type Veggie = {
@@ -90,6 +91,9 @@ type Veggie = {
 };
 
 const SEASON_BONUS = 0.1; // 10% bonus, adjustable
+const MERCHANT_DAYS = 30; // Every 30 days
+const GREENHOUSE_COST_PER_PLOT = 1000; // Cost per plot for greenhouse
+const GREENHOUSE_KN_COST_PER_PLOT = 100; // Knowledge cost per plot for greenhouse
 
 const veggieSeasonBonuses: Record<string, string[]> = {
   Radish: ['Spring', 'Fall'],
@@ -282,8 +286,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const handleBuyLargerFarm = () => {
     // Only allow if enough money and maxPlots reached
     if (money < farmCost || totalPlotsUsed < maxPlots) return;
-    // Calculate new maxPlots
-    const newMaxPlots = maxPlots + Math.floor(experience / 100);
+    // Calculate new maxPlots (capped at twice the current max)
+    const experienceBonus = Math.floor(experience / 100);
+    const uncappedMaxPlots = maxPlots + experienceBonus;
+    const newMaxPlots = Math.min(uncappedMaxPlots, maxPlots * 2);
     // Calculate money to keep
     const moneyKept = money - farmCost;
     // Calculate knowledge to keep (quarter of current)
@@ -434,6 +440,22 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setMoney((m: number) => m - 25000);
       setKnowledge((k: number) => k - 2000);
       setHeirloomOwned(true);
+      
+      // Retroactively update all vegetable prices to reflect the heirloom bonus
+      setVeggies((prev) => {
+        return prev.map((v, index) => {
+          if (v.betterSeedsLevel > 0) {
+            // Recalculate the sale price with the heirloom multiplier
+            // First, calculate the base price (original price before any Better Seeds)
+            const baseSalePrice = initialVeggies[index].salePrice;
+            // Then apply the heirloom multiplier (1.5x per level instead of 1.25x)
+            const newSalePrice = +(baseSalePrice * Math.pow(1.5, v.betterSeedsLevel)).toFixed(2);
+            console.log(`Updating ${v.name}: base=${baseSalePrice}, level=${v.betterSeedsLevel}, old=${v.salePrice}, new=${newSalePrice}`);
+            return { ...v, salePrice: newSalePrice };
+          }
+          return v;
+        });
+      });
     }
   };
   const [veggies, setVeggies] = useState<Veggie[]>(loaded?.veggies ?? initialVeggies);
@@ -508,9 +530,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, [day, greenhouseOwned, currentWeather, irrigationOwned]);
   // Greenhouse upgrade purchase handler
   const handleBuyGreenhouse = () => {
-    if (!greenhouseOwned && money >= 10000 && knowledge >= 1000) {
-      setMoney((m: number) => m - 10000);
-      setKnowledge((k: number) => k - 1000);
+    const greenhouseCost = GREENHOUSE_COST_PER_PLOT * maxPlots;
+    const greenhouseKnCost = GREENHOUSE_KN_COST_PER_PLOT * maxPlots;
+    if (!greenhouseOwned && money >= greenhouseCost && knowledge >= greenhouseKnCost) {
+      setMoney((m: number) => m - greenhouseCost);
+      setKnowledge((k: number) => k - greenhouseKnCost);
       setGreenhouseOwned(true);
     }
   };
@@ -555,7 +579,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             setTimeout(() => {
               if (day >= 0 && day <= 365) {
                 setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
-                setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
+                // Auto harvest gives half the experience of manual harvest
+                setExperience((exp: number) => exp + (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5));
               }
             }, 0);
             
@@ -650,7 +675,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
     if (day >= 0 && day <= 365) {
       setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
-      setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
+      
+      // Apply experience based on harvest type (auto vs manual)
+      if (isAutoHarvest) {
+        // Auto harvest gives half experience
+        setExperience((exp: number) => exp + (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5));
+      } else {
+        // Manual harvest gives full experience
+        setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
+      }
     }
   };
 
@@ -728,8 +761,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const newSeason = getSeason(newDay);
         handleWeatherChange(newSeason);
         
-        // Auto-sell logic for merchant (every 7 days)
-        if (autoSellOwned && newDay % 7 === 0) {
+        // Auto-sell logic for merchant (every MERCHANT_DAYS)
+        if (autoSellOwned && newDay % MERCHANT_DAYS === 0) {
           // Trigger auto-sell using the existing handleSell function
           setTimeout(() => {
             handleSell();
@@ -793,11 +826,14 @@ function useGame() {
 }
 
 export default App;
-export { GameProvider };
+export { GameProvider, GameContext };
 
 function App() {
   // Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // ArchieIcon component adds a clickable character that
+  // appears randomly on the screen and gives the player money when clicked
   
   // Info overlay state
   const [showInfoOverlay, setShowInfoOverlay] = useState(false);
@@ -901,15 +937,15 @@ function App() {
   };
   const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather } = useGame();
 
-  // Debug: Add $15 to money
+  // // Debug buttons for testing
   // const handleAddDebugMoney = () => {
-  //   setMoney((prev) => prev + 15);
+  //   setMoney((prev) => prev + 15000);
   // };
   // const handleAddDebugExperience = () => {
-  //   setExperience((prev) => prev + 10);
+  //   setExperience((prev) => prev + 100);
   // }
   // const handleAddDebugKnowledge = () => {
-  //   setKnowledge((prev) => prev + 10);
+  //   setKnowledge((prev) => prev + 10000);
   // }
   const season = getSeason(day);
   // Calculate totalPlotsUsed for UI
@@ -1024,6 +1060,7 @@ function App() {
       onChange={handleFileChange} 
       accept=".json"
     />
+    <ArchieIcon setMoney={setMoney} />
     <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -1031,23 +1068,23 @@ function App() {
           {/* <button
             onClick={handleAddDebugMoney}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Add $15 (Debug)"
+            title="Add $15000 (Debug)"
           >
-            Add $15 (Debug)
+            Add $15000 (Debug)
           </button>
           <button
             onClick={handleAddDebugExperience}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228899', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
             title="Add 10 Exp (Debug)"
           >
-            Add 10 Exp (Debug)
+            Add 100 Exp (Debug)
           </button>
           <button
             onClick={handleAddDebugKnowledge}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228899', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Add 10 Kn (Debug)"
+            title="Add 10000 Kn (Debug)"
           >
-            Add 10 Kn (Debug)
+            Add 10000 Kn (Debug)
           </button> */}
           <button
             onClick={() => setShowInfoOverlay(true)}
@@ -1081,9 +1118,29 @@ function App() {
         </span></div>
         <div style={{ marginBottom: '1rem' }} />
         <div className="stats under-title" style={{ display: 'inline-flex', verticalAlign: 'middle', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', fontSize: '1.0rem', marginBottom: '1rem' }}>
-            <span>
-            <img src="./Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Plots: {totalPlotsUsed} / {maxPlots}
+            <span style={{ position: 'relative' }}>
+              <img src="./Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+              Plots: {totalPlotsUsed} / {maxPlots}
+              <div 
+                style={{ 
+                  display: 'inline-block',
+                  marginLeft: '5px',
+                  width: '16px', 
+                  height: '16px', 
+                  backgroundColor: totalPlotsUsed >= maxPlots ? '#ffe0e0' : '#e0ffe0', 
+                  border: `1px solid ${totalPlotsUsed >= maxPlots ? '#ffaaaa' : '#aaffaa'}`,
+                  borderRadius: '50%', 
+                  textAlign: 'center', 
+                  lineHeight: '14px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'help'
+                }}
+                title={totalPlotsUsed >= maxPlots ? 
+                  'You\'ve reached your maximum plot limit! Buy a larger farm to unlock more plots for vegetables.' : 
+                  'Each vegetable and additional plot uses one plot.' }
+              >
+              </div>
             </span>
             <span>
             <img src="./Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
@@ -1105,32 +1162,38 @@ function App() {
               onClick={typeof handleBuyLargerFarm === 'function' ? handleBuyLargerFarm : undefined}
               disabled={money < farmCost}
               style={{ 
-                display: 'inline-flex', 
-                background: '#4a8',
-                padding: '.5rem', 
-                gap: '1rem', 
-                verticalAlign: 'middle', 
-                fontSize: '1.0rem', 
-                borderRadius: '8px', 
-                textAlign: 'center', 
-                maxWidth: 765,
-                border: money >= farmCost ? '1px solid #ffeb3b' : 'none',
-                boxShadow: money >= farmCost ? '0 0 4px 1px #ffe066' : 'none',
-                cursor: money >= farmCost ? 'pointer' : 'not-allowed',
-                fontWeight: 'bold',
-                marginTop: '0.5rem',
-                marginBottom: '0.5rem',
-                transition: 'box-shadow 0.2s, border 0.2s',
-              }} aria-label="Buy Larger Farm"
+              display: 'inline-flex', 
+              background: money >= farmCost ? '#2e7d32' : '#4a5568',
+              padding: '.5rem', 
+              gap: '1rem', 
+              verticalAlign: 'middle', 
+              fontSize: '1.0rem', 
+              borderRadius: '8px', 
+              textAlign: 'center', 
+              maxWidth: 765,
+              border: money >= farmCost ? '2px solid #ffeb3b' : '1px solid #718096',
+              boxShadow: money >= farmCost ? '0 0 8px 2px #ffe066' : 'none',
+              cursor: money >= farmCost ? 'pointer' : 'not-allowed',
+              fontWeight: 'bold',
+              marginTop: '0.5rem',
+              marginBottom: '0.5rem',
+              transition: 'all 0.2s',
+              color: '#fff'
+              }} 
+              aria-label="Buy Larger Farm"
+              title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
             >
-            <span style={{ color: '#444', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
+            <span style={{ color: '#fff', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
               Buy Larger Farm
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Farm cost:</span> ${farmCost?.toLocaleString()}
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {maxPlots + Math.floor(experience / 100)}
+              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Farm cost:</span> ${farmCost?.toLocaleString()}
+              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
+              {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
+              <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
+              )}
               <div />
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge bonus:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money kept:</span> ${money > farmCost ? (money - farmCost).toLocaleString() : 0}
-              <span style={{ color: '#228833', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge kept:</span> {knowledge / 4 > 0 ? (Math.floor(knowledge / 4)).toLocaleString() : 0}Kn
+              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge bonus:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
+              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money kept:</span> ${money > farmCost ? (money - farmCost).toLocaleString() : 0}
+              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge kept:</span> {knowledge / 4 > 0 ? (Math.floor(knowledge / 4)).toLocaleString() : 0}Kn
             </span>
             </button>
           </div>
@@ -1167,9 +1230,15 @@ function App() {
                 {v.name}
               </button>
               ) : (
-              <button key={v.name} disabled aria-label={`Locked veggie`} style={{ minWidth: '90px' }}>
+              <button 
+                key={v.name} 
+                disabled 
+                aria-label={`Locked veggie`} 
+                style={{ minWidth: '90px' }}
+                title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`}
+              >
                 {totalPlotsUsed >= maxPlots ? (
-                <span style={{ color: '#e44', fontWeight: 'bold' }}>Max Plots</span>
+                <span style={{ color: '#e44', fontWeight: 'bold' }}>Need Larger Farm</span>
                 ) : (
                 `Exp: ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}`
                 )}
@@ -1356,9 +1425,9 @@ function App() {
           {/* Merchant Progress Bar: only show if purchased */}
           {autoSellOwned && (
             <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {7 - (day % 7)} days</span>
+              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days</span>
               <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
-                <ProgressBar value={day % 7} max={7} height={12} color="#ffb300" />
+                <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
                 <span style={{
                   position: 'absolute',
                   left: 0,
@@ -1373,7 +1442,7 @@ function App() {
                   fontSize: '0.75rem',
                   pointerEvents: 'none',
                   userSelect: 'none',
-                }}>{Math.floor((day % 7) / 7 * 100)}%</span>
+                }}>{Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%</span>
               </div>
             </div>
           )}
@@ -1450,7 +1519,7 @@ function App() {
             <strong>Merchant</strong>
           </div>
           <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Buys veggies every 7 days.<br />
+            Buys veggies every {MERCHANT_DAYS} days.<br />
           </div>
           <button
             onClick={handleBuyAutoSell}
@@ -1480,20 +1549,20 @@ function App() {
           </div>
           <button
             onClick={handleBuyGreenhouse}
-            disabled={greenhouseOwned || money < 10000 || knowledge < 1000}
+            disabled={greenhouseOwned || money < (GREENHOUSE_COST_PER_PLOT * maxPlots) || knowledge < (GREENHOUSE_KN_COST_PER_PLOT * maxPlots)}
             style={{
               background: greenhouseOwned ? '#124212ff' : '#228833',
               color: '#fff',
               padding: '0.5rem 1rem',
               borderRadius: '5px',
-              border: !greenhouseOwned && money >= 10000 && knowledge >= 1000 ? '2px solid #ffeb3b' : 'none',
-              boxShadow: !greenhouseOwned && money >= 10000 && knowledge >= 1000 ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: greenhouseOwned ? 'not-allowed' : (money >= 10000 && knowledge >= 1000 ? 'pointer' : 'not-allowed'),
+              border: !greenhouseOwned && money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? '2px solid #ffeb3b' : 'none',
+              boxShadow: !greenhouseOwned && money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? '0 0 8px 2px #ffe066' : 'none',
+              cursor: greenhouseOwned ? 'not-allowed' : (money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? 'pointer' : 'not-allowed'),
               fontWeight: 'bold',
               transition: 'box-shadow 0.2s, border 0.2s',
             }}
           >
-            {greenhouseOwned ? 'Purchased' : '$10,000 & 1000 Kn'}
+            {greenhouseOwned ? 'Purchased' : `$${(GREENHOUSE_COST_PER_PLOT * maxPlots).toLocaleString()} & ${(GREENHOUSE_KN_COST_PER_PLOT * maxPlots)} Kn`}
           </button>
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
@@ -1642,7 +1711,7 @@ function App() {
                     <li><strong>Clear:</strong> Normal growth (no bonus/penalty)</li>
                     <li><strong>Rain:</strong> +20% growth boost for all vegetables</li>
                     <li><strong>Storm:</strong> +10% growth boost for all vegetables</li>
-                    <li><strong>Drought:</strong> -50% growth penalty unless you have Irrigation</li>
+                    <li><strong>Drought:</strong> -50% growth penalty unless you have Irrigation, +1 Kn per day</li>
                     <li><strong>Heatwave:</strong> -30% growth penalty (no protection available)</li>
                     <li><strong>Snow:</strong> 100% growth penalty (plants stop growing) unless you have a Greenhouse</li>
                   </ul>
@@ -1689,6 +1758,7 @@ function App() {
                   <ul>
                     <li><strong>Auto Harvest:</strong> +0.5 Knowledge per vegetable harvested</li>
                     <li><strong>Manual Harvest:</strong> +1 Knowledge per vegetable harvested</li>
+                    <li><strong>Experience:</strong> Auto harvest gives 50% of the experience compared to manual harvest</li>
                     <li><strong>Farm Tier Bonus:</strong> +1.25 Knowledge per harvest per farm tier</li>
                     <li><strong>Farmer's Almanac:</strong> Multiplies ALL knowledge gains by (1 + level)</li>
                   </ul>
@@ -1709,6 +1779,8 @@ function App() {
                     <li><strong>Starting Plots:</strong> 4 total plots across ALL vegetables</li>
                     <li><strong>Additional Plots:</strong> Buy more plots per vegetable (costs money)</li>
                     <li><strong>Max Plots:</strong> Total plots cannot exceed your farm limit</li>
+                    <li><strong>⚠️ IMPORTANT:</strong> Each unlocked vegetable AND each additional plot counts toward your plot limit</li>
+                    <li><strong>Solution:</strong> Expand your farm when you reach the maximum plots to increase your limit</li>
                   </ul>
                   
                   <h4>🚜 Farm Expansion (Prestige)</h4>
@@ -1725,7 +1797,7 @@ function App() {
                   <ul>
                     <li><strong>Money:</strong> Leftover money after paying farm cost</li>
                     <li><strong>Knowledge:</strong> 25% of current knowledge (1/4 retention)</li>
-                    <li><strong>Max Plots:</strong> Previous max + (experience ÷ 100) new plots</li>
+                    <li><strong>Max Plots:</strong> Previous max + (experience ÷ 100) new plots (capped at 2x current max)</li>
                     <li><strong>Farm Tier:</strong> Permanent progression level</li>
                   </ul>
                   
@@ -1767,6 +1839,7 @@ function App() {
                     <li><strong>Base Cost:</strong> $8 for Radish, scales by 1.5× per vegetable</li>
                     <li><strong>One-Time Purchase:</strong> No levels, just owned/not owned</li>
                     <li><strong>Knowledge:</strong> Auto harvest gives +0.5 Knowledge vs +1 for manual</li>
+                    <li><strong>Experience:</strong> Auto harvest gives 50% of the experience compared to manual harvest</li>
                   </ul>
                   
                   <h5>⚡ Harvester Speed</h5>
@@ -1843,7 +1916,7 @@ function App() {
                   <h5>🏠 Greenhouse</h5>
                   <ul>
                     <li><strong>Effect:</strong> Complete immunity to Winter and Snow penalties</li>
-                    <li><strong>Cost:</strong> $10,000 + 1,000 Knowledge (one-time purchase, per farm)</li>
+                    <li><strong>Cost:</strong> ${GREENHOUSE_COST_PER_PLOT.toLocaleString()} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
                     <li><strong>Winter Protection:</strong> Prevents -90% growth penalty in Winter</li>
                     <li><strong>Snow Protection:</strong> Prevents -100% growth penalty during Snow</li>
                     <li><strong>Value:</strong> Transforms Winter from terrible to normal growing season</li>

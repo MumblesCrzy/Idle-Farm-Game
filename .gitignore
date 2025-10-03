@@ -22,4 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-RELEASE_NOTES.md
+RELEASE_NOTES*
+ARCHIE_FEATURE*

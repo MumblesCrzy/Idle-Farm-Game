@@ -7,18 +7,31 @@ Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest
 
 The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, and a variety of upgrades to optimize your farm.
 
-## ✨ Latest Updates (v2.0)
+## ✨ Latest Updates (v1.2)
+### 🆕 New Features
+-   - **Greenhouse**: Complete immunity to Winter and Snow penalties
+  - Cost: $1,000 × max plots + 100 Knowledge × max plots (scales with farm size, one-time purchase per farm)
+- **🎪 Archie Bonus System**: Random clickable character appears periodically on screen for surprise money rewards with streak bonuses
+- **⚠️ Smart Plot Warnings**: Enhanced UI with warnings when purchasing plots would prevent vegetable unlocks
+- **🎯 Experience Balance**: Auto-harvest now gives 50% experience compared to manual harvest, encouraging active play
+- **📊 Scaled Greenhouse Pricing**: Greenhouse now costs $1,000 + 100 Knowledge per plot, scaling appropriately with farm size
+- **💡 Formula Tooltips**: Hover tooltips on "Buy Larger Farm" button explain the new max plots calculation formulame
+- **🎪 Archie Bonus System**: Random clickable character appears periodically on screen for surprise money rewards with streak bonuses
+- **⚠️ Smart Plot Warnings**: Enhanced UI with warnings when purchasing plots would prevent vegetable unlocks
+- **🎯 Experience Balance**: Auto-harvest now gives 50% experience compared to manual harvest, encouraging active play
 
-### 🎮 Enhanced User Experience
-- **📚 Complete In-Game Help System**: New Info overlay with detailed guides covering seasons, upgrades, strategy, and game mechanics
+### �🎮 Enhanced User Experience  
+- **📚 Complete In-Game Help System**: Comprehensive Info overlay with detailed guides covering seasons, upgrades, strategy, and game mechanics
 - **⚙️ Organized Settings Panel**: Streamlined interface with dedicated Settings overlay for save management and game actions
 - **🔧 Unified Harvest System**: Improved reliability and consistency between manual and auto harvesting
 - **💾 Enhanced Save System**: Export saves with timestamps, import validation, and safety confirmations
+- **🎨 Improved Plot Management**: Better messaging and tooltips for plot limits and farm expansion needs
 
 ### 🐛 Critical Bug Fixes
 - Fixed experience not being awarded on harvest
-- Resolved auto harvester reliability issues
+- Resolved auto harvester reliability issues  
 - Improved state management and timing for all harvest operations
+- Fixed plot limit confusion that prevented players from unlocking new vegetables
 
 ## Gameplay Overview
 
@@ -43,7 +56,7 @@ The game features persistent progress, a prestige system, farm expansion, weathe
 
 - **Farmer's Almanac:** Increases knowledge gain rate by 10% per purchase.
 - **Irrigation:** Negates drought penalties for all veggies during drought weather events. Persists across page refreshes.
-- **Greenhouse:** Removes winter growth penalty for all veggies.
+- **Greenhouse:** Removes winter growth penalty for all veggies. Cost scales with farm size ($1,000 + 100 Knowledge per plot).
 - **Heirloom Seeds:** Increases the Better Seeds multiplier for all veggies, making prestige upgrades more effective.
 - **Auto Sell:** Automatically sells all harvested veggies every 7 days.
 - **Merchant:** Buys all veggies every 7 days, providing a periodic income boost.
@@ -61,8 +74,9 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ### 🌱 Core Gameplay
 - Grow a variety of veggies with different growth rates and seasonal bonuses
 - Unlock new veggies by gaining experience through harvesting
-- Differentiated knowledge rewards: Manual harvesting (1.0x) vs Auto harvesting (0.5x)
+- **Balanced Rewards**: Manual harvesting gives full experience and knowledge; auto-harvest gives 50% experience and 50% knowledge
 - Unified harvest system ensuring consistent behavior across all harvesting methods
+- **Archie Bonus**: Rare clickable character appears randomly for bonus money rewards with streak multipliers
 
 ### 🔧 Upgrade Systems
 - **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, and Additional Plot upgrades
@@ -84,7 +98,8 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **Complete In-Game Documentation**: Comprehensive help system with strategic guides
 - **Four Help Categories**: Seasons & Weather, Farm & Experience, Veggie Upgrades, Farm Upgrades
 - **Beginner-Friendly**: Detailed explanations of complex mechanics and optimal strategies
-- **Modern UI**: Clean, responsive interface with intuitive navigation
+- **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
+- **Modern UI**: Clean, responsive interface with intuitive navigation and helpful feedback
 
 ### 🏆 Progression Systems
 - Farm expansion and prestige mechanic with permanent bonuses
@@ -93,18 +108,24 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 ## Roadmap
 
-- Add an Archie bonus.
-  - The Archie bonus is triggered by clicking an icon that very infrequently pops up at a randomized intervals.
-  - It gives a major growth and speed bonuses while also auto harvesting all unlocked veggies for a short time after.
-- Reset the upgrades section per new farm purchase, but base price on max number of plots.
-- Add Farm manager who can auto purchase Fertilizer and Better Seeds as an upgrade.
-- Add Mechanic who can auto purchase auto harvesters and harvest speed upgrades.
-- Add a display of the stash on the left side of the screen that keeps track of individual veggie amounts.
-- Add Canning skill which unlocks a new progress bar.
-  - Canning will take one veggie from the stash and turn it into a canned version which sells for 2x amount.
-- Add a Canning speed upgrade to make canning faster.
-- Add a spring "Farmer's market" event where all items sell for 3x their normal price.
-- Add a weather and event log to the game so it can be tracked.
+### 🎯 Next Priority Features
+- **Farm Manager Upgrade**: Auto-purchase Fertilizer and Better Seeds based on available resources
+- **Mechanic Upgrade**: Auto-purchase Auto Harvesters and Harvester Speed upgrades
+- **Enhanced Stash Display**: Visual inventory showing individual veggie amounts on the left side
+- **Weather & Event Log**: Track historical weather patterns and special events
+
+### 🔮 Future Features
+- **Canning System**: New skill tree to process vegetables into canned goods (2x sale price)
+  - Canning progress bar and speed upgrades
+- **Seasonal Events**: Spring Farmer's Market with 3x sale prices
+- **Advanced Automation**: More sophisticated auto-management systems
+- **Achievement System**: Unlock rewards for hitting milestones and completing challenges
+
+### ✅ Recently Completed
+- ~~Add Archie bonus system~~ ✅ **Implemented in v1.2**
+  - Random clickable character with money rewards and streak bonuses
+- ~~Improve plot limit user experience~~ ✅ **Implemented in v1.2**
+  - Warning systems and better messaging for plot management
 
 ## Getting Started
 
@@ -116,9 +137,13 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 1. **Start Simple**: Begin with Radish and focus on Fertilizer upgrades for faster growth
 2. **Use the Help System**: Click the "Info" button for comprehensive guides on all game mechanics
-3. **Manual vs Auto**: Manual harvesting gives double knowledge - balance active play with idle progression
-4. **Weather Awareness**: Check the weather icon and plan around seasonal bonuses for your vegetables
-5. **Save Management**: Use the Settings panel to export saves regularly as backups
+3. **Manual vs Auto**: Manual harvesting gives full experience/knowledge; auto gives 50% - balance active play with idle progression
+4. **Plot Management**: Watch plot warnings! Don't fill all plots with additional plots or you can't unlock new vegetables
+5. **Weather Awareness**: Check the weather icon and plan around seasonal bonuses for your vegetables
+6. **Upgrade Timing**: Major upgrades like Greenhouse scale with your farm size - plan purchases carefully
+7. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money!
+8. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
+9. **Save Management**: Use the Settings panel to export saves regularly as backups
 
 ### 🔧 For Developers
 
@@ -127,14 +152,17 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **State Management**: Centralized game state with localStorage persistence
 - **Component Architecture**: Modular overlay system for easy feature expansion
 
-## 📋 Recent Changes (v2.0)
+## 📋 Recent Changes (v1.2)
 
-See `RELEASE_NOTES_v2.0.md` for detailed changelog including:
-- Unified harvest system improvements
-- Complete in-game help documentation
-- Enhanced UI/UX with Settings overlay
-- Critical bug fixes for experience gain and auto harvesting
-- Improved save/load functionality
+### Major Features Added
+- **Scaled Pricing System**: Greenhouse upgrade now scales with farm progression ($1,000 + 100 Kn per plot)
+- **Enhanced Tooltips**: Added formula explanations for farm expansion calculations
+- **Retroactive Price Updates**: Heirloom Seeds now properly updates existing vegetable prices when purchased
+- **Archie Bonus System**: Random appearance system with streak bonuses and toast notifications
+- **Experience Rebalancing**: Auto-harvest now gives 50% experience to encourage active play
+- **Plot Management Improvements**: Smart warnings and better messaging to prevent player confusion
+- Enhanced tooltips and help text throughout the UI
+- Improved locked vegetable messaging and visual indicators for plot limits
 
 ---
 

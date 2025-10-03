@@ -68,3 +68,39 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Animation for RandomIcon component */
+@keyframes pop-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* RandomIcon hover effects */
+.random-icon {
+  transition: transform 0.2s, filter 0.3s;
+}
+
+.random-icon:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 12px gold);
+}
+
+/* Bounce animation for RandomIcon */
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-10px);
+  }
+}
