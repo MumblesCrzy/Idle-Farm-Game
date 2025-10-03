@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 RELEASE_NOTES*
 ARCHIE_FEATURE*
+itch_io*
