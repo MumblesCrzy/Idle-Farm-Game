@@ -5,33 +5,27 @@ Grow, upgrade, and master the seasons—build your farming empire one plot at a 
 
 Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and sell a variety of veggies, unlock powerful upgrades, and weather the changing seasons. Expand your farm, prestige for bigger rewards, and see how far your green thumb can take you!
 
-The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, and a variety of upgrades to optimize your farm.
+The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, advanced automation systems, and a variety of upgrades to optimize your farm.
 
-## ✨ Latest Updates (v1.2)
-### 🆕 New Features
--   - **Greenhouse**: Complete immunity to Winter and Snow penalties
-  - Cost: $1,000 × max plots + 100 Knowledge × max plots (scales with farm size, one-time purchase per farm)
-- **🎪 Archie Bonus System**: Random clickable character appears periodically on screen for surprise money rewards with streak bonuses
-- **⚠️ Smart Plot Warnings**: Enhanced UI with warnings when purchasing plots would prevent vegetable unlocks
-- **🎯 Experience Balance**: Auto-harvest now gives 50% experience compared to manual harvest, encouraging active play
-- **📊 Scaled Greenhouse Pricing**: Greenhouse now costs $1,000 + 100 Knowledge per plot, scaling appropriately with farm size
-- **💡 Formula Tooltips**: Hover tooltips on "Buy Larger Farm" button explain the new max plots calculation formulame
-- **🎪 Archie Bonus System**: Random clickable character appears periodically on screen for surprise money rewards with streak bonuses
-- **⚠️ Smart Plot Warnings**: Enhanced UI with warnings when purchasing plots would prevent vegetable unlocks
-- **🎯 Experience Balance**: Auto-harvest now gives 50% experience compared to manual harvest, encouraging active play
+## ✨ Latest Updates (v1.3) - NEW!
+### 🤖 Advanced Automation System
+- **🛡️ Auto-Purchasers**: Four intelligent automation systems that purchase upgrades automatically every 7 days
+  - **Assistant**: Auto-purchases Fertilizer upgrades using money
+  - **Cultivator**: Auto-purchases Better Seeds upgrades using knowledge  
+  - **Surveyor**: Auto-purchases Additional Plot upgrades using money (respects plot limits)
+  - **Mechanic**: Auto-purchases Harvester Speed upgrades using money
+- **⚡ Smart Management**: Auto-purchasers automatically turn off when they can't make purchases (e.g., Surveyor at max plots)
+- **📊 Progress Tracking**: Unified 7-day progress bar shows time until next auto-purchase cycle
+- **🎛️ Individual Control**: Each auto-purchaser can be toggled on/off independently
+- **💡 Dynamic Pricing**: Heirloom Seeds cost now updates immediately when unlocking new vegetables
 
-### �🎮 Enhanced User Experience  
-- **📚 Complete In-Game Help System**: Comprehensive Info overlay with detailed guides covering seasons, upgrades, strategy, and game mechanics
-- **⚙️ Organized Settings Panel**: Streamlined interface with dedicated Settings overlay for save management and game actions
-- **🔧 Unified Harvest System**: Improved reliability and consistency between manual and auto harvesting
-- **💾 Enhanced Save System**: Export saves with timestamps, import validation, and safety confirmations
-- **🎨 Improved Plot Management**: Better messaging and tooltips for plot limits and farm expansion needs
-
-### 🐛 Critical Bug Fixes
-- Fixed experience not being awarded on harvest
-- Resolved auto harvester reliability issues  
-- Improved state management and timing for all harvest operations
-- Fixed plot limit confusion that prevented players from unlocking new vegetables
+### 🎮 Enhanced User Experience  
+- **📚 Expanded Help System**: New comprehensive "Auto-Purchasers" section in Info display
+- **🎨 Visual Feedback**: Color-coded button states show auto-purchaser status at a glance
+  - Gray: Not purchased, can't afford
+  - Yellow glow: Not purchased, affordable
+  - Green: Purchased and active
+  - Red: Purchased but inactive
 
 ## Gameplay Overview
 
@@ -57,9 +51,18 @@ The game features persistent progress, a prestige system, farm expansion, weathe
 - **Farmer's Almanac:** Increases knowledge gain rate by 10% per purchase.
 - **Irrigation:** Negates drought penalties for all veggies during drought weather events. Persists across page refreshes.
 - **Greenhouse:** Removes winter growth penalty for all veggies. Cost scales with farm size ($1,000 + 100 Knowledge per plot).
-- **Heirloom Seeds:** Increases the Better Seeds multiplier for all veggies, making prestige upgrades more effective.
+- **Heirloom Seeds:** Increases the Better Seeds multiplier for all veggies, making prestige upgrades more effective. Cost scales with highest unlocked veggie.
 - **Auto Sell:** Automatically sells all harvested veggies every 7 days.
 - **Merchant:** Buys all veggies every 7 days, providing a periodic income boost.
+
+#### Auto-Purchaser System (NEW!)
+
+- **Assistant:** Automatically purchases Fertilizer upgrades using money every 7 days
+- **Cultivator:** Automatically purchases Better Seeds upgrades using knowledge every 7 days  
+- **Surveyor:** Automatically purchases Additional Plot upgrades using money every 7 days (respects plot limits)
+- **Mechanic:** Automatically purchases Harvester Speed upgrades using money every 7 days
+- **Smart Management:** Auto-purchasers turn off when they can't make purchases and prevent manual activation at limits
+- **Unified Progress:** All auto-purchasers share a single 7-day timer with visual progress bar
 
 Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow) interact with these global upgrades to further influence growth rates and harvest efficiency.
 
@@ -80,6 +83,7 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 ### 🔧 Upgrade Systems
 - **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, and Additional Plot upgrades
+- **Auto-Purchase System**: Four intelligent automation systems (Assistant, Cultivator, Surveyor, Mechanic)
 - **Global Upgrades**: Farmer's Almanac, Irrigation, Greenhouse, Heirloom Seeds, Auto Sell, Merchant
 - **Prestige/Knowledge System**: Earn and spend knowledge points on permanent upgrades
 
@@ -115,6 +119,7 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **Weather & Event Log**: Track historical weather patterns and special events
 
 ### 🔮 Future Features
+- **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.
 - **Canning System**: New skill tree to process vegetables into canned goods (2x sale price)
   - Canning progress bar and speed upgrades
 - **Seasonal Events**: Spring Farmer's Market with 3x sale prices
