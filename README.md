@@ -126,12 +126,6 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **Advanced Automation**: More sophisticated auto-management systems
 - **Achievement System**: Unlock rewards for hitting milestones and completing challenges
 
-### ✅ Recently Completed
-- ~~Add Archie bonus system~~ ✅ **Implemented in v1.2**
-  - Random clickable character with money rewards and streak bonuses
-- ~~Improve plot limit user experience~~ ✅ **Implemented in v1.2**
-  - Warning systems and better messaging for plot management
-
 ## Getting Started
 
 1. **Install dependencies**: `npm install`
@@ -157,17 +151,13 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **State Management**: Centralized game state with localStorage persistence
 - **Component Architecture**: Modular overlay system for easy feature expansion
 
-## 📋 Recent Changes (v1.2)
+## 📋 Recent Changes (v1.3)
 
 ### Major Features Added
-- **Scaled Pricing System**: Greenhouse upgrade now scales with farm progression ($1,000 + 100 Kn per plot)
-- **Enhanced Tooltips**: Added formula explanations for farm expansion calculations
-- **Retroactive Price Updates**: Heirloom Seeds now properly updates existing vegetable prices when purchased
-- **Archie Bonus System**: Random appearance system with streak bonuses and toast notifications
-- **Experience Rebalancing**: Auto-harvest now gives 50% experience to encourage active play
-- **Plot Management Improvements**: Smart warnings and better messaging to prevent player confusion
-- Enhanced tooltips and help text throughout the UI
-- Improved locked vegetable messaging and visual indicators for plot limits
+- **Complete Automation**: Four intelligent Auto-Purchaser systems handle all upgrade types
+- **Visual Excellence**: 4-state color system provides instant status feedback  
+- **Code Quality**: Massive architecture improvement with reusable components
+- **Continuted Documentation**: Comprehensive in-game guides for all automation features
 
 ---
 
