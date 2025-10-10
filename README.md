@@ -113,16 +113,14 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ## Roadmap
 
 ### 🎯 Next Priority Features
-- **Farm Manager Upgrade**: Auto-purchase Fertilizer and Better Seeds based on available resources
-- **Mechanic Upgrade**: Auto-purchase Auto Harvesters and Harvester Speed upgrades
 - **Enhanced Stash Display**: Visual inventory showing individual veggie amounts on the left side
+- **Canning System**: New skill tree to process vegetables into canned goods (2x sale price)
+  - Canning progress bar and speed upgrades
 - **Weather & Event Log**: Track historical weather patterns and special events
+- **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush
 
 ### 🔮 Future Features
 - **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.
-- **Canning System**: New skill tree to process vegetables into canned goods (2x sale price)
-  - Canning progress bar and speed upgrades
-- **Seasonal Events**: Spring Farmer's Market with 3x sale prices
 - **Advanced Automation**: More sophisticated auto-management systems
 - **Achievement System**: Unlock rewards for hitting milestones and completing challenges
 
