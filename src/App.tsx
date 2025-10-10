@@ -668,7 +668,25 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       });
     }
   };
-  const [veggies, setVeggies] = useState<Veggie[]>(loaded?.veggies ?? initialVeggies);
+
+  // Migration function to add missing autoPurchasers property to saved veggie data
+  const migrateVeggieData = (loadedVeggies: any[]): Veggie[] => {
+    if (!loadedVeggies) return initialVeggies;
+    
+    return loadedVeggies.map((savedVeggie, index) => {
+      // If autoPurchasers is missing, add it from the initial veggie data
+      if (!savedVeggie.autoPurchasers) {
+        const initialVeggie = initialVeggies[index];
+        return {
+          ...savedVeggie,
+          autoPurchasers: initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(15, 25, 15)
+        };
+      }
+      return savedVeggie;
+    });
+  };
+
+  const [veggies, setVeggies] = useState<Veggie[]>(loaded?.veggies ? migrateVeggieData(loaded.veggies) : initialVeggies);
   const [money, setMoney] = useState(loaded?.money ?? 0);
   // Helper: total plots used (unlocked veggies + additional plots)
   const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);  
@@ -1508,7 +1526,7 @@ function App() {
       resetGame();
     }
   };
-  const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // // Debug buttons for testing
   // const handleAddDebugMoney = () => {
