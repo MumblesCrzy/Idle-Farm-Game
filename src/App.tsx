@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback } from 'react';
 import ProgressBar from './components/ProgressBar';
 import ArchieIcon from './components/ArchieIcon';
+import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import './App.css';
 
 // Returns the effective growth per tick for a veggie, factoring all bonuses/penalties
@@ -1431,6 +1432,9 @@ function App() {
   
   // Settings overlay state
   const [showSettingsOverlay, setShowSettingsOverlay] = useState(false);
+  
+  // Advanced stash overlay state
+  const [showAdvancedStash, setShowAdvancedStash] = useState(false);
 
   // Import save handler: triggers file input
   const handleImportSave = () => {
@@ -2084,13 +2088,28 @@ function App() {
               </div>
             );
           })()}
-          <div style={{ color: '#888', marginBottom: '0.5rem', display: 'flex', flexDirection: 'row', gap: '2rem', justifyContent: 'center' }}>
-            <span>
-              {veggies.every((v) => v.stash === 0)
-                ? 'No veggies to sell'
-                : `Will receive: $${veggies.reduce((sum, v) => sum + v.stash * v.salePrice, 0).toFixed(2)}`}
-            </span>
-            <span>Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}</span>
+          <div style={{ color: '#888', marginBottom: '0.5rem', display: 'flex', flexDirection: 'row', gap: '2rem', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                onClick={() => setShowAdvancedStash(true)}
+                style={{
+                  background: '#228833',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#1e6b2b'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#228833'}
+                title="View detailed stash breakdown"
+              >
+                Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}
+              </button>
+            </div>
           </div>
           {/* Merchant Progress Bar: only show if purchased */}
           {autoSellOwned && (
@@ -2121,7 +2140,7 @@ function App() {
             disabled={veggies.every((v) => v.stash === 0)}
             aria-label="Sell all veggies"
           >
-            {veggies.every((v) => v.stash === 0) ? 'No veggies to sell' : 'Sell All'}
+            {veggies.every((v) => v.stash === 0) ? 'No veggies to sell' : 'Sell All'}  (${veggies.reduce((sum, v) => sum + v.stash * v.salePrice, 0).toFixed(2)})
           </button>
         </div>
       </div>
@@ -2796,6 +2815,16 @@ function App() {
         </div>
       </div>
     )}
+
+    {/* Advanced Stash Display Overlay */}
+    <AdvancedStashDisplay
+      visible={showAdvancedStash}
+      onClose={() => setShowAdvancedStash(false)}
+      veggies={veggies}
+      greenhouseOwned={greenhouseOwned}
+      irrigationOwned={irrigationOwned}
+      day={day}
+    />
   </>
   );
 }
