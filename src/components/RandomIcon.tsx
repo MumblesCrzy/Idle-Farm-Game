@@ -6,6 +6,7 @@ interface RandomIconProps {
   maxInterval?: number; // Optional: Maximum time in ms before reappearing (creates randomness)
   duration?: number; // Optional: How long the icon stays visible in ms
   reward?: () => void; // Optional: Function to call when clicked (e.g., give reward)
+  onAppear?: () => void; // Optional: Function to call when icon appears on screen
 }
 
 /**
@@ -17,10 +18,12 @@ const RandomIcon: React.FC<RandomIconProps> = ({
   minInterval, 
   maxInterval = minInterval * 2, 
   duration = 10000, 
-  reward = () => {} 
+  reward = () => {},
+  onAppear = () => {}
 }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [imageLoaded, setImageLoaded] = useState(true); // Assume success initially
   
   // Function to get a random position on screen (with margins)
   const getRandomPosition = () => {
@@ -66,7 +69,14 @@ const RandomIcon: React.FC<RandomIconProps> = ({
         const newPosition = getRandomPosition();
         setPosition(newPosition);
         console.log('RandomIcon: Showing icon at position', newPosition);
-        setVisible(true);        // Schedule hiding after duration
+        setVisible(true);
+        
+        // Delay the onAppear callback slightly to ensure the icon is rendered
+        setTimeout(() => {
+          console.log('RandomIcon: Triggering onAppear callback');
+          onAppear(); // Call appearance callback
+        }, 100);
+        // Schedule hiding after duration
         hideTimer = setTimeout(() => {
           if (!isActive) return;
           setVisible(false);
@@ -85,6 +95,12 @@ const RandomIcon: React.FC<RandomIconProps> = ({
       setPosition(newPosition);
       console.log('RandomIcon: Initial show at position', newPosition);
       setVisible(true);
+      
+      // Delay the onAppear callback slightly to ensure the icon is rendered
+      setTimeout(() => {
+        console.log('RandomIcon: Triggering initial onAppear callback');
+        onAppear(); // Call appearance callback
+      }, 100);
       
       hideTimer = setTimeout(() => {
         if (!isActive) return;
@@ -116,27 +132,68 @@ const RandomIcon: React.FC<RandomIconProps> = ({
       }}
       onClick={handleClick}
     >
-      <img 
-        src={imagePath} 
-        alt="Random Icon" 
-        className="random-icon"
-        style={{
-          width: '80px',
-          height: '80px',
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))',
-          transition: 'transform 0.2s, filter 0.3s',
-          animation: 'bounce 1.2s infinite alternate ease-in-out',
-        }}
-        onMouseOver={(e) => {
-          e.currentTarget.style.transform = 'scale(1.1)';
-          e.currentTarget.style.filter = 'drop-shadow(0 0 15px gold)';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.filter = 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))';
-        }}
-      />
+      {imageLoaded ? (
+        <img 
+          src={imagePath} 
+          alt="Archie" 
+          className="random-icon"
+          style={{
+            width: '80px',
+            height: '80px',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))',
+            transition: 'transform 0.2s, filter 0.3s',
+            animation: 'bounce 1.2s infinite alternate ease-in-out',
+          }}
+          onLoad={() => {
+            console.log('RandomIcon: Image loaded successfully');
+            setImageLoaded(true);
+          }}
+          onError={(e) => {
+            console.error('RandomIcon: Failed to load image:', imagePath);
+            setImageLoaded(false);
+            // Try to reload the image once
+            e.currentTarget.src = imagePath;
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0 0 15px gold)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))';
+          }}
+        />
+      ) : (
+        // Fallback display when image fails to load
+        <div
+          style={{
+            width: '80px',
+            height: '80px',
+            backgroundColor: '#FFD700',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#8B4513',
+            filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))',
+            transition: 'transform 0.2s, filter 0.3s',
+            animation: 'bounce 1.2s infinite alternate ease-in-out',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'drop-shadow(0 0 15px gold)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.8))';
+          }}
+        >
+          🐕
+        </div>
+      )}
     </div>
   );
 };

@@ -5,12 +5,15 @@ import Toast from './Toast';
 
 interface ArchieIconProps {
   setMoney: (value: React.SetStateAction<number>) => void;
+  money: number;
+  experience: number;
+  totalPlotsUsed: number;
 }
 
 const ARCHIE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney }) => {
-  const { lastClickTime, handleArchieClick, archieReward, setArchieReward, archieClickStreak } = useArchie();
+const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, totalPlotsUsed }) => {
+  const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak } = useArchie();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   
@@ -43,7 +46,8 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney }) => {
           minInterval={30000} // 30 seconds minimum before appearing
           maxInterval={120000} // 2 minutes maximum before appearing
           duration={180000} // Stays visible for 3 minutes
-          reward={handleArchieClick}
+          reward={() => handleArchieClick({ money, experience, totalPlotsUsed })}
+          onAppear={handleArchieAppear}
         />
       )}
       

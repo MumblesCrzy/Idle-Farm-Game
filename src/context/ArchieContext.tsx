@@ -9,10 +9,13 @@ interface ArchieContextType {
   setLastClickTime: React.Dispatch<React.SetStateAction<number>>;
   archieClickStreak: number;
   setArchieClickStreak: React.Dispatch<React.SetStateAction<number>>;
-  handleArchieClick: () => void;
+  soundEnabled: boolean;
+  setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  handleArchieClick: (gameState?: { money: number; experience: number; totalPlotsUsed: number }) => void;
+  handleArchieAppear: () => void;
 }
 
-const STREAK_TIMEOUT = 30 * 1000; // 30 seconds to maintain a streak
+const STREAK_TIMEOUT = 30 * 10000; // 300 seconds to maintain a streak
 
 const ArchieContext = createContext<ArchieContextType | undefined>(undefined);
 
@@ -21,9 +24,42 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [archieReward, setArchieReward] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [archieClickStreak, setArchieClickStreak] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Shared function to play Archie sound
+  const playArchieSound = () => {
+    if (soundEnabled) {
+      try {
+        const archieSound = new Audio('./Archie Bark.mp3');
+        archieSound.volume = 0.4; // 40% volume - friendly but not overwhelming
+        
+        // Add more robust error handling
+        archieSound.addEventListener('canplaythrough', () => {
+          console.log('ArchieContext: Audio ready to play');
+        });
+        
+        archieSound.addEventListener('error', (e) => {
+          console.warn('ArchieContext: Audio failed to load:', e);
+        });
+        
+        archieSound.play().catch((error) => {
+          console.warn('ArchieContext: Audio play failed (this is normal if autoplay is restricted):', error);
+        });
+      } catch (error) {
+        console.warn('ArchieContext: Audio initialization failed:', error);
+      }
+    } else {
+      console.log('ArchieContext: Sound disabled, skipping audio');
+    }
+  };
+
+  // Function to handle when Archie appears on screen
+  const handleArchieAppear = () => {
+    playArchieSound();
+  };
   
   // Function to handle when Archie is clicked
-  const handleArchieClick = () => {
+  const handleArchieClick = (gameState?: { money: number; experience: number; totalPlotsUsed: number }) => {
     // Record the time of click
     const currentTime = Date.now();
     
@@ -37,8 +73,24 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Update last click time
     setLastClickTime(currentTime);
     
-    // Calculate reward with streak bonus
-    const baseReward = 25; 
+    // Calculate scaled reward based on game progression
+    let baseReward = 50; // Higher base for better late-game rewards
+    
+    if (gameState) {
+      // Progressive scaling factors based on game state
+      const moneyFactor = Math.max(1, Math.log10(Math.max(1, gameState.money / 50))); // Logarithmic money scaling
+      const experienceFactor = Math.max(1, Math.log10(Math.max(1, gameState.experience / 10))); // Experience scaling  
+      const plotsFactor = Math.max(1, Math.sqrt(gameState.totalPlotsUsed / 2)); // Plots progression factor (starts at 4 base plots)
+      
+      // Combine factors for progressive scaling (improved scaling for late game)
+      // Formula: $50 base × money factor × experience factor × plots factor × 0.8 scaling
+      baseReward = Math.max(50, Math.floor(50 * moneyFactor * experienceFactor * plotsFactor * 0.8));
+      
+      // Intelligent cap: 5-20% of current money, minimum $1000, maximum $25000
+      const dynamicCap = Math.max(1000, Math.min(25000, gameState.money * 0.20));
+      baseReward = Math.min(baseReward, dynamicCap);
+    }
+    
     const randomMultiplier = Math.random() * 0.5 + 0.75; // 0.75 to 1.25
     const streakMultiplier = Math.min(3, 1 + (newStreak - 1) * 0.5); // Max 3x bonus for streaks
     
@@ -46,6 +98,9 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     // Set the reward (will be handled by the game context)
     setArchieReward(reward);
+    
+    // Play click sound
+    playArchieSound();
     
     // Mark as clicked
     setArchieClicked(true);
@@ -87,10 +142,25 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setArchieClickStreak(0);
         }
       }
+      
+      // Load sound setting
+      const savedSoundSetting = localStorage.getItem('archieSoundEnabled');
+      if (savedSoundSetting !== null) {
+        setSoundEnabled(savedSoundSetting === 'true');
+      }
     } catch (error) {
-      console.error('Failed to load Archie click streak:', error);
+      console.error('Failed to load Archie settings:', error);
     }
   }, []);
+
+  // Save sound setting when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('archieSoundEnabled', soundEnabled.toString());
+    } catch (error) {
+      console.error('Failed to save Sound Effects setting:', error);
+    }
+  }, [soundEnabled]);
 
   return (
     <ArchieContext.Provider value={{ 
@@ -102,7 +172,10 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setLastClickTime,
       archieClickStreak,
       setArchieClickStreak,
-      handleArchieClick
+      soundEnabled,
+      setSoundEnabled,
+      handleArchieClick,
+      handleArchieAppear
     }}>
       {children}
     </ArchieContext.Provider>

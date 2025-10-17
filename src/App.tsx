@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, createContext, useContext, useMemo, useCal
 import ProgressBar from './components/ProgressBar';
 import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
+import { useArchie } from './context/ArchieContext';
 import './App.css';
 
 // Returns the effective growth per tick for a veggie, factoring all bonuses/penalties
@@ -27,6 +28,10 @@ function getVeggieGrowthBonus(
   // Drought penalty (unless irrigation)
   if (currentWeather === 'Drought' && !irrigationOwned) {
     growthAmount *= 0.5; // 50% penalty
+  }
+  // Irrigation water efficiency bonus (always active when owned)
+  if (irrigationOwned) {
+    growthAmount *= 1.15; // 15% growth bonus
   }
   // Rain bonus
   if (currentWeather === 'Rain') {
@@ -119,11 +124,13 @@ type Veggie = {
   additionalPlotCost: number;
   // Auto-purchase system
   autoPurchasers: AutoPurchaseConfig[];
+  // Sell control
+  sellEnabled: boolean;
 };
 
 const SEASON_BONUS = 0.1; // 10% bonus, adjustable
-const IRRIGATION_COST = 500; // Cost for Irrigation
-const IRRIGATION_KN_COST = 50; // Knowledge cost for Irrigation
+const IRRIGATION_COST = 750; // Cost for Irrigation
+const IRRIGATION_KN_COST = 75; // Knowledge cost for Irrigation
 const MERCHANT_DAYS = 30; // Every 30 days
 const MERCHANT_COST = 1000; // Cost for Auto Sell
 const MERCHANT_KN_COST = 100; // Knowledge cost for Auto Sell
@@ -204,7 +211,7 @@ const calculateUpgradeCost = (type: keyof typeof COST_CONFIGS, currentLevel: num
   return Math.ceil(baseCost * Math.pow(config.levelScalingFactor, currentLevel) + 5 * currentLevel);
 };
 
-const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: number, mechanicCost: number): AutoPurchaseConfig[] => [
+const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: number, surveyorCost: number, mechanicCost: number): AutoPurchaseConfig[] => [
   {
     id: 'assistant',
     name: 'Assistant',
@@ -235,7 +242,7 @@ const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: numbe
     cycleDays: 7,
     owned: false,
     active: false,
-    cost: cultivatorCost,
+    cost: surveyorCost,
     timer: 0
   },
   {
@@ -252,16 +259,16 @@ const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: numbe
 ];
 
 const initialVeggies: Veggie[] = [
-  { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97, autoPurchasers: createAutoPurchaserConfigs(15, 25, 15) },
-  { name: 'Lettuce', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(1), fertilizerLevel: 0, fertilizerCost: 20, harvesterOwned: false, harvesterCost: 30, harvesterTimer: 0, salePrice: 2, betterSeedsLevel: 0, betterSeedsCost: 20, harvesterSpeedLevel: 0, harvesterSpeedCost: 100, additionalPlotLevel: 0, additionalPlotCost: 80, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(25, 50, 25) },
-  { name: 'Green Beans', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(2), fertilizerLevel: 0, fertilizerCost: 30, harvesterOwned: false, harvesterCost: 60, harvesterTimer: 0, salePrice: 3, betterSeedsLevel: 0, betterSeedsCost: 30, harvesterSpeedLevel: 0, harvesterSpeedCost: 200, additionalPlotLevel: 0, additionalPlotCost: 120, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(50, 100, 50) },
-  { name: 'Zucchini', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(3), fertilizerLevel: 0, fertilizerCost: 40, harvesterOwned: false, harvesterCost: 120, harvesterTimer: 0, salePrice: 4, betterSeedsLevel: 0, betterSeedsCost: 40, harvesterSpeedLevel: 0, harvesterSpeedCost: 400, additionalPlotLevel: 0, additionalPlotCost: 160, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(100, 200, 100) },
-  { name: 'Cucumbers', growth: 0, growthRate: 1.25, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(4), fertilizerLevel: 0, fertilizerCost: 50, harvesterOwned: false, harvesterCost: 240, harvesterTimer: 0, salePrice: 5, betterSeedsLevel: 0, betterSeedsCost: 50, harvesterSpeedLevel: 0, harvesterSpeedCost: 800, additionalPlotLevel: 0, additionalPlotCost: 240, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(200, 400, 200) },
-  { name: 'Tomatoes', growth: 0, growthRate: 1.0526, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(5), fertilizerLevel: 0, fertilizerCost: 60, harvesterOwned: false, harvesterCost: 480, harvesterTimer: 0, salePrice: 6, betterSeedsLevel: 0, betterSeedsCost: 60, harvesterSpeedLevel: 0, harvesterSpeedCost: 1600, additionalPlotLevel: 0, additionalPlotCost: 480, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(300, 600, 300) },
-  { name: 'Peppers', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(6), fertilizerLevel: 0, fertilizerCost: 70, harvesterOwned: false, harvesterCost: 960, harvesterTimer: 0, salePrice: 7, betterSeedsLevel: 0, betterSeedsCost: 70, harvesterSpeedLevel: 0, harvesterSpeedCost: 3200, additionalPlotLevel: 0, additionalPlotCost: 960, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(400, 800, 400) },
-  { name: 'Carrots', growth: 0, growthRate: 1.1111, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(7), fertilizerLevel: 0, fertilizerCost: 80, harvesterOwned: false, harvesterCost: 1920, harvesterTimer: 0, salePrice: 8, betterSeedsLevel: 0, betterSeedsCost: 80, harvesterSpeedLevel: 0, harvesterSpeedCost: 6400, additionalPlotLevel: 0, additionalPlotCost: 1920, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(500, 1000, 500) },
-  { name: 'Broccoli', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(8), fertilizerLevel: 0, fertilizerCost: 90, harvesterOwned: false, harvesterCost: 3840, harvesterTimer: 0, salePrice: 9, betterSeedsLevel: 0, betterSeedsCost: 90, harvesterSpeedLevel: 0, harvesterSpeedCost: 12800, additionalPlotLevel: 0, additionalPlotCost: 3840, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(600, 1200, 600) },
-  { name: 'Onions', growth: 0, growthRate: 0.7692, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(9), fertilizerLevel: 0, fertilizerCost: 100, harvesterOwned: false, harvesterCost: 7680, harvesterTimer: 0, salePrice: 10, betterSeedsLevel: 0, betterSeedsCost: 100, harvesterSpeedLevel: 0, harvesterSpeedCost: 25600, additionalPlotLevel: 0, additionalPlotCost: 7680, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(700, 1400, 700) },
+  { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97, autoPurchasers: createAutoPurchaserConfigs(8, 10, 30*5, 38), sellEnabled: true },
+  { name: 'Lettuce', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(1), fertilizerLevel: 0, fertilizerCost: 20, harvesterOwned: false, harvesterCost: 30, harvesterTimer: 0, salePrice: 2, betterSeedsLevel: 0, betterSeedsCost: 20, harvesterSpeedLevel: 0, harvesterSpeedCost: 100, additionalPlotLevel: 0, additionalPlotCost: 80, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(21, 28, 84*5, 113), sellEnabled: true },
+  { name: 'Green Beans', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(2), fertilizerLevel: 0, fertilizerCost: 30, harvesterOwned: false, harvesterCost: 60, harvesterTimer: 0, salePrice: 3, betterSeedsLevel: 0, betterSeedsCost: 30, harvesterSpeedLevel: 0, harvesterSpeedCost: 200, additionalPlotLevel: 0, additionalPlotCost: 120, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(29, 38, 117*5, 168), sellEnabled: true },
+  { name: 'Zucchini', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(3), fertilizerLevel: 0, fertilizerCost: 40, harvesterOwned: false, harvesterCost: 120, harvesterTimer: 0, salePrice: 4, betterSeedsLevel: 0, betterSeedsCost: 40, harvesterSpeedLevel: 0, harvesterSpeedCost: 400, additionalPlotLevel: 0, additionalPlotCost: 160, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(41, 54, 164*5, 252), sellEnabled: true },
+  { name: 'Cucumbers', growth: 0, growthRate: 1.25, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(4), fertilizerLevel: 0, fertilizerCost: 50, harvesterOwned: false, harvesterCost: 240, harvesterTimer: 0, salePrice: 5, betterSeedsLevel: 0, betterSeedsCost: 50, harvesterSpeedLevel: 0, harvesterSpeedCost: 800, additionalPlotLevel: 0, additionalPlotCost: 240, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(57, 76, 230*5, 380), sellEnabled: true },
+  { name: 'Tomatoes', growth: 0, growthRate: 1.0526, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(5), fertilizerLevel: 0, fertilizerCost: 60, harvesterOwned: false, harvesterCost: 480, harvesterTimer: 0, salePrice: 6, betterSeedsLevel: 0, betterSeedsCost: 60, harvesterSpeedLevel: 0, harvesterSpeedCost: 1600, additionalPlotLevel: 0, additionalPlotCost: 480, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(80, 106, 323*5, 569), sellEnabled: true },
+  { name: 'Peppers', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(6), fertilizerLevel: 0, fertilizerCost: 70, harvesterOwned: false, harvesterCost: 960, harvesterTimer: 0, salePrice: 7, betterSeedsLevel: 0, betterSeedsCost: 70, harvesterSpeedLevel: 0, harvesterSpeedCost: 3200, additionalPlotLevel: 0, additionalPlotCost: 960, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(113, 150, 452*5, 854), sellEnabled: true },
+  { name: 'Carrots', growth: 0, growthRate: 1.1111, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(7), fertilizerLevel: 0, fertilizerCost: 80, harvesterOwned: false, harvesterCost: 1920, harvesterTimer: 0, salePrice: 8, betterSeedsLevel: 0, betterSeedsCost: 80, harvesterSpeedLevel: 0, harvesterSpeedCost: 6400, additionalPlotLevel: 0, additionalPlotCost: 1920, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(158, 210, 632*5, 1281), sellEnabled: true },
+  { name: 'Broccoli', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(8), fertilizerLevel: 0, fertilizerCost: 90, harvesterOwned: false, harvesterCost: 3840, harvesterTimer: 0, salePrice: 9, betterSeedsLevel: 0, betterSeedsCost: 90, harvesterSpeedLevel: 0, harvesterSpeedCost: 12800, additionalPlotLevel: 0, additionalPlotCost: 3840, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(221, 294, 885*5, 1922), sellEnabled: true },
+  { name: 'Onions', growth: 0, growthRate: 0.7692, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(9), fertilizerLevel: 0, fertilizerCost: 100, harvesterOwned: false, harvesterCost: 7680, harvesterTimer: 0, salePrice: 10, betterSeedsLevel: 0, betterSeedsCost: 100, harvesterSpeedLevel: 0, harvesterSpeedCost: 25600, additionalPlotLevel: 0, additionalPlotCost: 7680, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(309, 412, 1239*5, 2883), sellEnabled: true },
 ];
 
 // Auto-purchase utility functions
@@ -405,6 +412,7 @@ type GameState = {
   setGlobalAutoPurchaseTimer: React.Dispatch<React.SetStateAction<number>>;
   setActiveVeggie: (i: number) => void;
   handleHarvest: () => void;
+  handleToggleSell: (index: number) => void;
   handleSell: () => void;
   handleBuyFertilizer: (index: number) => void;
   handleBuyHarvester: (index: number) => void;
@@ -521,6 +529,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setMaxPlots(newMaxPlots);
     setFarmTier(newFarmTier);
     setIrrigationOwned(false); // Preserve irrigation state
+    setGlobalAutoPurchaseTimer(0); // Reset auto-purchaser timer
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
     // Save to localStorage
     saveGameState({
@@ -539,6 +548,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       farmTier: newFarmTier,
       farmCost: Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)),
       irrigationOwned: irrigationOwned,
+      globalAutoPurchaseTimer: 0, // Reset auto-purchaser timer
       currentWeather: 'Clear', // Reset weather when resetting
       highestUnlockedVeggie: highestUnlockedVeggie // Preserve highest unlocked veggie through farm upgrades
     });
@@ -670,20 +680,27 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  // Migration function to add missing autoPurchasers property to saved veggie data
+  // Migration function to add missing properties to saved veggie data
   const migrateVeggieData = (loadedVeggies: any[]): Veggie[] => {
     if (!loadedVeggies) return initialVeggies;
     
     return loadedVeggies.map((savedVeggie, index) => {
+      const initialVeggie = initialVeggies[index];
+      
+      // Add missing properties with defaults
+      const migratedVeggie: any = { ...savedVeggie };
+      
       // If autoPurchasers is missing, add it from the initial veggie data
       if (!savedVeggie.autoPurchasers) {
-        const initialVeggie = initialVeggies[index];
-        return {
-          ...savedVeggie,
-          autoPurchasers: initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(15, 25, 15)
-        };
+        migratedVeggie.autoPurchasers = initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(8, 10, 30, 38);
       }
-      return savedVeggie;
+      
+      // If sellEnabled is missing, default to true (allow selling)
+      if (savedVeggie.sellEnabled === undefined) {
+        migratedVeggie.sellEnabled = true;
+      }
+      
+      return migratedVeggie;
     });
   };
 
@@ -977,6 +994,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     harvestVeggie(activeVeggie, false);
   }
 
+  // Toggle sell enabled for a specific veggie
+  const handleToggleSell = (index: number) => {
+    setVeggies((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], sellEnabled: !updated[index].sellEnabled };
+      return updated;
+    });
+  };
+
   // Fertilizer upgrade purchase
   // Additional Plot upgrade purchase
   const handleBuyAdditionalPlot = (index: number) => {
@@ -1034,8 +1060,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const handleSell = useCallback(() => {
     let total = 0;
     setVeggies((prev) => {
-      total = prev.reduce((sum, v) => sum + v.stash * v.salePrice, 0);
-      return prev.map((v) => ({ ...v, stash: 0 }));
+      total = prev.reduce((sum, v) => {
+        // Only include vegetables that are enabled for selling
+        return v.sellEnabled ? sum + v.stash * v.salePrice : sum;
+      }, 0);
+      return prev.map((v) => ({
+        ...v,
+        // Only clear stash for vegetables that are enabled for selling
+        stash: v.sellEnabled ? 0 : v.stash
+      }));
     });
     setMoney((m: number) => m + total);
   }, [setVeggies, setMoney]);
@@ -1165,7 +1198,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
       {children}
     </GameContext.Provider>
   );
@@ -1184,9 +1217,10 @@ interface AutoPurchaserButtonProps {
   knowledge: number;
   description: string;
   onPurchase: () => void;
+  forceDisabled?: boolean; // Optional: force disable even if affordable (e.g., max plots reached)
 }
 
-function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onPurchase }: AutoPurchaserButtonProps) {
+function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onPurchase, forceDisabled = false }: AutoPurchaserButtonProps) {
   const canAfford = autoPurchaser.currencyType === 'money' 
     ? money >= autoPurchaser.cost 
     : knowledge >= autoPurchaser.cost;
@@ -1195,7 +1229,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
   const currencyUnit = autoPurchaser.currencyType === 'knowledge' ? 'Kn' : '';
   
   const getButtonStyle = () => {
-    if (!autoPurchaser.owned && !canAfford) {
+    if (!autoPurchaser.owned && (!canAfford || forceDisabled)) {
       // Unpurchased + can't afford
       return {
         padding: '0.5rem 0.75rem',
@@ -1245,6 +1279,11 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
 
   const getTooltip = () => {
     const baseName = autoPurchaser.name;
+    
+    if (!autoPurchaser.owned && forceDisabled) {
+      return `${baseName}: Cannot purchase - You've reached your maximum plot limit. Expand your farm to unlock more plots.`;
+    }
+    
     const costDisplay = !autoPurchaser.owned 
       ? `Cost: ${currencySymbol}${autoPurchaser.cost}${currencyUnit}` 
       : autoPurchaser.active 
@@ -1273,7 +1312,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
     return baseStyle;
   };
 
-  const isDisabled = !autoPurchaser.owned && !canAfford;
+  const isDisabled = !autoPurchaser.owned && (!canAfford || forceDisabled);
 
   return (
     <button
@@ -1422,6 +1461,7 @@ function UpgradeButton({
 function App() {
   // Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { soundEnabled, setSoundEnabled } = useArchie();
   
   // ArchieIcon component adds a clickable character that
   // appears randomly on the screen and gives the player money when clicked
@@ -1530,7 +1570,7 @@ function App() {
       resetGame();
     }
   };
-  const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // // Debug buttons for testing
   // const handleAddDebugMoney = () => {
@@ -1655,11 +1695,11 @@ function App() {
       onChange={handleFileChange} 
       accept=".json"
     />
-    <ArchieIcon setMoney={setMoney} />
+    <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
     <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <h1 className="game-title" style={{ marginRight: '1rem' }}>Farm Idle Game</h1>
+          {/* <h1 className="game-title" style={{ marginRight: '1rem' }}>Farm Idle Game</h1> */}
           {/* <button
             onClick={handleAddDebugMoney}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
@@ -1852,6 +1892,19 @@ function App() {
               style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
               />
               {veggies[activeVeggie].name}
+              {!veggies[activeVeggie].sellEnabled && (
+                <span style={{ 
+                  fontSize: '0.8rem', 
+                  color: '#f44336', 
+                  fontWeight: 'bold',
+                  backgroundColor: '#ffebee',
+                  padding: '2px 6px',
+                  borderRadius: '12px',
+                  border: '1px solid #f44336'
+                }} title="This vegetable is set to stockpile (won't auto-sell)">
+                  🚫 HOLD
+                </span>
+              )}
               <span style={{ fontWeight: 'bold', color: '#228833', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
               <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
               (~{daysToGrow} days to grow)
@@ -1864,6 +1917,24 @@ function App() {
               style={{ marginLeft: 'auto', fontSize: '1rem', padding: '4px 14px', background: '#228833', color: '#fff', border: 'none', borderRadius: '5px', minWidth: '90px', cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
             >
               {veggies[activeVeggie].growth < 100 ? 'Growing...' : 'Harvest'}
+            </button>
+            <button
+              onClick={() => handleToggleSell(activeVeggie)}
+              style={{
+                marginLeft: '0.5rem',
+                fontSize: '1rem',
+                padding: '4px 14px',
+                background: veggies[activeVeggie].sellEnabled ? '#4CAF50' : '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                minWidth: '90px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+              title={veggies[activeVeggie].sellEnabled ? 'Sell enabled (click to disable and stockpile)' : 'Sell disabled (click to enable selling)'}
+            >
+              {veggies[activeVeggie].sellEnabled ? '💰 Sell' : '🚫 Hold'}
             </button>
           </div>
           <div 
@@ -2008,6 +2079,7 @@ function App() {
                   knowledge={knowledge}
                   description="Auto-purchases additional plot every 7 days"
                   onPurchase={() => handleBuyAutoPurchaser('surveyor')(activeVeggie)}
+                  forceDisabled={totalPlotsUsed >= maxPlots}
                 /> 
               </div>             
             </div>
@@ -2137,10 +2209,10 @@ function App() {
           )}
           <button
             onClick={handleSell}
-            disabled={veggies.every((v) => v.stash === 0)}
-            aria-label="Sell all veggies"
+            disabled={veggies.every((v) => !v.sellEnabled || v.stash === 0)}
+            aria-label="Sell all veggies (only those marked for selling)"
           >
-            {veggies.every((v) => v.stash === 0) ? 'No veggies to sell' : 'Sell All'}  (${veggies.reduce((sum, v) => sum + v.stash * v.salePrice, 0).toFixed(2)})
+            {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * v.salePrice : sum, 0).toFixed(2)})
           </button>
         </div>
       </div>
@@ -2149,17 +2221,15 @@ function App() {
         <h2 style={{ textAlign: 'center', color: '#228833' }}>Upgrades</h2>
         {/* Farmer's Almanac Upgrade - above Merchant */}
         <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' , marginBottom: '0.5rem' }}>
             <img src="./Farmer's Almanac.png" alt="Farmer's Almanac" style={{ width: 32, height: 32, marginRight: 0 }} />
-            <strong>Farmer's Almanac</strong>
+            <strong>Almanac</strong>
             <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '1.02rem' }}>+{(almanacLevel * 10).toFixed(0)}%</span>
-          </div>
-          <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            +10% knowledge per purchase.
           </div>
           <button
             onClick={handleBuyAlmanac}
             disabled={money < almanacCost}
+            title="Each level increases all veggie sale prices by 10%"
             style={{
               background: money >= almanacCost ? '#4a8' : '#aaa',
               color: '#fff',
@@ -2177,16 +2247,14 @@ function App() {
         </div>
         {/* Irrigation Upgrade */}
         <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
             <img src="./Irrigation.png" alt="Irrigation" style={{ width: 32, height: 32, marginRight: 4 }} />
             <strong>Irrigation</strong>
-          </div>
-          <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Negates drought penalty.<br />
           </div>
           <button
             onClick={handleBuyIrrigation}
             disabled={irrigationOwned || money < irrigationCost || knowledge < irrigationKnCost}
+            title="Negates drought penalty and provides +15% growth rate bonus."
             style={{
               background: irrigationOwned ? '#124212ff' : '#228833',
               color: '#fff',
@@ -2203,16 +2271,14 @@ function App() {
           </button>
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
             <img src="./Merchant.png" alt="Merchant" style={{ width: 32, height: 32, marginRight: 0 }} />
             <strong>Merchant</strong>
-          </div>
-          <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Buys veggies every {MERCHANT_DAYS} days.<br />
           </div>
           <button
             onClick={handleBuyAutoSell}
             disabled={autoSellOwned || money < MERCHANT_COST || knowledge < MERCHANT_KN_COST}
+            title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
             style={{
               background: autoSellOwned ? '#124212ff' : '#228833',
               color: '#fff',
@@ -2229,17 +2295,14 @@ function App() {
           </button>
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
             <img src="./Greenhouse.png" alt="Greenhouse" style={{ width: 32, height: 32, marginRight: 0 }} />
             <strong>Greenhouse</strong>
-          </div>
-          <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Negates winter growth penalty.<br />
           </div>
           <button
             onClick={handleBuyGreenhouse}
             disabled={greenhouseOwned || money < (GREENHOUSE_COST_PER_PLOT * maxPlots) || knowledge < (GREENHOUSE_KN_COST_PER_PLOT * maxPlots)}
-            title={`Cost is based max plots for your current farm: (${maxPlots} × $${GREENHOUSE_COST_PER_PLOT.toLocaleString()}). This persists through farm expansions.`}
+            title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${GREENHOUSE_COST_PER_PLOT.toLocaleString()} & ${maxPlots} x ${GREENHOUSE_KN_COST_PER_PLOT.toLocaleString()} Kn).`}
             style={{
               background: greenhouseOwned ? '#124212ff' : '#228833',
               color: '#fff',
@@ -2256,17 +2319,14 @@ function App() {
           </button>
         </div>
         <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
             <img src="./Heirloom Seeds.png" alt="Heirloom Seeds" style={{ width: 32, height: 32, marginRight: 0 }} />
             <strong>Heirloom Seeds</strong>
-          </div>
-          <div style={{ color: '#313131ff', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Doubles the effect of Better Seeds.<br />
           </div>
           <button
             onClick={handleBuyHeirloom}
             disabled={heirloomOwned || money < heirloomMoneyCost || knowledge < heirloomKnowledgeCost}
-            title={`Cost is based on your highest unlocked veggie ever: ${initialVeggies[highestUnlockedVeggie]?.name || 'Radish'} (${highestUnlockedVeggie + 1} × $${HEIRLOOM_COST_PER_VEGGIE.toLocaleString()}). This persists through farm expansions.`}
+            title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${initialVeggies[highestUnlockedVeggie]?.name || 'Radish'} (${highestUnlockedVeggie + 1} × $${HEIRLOOM_COST_PER_VEGGIE.toLocaleString()} & ${highestUnlockedVeggie + 1} × ${HEIRLOOM_KN_PER_VEGGIE.toLocaleString()} Kn).`}
             style={{
               background: heirloomOwned ? '#124212ff' : '#228833',
               color: '#fff',
@@ -2784,6 +2844,28 @@ function App() {
                   }}
                 >
                   Import Save
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Sound Settings</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                <label style={{ fontSize: '14px', color: '#333' }}>Sound Effects:</label>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  style={{
+                    padding: '6px 12px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    backgroundColor: soundEnabled ? '#28a745' : '#dc3545',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {soundEnabled ? '🔊 ON' : '🔇 OFF'}
                 </button>
               </div>
             </div>

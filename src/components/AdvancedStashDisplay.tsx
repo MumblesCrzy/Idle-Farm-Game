@@ -91,6 +91,7 @@ type Veggie = {
   additionalPlotLevel: number;
   additionalPlotCost: number;
   autoPurchasers: any[];
+  sellEnabled: boolean;
 };
 
 type AdvancedStashDisplayProps = {
@@ -177,6 +178,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
               <tr>
                 <th>Vegetable</th>
                 <th>Current Count & Value</th>
+                <th>Sell Status</th>
                 <th>Growth Rate</th>
                 <th>Est. Yearly Production</th>
                 <th>Est. Annual Revenue</th>
@@ -207,6 +209,19 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
                         <br />
                         ${(veggie.stash * veggie.salePrice).toFixed(2)} total value
                       </small>
+                    </td>
+                    <td style={{ textAlign: 'center', padding: '8px' }}>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.8em',
+                        fontWeight: 'bold',
+                        color: 'white',
+                        backgroundColor: veggie.sellEnabled ? '#28a745' : '#dc3545',
+                        display: 'inline-block',
+                      }}>
+                        {veggie.sellEnabled ? '💰 Auto-sell' : '🚫 Stockpile'}
+                      </span>
                     </td>
                     <td className="growth-rate">
                       {baseGrowthRate.toFixed(2)}%/day
