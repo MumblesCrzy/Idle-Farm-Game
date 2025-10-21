@@ -25,3 +25,4 @@ dist-ssr
 RELEASE_NOTES*
 ARCHIE_FEATURE*
 itch_io*
+docs/*

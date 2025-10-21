@@ -1,6 +1,26 @@
 import React, { useEffect } from 'react';
 import './AdvancedStashDisplay.css';
 
+// Utility function to format large numbers with shorthand notation
+function formatNumber(num: number, decimalPlaces: number = 1): string {
+  if (num < 1000) {
+    return num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2)).replace(/\.?0+$/, '');
+  }
+  
+  const units = ['', 'K', 'M', 'B', 'T', 'Q'];
+  let unitIndex = 0;
+  let value = num;
+  
+  while (value >= 1000 && unitIndex < units.length - 1) {
+    value /= 1000;
+    unitIndex++;
+  }
+  
+  // For values >= 1000, always show at least 1 decimal place unless it's a whole number
+  const formatted = value.toFixed(decimalPlaces);
+  return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
+}
+
 // Constants from App.tsx
 const SEASON_BONUS = 0.1;
 
@@ -101,6 +121,7 @@ type AdvancedStashDisplayProps = {
   greenhouseOwned: boolean;
   irrigationOwned: boolean;
   day: number;
+  onToggleSell: (index: number) => void;
 };
 
 const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
@@ -108,6 +129,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
   onClose,
   veggies,
   greenhouseOwned,
+  onToggleSell,
   // irrigationOwned, // Will be used in later calculation todos
   // day // Will be used in later calculation todos
 }) => {
@@ -168,7 +190,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
           </div>
           <div className="summary-item">
             <span className="summary-label">Total Value:</span>
-            <span className="summary-value">${totalValue.toFixed(2)}</span>
+            <span className="summary-value">${formatNumber(totalValue, 2)}</span>
           </div>
         </div>
 
@@ -178,7 +200,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
               <tr>
                 <th>Vegetable</th>
                 <th>Current Count & Value</th>
-                <th>Sell Status</th>
+                <th>Sell Status (Click to Toggle)</th>
                 <th>Growth Rate</th>
                 <th>Est. Yearly Production</th>
                 <th>Est. Annual Revenue</th>
@@ -186,6 +208,9 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
             </thead>
             <tbody>
               {unlockedVeggies.map((veggie) => {
+                // Find the original index in the full veggies array
+                const originalIndex = veggies.findIndex(v => v.name === veggie.name);
+                
                 // Calculate accurate base growth rate with fertilizer
                 const baseGrowthRate = calculateBaseGrowthRate(veggie);
                 
@@ -207,21 +232,34 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
                         ${(veggie.salePrice).toFixed(2)} value
                         <br />
-                        ${(veggie.stash * veggie.salePrice).toFixed(2)} total value
+                        ${formatNumber(veggie.stash * veggie.salePrice, 2)} total value
                       </small>
                     </td>
                     <td style={{ textAlign: 'center', padding: '8px' }}>
-                      <span style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.8em',
-                        fontWeight: 'bold',
-                        color: 'white',
-                        backgroundColor: veggie.sellEnabled ? '#28a745' : '#dc3545',
-                        display: 'inline-block',
-                      }}>
+                      <button
+                        onClick={() => onToggleSell(originalIndex)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '0.8em',
+                          fontWeight: 'bold',
+                          color: 'white',
+                          backgroundColor: veggie.sellEnabled ? '#28a745' : '#dc3545',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'inline-block',
+                          transition: 'background-color 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = veggie.sellEnabled ? '#218838' : '#c82333';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = veggie.sellEnabled ? '#28a745' : '#dc3545';
+                        }}
+                        title={`Click to ${veggie.sellEnabled ? 'stockpile' : 'enable auto-sell'} ${veggie.name}`}
+                      >
                         {veggie.sellEnabled ? '💰 Auto-sell' : '🚫 Stockpile'}
-                      </span>
+                      </button>
                     </td>
                     <td className="growth-rate">
                       {baseGrowthRate.toFixed(2)}%/day
@@ -239,13 +277,13 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
                       )}
                     </td>
                     <td className="yearly-growth">
-                      {totalYearlyProduction.toLocaleString()}
+                      {formatNumber(totalYearlyProduction, 0)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
                         {(1 + (veggie.additionalPlotLevel || 0))} per cycle
                       </small>
                     </td>
-                    <td className="annual-revenue">${annualRevenue.toLocaleString()}</td>
+                    <td className="annual-revenue">${formatNumber(annualRevenue, 1)}</td>
                   </tr>
                 );
               })}

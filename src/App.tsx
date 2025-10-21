@@ -1,9 +1,32 @@
 import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback } from 'react';
-import ProgressBar from './components/ProgressBar';
 import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
+import GrowingTab from './components/GrowingTab';
+import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
+import { useCanningSystem } from './hooks/useCanningSystem';
+import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import './App.css';
+
+// Utility function to format large numbers with shorthand notation
+function formatNumber(num: number, decimalPlaces: number = 1): string {
+  if (num < 1000) {
+    return num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2)).replace(/\.?0+$/, '');
+  }
+  
+  const units = ['', 'K', 'M', 'B', 'T', 'Q'];
+  let unitIndex = 0;
+  let value = num;
+  
+  while (value >= 1000 && unitIndex < units.length - 1) {
+    value /= 1000;
+    unitIndex++;
+  }
+  
+  // For values >= 1000, always show at least 1 decimal place unless it's a whole number
+  const formatted = value.toFixed(decimalPlaces);
+  return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
+}
 
 // Returns the effective growth per tick for a veggie, factoring all bonuses/penalties
 function getVeggieGrowthBonus(
@@ -460,19 +483,9 @@ const getSeason = (day: number) => {
 
 const GAME_STORAGE_KEY = 'farmIdleGameState';
 
-function loadGameState() {
-  try {
-    const raw = localStorage.getItem(GAME_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 function saveGameState(state: any) {
   try {
-    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(state));
+    saveGameStateWithCanning(state);
   } catch {}
 }
 
@@ -490,7 +503,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [currentWeather, setCurrentWeather] = useState<WeatherType>('Clear');
   // Only one declaration for irrigationOwned and setIrrigationOwned
   // Irrigation upgrade state
-  const loaded = loadGameState();
+  const loaded = loadGameStateWithCanning();
   // Track farm tier (number of times farm has been purchased)
   const [farmTier, setFarmTier] = useState<number>(loaded?.farmTier ?? 1);
   const [irrigationOwned, setIrrigationOwned] = useState(loaded?.irrigationOwned ?? false);
@@ -1210,254 +1223,6 @@ function useGame() {
   return context;
 }
 
-// AutoPurchaserButton component - reusable button for all auto-purchaser types
-interface AutoPurchaserButtonProps {
-  autoPurchaser: AutoPurchaseConfig;
-  money: number;
-  knowledge: number;
-  description: string;
-  onPurchase: () => void;
-  forceDisabled?: boolean; // Optional: force disable even if affordable (e.g., max plots reached)
-}
-
-function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onPurchase, forceDisabled = false }: AutoPurchaserButtonProps) {
-  const canAfford = autoPurchaser.currencyType === 'money' 
-    ? money >= autoPurchaser.cost 
-    : knowledge >= autoPurchaser.cost;
-  
-  const currencySymbol = autoPurchaser.currencyType === 'money' ? '$' : '';
-  const currencyUnit = autoPurchaser.currencyType === 'knowledge' ? 'Kn' : '';
-  
-  const getButtonStyle = () => {
-    if (!autoPurchaser.owned && (!canAfford || forceDisabled)) {
-      // Unpurchased + can't afford
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#aaa',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'not-allowed',
-        minWidth: '40px'
-      };
-    } else if (!autoPurchaser.owned && canAfford) {
-      // Unpurchased + can afford
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#666',
-        color: '#fff',
-        border: '2px solid #ffeb3b',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        minWidth: '40px',
-        boxShadow: '0 0 8px 2px #ffe066'
-      };
-    } else if (autoPurchaser.owned && autoPurchaser.active) {
-      // Purchased + ON
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#228833',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        minWidth: '40px'
-      };
-    } else {
-      // Purchased + OFF
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#8a2424ff',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        minWidth: '40px'
-      };
-    }
-  };
-
-  const getTooltip = () => {
-    const baseName = autoPurchaser.name;
-    
-    if (!autoPurchaser.owned && forceDisabled) {
-      return `${baseName}: Cannot purchase - You've reached your maximum plot limit. Expand your farm to unlock more plots.`;
-    }
-    
-    const costDisplay = !autoPurchaser.owned 
-      ? `Cost: ${currencySymbol}${autoPurchaser.cost}${currencyUnit}` 
-      : autoPurchaser.active 
-        ? 'Currently ON - Click to turn OFF' 
-        : 'Currently OFF - Click to turn ON';
-    
-    return `${baseName}: ${description}. ${costDisplay}`;
-  };
-
-  const getImageSrc = () => {
-    return `./${autoPurchaser.name}.png`;
-  };
-
-  const getImageAlt = () => {
-    if (!autoPurchaser.owned) {
-      return autoPurchaser.name;
-    }
-    return autoPurchaser.active ? `${autoPurchaser.name} ON` : `${autoPurchaser.name} OFF`;
-  };
-
-  const getImageStyle = () => {
-    const baseStyle = { width: '32px', height: '32px', objectFit: 'contain' as const };
-    if (autoPurchaser.owned && !autoPurchaser.active) {
-      return { ...baseStyle, opacity: 0.5 };
-    }
-    return baseStyle;
-  };
-
-  const isDisabled = !autoPurchaser.owned && (!canAfford || forceDisabled);
-
-  return (
-    <button
-      title={getTooltip()}
-      style={getButtonStyle()}
-      onClick={onPurchase}
-      disabled={isDisabled}
-    >
-      <img 
-        src={getImageSrc()} 
-        alt={getImageAlt()} 
-        style={getImageStyle()} 
-      />
-    </button>
-  );
-}
-
-// UpgradeButton component - reusable button for all upgrade types
-interface UpgradeButtonProps {
-  title: string;
-  imageSrc: string;
-  imageAlt: string;
-  buttonText: string;
-  money: number;
-  knowledge: number;
-  cost: number;
-  currencyType: 'money' | 'knowledge';
-  onClick: () => void;
-  disabled?: boolean;
-  isOwned?: boolean;
-  isMaxLevel?: boolean;
-  level?: number;
-  flex?: boolean;
-}
-
-function UpgradeButton({ 
-  title, 
-  imageSrc, 
-  imageAlt, 
-  buttonText, 
-  money, 
-  knowledge, 
-  cost, 
-  currencyType, 
-  onClick, 
-  disabled = false, 
-  isOwned = false, 
-  isMaxLevel = false, 
-  level,
-  flex = false 
-}: UpgradeButtonProps) {
-  const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
-  
-  const getButtonStyle = () => {
-    if (isOwned) {
-      // Owned/Purchased
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#4a5568',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'default',
-        minWidth: '204px',
-        minHeight: '52px',
-        whiteSpace: 'nowrap' as const,
-        ...(flex && { flex: 1 })
-      };
-    } else if (isMaxLevel || disabled) {
-      // Max level or disabled
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: isMaxLevel ? '#722929ff' : '#3a6318ff',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'not-allowed',
-        minWidth: '204px',
-        whiteSpace: 'nowrap' as const,
-        ...(flex && { flex: 1 })
-      };
-    } else if (!canAfford) {
-      // Can't afford
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#aaa',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'not-allowed',
-        minWidth: '204px',
-        whiteSpace: 'nowrap' as const,
-        ...(flex && { flex: 1 })
-      };
-    } else {
-      // Can afford
-      return {
-        padding: '0.5rem 0.75rem',
-        backgroundColor: '#3a6318ff',
-        color: '#fff',
-        border: '2px solid #ffeb3b',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        minWidth: '204px',
-        boxShadow: '0 0 8px 2px #ffe066',
-        whiteSpace: 'nowrap' as const,
-        ...(flex && { flex: 1 })
-      };
-    }
-  };
-
-  const renderButtonContent = () => {
-    
-    return (
-      <>
-        <img 
-          src={imageSrc} 
-          alt={imageAlt} 
-          style={{ 
-            width: '2.0em', 
-            height: '2.0em', 
-            objectFit: 'contain', 
-            verticalAlign: 'middle' 
-          }} 
-        />
-        {buttonText}
-        {level !== undefined && (
-          <span style={{ color: '#888', fontWeight: 'normal' }}> ({level})</span>
-        )}
-      </>
-    );
-  };
-
-  return (
-    <button
-      title={title}
-      style={getButtonStyle()}
-      onClick={onClick}
-      disabled={disabled || !canAfford || isMaxLevel || isOwned}
-    >
-      {renderButtonContent()}
-    </button>
-  );
-}
-
 function App() {
   // Ref for hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1476,6 +1241,36 @@ function App() {
   // Advanced stash overlay state
   const [showAdvancedStash, setShowAdvancedStash] = useState(false);
 
+  // Tab system state
+  const [activeTab, setActiveTab] = useState<'growing' | 'canning'>('growing');
+  
+  // Load initial canning state
+  const [initialCanningState] = useState(() => {
+    const loaded = loadGameStateWithCanning();
+    return loaded?.canningState || undefined;
+  });
+
+  // Load and manage UI preferences
+  const [uiPreferences, setUiPreferences] = useState<{
+    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
+    canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
+  }>(() => {
+    const loaded = loadGameStateWithCanning();
+    return {
+      canningRecipeFilter: loaded?.uiPreferences?.canningRecipeFilter || 'all',
+      canningRecipeSort: loaded?.uiPreferences?.canningRecipeSort || 'profit'
+    };
+  });
+
+  // Handlers for updating UI preferences
+  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet') => {
+    setUiPreferences(prev => ({ ...prev, canningRecipeFilter: filter }));
+  }, []);
+
+  const setCanningRecipeSort = useCallback((sort: 'name' | 'profit' | 'time' | 'difficulty') => {
+    setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
+  }, []);
+
   // Import save handler: triggers file input
   const handleImportSave = () => {
     if (fileInputRef.current) {
@@ -1492,32 +1287,20 @@ function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        // Basic validation
-        if (!data || typeof data !== "object" || !Array.isArray(data.veggies)) {
+        
+        // Validate and migrate data with canning support
+        if (!validateCanningImport(data)) {
           alert("Invalid save file format.");
           return;
         }
-        // Update all relevant state
-        setVeggies(data.veggies);
-        setMoney(data.money ?? 0);
-        setExperience(data.experience ?? 0);
-        setKnowledge(data.knowledge ?? 0);
-        setActiveVeggie(data.activeVeggie ?? 0);
-        setDay(data.day ?? 0);
-        setGreenhouseOwned(data.greenhouseOwned ?? false);
-        setAlmanacLevel(data.almanacLevel ?? 0);
-        setAlmanacCost(data.almanacCost ?? 10);
-        setAutoSellOwned(data.autoSellOwned ?? false);
-        setHeirloomOwned(data.heirloomOwned ?? false);
-        setMaxPlots(data.maxPlots ?? 4);
-        setFarmTier(data.farmTier ?? 1);
-        setFarmCost(data.farmCost ?? FARM_BASE_COST);
-        setIrrigationOwned(data.irrigationOwned ?? false);
-        setCurrentWeather(data.currentWeather ?? 'Clear');
-        // Update farm cost based on tier
-        const newFarmCost = Math.ceil(FARM_BASE_COST * Math.pow(1.85, (data.farmTier ?? 1) - 1));
-        setFarmCost(newFarmCost);
-        alert("Save imported successfully!");
+        
+        // Save the imported data to localStorage
+        saveGameStateWithCanning(data);
+        
+        // Reload the page to reinitialize all systems with imported data
+        alert("Save imported successfully! The page will reload to apply all changes.");
+        window.location.reload();
+        
       } catch {
         alert("Failed to import save file.");
       }
@@ -1542,8 +1325,9 @@ function App() {
     farmTier,
     irrigationOwned,
     currentWeather,
+    canningState,
     // Optionally add a version for future compatibility
-    saveVersion: 1
+    saveVersion: 2
   });
 
   // Export save handler
@@ -1571,6 +1355,54 @@ function App() {
     }
   };
   const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+
+  // Initialize canning system
+  const {
+    canningState,
+    startCanning,
+    completeCanning,
+    purchaseUpgrade,
+    canMakeRecipe
+  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState);
+
+  // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
+  const canningUnlocked = experience >= 5000;
+
+  // Save canning state when it changes
+  useEffect(() => {
+    if (canningState) {
+      const gameState = {
+        veggies,
+        money,
+        experience,
+        knowledge,
+        activeVeggie,
+        day,
+        globalAutoPurchaseTimer,
+        greenhouseOwned,
+        heirloomOwned,
+        autoSellOwned,
+        almanacLevel,
+        almanacCost,
+        maxPlots,
+        farmTier,
+        farmCost,
+        irrigationOwned,
+        currentWeather,
+        highestUnlockedVeggie,
+        canningState,
+        uiPreferences
+      };
+      saveGameStateWithCanning(gameState);
+    }
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
+
+  // Reset tab to growing if canning becomes locked while on canning tab
+  useEffect(() => {
+    if (activeTab === 'canning' && !canningUnlocked) {
+      setActiveTab('growing');
+    }
+  }, [activeTab, canningUnlocked]);
 
   // // Debug buttons for testing
   // const handleAddDebugMoney = () => {
@@ -1687,8 +1519,8 @@ function App() {
   const daysToGrow = growthMultiplier > 0 ? Math.ceil(100 / growthMultiplier) : 0;
 
   return (
-  <>
-    <input 
+    <>
+      <input 
       type="file" 
       ref={fileInputRef} 
       style={{ display: 'none' }} 
@@ -1779,389 +1611,13 @@ function App() {
             </span>
             <span>
             <img src="./Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Money: ${money.toFixed(2)}
-            </span>
-            <span>
-            <img src="./Experience.png" alt="Experience" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Experience: {experience.toFixed(2)}
+            Money: ${formatNumber(money, 2)}
             </span>
             <span>
             <img src="./Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
             Knowledge: {knowledge.toFixed(2)}
             </span>
-        </div>
-        {/* Farm upgrade UI: show when maxPlots reached */}
-        {totalPlotsUsed >= maxPlots && (
-          <div>
-            <button
-              onClick={typeof handleBuyLargerFarm === 'function' ? handleBuyLargerFarm : undefined}
-              disabled={money < farmCost}
-              style={{ 
-              display: 'inline-flex', 
-              background: money >= farmCost ? '#2e7d32' : '#4a5568',
-              padding: '.5rem', 
-              gap: '1rem', 
-              verticalAlign: 'middle', 
-              fontSize: '1.0rem', 
-              borderRadius: '8px', 
-              textAlign: 'center', 
-              maxWidth: 765,
-              border: money >= farmCost ? '2px solid #ffeb3b' : '1px solid #718096',
-              boxShadow: money >= farmCost ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: money >= farmCost ? 'pointer' : 'not-allowed',
-              fontWeight: 'bold',
-              marginTop: '0.5rem',
-              marginBottom: '0.5rem',
-              transition: 'all 0.2s',
-              color: '#fff'
-              }} 
-              aria-label="Buy Larger Farm"
-              title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
-            >
-            <span style={{ color: '#fff', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
-              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Buy Larger Farm:</span> ${farmCost?.toLocaleString()}
-              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
-              {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
-              <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
-              )}
-              <div />
-              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-              <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? (money - farmCost).toLocaleString() : 0} / {knowledge / 3 > 0 ? (Math.floor(knowledge / 3)).toLocaleString() : 0}Kn
-              {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
-            </span>
-            </button>
-          </div>
-        )}          
-        <div style={{ marginBottom: '1rem' }} />         
-        <div className="veggie-selector">
-            <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              flexWrap: 'nowrap',
-              gap: '0.5rem',
-              overflowX: 'auto',
-              fontSize: '0.9rem',
-              marginLeft: '-0.5rem',
-              marginRight: '-0.5rem',
-              // Add minWidth and allow buttons to wrap text
-              minWidth: 0,
-            }}
-            >
-            {veggies.map((v, i) => (
-              v.unlocked ? (
-              <button
-                key={v.name}
-                className={[ 
-                i === activeVeggie ? 'active' : '',
-                v.growth >= 100 ? 'ready' : ''
-                ].filter(Boolean).join(' ')}
-                onClick={() => setActiveVeggie(i)}
-                aria-label={`Select ${v.name}`}
-                disabled={i === activeVeggie}
-                style={{ minWidth: '96px' }}
-              >
-                {v.name}
-              </button>
-              ) : (
-              <button 
-                key={v.name} 
-                disabled 
-                aria-label={`Locked veggie`} 
-                style={{ minWidth: '96px' }}
-                title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`}
-              >
-                {totalPlotsUsed >= maxPlots ? (
-                <span style={{ color: '#e44', fontWeight: 'bold' }}>Need Larger Farm</span>
-                ) : (
-                `Exp: ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}`
-                )}
-              </button>
-              )
-            ))}
-            </div>
-          </div>
-          <div style={{ marginBottom: '2rem' }} />
-          <div className="veggie-panel">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-            <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <img
-              title={`Bonus Growth: ${veggieSeasonBonuses[veggies[activeVeggie].name]}`}
-              src={`./${veggies[activeVeggie].name}.png`}
-              alt={veggies[activeVeggie].name}
-              style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
-              />
-              {veggies[activeVeggie].name}
-              {!veggies[activeVeggie].sellEnabled && (
-                <span style={{ 
-                  fontSize: '0.8rem', 
-                  color: '#f44336', 
-                  fontWeight: 'bold',
-                  backgroundColor: '#ffebee',
-                  padding: '2px 6px',
-                  borderRadius: '12px',
-                  border: '1px solid #f44336'
-                }} title="This vegetable is set to stockpile (won't auto-sell)">
-                  🚫 HOLD
-                </span>
-              )}
-              <span style={{ fontWeight: 'bold', color: '#228833', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
-              <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
-              (~{daysToGrow} days to grow)
-              </span>
-            </h2>
-            <button
-              onClick={handleHarvest}
-              disabled={veggies[activeVeggie].growth < 100}
-              aria-label={`Harvest ${veggies[activeVeggie].name}`}
-              style={{ marginLeft: 'auto', fontSize: '1rem', padding: '4px 14px', background: '#228833', color: '#fff', border: 'none', borderRadius: '5px', minWidth: '90px', cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
-            >
-              {veggies[activeVeggie].growth < 100 ? 'Growing...' : 'Harvest'}
-            </button>
-            <button
-              onClick={() => handleToggleSell(activeVeggie)}
-              style={{
-                marginLeft: '0.5rem',
-                fontSize: '1rem',
-                padding: '4px 14px',
-                background: veggies[activeVeggie].sellEnabled ? '#4CAF50' : '#f44336',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                minWidth: '90px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-              }}
-              title={veggies[activeVeggie].sellEnabled ? 'Sell enabled (click to disable and stockpile)' : 'Sell disabled (click to enable selling)'}
-            >
-              {veggies[activeVeggie].sellEnabled ? '💰 Sell' : '🚫 Hold'}
-            </button>
-          </div>
-          <div 
-              style={{ position: 'relative', width: '100%', marginTop: '0.5rem', marginBottom: '0.5rem', height: '22px' }}
-              title={`Growth Progress: ${Math.max(0, Math.ceil((100 - veggies[activeVeggie].growth) / growthMultiplier))} seconds until grown`}
-          >
-            <ProgressBar value={veggies[activeVeggie].growth} max={100} height={22} />
-            <span style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              color: '#222',
-              fontSize: '1rem',
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}>
-              {`${Math.floor(veggies[activeVeggie].growth)}%`}
-            </span>
-          </div>
-          {/* Auto Harvester Progress Bar: only show if purchased */}
-          {veggies[activeVeggie].harvesterOwned && (
-            <div 
-              style={{ position: 'relative', width: '100%', marginTop: '0.25rem', height: '22px' }}
-              title={`Auto Harvester: ${Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))) - veggies[activeVeggie].harvesterTimer} seconds until next harvest attempt`}
-            >
-              <ProgressBar
-              value={veggies[activeVeggie].harvesterTimer}
-              max={Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))}
-              color="#627beeff"
-              height={22}
-              />
-              <span style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              color: '#222',
-              fontSize: '1rem',
-              pointerEvents: 'none',
-              userSelect: 'none',
-              }}>
-              {`${Math.floor(
-                (veggies[activeVeggie].harvesterTimer /
-                Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))) * 100
-              )}%`}
-              </span>
-            </div>
-          )}
-          <br />
-          <div style={{
-            marginTop: '1rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1rem',
-            alignItems: 'start',
-            maxWidth: '700px'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
-                <UpgradeButton
-                  title={veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel
-                    ? 'Fertilizer: MAX Level Reached'
-                    : `Fertilizer: +5% growth speed - Cost: $${veggies[activeVeggie].fertilizerCost}`}
-                  imageSrc="./Fertilizer.png"
-                  imageAlt="Fertilizer"
-                  buttonText="Fertilizer"
-                  money={money}
-                  knowledge={knowledge}
-                  cost={veggies[activeVeggie].fertilizerCost}
-                  currencyType="money"
-                  onClick={() => handleBuyFertilizer(activeVeggie)}
-                  disabled={money < veggies[activeVeggie].fertilizerCost || veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel}
-                  isMaxLevel={veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel}
-                  level={veggies[activeVeggie].fertilizerLevel}
-                  flex={true}
-                />
-                <AutoPurchaserButton
-                  autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'assistant')!}
-                  money={money}
-                  knowledge={knowledge}
-                  description="Auto-purchases fertilizer every 7 days"
-                  onPurchase={() => handleBuyAutoPurchaser('assistant')(activeVeggie)}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
-              <UpgradeButton
-                title={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${veggies[activeVeggie].betterSeedsCost}Kn`}
-                imageSrc="./Better Seeds.png"
-                imageAlt="Better Seeds"
-                buttonText="Better Seeds"
-                money={money}
-                knowledge={knowledge}
-                cost={veggies[activeVeggie].betterSeedsCost}
-                currencyType="knowledge"
-                onClick={() => handleBuyBetterSeeds(activeVeggie)}
-                disabled={knowledge < veggies[activeVeggie].betterSeedsCost}
-                level={veggies[activeVeggie].betterSeedsLevel}
-                flex={true}
-              />
-              <AutoPurchaserButton
-                autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'cultivator')!}
-                money={money}
-                knowledge={knowledge}
-                description="Auto-purchases better seeds every 7 days"
-                onPurchase={() => handleBuyAutoPurchaser('cultivator')(activeVeggie)}
-              />
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
-                <UpgradeButton
-                  title={totalPlotsUsed >= maxPlots ? 'Max Plots Reached' : `Additional Plot: +1 veggie/harvest - Cost: $${veggies[activeVeggie].additionalPlotCost}`}
-                  imageSrc="./Additional Plot.png"
-                  imageAlt="Additional Plot"
-                  buttonText="Additional Plot"
-                  money={money}
-                  knowledge={knowledge}
-                  cost={veggies[activeVeggie].additionalPlotCost}
-                  currencyType="money"
-                  onClick={() => handleBuyAdditionalPlot(activeVeggie)}
-                  disabled={money < veggies[activeVeggie].additionalPlotCost || totalPlotsUsed >= maxPlots}
-                  isMaxLevel={totalPlotsUsed >= maxPlots}
-                  level={veggies[activeVeggie].additionalPlotLevel}
-                  flex={true}
-                />
-                <AutoPurchaserButton
-                  autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'surveyor')!}
-                  money={money}
-                  knowledge={knowledge}
-                  description="Auto-purchases additional plot every 7 days"
-                  onPurchase={() => handleBuyAutoPurchaser('surveyor')(activeVeggie)}
-                  forceDisabled={totalPlotsUsed >= maxPlots}
-                /> 
-              </div>             
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.5rem' }}>
-              <UpgradeButton
-                title={veggies[activeVeggie].harvesterOwned ? 'Purchased' : `Auto Harvester - Cost: $${veggies[activeVeggie].harvesterCost}`}
-                imageSrc="./Auto Harvester.png"
-                imageAlt="Auto Harvester"
-                buttonText="Auto Harvester"
-                money={money}
-                knowledge={knowledge}
-                cost={veggies[activeVeggie].harvesterCost}
-                currencyType="money"
-                onClick={() => handleBuyHarvester(activeVeggie)}
-                disabled={veggies[activeVeggie].harvesterOwned || money < veggies[activeVeggie].harvesterCost}
-                isOwned={veggies[activeVeggie].harvesterOwned}
-              />
-            </div>
-            {veggies[activeVeggie].harvesterOwned && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
-
-                  <UpgradeButton
-                    title={`Harvester Speed: +5% speed - Cost: $${veggies[activeVeggie].harvesterSpeedCost}`}
-                    imageSrc="./Harvester Speed.png"
-                    imageAlt="Harvester Speed"
-                    buttonText="Harvester Speed"
-                    money={money}
-                    knowledge={knowledge}
-                    cost={veggies[activeVeggie].harvesterSpeedCost ?? 50}
-                    currencyType="money"
-                    onClick={() => handleBuyHarvesterSpeed(activeVeggie)}
-                    disabled={money < (veggies[activeVeggie].harvesterSpeedCost ?? 50)}
-                    level={veggies[activeVeggie].harvesterSpeedLevel ?? 0}
-                    flex={true}
-                  />
-                  <AutoPurchaserButton
-                    autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'mechanic')!}
-                    money={money}
-                    knowledge={knowledge}
-                    description="Auto-purchases Harvester Speed every 7 days"
-                    onPurchase={() => handleBuyAutoPurchaser('mechanic')(activeVeggie)}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Unified Auto-Purchase Progress Bar: show if any auto-purchasers are active */}
-          {(() => {
-            const activeAutoPurchasers = veggies[activeVeggie].autoPurchasers.filter(ap => ap.owned && ap.active);
-            if (activeAutoPurchasers.length === 0) return null;
-            
-            return (
-              <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-                <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                  Auto-Purchase: {7 - globalAutoPurchaseTimer} days
-                </span>
-                <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
-                  <ProgressBar value={globalAutoPurchaseTimer} max={7} height={12} color="#4caf50" />
-                  <span style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    color: '#222',
-                    fontSize: '0.75rem',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                  }}>{Math.floor((globalAutoPurchaseTimer / 7) * 100)}%</span>
-                </div>
-              </div>
-            );
-          })()}
-          <div style={{ color: '#888', marginBottom: '0.5rem', display: 'flex', flexDirection: 'row', gap: '2rem', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>
               <button
                 onClick={() => setShowAdvancedStash(true)}
                 style={{
@@ -2173,175 +1629,200 @@ function App() {
                   fontSize: '0.75rem',
                   cursor: 'pointer',
                   fontWeight: '500',
-                  transition: 'background-color 0.2s ease'
+                  transition: 'background-color 0.2s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#1e6b2b'}
                 onMouseLeave={(e) => e.currentTarget.style.background = '#228833'}
                 title="View detailed stash breakdown"
               >
+                <img src="./Money.png" alt="Stash" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                 Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}
+              </button>
+            </span>
+        </div>
+        {/* Farm upgrade UI: show when maxPlots reached - Fixed height container to prevent layout shifts */}
+        <div style={{ minHeight: totalPlotsUsed >= maxPlots ? 'auto' : '0', marginBottom: '1rem' }}>
+          {totalPlotsUsed >= maxPlots && (
+            <div>
+              <button
+                onClick={typeof handleBuyLargerFarm === 'function' ? handleBuyLargerFarm : undefined}
+                disabled={money < farmCost}
+                style={{ 
+                display: 'inline-flex', 
+                background: money >= farmCost ? '#2e7d32' : '#4a5568',
+                padding: '.5rem', 
+                gap: '1rem', 
+                verticalAlign: 'middle', 
+                fontSize: '1.0rem', 
+                borderRadius: '8px', 
+                textAlign: 'center', 
+                maxWidth: 765,
+                border: money >= farmCost ? '2px solid #ffeb3b' : '1px solid #718096',
+                boxShadow: money >= farmCost ? '0 0 8px 2px #ffe066' : 'none',
+                cursor: money >= farmCost ? 'pointer' : 'not-allowed',
+                fontWeight: 'bold',
+                marginTop: '0.5rem',
+                marginBottom: '0.5rem',
+                transition: 'all 0.2s',
+                color: '#fff'
+                }} 
+                aria-label="Buy Larger Farm"
+                title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
+              >
+              <span style={{ color: '#fff', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Buy Larger Farm:</span> ${formatNumber(farmCost, 1)}
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
+                {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
+                <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
+                )}
+                <div />
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge / 3 > 0 ? formatNumber(Math.floor(knowledge / 3), 1) : 0}Kn
+                {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
+              </span>
+              </button>
+            </div>
+          )}
+        </div>
+        <div style={{ marginBottom: '1rem' }} />
+          
+          {/* Tab Navigation */}
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #444' }}>
+              <button
+                onClick={() => setActiveTab('growing')}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: activeTab === 'growing' ? '#4caf50' : '#333',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px 8px 0 0',
+                  cursor: 'pointer',
+                  fontWeight: activeTab === 'growing' ? 'bold' : 'normal',
+                  fontSize: '1rem',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                Growing
+              </button>
+              <button
+                onClick={() => canningUnlocked ? setActiveTab('canning') : null}
+                disabled={!canningUnlocked}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: canningUnlocked 
+                    ? (activeTab === 'canning' ? '#ff8503' : '#333')
+                    : '#666',
+                  color: canningUnlocked ? '#fff' : '#bbb',
+                  border: 'none',
+                  borderRadius: '8px 8px 0 0',
+                  cursor: canningUnlocked ? 'pointer' : 'not-allowed',
+                  fontWeight: activeTab === 'canning' ? 'bold' : 'normal',
+                  fontSize: '1rem',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  flexDirection: 'column'
+                }}
+                title={canningUnlocked ? 'Canning System' : `Canning unlocks at ${Math.round(5000 - experience).toLocaleString()} more experience`}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
+                  Canning
+                </div>
+                {!canningUnlocked && (
+                    <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                    Req: {Math.round(5000 - experience).toLocaleString()} exp
+                    </div>
+                )}
               </button>
             </div>
           </div>
-          {/* Merchant Progress Bar: only show if purchased */}
-          {autoSellOwned && (
-            <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days</span>
-              <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
-                <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
-                <span style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  color: '#222',
-                  fontSize: '0.75rem',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}>{Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%</span>
-              </div>
-            </div>
+
+          {/* Tab Content */}
+          {activeTab === 'growing' && (
+            <GrowingTab
+              veggies={veggies}
+              activeVeggie={activeVeggie}
+              totalPlotsUsed={totalPlotsUsed}
+              maxPlots={maxPlots}
+              money={money}
+              knowledge={knowledge}
+              experience={experience}
+              day={day}
+              globalAutoPurchaseTimer={globalAutoPurchaseTimer}
+              autoSellOwned={autoSellOwned}
+              season={season}
+              currentWeather={currentWeather}
+              greenhouseOwned={greenhouseOwned}
+              irrigationOwned={irrigationOwned}
+              heirloomOwned={heirloomOwned}
+              almanacLevel={almanacLevel}
+              almanacCost={almanacCost}
+              irrigationCost={irrigationCost}
+              irrigationKnCost={irrigationKnCost}
+              heirloomMoneyCost={heirloomMoneyCost}
+              heirloomKnowledgeCost={heirloomKnowledgeCost}
+              highestUnlockedVeggie={highestUnlockedVeggie}
+              farmTier={farmTier}
+              MERCHANT_DAYS={MERCHANT_DAYS}
+              MERCHANT_COST={MERCHANT_COST}
+              MERCHANT_KN_COST={MERCHANT_KN_COST}
+              GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
+              GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
+              HEIRLOOM_COST_PER_VEGGIE={HEIRLOOM_COST_PER_VEGGIE}
+              HEIRLOOM_KN_PER_VEGGIE={HEIRLOOM_KN_PER_VEGGIE}
+              initialVeggies={initialVeggies}
+              veggieSeasonBonuses={veggieSeasonBonuses}
+              daysToGrow={daysToGrow}
+              growthMultiplier={growthMultiplier}
+              setActiveVeggie={setActiveVeggie}
+              handleHarvest={handleHarvest}
+              handleToggleSell={handleToggleSell}
+              handleSell={handleSell}
+              handleBuyFertilizer={handleBuyFertilizer}
+              handleBuyHarvester={handleBuyHarvester}
+              handleBuyBetterSeeds={handleBuyBetterSeeds}
+              handleBuyAdditionalPlot={handleBuyAdditionalPlot}
+              handleBuyHarvesterSpeed={handleBuyHarvesterSpeed}
+              handleBuyAutoPurchaser={handleBuyAutoPurchaser}
+              handleBuyAlmanac={handleBuyAlmanac}
+              handleBuyIrrigation={handleBuyIrrigation}
+              handleBuyAutoSell={handleBuyAutoSell}
+              handleBuyGreenhouse={handleBuyGreenhouse}
+              handleBuyHeirloom={handleBuyHeirloom}
+              formatNumber={formatNumber}
+            />
           )}
-          <button
-            onClick={handleSell}
-            disabled={veggies.every((v) => !v.sellEnabled || v.stash === 0)}
-            aria-label="Sell all veggies (only those marked for selling)"
-          >
-            {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * v.salePrice : sum, 0).toFixed(2)})
-          </button>
-        </div>
-      </div>
-      {/* Veggie Agnostic Upgrades Section */}
-      <div style={{ width: '350px', marginLeft: '2rem', background: '#81b886ff', border: '1px solid #cceccc', borderRadius: '8px', padding: '1rem', boxShadow: '0 2px 8px #e0ffe0' }}>
-        <h2 style={{ textAlign: 'center', color: '#228833' }}>Upgrades</h2>
-        {/* Farmer's Almanac Upgrade - above Merchant */}
-        <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%' , marginBottom: '0.5rem' }}>
-            <img src="./Farmer's Almanac.png" alt="Farmer's Almanac" style={{ width: 32, height: 32, marginRight: 0 }} />
-            <strong>Almanac</strong>
-            <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '1.02rem' }}>+{(almanacLevel * 10).toFixed(0)}%</span>
-          </div>
-          <button
-            onClick={handleBuyAlmanac}
-            disabled={money < almanacCost}
-            title="Each level increases all veggie sale prices by 10%"
-            style={{
-              background: money >= almanacCost ? '#4a8' : '#aaa',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              border: money >= almanacCost ? '2px solid #ffeb3b' : 'none',
-              boxShadow: money >= almanacCost ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: money >= almanacCost ? 'pointer' : 'not-allowed',
-              fontWeight: 'bold',
-              transition: 'box-shadow 0.2s, border 0.2s',
-            }}
-          >
-            Buy (${almanacCost})
-          </button>
-        </div>
-        {/* Irrigation Upgrade */}
-        <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
-            <img src="./Irrigation.png" alt="Irrigation" style={{ width: 32, height: 32, marginRight: 4 }} />
-            <strong>Irrigation</strong>
-          </div>
-          <button
-            onClick={handleBuyIrrigation}
-            disabled={irrigationOwned || money < irrigationCost || knowledge < irrigationKnCost}
-            title="Negates drought penalty and provides +15% growth rate bonus."
-            style={{
-              background: irrigationOwned ? '#124212ff' : '#228833',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              border: !irrigationOwned && money >= irrigationCost && knowledge >= irrigationKnCost ? '2px solid #ffeb3b' : 'none',
-              boxShadow: !irrigationOwned && money >= irrigationCost && knowledge >= irrigationKnCost ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: irrigationOwned ? 'not-allowed' : (money >= irrigationCost && knowledge >= irrigationKnCost ? 'pointer' : 'not-allowed'),
-              fontWeight: 'bold',
-              transition: 'box-shadow 0.2s, border 0.2s',
-            }}
-          >
-            {irrigationOwned ? 'Purchased' : `$${irrigationCost.toLocaleString()} & ${irrigationKnCost} Kn`}
-          </button>
-        </div>
-        <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
-            <img src="./Merchant.png" alt="Merchant" style={{ width: 32, height: 32, marginRight: 0 }} />
-            <strong>Merchant</strong>
-          </div>
-          <button
-            onClick={handleBuyAutoSell}
-            disabled={autoSellOwned || money < MERCHANT_COST || knowledge < MERCHANT_KN_COST}
-            title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
-            style={{
-              background: autoSellOwned ? '#124212ff' : '#228833',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              border: !autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST ? '2px solid #ffeb3b' : 'none',
-              boxShadow: !autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: autoSellOwned ? 'not-allowed' : (money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST ? 'pointer' : 'not-allowed'),
-              fontWeight: 'bold',
-              transition: 'box-shadow 0.2s, border 0.2s',
-            }}
-          >
-            {autoSellOwned ? 'Purchased' : `$${MERCHANT_COST.toLocaleString()} & ${MERCHANT_KN_COST} Kn`}
-          </button>
-        </div>
-        <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
-            <img src="./Greenhouse.png" alt="Greenhouse" style={{ width: 32, height: 32, marginRight: 0 }} />
-            <strong>Greenhouse</strong>
-          </div>
-          <button
-            onClick={handleBuyGreenhouse}
-            disabled={greenhouseOwned || money < (GREENHOUSE_COST_PER_PLOT * maxPlots) || knowledge < (GREENHOUSE_KN_COST_PER_PLOT * maxPlots)}
-            title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${GREENHOUSE_COST_PER_PLOT.toLocaleString()} & ${maxPlots} x ${GREENHOUSE_KN_COST_PER_PLOT.toLocaleString()} Kn).`}
-            style={{
-              background: greenhouseOwned ? '#124212ff' : '#228833',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              border: !greenhouseOwned && money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? '2px solid #ffeb3b' : 'none',
-              boxShadow: !greenhouseOwned && money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: greenhouseOwned ? 'not-allowed' : (money >= (GREENHOUSE_COST_PER_PLOT * maxPlots) && knowledge >= (GREENHOUSE_KN_COST_PER_PLOT * maxPlots) ? 'pointer' : 'not-allowed'),
-              fontWeight: 'bold',
-              transition: 'box-shadow 0.2s, border 0.2s',
-            }}
-          >
-            {greenhouseOwned ? 'Purchased' : `$${(GREENHOUSE_COST_PER_PLOT * maxPlots).toLocaleString()} & ${(GREENHOUSE_KN_COST_PER_PLOT * maxPlots)} Kn`}
-          </button>
-        </div>
-        <div style={{ marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center', textAlign: 'center', width: '100%', marginBottom: '0.5rem' }}>
-            <img src="./Heirloom Seeds.png" alt="Heirloom Seeds" style={{ width: 32, height: 32, marginRight: 0 }} />
-            <strong>Heirloom Seeds</strong>
-          </div>
-          <button
-            onClick={handleBuyHeirloom}
-            disabled={heirloomOwned || money < heirloomMoneyCost || knowledge < heirloomKnowledgeCost}
-            title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${initialVeggies[highestUnlockedVeggie]?.name || 'Radish'} (${highestUnlockedVeggie + 1} × $${HEIRLOOM_COST_PER_VEGGIE.toLocaleString()} & ${highestUnlockedVeggie + 1} × ${HEIRLOOM_KN_PER_VEGGIE.toLocaleString()} Kn).`}
-            style={{
-              background: heirloomOwned ? '#124212ff' : '#228833',
-              color: '#fff',
-              padding: '0.5rem 1rem',
-              borderRadius: '5px',
-              border: !heirloomOwned && money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost ? '2px solid #ffeb3b' : 'none',
-              boxShadow: !heirloomOwned && money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost ? '0 0 8px 2px #ffe066' : 'none',
-              cursor: heirloomOwned ? 'not-allowed' : (money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost ? 'pointer' : 'not-allowed'),
-              fontWeight: 'bold',
-              transition: 'box-shadow 0.2s, border 0.2s',
-            }}
-          >
-            {heirloomOwned ? 'Purchased' : `$${heirloomMoneyCost.toLocaleString()} & ${heirloomKnowledgeCost} Kn`}
-          </button>
-        </div>
+
+
+      
+      {/* Canning Tab Content */}
+      {activeTab === 'canning' && (
+        <CanningTab
+          canningState={canningState}
+          canningUnlocked={canningUnlocked}
+          veggies={veggies}
+          money={money}
+          knowledge={knowledge}
+          startCanning={startCanning}
+          completeCanning={completeCanning}
+          canMakeRecipe={canMakeRecipe}
+          purchaseUpgrade={purchaseUpgrade}
+          recipeFilter={uiPreferences.canningRecipeFilter}
+          recipeSort={uiPreferences.canningRecipeSort}
+          onRecipeFilterChange={setCanningRecipeFilter}
+          onRecipeSortChange={setCanningRecipeSort}
+        />
+      )}
       </div>
     </div>
     
@@ -2437,7 +1918,10 @@ function App() {
             <div style={{ lineHeight: '1.6', color: '#555', textAlign: 'left' }}>
               {selectedInfoCategory === 'seasons' && (
                 <div>
-                  <h4>🌱 Seasons</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                    Seasons
+                  </h4>
                   <p>The game cycles through four seasons: <strong>Spring → Summer → Fall → Winter</strong>. Each season lasts ~90 days and affects how your vegetables grow.</p>
                   
                   <h5>Season Effects:</h5>
@@ -2572,7 +2056,10 @@ function App() {
               )}
               {selectedInfoCategory === 'veggies' && (
                 <div>
-                  <h4>🌱 Per-Vegetable Upgrades</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                    Per-Vegetable Upgrades
+                  </h4>
                   <p>Each vegetable has its own individual upgrades that only affect that specific crop:</p>
                   
                   <h5>🧪 Fertilizer (Growth Speed)</h5>
@@ -2668,7 +2155,7 @@ function App() {
                   <h5>🏠 Greenhouse</h5>
                   <ul>
                     <li><strong>Effect:</strong> Complete immunity to Winter and Snow penalties</li>
-                    <li><strong>Cost:</strong> ${GREENHOUSE_COST_PER_PLOT.toLocaleString()} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
+                    <li><strong>Cost:</strong> ${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
                     <li><strong>Winter Protection:</strong> Prevents -90% growth penalty in Winter</li>
                     <li><strong>Snow Protection:</strong> Prevents -100% growth penalty during Snow</li>
                     <li><strong>Value:</strong> Transforms Winter from terrible to normal growing season</li>
@@ -2906,8 +2393,9 @@ function App() {
       greenhouseOwned={greenhouseOwned}
       irrigationOwned={irrigationOwned}
       day={day}
+      onToggleSell={handleToggleSell}
     />
-  </>
+    </>
   );
 }
 

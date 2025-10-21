@@ -104,6 +104,7 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 - **Beginner-Friendly**: Detailed explanations of complex mechanics and optimal strategies
 - **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
 - **Modern UI**: Clean, responsive interface with intuitive navigation and helpful feedback
+- **Enhanced Stash Display**: Visual inventory showing individual veggie amounts on the left side
 
 ### 🏆 Progression Systems
 - Farm expansion and prestige mechanic with permanent bonuses
@@ -113,9 +114,7 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ## Roadmap
 
 ### 🎯 Next Priority Features
-- **Enhanced Stash Display**: Visual inventory showing individual veggie amounts on the left side
-- **Canning System**: New skill tree to process vegetables into canned goods (2x sale price)
-  - Canning progress bar and speed upgrades
+- **Canning System**: New skill tree to process vegetables into canned goods (Increased sale price)
 - **Weather & Event Log**: Track historical weather patterns and special events
 - **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush
 
