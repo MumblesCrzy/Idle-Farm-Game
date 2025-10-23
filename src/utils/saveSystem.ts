@@ -51,7 +51,7 @@ export interface ExtendedGameState {
   };
 }
 
-const CANNING_VERSION = 1;
+const CANNING_VERSION = 2;
 const GAME_STORAGE_KEY = 'farmIdleGameState';
 
 // Load game state with canning migration
@@ -72,13 +72,16 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
 // Save game state including canning
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
+    console.log('saveGameStateWithCanning: Attempting to save state:', state);
     const stateToSave = {
       ...state,
       canningVersion: CANNING_VERSION
     };
+    console.log('saveGameStateWithCanning: State to save with version:', stateToSave);
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
-  } catch {
-    // Silently fail like the original implementation
+    console.log('saveGameStateWithCanning: Successfully saved to localStorage with key:', GAME_STORAGE_KEY);
+  } catch (error) {
+    console.error('saveGameStateWithCanning: Error saving to localStorage:', error);
   }
 }
 
@@ -155,6 +158,19 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           costCurrency: 'money',
           maxLevel: 14,
           effect: 1,
+          unlocked: true
+        },
+        {
+          id: 'canner',
+          name: 'Canner',
+          description: 'Automatically starts canning processes every 10 seconds (gives reduced knowledge)',
+          type: 'automation',
+          level: 0,
+          cost: 5000,
+          baseCost: 5000,
+          costCurrency: 'knowledge',
+          maxLevel: 1,
+          effect: 0,
           unlocked: true
         }
       ],

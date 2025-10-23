@@ -58,6 +58,19 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     maxLevel: 14,
     effect: 1, // Number of additional simultaneous processes
     unlocked: true
+  },
+  {
+    id: 'canner',
+    name: 'Canner',
+    description: 'Automatically starts canning processes every 10 seconds (gives reduced knowledge)',
+    type: 'automation',
+    level: 0,
+    cost: 5000,
+    baseCost: 5000,
+    costCurrency: 'knowledge',
+    maxLevel: 1,
+    effect: 0, // Binary on/off state
+    unlocked: true
   }
 ];
 
@@ -85,7 +98,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   setMoney: (value: number | ((prev: number) => number)) => void,
   knowledge: number,
   setKnowledge: (value: number | ((prev: number) => number)) => void,
-  initialCanningState?: CanningState
+  initialCanningState?: CanningState,
+  recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit'
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -202,7 +216,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   }, [veggies]);
   
   // Start a canning process
-  const startCanning = useCallback((recipeId: string): boolean => {
+  const startCanning = useCallback((recipeId: string, automated: boolean = false): boolean => {
     const recipe = canningState.recipes.find(r => r.id === recipeId);
     if (!recipe || !recipe.unlocked || !canMakeRecipe(recipe)) {
       return false;
@@ -235,7 +249,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       startTime: Date.now(),
       remainingTime: processingTime,
       totalTime: processingTime,
-      completed: false
+      completed: false,
+      automated
     };
     
     setCanningState(prev => ({
@@ -286,7 +301,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     
     // Calculate knowledge reward based on recipe complexity
     // Base: 2 knowledge per ingredient, with bonus items giving extra knowledge
-    const knowledgeReward = (recipe.ingredients.length * 2) * totalItems;
+    // Automated processes give 1/10th knowledge to balance automation convenience
+    const baseKnowledgeReward = (recipe.ingredients.length * 2) * totalItems;
+    const knowledgeReward = process.automated ? Math.ceil(baseKnowledgeReward / 10) : baseKnowledgeReward;
     
     // Add money and knowledge
     setMoney(prev => prev + totalEarnings);
@@ -395,6 +412,135 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }
   }, [canningState.activeProcesses, completeCanning]);
   
+  // Extract canner state for stable dependencies
+  const cannerUpgrade = canningState.upgrades.find(u => u.id === 'canner');
+  const cannerLevel = cannerUpgrade?.level || 0;
+  const autoCanningEnabled = canningState.autoCanning.enabled;
+  const unlockedRecipeCount = canningState.recipes.filter(r => r.unlocked).length;
+
+  // Function to sort recipes based on current sort preference
+  const sortRecipes = useCallback((recipes: Recipe[]) => {
+    // Helper functions to match CanningPanel logic
+    const getBetterSeedsMultiplier = (recipe: Recipe) => {
+      if (recipe.ingredients.length === 0) return 1;
+      
+      const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
+        const veggie = veggies.find(v => v.name === ingredient.veggieName);
+        return sum + (veggie?.betterSeedsLevel || 0);
+      }, 0);
+      
+      const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
+      return Math.pow(1.25, averageBetterSeedsLevel);
+    };
+
+    const getEffectiveSalePrice = (recipe: Recipe) => {
+      const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
+      const efficiencyMultiplier = efficiencyUpgrade?.effect || 1;
+      return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe);
+    };
+
+    const getRawValue = (recipe: Recipe) => {
+      return recipe.ingredients.reduce((sum, ing) => {
+        const veggie = veggies.find(v => v.name === ing.veggieName);
+        return sum + (veggie?.salePrice || 0) * ing.quantity;
+      }, 0);
+    };
+
+    const getProfit = (recipe: Recipe) => {
+      return getEffectiveSalePrice(recipe) - getRawValue(recipe);
+    };
+
+    return [...recipes].sort((a, b) => {
+      switch (recipeSort) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'profit': {
+          const profitA = getProfit(a);
+          const profitB = getProfit(b);
+          return profitB - profitA; // Descending (higher profit first)
+        }
+        case 'time':
+          return a.processingTime - b.processingTime; // Ascending (faster first)
+        case 'difficulty':
+          return a.ingredients.length - b.ingredients.length; // Ascending (fewer ingredients first)
+        default:
+          return 0;
+      }
+    });
+  }, [recipeSort, veggies, canningState.upgrades]);
+
+  // Auto-canning timer - runs every 10 seconds when Canner upgrade is purchased and enabled
+  useEffect(() => {
+    const cannerEnabled = cannerLevel > 0 && autoCanningEnabled;
+    
+    console.log('Auto-canning effect triggered:', {
+      cannerLevel,
+      autoCanningEnabled,
+      cannerEnabled
+    });
+    
+    if (!cannerEnabled) return;
+    
+    const autoCanningInterval = setInterval(() => {
+      console.log('Auto-canning interval triggered');
+      
+      // Use a fresh state getter to avoid stale closures
+      setCanningState(currentState => {
+        const currentActiveProcesses = currentState.activeProcesses.length;
+        const currentMaxProcesses = currentState.maxSimultaneousProcesses;
+        
+        console.log('Auto-canning: Process check', {
+          currentActiveProcesses,
+          currentMaxProcesses,
+          hasSlots: currentActiveProcesses < currentMaxProcesses
+        });
+        
+        // Only try to start new processes if we have available slots
+        if (currentActiveProcesses < currentMaxProcesses) {
+          // Get unlocked recipes first
+          const unlockedRecipes = currentState.recipes.filter(recipe => recipe.unlocked);
+          
+          console.log('Auto-canning: Unlocked recipes', unlockedRecipes.map(r => r.name));
+          
+          // Sort recipes according to current preference
+          const sortedRecipes = sortRecipes(unlockedRecipes);
+          
+          console.log('Auto-canning: Sorted recipes', sortedRecipes.map(r => r.name));
+          
+          // Find the first recipe that we can actually make (has enough ingredients)
+          let recipeToStart = null;
+          for (const recipe of sortedRecipes) {
+            if (canMakeRecipe(recipe)) {
+              recipeToStart = recipe;
+              break;
+            }
+          }
+          
+          if (recipeToStart) {
+            console.log('Auto-canning: Found recipe with resources:', recipeToStart.name);
+            // Start the recipe that has enough ingredients
+            setTimeout(() => {
+              const success = startCanning(recipeToStart.id, true);
+              console.log('Auto-canning: Start result', success);
+            }, 0);
+          } else {
+            console.log('Auto-canning: No recipes have enough ingredients');
+          }
+        } else {
+          console.log('Auto-canning: All process slots full');
+        }
+        
+        return currentState; // Return unchanged state
+      });
+    }, 10000); // 10 seconds
+    
+    console.log('Auto-canning timer started');
+    return () => {
+      console.log('Auto-canning timer stopped');
+      clearInterval(autoCanningInterval);
+    };
+  }, [cannerLevel, autoCanningEnabled, unlockedRecipeCount]);
+  
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {
     return canningState.recipes.filter(recipe => 
@@ -422,6 +568,17 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     );
   }, [veggies]);
   
+  // Toggle auto-canning enabled state
+  const toggleAutoCanning = useCallback(() => {
+    setCanningState(prev => ({
+      ...prev,
+      autoCanning: {
+        ...prev.autoCanning,
+        enabled: !prev.autoCanning.enabled
+      }
+    }));
+  }, []);
+  
   return {
     canningState,
     startCanning,
@@ -429,6 +586,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     purchaseUpgrade,
     canMakeRecipe,
     getAvailableRecipes,
-    getRecipeAnalysis
+    getRecipeAnalysis,
+    toggleAutoCanning
   };
 }

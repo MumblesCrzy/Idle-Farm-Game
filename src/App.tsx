@@ -220,7 +220,7 @@ const COST_CONFIGS: Record<string, CostConfig> = {
 
 const calculateExpRequirement = (index: number): number => {
   if (index === 0) return 0; // First veggie is free
-  return Math.floor(75 * Math.pow(1.8, index));
+  return Math.floor(50 * Math.pow(1.9, index));
 };
 
 const calculateInitialCost = (type: keyof typeof COST_CONFIGS, index: number): number => {
@@ -503,7 +503,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [currentWeather, setCurrentWeather] = useState<WeatherType>('Clear');
   // Only one declaration for irrigationOwned and setIrrigationOwned
   // Irrigation upgrade state
-  const loaded = loadGameStateWithCanning();
+  
+  // Load game state fresh each time - this ensures imports work correctly
+  const getLoadedState = () => {
+    const result = loadGameStateWithCanning();
+    console.log('GameProvider: Raw localStorage data:', localStorage.getItem('farmIdleGameState'));
+    console.log('GameProvider: Parsed result:', result);
+    return result;
+  };
+  const loaded = getLoadedState();
+  console.log('GameProvider: Loading state with experience =', loaded?.experience || 0);
+  
   // Track farm tier (number of times farm has been purchased)
   const [farmTier, setFarmTier] = useState<number>(loaded?.farmTier ?? 1);
   const [irrigationOwned, setIrrigationOwned] = useState(loaded?.irrigationOwned ?? false);
@@ -758,29 +768,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       document.title = 'Farm Idle Game';
     }
   }, [veggies]);
-  // Save game state on any change
-  useEffect(() => {
-  saveGameState({
-    veggies,
-    money,
-    experience,
-    knowledge,
-    activeVeggie,
-    day,
-    greenhouseOwned,
-    heirloomOwned,
-    autoSellOwned,
-    almanacLevel,
-    almanacCost,
-    maxPlots,
-    farmTier,
-    farmCost,
-    irrigationOwned,
-    currentWeather,
-    highestUnlockedVeggie
-  });
-  }, [veggies, money, experience, knowledge, activeVeggie, day, greenhouseOwned, heirloomOwned, autoSellOwned, currentWeather, farmCost, highestUnlockedVeggie]);
-
+  
   const timerRef = useRef<number | null>(null);
   // Growth timer for all unlocked veggies
   useEffect(() => {
@@ -1244,10 +1232,16 @@ function App() {
   // Tab system state
   const [activeTab, setActiveTab] = useState<'growing' | 'canning'>('growing');
   
-  // Load initial canning state
+  // Load initial canning state fresh each time
   const [initialCanningState] = useState(() => {
-    const loaded = loadGameStateWithCanning();
-    return loaded?.canningState || undefined;
+    try {
+      const loaded = loadGameStateWithCanning();
+      console.log('Loading canning state:', loaded?.canningState ? 'Found saved state' : 'No saved state');
+      return loaded?.canningState || undefined;
+    } catch (error) {
+      console.error('Error loading canning state:', error);
+      return undefined;
+    }
   });
 
   // Load and manage UI preferences
@@ -1287,21 +1281,35 @@ function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
+        console.log('Import: Loaded data from file:', data);
         
         // Validate and migrate data with canning support
         if (!validateCanningImport(data)) {
+          console.error('Import: Validation failed for data:', data);
           alert("Invalid save file format.");
           return;
         }
+        console.log('Import: Data validation passed');
         
         // Save the imported data to localStorage
+        console.log('Import: About to save data:', data);
         saveGameStateWithCanning(data);
+        console.log('Import: Data saved to localStorage');
+        
+        // Verify it was saved correctly
+        const verification = loadGameStateWithCanning();
+        console.log('Import: Verification load from localStorage:', verification);
+        
+        // Also check raw localStorage to make sure it's actually there
+        const rawStored = localStorage.getItem('farmIdleGameState');
+        console.log('Import: Raw localStorage after save:', rawStored ? JSON.parse(rawStored) : 'null');
         
         // Reload the page to reinitialize all systems with imported data
         alert("Save imported successfully! The page will reload to apply all changes.");
         window.location.reload();
         
-      } catch {
+      } catch (error) {
+        console.error('Import: Error during import:', error);
         alert("Failed to import save file.");
       }
     };
@@ -1362,15 +1370,49 @@ function App() {
     startCanning,
     completeCanning,
     purchaseUpgrade,
-    canMakeRecipe
-  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState);
+    canMakeRecipe,
+    toggleAutoCanning
+  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort);
 
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
   const canningUnlocked = experience >= 5000;
 
-  // Save canning state when it changes
+  // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
+    // If experience is significantly high, we likely just imported data
+    if (experience > 10000) {
+      console.log('Detected imported data with experience:', experience);
+      justImportedRef.current = true;
+      // Reset the flag after a short delay to allow normal auto-saving later
+      setTimeout(() => {
+        console.log('Re-enabling auto-save after import delay');
+        justImportedRef.current = false;
+      }, 5000);
+    }
+  }, [experience]);
+
+  // Throttled save system - save at most once every 30 seconds
+  const saveTimeoutRef = useRef<number | null>(null);
+  const lastSaveTimeRef = useRef<number>(Date.now());
+  const pendingSaveRef = useRef<boolean>(false);
+  const justImportedRef = useRef<boolean>(false);
+
+  const performSave = useCallback(() => {
+    // Don't auto-save if we just imported data
+    if (justImportedRef.current) {
+      console.log('Skipping auto-save because data was just imported');
+      justImportedRef.current = false;
+      return;
+    }
+    
     if (canningState) {
+      console.log('Saving canning state:', {
+        upgradeCount: canningState.upgrades?.length,
+        recipeCount: canningState.recipes?.length,
+        unlockedRecipeCount: canningState.unlockedRecipes?.length,
+        canningExperience: canningState.canningExperience,
+        totalItemsCanned: canningState.totalItemsCanned
+      });
       const gameState = {
         veggies,
         money,
@@ -1394,8 +1436,57 @@ function App() {
         uiPreferences
       };
       saveGameStateWithCanning(gameState);
+      lastSaveTimeRef.current = Date.now();
+      pendingSaveRef.current = false;
     }
   }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
+
+  // Throttled save effect
+  useEffect(() => {
+    const now = Date.now();
+    const timeSinceLastSave = now - lastSaveTimeRef.current;
+    
+    // If it's been more than 30 seconds since last save, save immediately
+    if (timeSinceLastSave >= 30000) {
+      performSave();
+    } else if (!pendingSaveRef.current) {
+      // Otherwise, schedule a save for when the 30 second window is up
+      pendingSaveRef.current = true;
+      const timeUntilNextSave = 30000 - timeSinceLastSave;
+      
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      saveTimeoutRef.current = setTimeout(() => {
+        performSave();
+      }, timeUntilNextSave);
+    }
+  }, [performSave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Force save on page unload (refresh/close)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Force immediate save if there are pending changes
+      if (pendingSaveRef.current || Date.now() - lastSaveTimeRef.current >= 30000) {
+        performSave();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [performSave]);
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
@@ -1517,6 +1608,55 @@ function App() {
     irrigationOwned
   );
   const daysToGrow = growthMultiplier > 0 ? Math.ceil(100 / growthMultiplier) : 0;
+
+  // Preload all images to prevent loading delays when switching tabs
+  useEffect(() => {
+    const allImages = [
+      // Tab and UI icons
+      './Growing.png', './Canning.png', './Plots.png', './Money.png', './Knowledge.png', './Experience.png',
+      
+      // Season images
+      './spring.png', './summer.png', './fall.png', './winter.png',
+      
+      // Weather images
+      './Clear.png', './Rain.png', './Drought.png', './Storm.png', './Heatwave.png', './Snow.png',
+      
+      // All vegetable images
+      './Radish.png', './Carrots.png', './Broccoli.png', './Lettuce.png', './Onions.png', 
+      './Tomatoes.png', './Peppers.png', './Cucumbers.png', './Green Beans.png', './Zucchini.png',
+      
+      // Growing tab upgrade images
+      './Fertilizer.png', './Better Seeds.png', './Additional Plot.png', './Auto Harvester.png', './Harvester Speed.png',
+      './Farmer\'s Almanac.png', './Irrigation.png', './Merchant.png', './Greenhouse.png', './Heirloom Seeds.png',
+      
+      // Auto-purchaser images
+      './Assistant.png', './Cultivator.png', './Surveyor.png', './Mechanic.png',
+      
+      // Canning upgrade images
+      './Quick Hands.png', './Family Recipe.png', './Heirloom Touch.png', './Batch Canning.png', './Canner.png',
+      
+      // Special images
+      './Archie.png'
+    ];
+
+    // Preload using both methods for maximum browser compatibility
+    allImages.forEach(src => {
+      // Method 1: Create Image object for immediate loading
+      const img = new Image();
+      img.src = src;
+      
+      // Method 2: Add preload link for better caching
+      if (!document.querySelector(`link[href="${src}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = src;
+        document.head.appendChild(link);
+      }
+    });
+
+    console.log('All images preloading started');
+  }, []); // Only run once on mount
 
   return (
     <>
@@ -1680,7 +1820,7 @@ function App() {
                 )}
                 <div />
                 <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge / 3 > 0 ? formatNumber(Math.floor(knowledge / 3), 1) : 0}Kn
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge / 3 > 0 ? formatNumber(Math.floor(knowledge / 3), 1) : 0}n
                 {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
               </span>
               </button>
@@ -1817,6 +1957,7 @@ function App() {
           completeCanning={completeCanning}
           canMakeRecipe={canMakeRecipe}
           purchaseUpgrade={purchaseUpgrade}
+          toggleAutoCanning={toggleAutoCanning}
           recipeFilter={uiPreferences.canningRecipeFilter}
           recipeSort={uiPreferences.canningRecipeSort}
           onRecipeFilterChange={setCanningRecipeFilter}

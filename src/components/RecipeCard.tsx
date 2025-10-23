@@ -95,7 +95,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   return (
     <div
       style={{
-        border: `2px solid ${canMake ? '#4CAF50' : '#ccc'}`,
+        border: `2px solid ${canMake ? '#700e01' : '#ccc'}`,
         borderRadius: '6px',
         padding: '8px',
         margin: '4px',
@@ -195,7 +195,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           style={{
             width: '100%',
             padding: '6px',
-            backgroundColor: '#4CAF50',
+            backgroundColor: '#700e01',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -205,10 +205,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
             transition: 'background-color 0.2s'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#45a049';
+            e.currentTarget.style.backgroundColor = '#620000';
+                                                        
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#4CAF50';
+            e.currentTarget.style.backgroundColor = '#700e01';
           }}
         >
           Start Canning

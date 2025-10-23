@@ -13,6 +13,7 @@ interface CanningTabProps {
   completeCanning: (processIndex: number) => void;
   canMakeRecipe: (recipe: any) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
+  toggleAutoCanning: () => void;
   recipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty';
   onRecipeFilterChange: (filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet') => void;
@@ -29,6 +30,7 @@ const CanningTab: React.FC<CanningTabProps> = ({
   completeCanning,
   canMakeRecipe,
   purchaseUpgrade,
+  toggleAutoCanning,
   recipeFilter,
   recipeSort,
   onRecipeFilterChange,
@@ -66,6 +68,8 @@ const CanningTab: React.FC<CanningTabProps> = ({
         money={money}
         knowledge={knowledge}
         onPurchaseUpgrade={purchaseUpgrade}
+        canningState={canningState}
+        onToggleAutoCanning={toggleAutoCanning}
       />
     </>
   );

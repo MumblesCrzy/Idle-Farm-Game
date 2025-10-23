@@ -307,6 +307,8 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
         onStartCanning={handleStartCanning}
         veggies={veggies}
         canMake={selectedRecipe ? canMakeRecipe(selectedRecipe) : false}
+        efficiencyMultiplier={efficiencyMultiplier}
+        speedMultiplier={speedMultiplier}
       />
     </div>
   );

@@ -366,6 +366,16 @@ function UpgradeButton({
               }
             </div>
           )}
+          {isOwned && (
+            <div style={{ fontSize: '11px', color: '#ccc', marginTop: '4px' }}>
+              Owned
+            </div>
+          )}
+          {isMaxLevel && (
+            <div style={{ fontSize: '11px', color: '#ccc', marginTop: '4px' }}>
+              Max Level
+            </div>
+          )}
         </div>
       </>
     );
@@ -651,7 +661,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 isMaxLevel={veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel}
                 level={veggies[activeVeggie].fertilizerLevel}
                 flex={true}
-                effect={`Growth time: ${veggies[activeVeggie].fertilizerLevel > 0 ? `${100 - (veggies[activeVeggie].fertilizerLevel * 5)}%` : '100%'}`}
+                effect={`Growth rate: ${veggies[activeVeggie].fertilizerLevel > 0 ? `+${(veggies[activeVeggie].fertilizerLevel * 5)}%` : '+0%'}`}
               />
               <AutoPurchaserButton
                 autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'assistant')!}
@@ -708,6 +718,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 isMaxLevel={totalPlotsUsed >= maxPlots}
                 level={veggies[activeVeggie].additionalPlotLevel}
                 flex={true}
+                effect={`Extra veggies per harvest: +${veggies[activeVeggie].additionalPlotLevel}`}
               />
               <AutoPurchaserButton
                 autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'surveyor')!}
@@ -734,7 +745,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
               onClick={() => handleBuyHarvester(activeVeggie)}
               disabled={veggies[activeVeggie].harvesterOwned || money < veggies[activeVeggie].harvesterCost}
               isOwned={veggies[activeVeggie].harvesterOwned}
-              effect={veggies[activeVeggie].harvesterOwned ? 'Auto-harvests when ready' : undefined}
+              effect="Auto-harvests when ready"
             />
           </div>
           
@@ -755,7 +766,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                   disabled={money < (veggies[activeVeggie].harvesterSpeedCost ?? 50)}
                   level={veggies[activeVeggie].harvesterSpeedLevel ?? 0}
                   flex={true}
-                  effect={`Harvest time: ${(veggies[activeVeggie].harvesterSpeedLevel ?? 0) > 0 ? `${100 - ((veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 5)}%` : '100%'}`}
+                  effect={`Harvest time: ${(veggies[activeVeggie].harvesterSpeedLevel ?? 0) > 0 ? `${Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))}s` : '50s'}`}
                 />
                 <AutoPurchaserButton
                   autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'mechanic')!}
@@ -880,7 +891,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             onClick={handleBuyIrrigation}
             disabled={irrigationOwned || money < irrigationCost || knowledge < irrigationKnCost}
             isOwned={irrigationOwned}
-            effect={irrigationOwned ? '+15% growth rate, drought immunity' : undefined}
+            effect="+15% growth rate, drought immunity"
           />
         </div>
 
@@ -899,7 +910,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             onClick={handleBuyAutoSell}
             disabled={autoSellOwned || money < MERCHANT_COST || knowledge < MERCHANT_KN_COST}
             isOwned={autoSellOwned}
-            effect={autoSellOwned ? `Auto-sells every ${MERCHANT_DAYS} days` : undefined}
+            effect={`Auto-sells every ${MERCHANT_DAYS} days`}
           />
         </div>
 

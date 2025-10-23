@@ -26,6 +26,7 @@ export type CanningProcess = {
   remainingTime: number; // How much time is left in seconds
   totalTime: number; // Total processing time (including speed bonuses)
   completed: boolean; // Whether this process is finished
+  automated?: boolean; // Whether this process was started automatically
 };
 
 export type CanningUpgrade = {

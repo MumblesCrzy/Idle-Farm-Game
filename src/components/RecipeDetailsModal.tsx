@@ -6,8 +6,10 @@ interface RecipeDetailsModalProps {
   isVisible: boolean;
   onClose: () => void;
   onStartCanning: (recipeId: string) => void;
-  veggies: Array<{name: string, stash: number, salePrice: number}>;
+  veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
   canMake: boolean;
+  efficiencyMultiplier?: number;
+  speedMultiplier?: number;
 }
 
 const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
@@ -16,9 +18,28 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
   onClose,
   onStartCanning,
   veggies,
-  canMake
+  canMake,
+  efficiencyMultiplier = 1,
+  speedMultiplier = 1
 }) => {
   if (!isVisible || !recipe) return null;
+
+  // Calculate better seeds multiplier based on ingredient better seeds levels
+  const getBetterSeedsMultiplier = () => {
+    if (recipe.ingredients.length === 0) return 1;
+    
+    // Calculate average better seeds level of all ingredients
+    const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
+      const veggie = veggies.find(v => v.name === ingredient.veggieName);
+      return sum + (veggie?.betterSeedsLevel || 0);
+    }, 0);
+    
+    const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
+    
+    // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
+    // This keeps canning competitive but not overpowered
+    return Math.pow(1.25, averageBetterSeedsLevel);
+  };
 
   const getRawValue = () => {
     return recipe.ingredients.reduce((total, ingredient) => {
@@ -27,15 +48,25 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
     }, 0);
   };
 
+  const getEffectiveSalePrice = () => {
+    return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier();
+  };
+
+  const getEffectiveProcessingTime = () => {
+    return Math.ceil(recipe.baseProcessingTime * speedMultiplier);
+  };
+
   const getProfit = () => {
     const rawValue = getRawValue();
-    return recipe.salePrice - rawValue;
+    const effectiveSalePrice = getEffectiveSalePrice();
+    return effectiveSalePrice - rawValue;
   };
 
   const getProfitMargin = () => {
     const rawValue = getRawValue();
     if (rawValue === 0) return 0;
-    return ((recipe.salePrice - rawValue) / rawValue) * 100;
+    const effectiveSalePrice = getEffectiveSalePrice();
+    return ((effectiveSalePrice - rawValue) / rawValue) * 100;
   };
 
   const getMissingIngredients = () => {
@@ -200,13 +231,40 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
             <div>
               <span style={{ color: '#666' }}>Processing Time:</span>
               <div style={{ fontWeight: 'bold', color: '#333' }}>
-                {recipe.processingTime}s
+                {getEffectiveProcessingTime()}s
+                {speedMultiplier !== 1 && (
+                  <span style={{ 
+                    fontSize: '10px', 
+                    color: '#666', 
+                    marginLeft: '4px' 
+                  }}>
+                    (base: {recipe.baseProcessingTime}s)
+                  </span>
+                )}
               </div>
             </div>
             <div>
               <span style={{ color: '#666' }}>Sale Price:</span>
               <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                ${recipe.salePrice.toFixed(2)}
+                ${getEffectiveSalePrice().toFixed(2)}
+                {(efficiencyMultiplier !== 1 || getBetterSeedsMultiplier() !== 1) && (
+                  <span style={{ 
+                    fontSize: '10px', 
+                    color: '#666', 
+                    marginLeft: '4px' 
+                  }}>
+                    (base: ${recipe.salePrice.toFixed(2)})
+                  </span>
+                )}
+                {getBetterSeedsMultiplier() > 1 && (
+                  <div style={{ 
+                    fontSize: '9px', 
+                    color: '#8BC34A', 
+                    fontWeight: 'normal'
+                  }}>
+                    🌱 Better Seeds: +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
+                  </div>
+                )}
               </div>
             </div>
             <div>
