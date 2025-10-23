@@ -10,6 +10,7 @@ type ProgressBarProps = {
 const ProgressBar: React.FC<ProgressBarProps> = ({ value, max = 100, color, height }) => (
   <div
     className="progress-bar"
+    data-testid="progress-bar"
     style={{ height: `${typeof height === 'number' ? height : 12}px`, background: '#eee', borderRadius: '6px', overflow: 'hidden' }}
   >
     <div

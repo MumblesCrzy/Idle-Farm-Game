@@ -24,5 +24,6 @@ dist-ssr
 *.sw?
 RELEASE_NOTES*
 ARCHIE_FEATURE*
+TEST_DOCUMENTATION*
 itch_io*
 docs/*
