@@ -72,14 +72,11 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
 // Save game state including canning
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
-    console.log('saveGameStateWithCanning: Attempting to save state:', state);
     const stateToSave = {
       ...state,
       canningVersion: CANNING_VERSION
     };
-    console.log('saveGameStateWithCanning: State to save with version:', stateToSave);
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
-    console.log('saveGameStateWithCanning: Successfully saved to localStorage with key:', GAME_STORAGE_KEY);
   } catch (error) {
     console.error('saveGameStateWithCanning: Error saving to localStorage:', error);
   }
@@ -272,18 +269,6 @@ export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
     
     return veggie;
   });
-}
-
-// Export functions for import/export
-export function exportSaveWithCanning(state: ExtendedGameState): string {
-  const saveData = {
-    ...state,
-    canningVersion: CANNING_VERSION,
-    exportTimestamp: new Date().toISOString(),
-    gameVersion: '1.5.0'
-  };
-  
-  return JSON.stringify(saveData, null, 2);
 }
 
 export function validateCanningImport(data: any): data is ExtendedGameState {

@@ -470,8 +470,6 @@ type GameState = {
   heirloomKnowledgeCost: number;
 };
 
-const FARM_BASE_COST = 500;
-
 const GameContext = createContext<GameState | undefined>(undefined);
 
 const getSeason = (day: number) => {
@@ -507,12 +505,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Load game state fresh each time - this ensures imports work correctly
   const getLoadedState = () => {
     const result = loadGameStateWithCanning();
-    console.log('GameProvider: Raw localStorage data:', localStorage.getItem('farmIdleGameState'));
-    console.log('GameProvider: Parsed result:', result);
     return result;
   };
   const loaded = getLoadedState();
-  console.log('GameProvider: Loading state with experience =', loaded?.experience || 0);
   
   // Track farm tier (number of times farm has been purchased)
   const [farmTier, setFarmTier] = useState<number>(loaded?.farmTier ?? 1);
@@ -1281,28 +1276,15 @@ function App() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        console.log('Import: Loaded data from file:', data);
         
         // Validate and migrate data with canning support
         if (!validateCanningImport(data)) {
-          console.error('Import: Validation failed for data:', data);
           alert("Invalid save file format.");
           return;
         }
-        console.log('Import: Data validation passed');
         
         // Save the imported data to localStorage
-        console.log('Import: About to save data:', data);
         saveGameStateWithCanning(data);
-        console.log('Import: Data saved to localStorage');
-        
-        // Verify it was saved correctly
-        const verification = loadGameStateWithCanning();
-        console.log('Import: Verification load from localStorage:', verification);
-        
-        // Also check raw localStorage to make sure it's actually there
-        const rawStored = localStorage.getItem('farmIdleGameState');
-        console.log('Import: Raw localStorage after save:', rawStored ? JSON.parse(rawStored) : 'null');
         
         // Reload the page to reinitialize all systems with imported data
         alert("Save imported successfully! The page will reload to apply all changes.");
@@ -1362,7 +1344,7 @@ function App() {
       resetGame();
     }
   };
-  const { resetGame, veggies, setVeggies, money, setMoney, setExperience, experience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // Initialize canning system
   const {
@@ -1618,7 +1600,7 @@ function App() {
       './Growing.png', './Canning.png', './Plots.png', './Money.png', './Knowledge.png', './Experience.png',
       
       // Season images
-      './spring.png', './summer.png', './fall.png', './winter.png',
+      './Spring.png', './Summer.png', './Fall.png', './Winter.png',
       
       // Weather images
       './Clear.png', './Rain.png', './Drought.png', './Storm.png', './Heatwave.png', './Snow.png',
