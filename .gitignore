@@ -25,6 +25,7 @@ dist-ssr
 
 # Test coverage reports
 coverage/
+coverage/*
 *.lcov
 
 # Documentation and release files
