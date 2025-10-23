@@ -214,7 +214,7 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = ({
       flexDirection: 'column',
       gap: '8px'
     }}>
-      {upgrades.map(upgrade => {
+      {upgrades?.map(upgrade => {
         // Special handling for Canner upgrade to combine purchase and toggle
         if (upgrade.id === 'canner') {
           const isPurchased = upgrade.level > 0;

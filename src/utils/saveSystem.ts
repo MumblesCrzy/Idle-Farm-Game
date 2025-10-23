@@ -51,7 +51,7 @@ export interface ExtendedGameState {
   };
 }
 
-const CANNING_VERSION = 2;
+const CANNING_VERSION = 3; // Incremented to force migration for canner upgrade
 const GAME_STORAGE_KEY = 'farmIdleGameState';
 
 // Load game state with canning migration
@@ -84,8 +84,16 @@ export function saveGameStateWithCanning(state: ExtendedGameState): void {
 
 // Migrate old save data to include canning
 function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
+  console.log('migrateCanningSaveData called:', {
+    hasCanningState: !!loaded.canningState,
+    canningVersion: loaded.canningVersion,
+    currentVersion: CANNING_VERSION,
+    needsMigration: !loaded.canningState || !loaded.canningVersion || loaded.canningVersion < CANNING_VERSION
+  });
+
   // If no canning data exists or version is outdated, create default
   if (!loaded.canningState || !loaded.canningVersion || loaded.canningVersion < CANNING_VERSION) {
+    console.log('Performing canning migration...');
     const defaultCanningState: CanningState = {
       recipes: INITIAL_RECIPES.map(config => ({
         id: config.id,
@@ -178,21 +186,24 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
 
     // Migrate existing canning state if it exists
     if (loaded.canningState) {
+      // Store reference to original canning state before overriding
+      const originalCanningState = loaded.canningState;
+      
       // Preserve user progress
-      defaultCanningState.totalItemsCanned = loaded.canningState.totalItemsCanned || 0;
-      defaultCanningState.canningExperience = loaded.canningState.canningExperience || 0;
+      defaultCanningState.totalItemsCanned = originalCanningState.totalItemsCanned || 0;
+      defaultCanningState.canningExperience = originalCanningState.canningExperience || 0;
       
       // Preserve unlocked recipes
-      if (loaded.canningState.unlockedRecipes) {
-        defaultCanningState.unlockedRecipes = loaded.canningState.unlockedRecipes;
+      if (originalCanningState.unlockedRecipes) {
+        defaultCanningState.unlockedRecipes = originalCanningState.unlockedRecipes;
         defaultCanningState.recipes.forEach(recipe => {
           recipe.unlocked = defaultCanningState.unlockedRecipes.includes(recipe.id);
         });
       }
       
-      // Preserve upgrade levels
-      if (loaded.canningState.upgrades) {
-        loaded.canningState.upgrades.forEach(savedUpgrade => {
+      // Preserve upgrade levels - always use the default upgrades as base to ensure new upgrades are included
+      if (originalCanningState.upgrades) {
+        originalCanningState.upgrades.forEach(savedUpgrade => {
           const defaultUpgrade = defaultCanningState.upgrades.find(u => u.id === savedUpgrade.id);
           if (defaultUpgrade) {
             defaultUpgrade.level = savedUpgrade.level;
@@ -203,16 +214,16 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
       }
       
       // Preserve auto-canning config
-      if (loaded.canningState.autoCanning) {
+      if (originalCanningState.autoCanning) {
         defaultCanningState.autoCanning = {
           ...DEFAULT_AUTO_CANNING_CONFIG,
-          ...loaded.canningState.autoCanning
+          ...originalCanningState.autoCanning
         };
       }
 
       // Migrate activeProcesses to include totalTime field
-      if (loaded.canningState.activeProcesses && Array.isArray(loaded.canningState.activeProcesses)) {
-        defaultCanningState.activeProcesses = loaded.canningState.activeProcesses.map(process => {
+      if (originalCanningState.activeProcesses && Array.isArray(originalCanningState.activeProcesses)) {
+        defaultCanningState.activeProcesses = originalCanningState.activeProcesses.map(process => {
           // If process doesn't have totalTime, calculate it from remainingTime (best guess)
           if (typeof process.totalTime !== 'number') {
             const recipe = defaultCanningState.recipes.find(r => r.id === process.recipeId);
@@ -225,6 +236,9 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           return process;
         });
       }
+      
+      // Override the loaded state with the updated default state to ensure all upgrades are present
+      loaded.canningState = defaultCanningState;
     }
 
     loaded.canningState = defaultCanningState;
@@ -242,6 +256,12 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
 
   // Update version
   loaded.canningVersion = CANNING_VERSION;
+  
+  console.log('Migration completed:', {
+    finalUpgrades: loaded.canningState?.upgrades?.map(u => u.id),
+    hasCannerUpgrade: loaded.canningState?.upgrades?.some(u => u.id === 'canner'),
+    canningVersion: loaded.canningVersion
+  });
 
   return loaded;
 }

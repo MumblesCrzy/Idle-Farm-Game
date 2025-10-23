@@ -101,51 +101,70 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   initialCanningState?: CanningState,
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit'
 ) {
+  console.log('useCanningSystem called with:', {
+    hasInitialCanningState: !!initialCanningState,
+    initialCanningStateUpgrades: initialCanningState?.upgrades?.map(u => u.id),
+    initialCanningStateUpgradesLength: initialCanningState?.upgrades?.length,
+    hasCannerInInitial: initialCanningState?.upgrades?.some(u => u.id === 'canner'),
+    defaultUpgrades: INITIAL_CANNING_UPGRADES.map(u => u.id),
+    defaultUpgradesLength: INITIAL_CANNING_UPGRADES.length,
+    hasCannerInDefault: INITIAL_CANNING_UPGRADES.some(u => u.id === 'canner')
+  });
+
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
+  
+  console.log('useCanningSystem state after initialization:', {
+    currentUpgrades: canningState.upgrades?.map(u => u.id),
+    currentUpgradesLength: canningState.upgrades?.length,
+    hasCannerInCurrent: canningState.upgrades?.some(u => u.id === 'canner'),
+    cannerUpgrade: canningState.upgrades?.find(u => u.id === 'canner')
+  });
   
   // Initialize recipes from configuration
   useEffect(() => {
-    const recipes: Recipe[] = INITIAL_RECIPES.map(config => {
-      const ingredients: CanningIngredient[] = config.ingredients.map(ing => {
-        const veggieIndex = veggies.findIndex(v => v.name === ing.veggieName);
+    setCanningState(prev => {
+      const recipes: Recipe[] = INITIAL_RECIPES.map(config => {
+        const ingredients: CanningIngredient[] = config.ingredients.map(ing => {
+          const veggieIndex = veggies.findIndex(v => v.name === ing.veggieName);
+          return {
+            veggieIndex,
+            veggieName: ing.veggieName,
+            quantity: ing.quantity
+          };
+        });
+        
+        // First recipe unlocks with growing experience, others with canning experience
+        const isFirstRecipe = config.id === 'canned_radish';
+        const unlocked = isFirstRecipe 
+          ? experience >= config.experienceRequired // Use growing experience for first recipe
+          : prev.canningExperience >= config.experienceRequired; // Use canning experience from prev state
+        
         return {
-          veggieIndex,
-          veggieName: ing.veggieName,
-          quantity: ing.quantity
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          ingredients,
+          processingTime: config.baseProcessingTime,
+          baseProcessingTime: config.baseProcessingTime,
+          salePrice: config.baseSalePrice,
+          baseSalePrice: config.baseSalePrice,
+          experienceRequired: config.experienceRequired,
+          unlocked,
+          timesCompleted: 0
         };
       });
       
-      // First recipe unlocks with growing experience, others with canning experience
-      const isFirstRecipe = config.id === 'canned_radish';
-      const unlocked = isFirstRecipe 
-        ? experience >= config.experienceRequired // Use growing experience for first recipe
-        : canningState.canningExperience >= config.experienceRequired; // Use canning experience for others
+      const unlockedRecipeIds = recipes
+        .filter(recipe => recipe.unlocked)
+        .map(recipe => recipe.id);
       
-      return {
-        id: config.id,
-        name: config.name,
-        description: config.description,
-        ingredients,
-        processingTime: config.baseProcessingTime,
-        baseProcessingTime: config.baseProcessingTime,
-        salePrice: config.baseSalePrice,
-        baseSalePrice: config.baseSalePrice,
-        experienceRequired: config.experienceRequired,
-        unlocked,
-        timesCompleted: 0
+      return { 
+        ...prev, 
+        recipes,
+        unlockedRecipes: unlockedRecipeIds
       };
     });
-    
-    const unlockedRecipeIds = recipes
-      .filter(recipe => recipe.unlocked)
-      .map(recipe => recipe.id);
-    
-    setCanningState(prev => ({ 
-      ...prev, 
-      recipes,
-      unlockedRecipes: unlockedRecipeIds
-    }));
-  }, [veggies, experience, canningState.canningExperience]); // Add canningExperience as dependency
+  }, [veggies, experience]); // Removed canningState.canningExperience to avoid circular dependency
   
   // Update recipe unlocks based on experience
   useEffect(() => {

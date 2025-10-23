@@ -1231,7 +1231,6 @@ function App() {
   const [initialCanningState] = useState(() => {
     try {
       const loaded = loadGameStateWithCanning();
-      console.log('Loading canning state:', loaded?.canningState ? 'Found saved state' : 'No saved state');
       return loaded?.canningState || undefined;
     } catch (error) {
       console.error('Error loading canning state:', error);
