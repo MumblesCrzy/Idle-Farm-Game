@@ -1441,23 +1441,23 @@ function App() {
     }
   }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
 
-  // Throttled save effect
+  // Debounced save effect - only trigger save if state has actually changed
+  // and enough time has passed
   useEffect(() => {
     const now = Date.now();
     const timeSinceLastSave = now - lastSaveTimeRef.current;
     
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
     // If it's been more than 30 seconds since last save, save immediately
     if (timeSinceLastSave >= 30000) {
       performSave();
-    } else if (!pendingSaveRef.current) {
-      // Otherwise, schedule a save for when the 30 second window is up
-      pendingSaveRef.current = true;
+    } else {
+      // Otherwise, schedule a save for 30 seconds from last save
       const timeUntilNextSave = 30000 - timeSinceLastSave;
-      
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      
       saveTimeoutRef.current = setTimeout(() => {
         performSave();
       }, timeUntilNextSave);
@@ -1478,7 +1478,9 @@ function App() {
     const handleBeforeUnload = () => {
       // Force immediate save if there are pending changes
       if (pendingSaveRef.current || Date.now() - lastSaveTimeRef.current >= 30000) {
-        performSave();
+        // Get the current performSave function and call it
+        const currentPerformSave = performSave;
+        currentPerformSave();
       }
     };
 
@@ -1486,7 +1488,7 @@ function App() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [performSave]);
+  }, []); // Remove performSave dependency
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
