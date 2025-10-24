@@ -101,24 +101,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   initialCanningState?: CanningState,
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit'
 ) {
-  console.log('useCanningSystem called with:', {
-    hasInitialCanningState: !!initialCanningState,
-    initialCanningStateUpgrades: initialCanningState?.upgrades?.map(u => u.id),
-    initialCanningStateUpgradesLength: initialCanningState?.upgrades?.length,
-    hasCannerInInitial: initialCanningState?.upgrades?.some(u => u.id === 'canner'),
-    defaultUpgrades: INITIAL_CANNING_UPGRADES.map(u => u.id),
-    defaultUpgradesLength: INITIAL_CANNING_UPGRADES.length,
-    hasCannerInDefault: INITIAL_CANNING_UPGRADES.some(u => u.id === 'canner')
-  });
-
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
-  
-  console.log('useCanningSystem state after initialization:', {
-    currentUpgrades: canningState.upgrades?.map(u => u.id),
-    currentUpgradesLength: canningState.upgrades?.length,
-    hasCannerInCurrent: canningState.upgrades?.some(u => u.id === 'canner'),
-    cannerUpgrade: canningState.upgrades?.find(u => u.id === 'canner')
-  });
   
   // Initialize recipes from configuration
   useEffect(() => {

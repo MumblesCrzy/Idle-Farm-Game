@@ -110,3 +110,34 @@ export type CanningAutoPurchase = {
   timer: number;
   costCurrency: 'money' | 'knowledge';
 };
+
+// Lean save format - only stores player progress, not game constants
+export type LeanCanningProgress = {
+  // Upgrade progress (just levels)
+  upgradeProgress: Record<string, number>; // upgradeId -> level
+  
+  // Recipe progress
+  unlockedRecipes: string[]; // Recipe IDs that are unlocked
+  recipeCompletions: Record<string, number>; // recipeId -> times completed
+  
+  // Active processes (minimal data needed to restore)
+  activeProcesses: Array<{
+    recipeId: string;
+    startTime: number;
+    remainingTime: number;
+    totalTime: number;
+    automated?: boolean;
+  }>;
+  
+  // Player stats
+  totalItemsCanned: number;
+  canningExperience: number;
+  maxSimultaneousProcesses: number;
+  
+  // Auto-canning preferences
+  autoCanning: {
+    enabled: boolean;
+    selectedRecipes: string[];
+    priorityOrder: string[];
+  };
+};
