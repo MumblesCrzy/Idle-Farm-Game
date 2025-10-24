@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { 
   CanningState, 
   Recipe, 
@@ -102,6 +102,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit'
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
+  
+  // Ref to always have access to current veggie state in callbacks
+  const currentVeggiesRef = useRef(veggies);
+  currentVeggiesRef.current = veggies;
   
   // Initialize recipes from configuration
   useEffect(() => {
@@ -307,6 +311,11 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     const baseKnowledgeReward = (recipe.ingredients.length * 2) * totalItems;
     const knowledgeReward = process.automated ? Math.ceil(baseKnowledgeReward / 10) : baseKnowledgeReward;
     
+    // Calculate canning experience reward
+    // Automated processes give 1/10th canning experience to balance automation convenience
+    const baseCanningExperience = (recipe.ingredients.length * 10) * totalItems;
+    const canningExperienceReward = process.automated ? Math.ceil(baseCanningExperience / 10) : baseCanningExperience;
+    
     // Add money and knowledge
     setMoney(prev => prev + totalEarnings);
     setKnowledge(prev => prev + knowledgeReward);
@@ -316,7 +325,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       ...prev,
       activeProcesses: prev.activeProcesses.filter((_, index) => index !== processIndex),
       totalItemsCanned: prev.totalItemsCanned + totalItems,
-      canningExperience: prev.canningExperience + (recipe.ingredients.length * 10),
+      canningExperience: prev.canningExperience + canningExperienceReward,
       recipes: prev.recipes.map(r => 
         r.id === recipe.id 
           ? { ...r, timesCompleted: r.timesCompleted + 1 }
@@ -510,9 +519,16 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           console.log('Auto-canning: Sorted recipes', sortedRecipes.map(r => r.name));
           
           // Find the first recipe that we can actually make (has enough ingredients)
+          // Use current veggie state from ref to avoid stale closure issues
           let recipeToStart = null;
           for (const recipe of sortedRecipes) {
-            if (canMakeRecipe(recipe)) {
+            // Check if we have enough ingredients using current veggie state
+            const hasIngredients = recipe.ingredients.every(ingredient => {
+              const veggie = currentVeggiesRef.current[ingredient.veggieIndex];
+              return veggie && veggie.stash >= ingredient.quantity;
+            });
+            
+            if (hasIngredients) {
               recipeToStart = recipe;
               break;
             }

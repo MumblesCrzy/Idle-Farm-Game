@@ -132,7 +132,7 @@ describe('Integration Tests', () => {
       expect(loadedState!.day).toBe(10)
       expect(loadedState!.greenhouseOwned).toBe(true)
       expect(loadedState!.canningState).toBeTruthy()
-      expect(loadedState!.canningVersion).toBe(2)
+      expect(loadedState!.canningVersion).toBe(3)
     })
 
     it('should handle save/load with canning data', () => {

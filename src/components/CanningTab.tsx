@@ -38,11 +38,7 @@ const CanningTab: React.FC<CanningTabProps> = ({
 }) => {
   // Main canning content
   const mainContent = (
-    <div style={{ height: '20px', marginBottom: '.75rem', display: 'flex', flexDirection: 'column' }}>
-      {/* <h2 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <img src="./Canning.png" alt="Canning" style={{ width: '24px', height: '24px' }} />
-        Canning System
-      </h2> */}
+    <div style={{ marginBottom: '.75rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1 }}>
         <CanningPanel
           canningState={canningState}

@@ -251,7 +251,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
       </div>
 
       {/* Recipe grid - condensed */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>       
+      <div style={{ flex: 1 }}>       
         {sortedRecipes.length === 0 ? (
           <div style={{
             textAlign: 'center',
@@ -259,7 +259,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
             color: '#888',
             backgroundColor: '#f9f9f9',
             borderRadius: '6px',
-            margin: '6px 0'
+            margin: '6px'
           }}>
             No recipes match the current filter.
             {recipeFilter === 'available' && (
@@ -273,7 +273,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
             gap: '8px',
-            padding: '6px 0'
+            padding: '0 18px 0px 0px'
           }}>
             {sortedRecipes.map(recipe => (
               <RecipeCard

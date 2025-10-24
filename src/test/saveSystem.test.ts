@@ -88,7 +88,7 @@ describe('saveSystem', () => {
       expect(loaded!.money).toBe(100)
       expect(loaded!.canningState).toBeTruthy()
       expect(loaded!.canningState!.recipes).toHaveLength(1)
-      expect(loaded!.canningVersion).toBe(2)
+      expect(loaded!.canningVersion).toBe(3)
     })
 
     it('should preserve existing canning progress during migration', () => {
@@ -132,7 +132,7 @@ describe('saveSystem', () => {
       expect(loaded!.canningState!.totalItemsCanned).toBe(50)
       expect(loaded!.canningState!.canningExperience).toBe(100)
       expect(loaded!.canningState!.unlockedRecipes).toContain('canned_tomatoes')
-      expect(loaded!.canningVersion).toBe(2)
+      expect(loaded!.canningVersion).toBe(3)
     })
   })
 
@@ -165,7 +165,7 @@ describe('saveSystem', () => {
       
       const parsed = JSON.parse(saved!)
       expect(parsed.money).toBe(200)
-      expect(parsed.canningVersion).toBe(2)
+      expect(parsed.canningVersion).toBe(3)
     })
 
     it('should handle localStorage errors gracefully', () => {
