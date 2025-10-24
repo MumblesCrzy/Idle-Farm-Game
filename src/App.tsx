@@ -527,7 +527,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Calculate money to keep
     const moneyKept = money - farmCost;
     // Calculate knowledge to keep (third of current)
-    const knowledgeKept = Math.floor(knowledge / 3);
+    const knowledgeKept = knowledge;
     // Calculate new farm tier
     const newFarmTier = farmTier + 1;
     // Save current state of irrigation
@@ -1803,7 +1803,7 @@ function App() {
                 )}
                 <div />
                 <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge / 3 > 0 ? formatNumber(Math.floor(knowledge / 3), 1) : 0}n
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 1) : 0}n
                 {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
               </span>
               </button>

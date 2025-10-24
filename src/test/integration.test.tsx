@@ -4,7 +4,7 @@ import React from 'react'
 import { ArchieProvider } from '../context/ArchieContext'
 import ProgressBar from '../components/ProgressBar'
 import VeggiePanel from '../components/VeggiePanel'
-import { loadGameStateWithCanning, saveGameStateWithCanning } from '../utils/saveSystem'
+import { loadLeanGameState, saveLeanGameState, canningStateToLeanProgress } from '../utils/leanSaveSystem'
 
 // Mock dependencies for integration tests
 vi.mock('../data/recipes', () => ({
@@ -121,18 +121,18 @@ describe('Integration Tests', () => {
       }
 
       // Save the game state
-      saveGameStateWithCanning(gameState)
+      saveLeanGameState(gameState)
 
       // Load the game state
-      const loadedState = loadGameStateWithCanning()
+      const loadedState = loadLeanGameState()
 
       expect(loadedState).toBeTruthy()
       expect(loadedState!.money).toBe(1000)
       expect(loadedState!.experience).toBe(500)
       expect(loadedState!.day).toBe(10)
       expect(loadedState!.greenhouseOwned).toBe(true)
-      expect(loadedState!.canningState).toBeTruthy()
-      expect(loadedState!.canningVersion).toBe(3)
+      // canningProgress should be undefined for basic save without canning data
+      expect(loadedState!.canningProgress).toBeUndefined()
     })
 
     it('should handle save/load with canning data', () => {
@@ -154,14 +154,14 @@ describe('Integration Tests', () => {
         irrigationOwned: true,
         currentWeather: 'rain',
         highestUnlockedVeggie: 5,
-        canningState: {
-          recipes: [],
-          upgrades: [],
-          activeProcesses: [],
+        canningProgress: {
+          upgradeProgress: {},
           unlockedRecipes: ['test_recipe'],
-          maxSimultaneousProcesses: 2,
+          recipeCompletions: {},
+          activeProcesses: [],
           totalItemsCanned: 100,
           canningExperience: 500,
+          maxSimultaneousProcesses: 2,
           autoCanning: {
             enabled: true,
             selectedRecipes: ['test_recipe'],
@@ -171,15 +171,15 @@ describe('Integration Tests', () => {
       }
 
       // Save state with canning
-      saveGameStateWithCanning(gameStateWithCanning)
+      saveLeanGameState(gameStateWithCanning)
 
       // Load and verify canning data is preserved
-      const loaded = loadGameStateWithCanning()
+      const loaded = loadLeanGameState()
       
-      expect(loaded!.canningState!.unlockedRecipes).toContain('test_recipe')
-      expect(loaded!.canningState!.totalItemsCanned).toBe(100)
-      expect(loaded!.canningState!.canningExperience).toBe(500)
-      expect(loaded!.canningState!.autoCanning.enabled).toBe(true)
+      expect(loaded!.canningProgress!.unlockedRecipes).toContain('test_recipe')
+      expect(loaded!.canningProgress!.totalItemsCanned).toBe(100)
+      expect(loaded!.canningProgress!.canningExperience).toBe(500)
+      expect(loaded!.canningProgress!.autoCanning.enabled).toBe(true)
     })
   })
 
@@ -214,7 +214,7 @@ describe('Integration Tests', () => {
       }
 
       // Should not throw an error even when localStorage fails
-      expect(() => saveGameStateWithCanning(gameState)).not.toThrow()
+      expect(() => saveLeanGameState(gameState)).not.toThrow()
       expect(consoleSpy).toHaveBeenCalled()
 
       // Restore localStorage

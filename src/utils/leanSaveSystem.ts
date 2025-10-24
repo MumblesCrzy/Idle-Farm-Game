@@ -198,3 +198,99 @@ export function createDefaultLeanProgress(): LeanCanningProgress {
     }
   };
 }
+
+// Game state interface for lean saves (without canningVersion)
+export interface LeanGameState {
+  veggies: Array<{
+    name: string;
+    growth: number;
+    stash: number;
+    sellEnabled?: boolean;
+    harvestTime?: number;
+    betterSeedsLevel?: number;
+    salePrice?: number;
+  }>;
+  money: number;
+  experience: number;
+  knowledge: number;
+  activeVeggie: number;
+  day: number;
+  greenhouseOwned: boolean;
+  heirloomOwned: boolean;
+  autoSellOwned: boolean;
+  almanacLevel: number;
+  almanacCost: number;
+  maxPlots: number;
+  farmTier: number;
+  farmCost: number;
+  irrigationOwned: boolean;
+  currentWeather: string;
+  highestUnlockedVeggie: number;
+  globalAutoPurchaseTimer?: number; // Timer for auto purchases
+  uiPreferences?: {
+    canningRecipeFilter?: string;
+    canningRecipeSort?: string;
+  };
+  canningProgress?: LeanCanningProgress; // Lean canning progress without version
+}
+
+// Save game state using lean format
+export function saveLeanGameState(state: LeanGameState): void {
+  try {
+    localStorage.setItem('farmGame', JSON.stringify(state));
+  } catch (error) {
+    console.error('Error saving lean game state to localStorage:', error);
+  }
+}
+
+// Load game state using lean format, with migration from old saves
+export function loadLeanGameState(): LeanGameState | null {
+  try {
+    const saved = localStorage.getItem('farmGame');
+    if (!saved) return null;
+    
+    const loaded = JSON.parse(saved);
+    
+    // Check if this is an old save with canningVersion
+    if (loaded.canningVersion !== undefined) {
+      console.log('Migrating old save to lean format...');
+      
+      // Convert old save to lean format
+      const leanState: LeanGameState = {
+        veggies: loaded.veggies || [],
+        money: loaded.money || 0,
+        experience: loaded.experience || 0,
+        knowledge: loaded.knowledge || 0,
+        activeVeggie: loaded.activeVeggie || 0,
+        day: loaded.day || 1,
+        greenhouseOwned: loaded.greenhouseOwned || false,
+        heirloomOwned: loaded.heirloomOwned || false,
+        autoSellOwned: loaded.autoSellOwned || false,
+        almanacLevel: loaded.almanacLevel || 1,
+        almanacCost: loaded.almanacCost || 100,
+        maxPlots: loaded.maxPlots || 4,
+        farmTier: loaded.farmTier || 1,
+        farmCost: loaded.farmCost || 500,
+        irrigationOwned: loaded.irrigationOwned || false,
+        currentWeather: loaded.currentWeather || 'sunny',
+        highestUnlockedVeggie: loaded.highestUnlockedVeggie || 0
+      };
+      
+      // Convert old canning state to lean progress if present
+      if (loaded.canningState) {
+        leanState.canningProgress = canningStateToLeanProgress(loaded.canningState);
+      }
+      
+      // Save in new lean format and return
+      saveLeanGameState(leanState);
+      return leanState;
+    }
+    
+    // Already in lean format, return as-is
+    return loaded as LeanGameState;
+    
+  } catch (error) {
+    console.error('Error loading game state from localStorage:', error);
+    return null;
+  }
+}

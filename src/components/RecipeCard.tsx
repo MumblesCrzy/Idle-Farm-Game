@@ -92,6 +92,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     return '#f44336';
   };
 
+  // Calculate reward amounts (assuming manual canning)
+  const getKnowledgeReward = () => {
+    return recipe.ingredients.length * 2;
+  };
+
+  const getCanningExperienceReward = () => {
+    return recipe.ingredients.length * 10;
+  };
+
   return (
     <div
       style={{
@@ -164,7 +173,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
                 marginLeft: '2px',
                 fontWeight: 'normal'
               }}>
-                🌱+{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
+                +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
               </span>
             )}
           </span>
@@ -177,13 +186,27 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
         </div>
         
         <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          fontSize: '10px', 
+          color: '#666',
+          marginBottom: '8px'
+        }}>
+          <span style={{ color: '#2196F3' }}>
+            +{getKnowledgeReward()} kn
+          </span>
+          <span style={{ color: '#9C27B0' }}>
+            +{getCanningExperienceReward()} exp
+          </span>
+        </div>
+        {/* <div style={{ 
           fontSize: '11px', 
           color: getProfitColor(),
           fontWeight: 'bold',
-          marginBottom: '8px'
+          marginBottom: '6px'
         }}>
           Profit: +${getProfit().toFixed(2)}
-        </div>
+        </div>         */}
       </div>
       
       {canMake && (

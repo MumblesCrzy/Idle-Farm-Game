@@ -69,6 +69,15 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
     return ((effectiveSalePrice - rawValue) / rawValue) * 100;
   };
 
+  // Calculate reward amounts (assuming manual canning)
+  const getKnowledgeReward = () => {
+    return recipe.ingredients.length * 2;
+  };
+
+  const getCanningExperienceReward = () => {
+    return recipe.ingredients.length * 10;
+  };
+
   const getMissingIngredients = () => {
     return recipe.ingredients.filter(ingredient => {
       const veggie = veggies.find(v => v.name === ingredient.veggieName);
@@ -262,7 +271,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
                     color: '#8BC34A', 
                     fontWeight: 'normal'
                   }}>
-                    🌱 Better Seeds: +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
+                    Better Seeds: +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
                   </div>
                 )}
               </div>
@@ -280,6 +289,32 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
                 color: getProfit() > 0 ? '#28a745' : '#dc3545' 
               }}>
                 ${getProfit().toFixed(2)} ({getProfitMargin().toFixed(0)}%)
+              </div>
+            </div>
+            <div>
+              <span style={{ color: '#666' }}>Knowledge Reward:</span>
+              <div style={{ fontWeight: 'bold', color: '#2196F3' }}>
+                +{getKnowledgeReward()}
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  fontWeight: 'normal'
+                }}>
+                  (Auto: +{Math.ceil(getKnowledgeReward() / 10)})
+                </div>
+              </div>
+            </div>
+            <div>
+              <span style={{ color: '#666' }}>Canning Experience:</span>
+              <div style={{ fontWeight: 'bold', color: '#9C27B0' }}>
+                +{getCanningExperienceReward()}
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  fontWeight: 'normal'
+                }}>
+                  (Auto: +{Math.ceil(getCanningExperienceReward() / 10)})
+                </div>
               </div>
             </div>
           </div>
