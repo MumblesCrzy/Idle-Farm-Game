@@ -1693,7 +1693,7 @@ function App() {
         </div>
         <div className="day-counter">Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
           <img
-            src={`./${season.toLowerCase()}.png`}
+            src={`./${season}.png`}
             alt={season}
             style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
           />
