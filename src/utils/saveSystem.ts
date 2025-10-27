@@ -251,16 +251,82 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
 }
 
 // Save game state including canning
+// Helper function to create lean veggie data for save files
+function createLeanVeggieData(veggie: any) {
+  // Extract only autopurchaser owned and active properties (safely handle missing autoPurchasers)
+  const leanAutoPurchasers = veggie.autoPurchasers ? veggie.autoPurchasers.map((ap: any) => ({
+    owned: ap.owned,
+    active: ap.active
+  })) : [];
+
+  return {
+    id: veggie.name, // Using name as id for compatibility
+    growth: veggie.growth,
+    stash: veggie.stash,
+    unlocked: veggie.unlocked,
+    fertilizerLevel: veggie.fertilizerLevel,
+    harvesterOwned: veggie.harvesterOwned,
+    harvesterTimer: veggie.harvesterTimer,
+    betterSeedsLevel: veggie.betterSeedsLevel,
+    additionalPlotLevel: veggie.additionalPlotLevel,
+    autoPurchasers: leanAutoPurchasers
+  };
+}
+
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
+    // Create lean veggie data to reduce save file size
+    const leanVeggies = state.veggies.map(createLeanVeggieData);
+    
     const stateToSave = {
       ...state,
+      veggies: leanVeggies, // Replace with lean data
       canningVersion: CANNING_VERSION
     };
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (error) {
     console.error('saveGameStateWithCanning: Error saving to localStorage:', error);
   }
+}
+
+// Helper function to reconstruct full veggie data from lean save data
+export function reconstructVeggieData(leanVeggie: any, initialVeggieTemplate: any): any {
+  // Start with the full template
+  const fullVeggie = { ...initialVeggieTemplate };
+  
+  // Override with the saved lean data
+  fullVeggie.growth = leanVeggie.growth ?? fullVeggie.growth;
+  fullVeggie.stash = leanVeggie.stash ?? fullVeggie.stash;
+  fullVeggie.unlocked = leanVeggie.unlocked ?? fullVeggie.unlocked;
+  fullVeggie.fertilizerLevel = leanVeggie.fertilizerLevel ?? fullVeggie.fertilizerLevel;
+  fullVeggie.harvesterOwned = leanVeggie.harvesterOwned ?? fullVeggie.harvesterOwned;
+  fullVeggie.harvesterTimer = leanVeggie.harvesterTimer ?? fullVeggie.harvesterTimer;
+  fullVeggie.betterSeedsLevel = leanVeggie.betterSeedsLevel ?? fullVeggie.betterSeedsLevel;
+  fullVeggie.additionalPlotLevel = leanVeggie.additionalPlotLevel ?? fullVeggie.additionalPlotLevel;
+  
+  // Handle autoPurchasers - merge saved owned/active with template
+  if (leanVeggie.autoPurchasers && Array.isArray(leanVeggie.autoPurchasers)) {
+    fullVeggie.autoPurchasers = fullVeggie.autoPurchasers.map((templateAP: any, index: number) => {
+      const leanAP = leanVeggie.autoPurchasers[index];
+      if (leanAP) {
+        return {
+          ...templateAP,
+          owned: leanAP.owned ?? templateAP.owned,
+          active: leanAP.active ?? templateAP.active
+        };
+      }
+      return templateAP;
+    });
+  }
+  
+  return fullVeggie;
+}
+
+// Helper function to check if veggie data is in lean format
+export function isLeanVeggieData(veggie: any): boolean {
+  // Lean data has 'id' instead of 'name' and missing most properties
+  return veggie.id !== undefined && veggie.name === undefined && 
+         (veggie.growthRate === undefined || veggie.salePrice === undefined);
 }
 
 // Migrate old save data to include canning

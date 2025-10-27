@@ -4,6 +4,8 @@ import {
   saveGameStateWithCanning,
   migrateVeggieDataWithCanning,
   validateCanningImport,
+  isLeanVeggieData,
+  reconstructVeggieData,
   type ExtendedGameState
 } from '../utils/saveSystem'
 
@@ -345,6 +347,187 @@ describe('saveSystem', () => {
       }
 
       expect(validateCanningImport(stateWithBadCanning)).toBe(false)
+    })
+  })
+
+  describe('lean veggie export', () => {
+    it('should create lean veggie data when saving', () => {
+      const fullVeggie = {
+        name: 'Tomatoes',
+        growth: 50,
+        growthRate: 1.5,
+        stash: 10,
+        unlocked: true,
+        experience: 100,
+        experienceToUnlock: 0,
+        fertilizerLevel: 3,
+        fertilizerCost: 80,
+        harvesterOwned: true,
+        harvesterCost: 100,
+        harvesterTimer: 25,
+        salePrice: 6,
+        betterSeedsLevel: 2,
+        betterSeedsCost: 50,
+        additionalPlotLevel: 1,
+        additionalPlotCost: 200,
+        autoPurchasers: [
+          { id: 'test1', owned: true, active: false, other: 'data' },
+          { id: 'test2', owned: false, active: true, other: 'data' }
+        ],
+        sellEnabled: true,
+        fertilizerMaxLevel: 99
+      }
+
+      const gameState: ExtendedGameState = {
+        veggies: [fullVeggie],
+        money: 100,
+        experience: 50,
+        knowledge: 25,
+        activeVeggie: 0,
+        day: 1,
+        greenhouseOwned: false,
+        heirloomOwned: false,
+        autoSellOwned: false,
+        almanacLevel: 1,
+        almanacCost: 100,
+        maxPlots: 4,
+        farmTier: 1,
+        farmCost: 500,
+        irrigationOwned: false,
+        currentWeather: 'sunny',
+        highestUnlockedVeggie: 0
+      }
+
+      saveGameStateWithCanning(gameState)
+
+      const saved = localStorage.getItem('farmIdleGameState')
+      const parsed = JSON.parse(saved!)
+      const savedVeggie = parsed.veggies[0]
+
+      // Check that only the specified properties are saved
+      expect(savedVeggie.id).toBe('Tomatoes')
+      expect(savedVeggie.growth).toBe(50)
+      expect(savedVeggie.stash).toBe(10)
+      expect(savedVeggie.unlocked).toBe(true)
+      expect(savedVeggie.fertilizerLevel).toBe(3)
+      expect(savedVeggie.harvesterOwned).toBe(true)
+      expect(savedVeggie.harvesterTimer).toBe(25)
+      expect(savedVeggie.betterSeedsLevel).toBe(2)
+      expect(savedVeggie.additionalPlotLevel).toBe(1)
+      
+      // Check autoPurchasers are trimmed
+      expect(savedVeggie.autoPurchasers).toHaveLength(2)
+      expect(savedVeggie.autoPurchasers[0]).toEqual({ owned: true, active: false })
+      expect(savedVeggie.autoPurchasers[1]).toEqual({ owned: false, active: true })
+
+      // Check that extra properties are NOT saved
+      expect(savedVeggie.name).toBeUndefined()
+      expect(savedVeggie.growthRate).toBeUndefined()
+      expect(savedVeggie.salePrice).toBeUndefined()
+      expect(savedVeggie.fertilizerCost).toBeUndefined()
+      expect(savedVeggie.sellEnabled).toBeUndefined()
+    })
+
+    it('should detect lean veggie data correctly', () => {
+      const leanVeggie = {
+        id: 'Tomatoes',
+        growth: 50,
+        stash: 10,
+        unlocked: true,
+        fertilizerLevel: 3,
+        harvesterOwned: true,
+        harvesterTimer: 25,
+        betterSeedsLevel: 2,
+        additionalPlotLevel: 1,
+        autoPurchasers: [{ owned: true, active: false }]
+      }
+
+      const fullVeggie = {
+        name: 'Tomatoes',
+        growth: 50,
+        growthRate: 1.5,
+        stash: 10,
+        unlocked: true,
+        salePrice: 6,
+        fertilizerLevel: 3
+      }
+
+      expect(isLeanVeggieData(leanVeggie)).toBe(true)
+      expect(isLeanVeggieData(fullVeggie)).toBe(false)
+    })
+
+    it('should reconstruct full veggie data from lean data', () => {
+      const leanVeggie = {
+        id: 'Tomatoes',
+        growth: 50,
+        stash: 10,
+        unlocked: true,
+        fertilizerLevel: 3,
+        harvesterOwned: true,
+        harvesterTimer: 25,
+        betterSeedsLevel: 2,
+        additionalPlotLevel: 1,
+        autoPurchasers: [
+          { owned: true, active: false },
+          { owned: false, active: true }
+        ]
+      }
+
+      const initialTemplate = {
+        name: 'Tomatoes',
+        growth: 0,
+        growthRate: 1.0526,
+        stash: 0,
+        unlocked: false,
+        experience: 0,
+        experienceToUnlock: 50,
+        fertilizerLevel: 0,
+        fertilizerCost: 60,
+        harvesterOwned: false,
+        harvesterCost: 480,
+        harvesterTimer: 0,
+        salePrice: 6,
+        betterSeedsLevel: 0,
+        betterSeedsCost: 60,
+        additionalPlotLevel: 0,
+        additionalPlotCost: 480,
+        autoPurchasers: [
+          { id: 'test1', owned: false, active: false, cost: 100 },
+          { id: 'test2', owned: false, active: false, cost: 200 }
+        ],
+        sellEnabled: true,
+        fertilizerMaxLevel: 99
+      }
+
+      const reconstructed = reconstructVeggieData(leanVeggie, initialTemplate)
+
+      // Should have lean data values
+      expect(reconstructed.growth).toBe(50)
+      expect(reconstructed.stash).toBe(10)
+      expect(reconstructed.unlocked).toBe(true)
+      expect(reconstructed.fertilizerLevel).toBe(3)
+      expect(reconstructed.harvesterOwned).toBe(true)
+      expect(reconstructed.harvesterTimer).toBe(25)
+      expect(reconstructed.betterSeedsLevel).toBe(2)
+      expect(reconstructed.additionalPlotLevel).toBe(1)
+
+      // Should have template values for missing properties
+      expect(reconstructed.name).toBe('Tomatoes')
+      expect(reconstructed.growthRate).toBe(1.0526)
+      expect(reconstructed.salePrice).toBe(6)
+      expect(reconstructed.fertilizerCost).toBe(60)
+      expect(reconstructed.sellEnabled).toBe(true)
+
+      // Should merge autoPurchaser data correctly
+      expect(reconstructed.autoPurchasers[0].id).toBe('test1')
+      expect(reconstructed.autoPurchasers[0].owned).toBe(true)
+      expect(reconstructed.autoPurchasers[0].active).toBe(false)
+      expect(reconstructed.autoPurchasers[0].cost).toBe(100)
+
+      expect(reconstructed.autoPurchasers[1].id).toBe('test2')
+      expect(reconstructed.autoPurchasers[1].owned).toBe(false)
+      expect(reconstructed.autoPurchasers[1].active).toBe(true)
+      expect(reconstructed.autoPurchasers[1].cost).toBe(200)
     })
   })
 })

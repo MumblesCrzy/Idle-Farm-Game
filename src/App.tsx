@@ -5,7 +5,7 @@ import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
-import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
+import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning, isLeanVeggieData, reconstructVeggieData } from './utils/saveSystem';
 import './App.css';
 
 // Utility function to format large numbers with shorthand notation
@@ -710,17 +710,26 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     return loadedVeggies.map((savedVeggie, index) => {
       const initialVeggie = initialVeggies[index];
+      if (!initialVeggie) return savedVeggie; // Skip if no template available
       
-      // Add missing properties with defaults
-      const migratedVeggie: any = { ...savedVeggie };
+      let migratedVeggie: any;
       
-      // If autoPurchasers is missing, add it from the initial veggie data
-      if (!savedVeggie.autoPurchasers) {
-        migratedVeggie.autoPurchasers = initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(8, 10, 30, 38);
+      // Check if this is lean data that needs reconstruction
+      if (isLeanVeggieData(savedVeggie)) {
+        console.log(`Reconstructing lean data for veggie: ${savedVeggie.id}`);
+        migratedVeggie = reconstructVeggieData(savedVeggie, initialVeggie);
+      } else {
+        // Standard migration for full data
+        migratedVeggie = { ...savedVeggie };
+        
+        // If autoPurchasers is missing, add it from the initial veggie data
+        if (!savedVeggie.autoPurchasers) {
+          migratedVeggie.autoPurchasers = initialVeggie.autoPurchasers;
+        }
       }
       
       // If sellEnabled is missing, default to true (allow selling)
-      if (savedVeggie.sellEnabled === undefined) {
+      if (migratedVeggie.sellEnabled === undefined) {
         migratedVeggie.sellEnabled = true;
       }
       
