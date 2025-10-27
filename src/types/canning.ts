@@ -37,6 +37,7 @@ export type CanningUpgrade = {
   level: number; // Current level
   cost: number; // Current cost to upgrade
   baseCost: number; // Original cost (for scaling calculations)
+  upgradeCostScaling: number; // How fast costs increase per upgrade level
   costCurrency: 'money' | 'knowledge'; // What currency this costs
   maxLevel?: number; // Optional max level
   effect: number; // Current effect value (calculated from level)

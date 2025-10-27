@@ -169,7 +169,6 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
         padding: '40px',
         textAlign: 'center'
       }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏺</div>
         <h2 style={{ color: '#666', marginBottom: '8px' }}>Canning System Locked</h2>
         <p style={{ color: '#888', marginBottom: '16px', maxWidth: '300px' }}>
           You need more experience to unlock canning recipes. Keep growing and harvesting vegetables!

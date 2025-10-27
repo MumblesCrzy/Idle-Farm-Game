@@ -182,7 +182,7 @@ type CostConfig = {
   baseValue: number;
   firstVeggieDiscount: number; // Multiplier for first veggie (< 1 means cheaper)
   scalingFactor: number; // How fast costs increase per veggie tier
-  levelScalingFactor: number; // How fast costs increase per upgrade level
+  upgradeCostScaling: number; // How fast costs increase per upgrade level
 };
 
 const COST_CONFIGS: Record<string, CostConfig> = {
@@ -190,31 +190,31 @@ const COST_CONFIGS: Record<string, CostConfig> = {
     baseValue: 10,
     firstVeggieDiscount: 0.5, // First veggie pays 50% of base
     scalingFactor: 1.4,
-    levelScalingFactor: 1.25
+    upgradeCostScaling: 1.25
   },
   harvester: {
     baseValue: 15,
     firstVeggieDiscount: 0.53, // ~8 for first veggie
     scalingFactor: 1.5,
-    levelScalingFactor: 1.0 // Harvester doesn't scale with level
+    upgradeCostScaling: 1.0 // Harvester doesn't scale with level
   },
   betterSeeds: {
     baseValue: 10,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.4,
-    levelScalingFactor: 1.5
+    upgradeCostScaling: 1.5
   },
   harvesterSpeed: {
     baseValue: 50,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.5,
-    levelScalingFactor: 1.25
+    upgradeCostScaling: 1.25
   },
   additionalPlot: {
     baseValue: 40,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.4,
-    levelScalingFactor: 1.5
+    upgradeCostScaling: 1.5
   }
 };
 
@@ -231,7 +231,7 @@ const calculateInitialCost = (type: keyof typeof COST_CONFIGS, index: number): n
 
 const calculateUpgradeCost = (type: keyof typeof COST_CONFIGS, currentLevel: number, baseCost: number): number => {
   const config = COST_CONFIGS[type];
-  return Math.ceil(baseCost * Math.pow(config.levelScalingFactor, currentLevel) + 5 * currentLevel);
+  return Math.ceil(baseCost * Math.pow(config.upgradeCostScaling, currentLevel) + 5 * currentLevel);
 };
 
 const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: number, surveyorCost: number, mechanicCost: number): AutoPurchaseConfig[] => [
@@ -431,6 +431,8 @@ type GameState = {
   activeVeggie: number;
   day: number;
   setDay: React.Dispatch<React.SetStateAction<number>>;
+  totalDaysElapsed: number;
+  setTotalDaysElapsed: React.Dispatch<React.SetStateAction<number>>;
   globalAutoPurchaseTimer: number;
   setGlobalAutoPurchaseTimer: React.Dispatch<React.SetStateAction<number>>;
   setActiveVeggie: (i: number) => void;
@@ -473,7 +475,7 @@ type GameState = {
 const GameContext = createContext<GameState | undefined>(undefined);
 
 const getSeason = (day: number) => {
-  if (day >= 0 && day < 80) return 'Spring';
+  if (day >= 1 && day < 80) return 'Spring';
   if (day >= 80 && day < 172) return 'Summer';
   if (day >= 172 && day < 265) return 'Fall';
   return 'Winter';
@@ -530,15 +532,18 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const knowledgeKept = knowledge;
     // Calculate new farm tier
     const newFarmTier = farmTier + 1;
+    // Calculate starting experience based on farm tier to unlock appropriate vegetables
+    // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
+    const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
     // Save current state of irrigation
     // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
     // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
     setVeggies(initialVeggies.map(v => ({ ...v })));
     setMoney(moneyKept > 0 ? moneyKept : 0);
-    setExperience(0);
+    setExperience(startingExperience);
     setKnowledge(knowledgeKept);
     setActiveVeggie(0);
-    setDay(0);
+    setDay(1);
     setGreenhouseOwned(false);
     setAlmanacLevel(0);
     setAlmanacCost(10);
@@ -553,10 +558,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     saveGameState({
       veggies: initialVeggies.map(v => ({ ...v })),
       money: moneyKept > 0 ? moneyKept : 0,
-      experience: 0,
+      experience: startingExperience,
       knowledge: knowledgeKept,
       activeVeggie: 0,
-      day: 0,
+      day: 1,
       greenhouseOwned: false,
       heirloomOwned: false,
       autoSellOwned: false,
@@ -599,7 +604,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const resetGame = () => {
   localStorage.removeItem(GAME_STORAGE_KEY);
   setFarmTier(1);
-  setDay(0);
+  setDay(1);
+  setTotalDaysElapsed(0);
   setMaxPlots(4);
   setMoney(0);
   setExperience(0);
@@ -618,7 +624,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Also force experience to 0 in localStorage
   saveGameState({
     farmTier: 1,
-    day: 0,
+    day: 1,
     maxPlots: 4,
     money: 0,
     experience: 0,
@@ -729,7 +735,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [experience, setExperience] = useState(loaded?.experience ?? 0);
   const [knowledge, setKnowledge] = useState(loaded?.knowledge ?? 0);
   const [activeVeggie, setActiveVeggie] = useState(loaded?.activeVeggie ?? 0);
-  const [day, setDay] = useState(loaded?.day ?? 0);
+  const [day, setDay] = useState(loaded?.day ?? 1);
+  const [totalDaysElapsed, setTotalDaysElapsed] = useState(loaded?.totalDaysElapsed ?? 0);
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(loaded?.globalAutoPurchaseTimer ?? 0);
   const [highestUnlockedVeggie, setHighestUnlockedVeggie] = useState(loaded?.highestUnlockedVeggie ?? 0);
   
@@ -869,7 +876,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         });
 
         // Update experience and knowledge for all harvests
-        if (totalExperienceGain > 0 && day >= 0 && day <= 365) {
+        if (totalExperienceGain > 0 && day >= 1 && day <= 365) {
           setTimeout(() => {
             setKnowledge((k: number) => k + totalKnowledgeGain);
             setExperience((exp: number) => exp + totalExperienceGain);
@@ -971,7 +978,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     });
     
     // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
-    if (day >= 0 && day <= 365) {
+    if (day >= 1 && day <= 365) {
       setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
       
       // Apply experience based on harvest type (auto vs manual)
@@ -1082,8 +1089,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     let dayIntervalId: number | null = null;
     
     const updateDay = () => {
+      setTotalDaysElapsed((total: number) => total + 1);
       setDay((d: number) => {
-        const newDay = (d + 1) % 366;
+        const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
         // Handle weather changes inline with day changes to reduce state updates
         const newSeason = getSeason(newDay);
         handleWeatherChange(newSeason);
@@ -1194,7 +1202,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
       {children}
     </GameContext.Provider>
   );
@@ -1343,7 +1351,7 @@ function App() {
       resetGame();
     }
   };
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // Initialize canning system
   const {
@@ -1353,7 +1361,7 @@ function App() {
     purchaseUpgrade,
     canMakeRecipe,
     toggleAutoCanning
-  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort);
+  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort, farmTier);
 
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
   const canningUnlocked = experience >= 5000;
@@ -1401,6 +1409,7 @@ function App() {
         knowledge,
         activeVeggie,
         day,
+        totalDaysElapsed,
         globalAutoPurchaseTimer,
         greenhouseOwned,
         heirloomOwned,
@@ -1420,7 +1429,7 @@ function App() {
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed
@@ -1654,7 +1663,6 @@ function App() {
     <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-          {/* <h1 className="game-title" style={{ marginRight: '1rem' }}>Farm Idle Game</h1> */}
           {/* <button
             onClick={handleAddDebugMoney}
             style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
@@ -1691,7 +1699,7 @@ function App() {
             Settings
           </button>
         </div>
-        <div className="day-counter">Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+        <div className="day-counter">Year: {Math.floor(totalDaysElapsed / 365) + 1} | Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
           <img
             src={`./${season}.png`}
             alt={season}
@@ -1782,7 +1790,7 @@ function App() {
                 fontSize: '1.0rem', 
                 borderRadius: '8px', 
                 textAlign: 'center', 
-                maxWidth: 765,
+                maxWidth: 1200,
                 border: money >= farmCost ? '2px solid #ffeb3b' : '1px solid #718096',
                 boxShadow: money >= farmCost ? '0 0 8px 2px #ffe066' : 'none',
                 cursor: money >= farmCost ? 'pointer' : 'not-allowed',
@@ -1801,15 +1809,16 @@ function App() {
                 {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
                 <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
                 )}
-                <div />
+                {/* <div /> */}
                 <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 1) : 0}n
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 1) : 0}Kn
                 {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
               </span>
               </button>
             </div>
           )}
         </div>
+        
         <div style={{ marginBottom: '1rem' }} />
           
           {/* Tab Navigation */}
@@ -1989,7 +1998,8 @@ function App() {
               { id: 'farm', label: 'Farm & Experience' },
               { id: 'veggies', label: 'Veggie Upgrades' },
               { id: 'upgrades', label: 'Farm Upgrades' },
-              { id: 'autopurchase', label: 'Auto-Purchasers' }
+              { id: 'autopurchase', label: 'Auto-Purchasers' },
+              { id: 'canning', label: 'Canning System' }
             ].map(category => (
               <button
                 key={category.id}
@@ -2021,6 +2031,7 @@ function App() {
                 {selectedInfoCategory === 'veggies' && 'Veggie Upgrades'}
                 {selectedInfoCategory === 'upgrades' && 'Farm Upgrades'}
                 {selectedInfoCategory === 'autopurchase' && 'Auto-Purchasers'}
+                {selectedInfoCategory === 'canning' && 'Canning System'}
               </h3>
               <button
                 onClick={() => setShowInfoOverlay(false)}
@@ -2373,6 +2384,61 @@ function App() {
                     <li><strong>Late Game:</strong> Add Mechanic after buying Auto Harvester for full automation</li>
                     <li><strong>Active Management:</strong> Turn off auto-purchasers if you need to save currency for big purchases</li>
                     <li><strong>Per-Vegetable Setup:</strong> Remember to activate auto-purchasers on each new vegetable you unlock</li>
+                  </ul>
+                </div>
+              )}
+
+              {selectedInfoCategory === 'canning' && (
+                <div>
+                  <h4>🏺 Canning System</h4>
+                  <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
+                  
+                  <h5>🎯 How Canning Works:</h5>
+                  <ul>
+                    <li><strong>Unlock Requirement:</strong> Reach 5,000 experience to access canning</li>
+                    <li><strong>Recipe Requirements:</strong> Each recipe needs specific vegetables in specific quantities</li>
+                    <li><strong>Processing Time:</strong> Recipes take time to complete (varies by complexity)</li>
+                    <li><strong>Multiple Processes:</strong> Run several recipes simultaneously (upgrade to increase slots)</li>
+                    <li><strong>Experience Rewards:</strong> Gain both money and canning experience from completed recipes</li>
+                    <li><strong>Knowledge Rewards:</strong> Earn knowledge points based on recipe complexity</li>
+                  </ul>
+                  
+                  <h5>📋 Recipe Information:</h5>
+                  <ul>
+                    <li><strong>Small Cards:</strong> Show ingredients, profit, processing time, and reward amounts</li>
+                    <li><strong>Knowledge Reward:</strong> 2 knowledge per ingredient (reduced for auto-canning)</li>
+                    <li><strong>Canning Experience:</strong> 10 experience per ingredient (reduced for auto-canning)</li>
+                    <li><strong>Recipe Details:</strong> Click any recipe for detailed breakdown and ingredient requirements</li>
+                    <li><strong>Recipe Filtering:</strong> Filter by availability, complexity, or type</li>
+                    <li><strong>Recipe Sorting:</strong> Sort by name, profit, time, or difficulty</li>
+                  </ul>
+
+                  <h5>⚙️ Canning Upgrades:</h5>
+                  <ul>
+                    <li><strong>Quick Hands:</strong> Reduces processing time for faster production</li>
+                    <li><strong>Family Recipe:</strong> Increases sale price of canned goods</li>
+                    <li><strong>Heirloom Touch:</strong> Unlocks advanced recipes with better rewards</li>
+                    <li><strong>Batch Canning:</strong> Allows multiple simultaneous canning processes</li>
+                    <li><strong>Canner (Auto-Canning):</strong> Automatically starts recipes every 10 seconds</li>
+                  </ul>
+
+                  <h5>🤖 Auto-Canning System:</h5>
+                  <ul>
+                    <li><strong>How it Works:</strong> Automatically selects and starts recipes every 10 seconds</li>
+                    <li><strong>Recipe Selection:</strong> Picks the first available recipe in your selected sort order</li>
+                    <li><strong>Ingredient Checking:</strong> Only starts recipes you can actually make</li>
+                    <li><strong>Reduced Rewards:</strong> Auto-canning gives 1/10th the knowledge and experience of manual canning</li>
+                    <li><strong>Toggle Control:</strong> Can be turned on/off at any time after purchase</li>
+                  </ul>
+
+                  <h4>💡 Canning Strategy:</h4>
+                  <ul>
+                    <li><strong>Start Simple:</strong> Begin with single-ingredient recipes to learn the system</li>
+                    <li><strong>Upgrade Progressively:</strong> Buy Quick Hands first, then Family Recipe for better profits</li>
+                    <li><strong>Balance Manual vs Auto:</strong> Use manual canning for high-value recipes, auto for idle play</li>
+                    <li><strong>Manage Ingredients:</strong> Keep a good stock of common vegetables for consistent canning</li>
+                    <li><strong>Sort by Profit:</strong> Default sorting helps maximize income per time invested</li>
+                    <li><strong>Batch Processing:</strong> Upgrade simultaneous processes to handle multiple recipes</li>
                   </ul>
                 </div>
               )}

@@ -18,6 +18,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 100,
     baseCost: 100,
+    upgradeCostScaling: 1.5,
     costCurrency: 'money',
     effect: 1.0, // Multiplier for processing time
     unlocked: true
@@ -30,6 +31,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 150,
     baseCost: 150,
+    upgradeCostScaling: 1.5,
     costCurrency: 'knowledge',
     effect: 1.0, // Multiplier for sale price
     unlocked: true
@@ -42,6 +44,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 200,
     baseCost: 200,
+    upgradeCostScaling: 1.4,
     costCurrency: 'knowledge',
     effect: 0, // Percentage chance for bonus
     unlocked: true
@@ -54,6 +57,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 500,
     baseCost: 500,
+    upgradeCostScaling: 1.3,
     costCurrency: 'money',
     maxLevel: 14,
     effect: 1, // Number of additional simultaneous processes
@@ -67,6 +71,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 5000,
     baseCost: 5000,
+    upgradeCostScaling: 1.0,
     costCurrency: 'knowledge',
     maxLevel: 1,
     effect: 0, // Binary on/off state
@@ -99,7 +104,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   knowledge: number,
   setKnowledge: (value: number | ((prev: number) => number)) => void,
   initialCanningState?: CanningState,
-  recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit'
+  recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit',
+  farmTier?: number
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -180,6 +186,16 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       };
     });
   }, [experience, canningState.canningExperience]); // Watch both experience types
+
+  // Reset canning state when farm tier changes (farm upgrade)
+  const farmTierRef = useRef(farmTier);
+  useEffect(() => {
+    if (farmTier !== undefined && farmTierRef.current !== undefined && farmTier > farmTierRef.current) {
+      // Farm tier increased, reset canning state
+      setCanningState(INITIAL_CANNING_STATE);
+    }
+    farmTierRef.current = farmTier;
+  }, [farmTier]);
   
   // Update upgrade effects based on levels
   const updateUpgradeEffects = useCallback((upgrades: CanningUpgrade[]) => {
@@ -209,7 +225,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const updateUpgradeCosts = useCallback((upgrades: CanningUpgrade[]) => {
     return upgrades.map(upgrade => ({
       ...upgrade,
-      cost: Math.ceil(upgrade.baseCost * Math.pow(1.5, upgrade.level))
+      cost: Math.ceil(upgrade.baseCost * Math.pow(upgrade.upgradeCostScaling, upgrade.level))
     }));
   }, []);
   
@@ -596,7 +612,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       }
     }));
   }, []);
-  
+
   return {
     canningState,
     startCanning,

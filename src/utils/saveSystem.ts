@@ -48,6 +48,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 100,
       baseCost: 100,
+      upgradeCostScaling: 1.5,
       costCurrency: 'money' as const,
       effect: 1.0,
       unlocked: true
@@ -60,6 +61,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 150,
       baseCost: 150,
+      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 1.0,
       unlocked: true
@@ -72,6 +74,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 200,
       baseCost: 200,
+      upgradeCostScaling: 1.4,
       costCurrency: 'knowledge' as const,
       effect: 0,
       unlocked: true
@@ -84,6 +87,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 500,
       baseCost: 500,
+      upgradeCostScaling: 1.3,
       costCurrency: 'money' as const,
       maxLevel: 14,
       effect: 1,
@@ -97,6 +101,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 5000,
       baseCost: 5000,
+      upgradeCostScaling: 1.0,
       costCurrency: 'knowledge' as const,
       maxLevel: 1,
       effect: 0,
@@ -110,7 +115,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
     let updatedUpgrade = { ...upgrade, level: savedLevel };
     
     // Recalculate cost and effect based on level
-    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(1.5, savedLevel));
+    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(updatedUpgrade.upgradeCostScaling, savedLevel));
     
     // Recalculate effect based on type and level
     switch (updatedUpgrade.type) {
@@ -199,6 +204,7 @@ export interface ExtendedGameState {
   knowledge: number;
   activeVeggie: number;
   day: number;
+  totalDaysElapsed?: number;
   greenhouseOwned: boolean;
   heirloomOwned: boolean;
   autoSellOwned: boolean;
@@ -299,6 +305,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 100,
           baseCost: 100,
+          upgradeCostScaling: 1.5,
           costCurrency: 'money',
           effect: 1.0,
           unlocked: true
@@ -311,6 +318,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 150,
           baseCost: 150,
+          upgradeCostScaling: 1.5,
           costCurrency: 'knowledge',
           effect: 1.0,
           unlocked: true
@@ -323,6 +331,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 200,
           baseCost: 200,
+          upgradeCostScaling: 1.4,
           costCurrency: 'knowledge',
           effect: 0,
           unlocked: true
@@ -335,6 +344,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 500,
           baseCost: 500,
+          upgradeCostScaling: 1.3,
           costCurrency: 'money',
           maxLevel: 14,
           effect: 1,
@@ -348,6 +358,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 5000,
           baseCost: 5000,
+          upgradeCostScaling: 1.0,
           costCurrency: 'knowledge',
           maxLevel: 1,
           effect: 0,
@@ -445,6 +456,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
         level: 0,
         cost: 5000,
         baseCost: 5000,
+        upgradeCostScaling: 1.0,
         costCurrency: 'knowledge',
         maxLevel: 1,
         effect: 0,

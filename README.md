@@ -120,6 +120,11 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 
 ### 🔮 Future Features
 - **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.
+- **Factions**: 
+  - Farmers - They help things grow through strange rituals
+  - Engineers - They help make machines smarter, but is it too much
+  - Chefs - Everything will taste better, but watch for the glutton
+  - Merchants - Profits over people
 - **Advanced Automation**: More sophisticated auto-management systems
 - **Achievement System**: Unlock rewards for hitting milestones and completing challenges
 
