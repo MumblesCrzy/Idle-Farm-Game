@@ -29,7 +29,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px 16px;
-  background: linear-gradient(135deg, #228833, #2e5c3e);
+  background: linear-gradient(135deg, #2e7d32, #2e5c3e);
   color: white;
   border-radius: 12px 12px 0 0;
 }
@@ -86,7 +86,7 @@
 .summary-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #228833;
+  color: #2e7d32;
 }
 
 .stash-table-container {
@@ -134,7 +134,7 @@
 
 .stash-count {
   font-weight: 600;
-  color: #228833;
+  color: #2e7d32;
 }
 
 .growth-rate {
@@ -149,7 +149,7 @@
 
 .annual-revenue {
   font-weight: 600;
-  color: #228833;
+  color: #2e7d32;
 }
 
 .stash-footer {
@@ -171,7 +171,7 @@
 }
 
 .close-footer-button {
-  background: #228833;
+  background: #2e7d32;
   color: white;
   border: none;
   padding: 8px 24px;

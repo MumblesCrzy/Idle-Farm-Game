@@ -5,7 +5,7 @@ import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
-import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning, isLeanVeggieData, reconstructVeggieData } from './utils/saveSystem';
+import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import './App.css';
 
 // Utility function to format large numbers with shorthand notation
@@ -182,7 +182,7 @@ type CostConfig = {
   baseValue: number;
   firstVeggieDiscount: number; // Multiplier for first veggie (< 1 means cheaper)
   scalingFactor: number; // How fast costs increase per veggie tier
-  upgradeCostScaling: number; // How fast costs increase per upgrade level
+  levelScalingFactor: number; // How fast costs increase per upgrade level
 };
 
 const COST_CONFIGS: Record<string, CostConfig> = {
@@ -190,31 +190,31 @@ const COST_CONFIGS: Record<string, CostConfig> = {
     baseValue: 10,
     firstVeggieDiscount: 0.5, // First veggie pays 50% of base
     scalingFactor: 1.4,
-    upgradeCostScaling: 1.25
+    levelScalingFactor: 1.25
   },
   harvester: {
     baseValue: 15,
     firstVeggieDiscount: 0.53, // ~8 for first veggie
     scalingFactor: 1.5,
-    upgradeCostScaling: 1.0 // Harvester doesn't scale with level
+    levelScalingFactor: 1.0 // Harvester doesn't scale with level
   },
   betterSeeds: {
     baseValue: 10,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.4,
-    upgradeCostScaling: 1.5
+    levelScalingFactor: 1.5
   },
   harvesterSpeed: {
     baseValue: 50,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.5,
-    upgradeCostScaling: 1.25
+    levelScalingFactor: 1.25
   },
   additionalPlot: {
     baseValue: 40,
     firstVeggieDiscount: 0.5,
     scalingFactor: 1.4,
-    upgradeCostScaling: 1.5
+    levelScalingFactor: 1.5
   }
 };
 
@@ -231,7 +231,7 @@ const calculateInitialCost = (type: keyof typeof COST_CONFIGS, index: number): n
 
 const calculateUpgradeCost = (type: keyof typeof COST_CONFIGS, currentLevel: number, baseCost: number): number => {
   const config = COST_CONFIGS[type];
-  return Math.ceil(baseCost * Math.pow(config.upgradeCostScaling, currentLevel) + 5 * currentLevel);
+  return Math.ceil(baseCost * Math.pow(config.levelScalingFactor, currentLevel) + 5 * currentLevel);
 };
 
 const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: number, surveyorCost: number, mechanicCost: number): AutoPurchaseConfig[] => [
@@ -710,26 +710,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     return loadedVeggies.map((savedVeggie, index) => {
       const initialVeggie = initialVeggies[index];
-      if (!initialVeggie) return savedVeggie; // Skip if no template available
       
-      let migratedVeggie: any;
+      // Add missing properties with defaults
+      const migratedVeggie: any = { ...savedVeggie };
       
-      // Check if this is lean data that needs reconstruction
-      if (isLeanVeggieData(savedVeggie)) {
-        console.log(`Reconstructing lean data for veggie: ${savedVeggie.id}`);
-        migratedVeggie = reconstructVeggieData(savedVeggie, initialVeggie);
-      } else {
-        // Standard migration for full data
-        migratedVeggie = { ...savedVeggie };
-        
-        // If autoPurchasers is missing, add it from the initial veggie data
-        if (!savedVeggie.autoPurchasers) {
-          migratedVeggie.autoPurchasers = initialVeggie.autoPurchasers;
-        }
+      // If autoPurchasers is missing, add it from the initial veggie data
+      if (!savedVeggie.autoPurchasers) {
+        migratedVeggie.autoPurchasers = initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(8, 10, 30, 38);
       }
       
       // If sellEnabled is missing, default to true (allow selling)
-      if (migratedVeggie.sellEnabled === undefined) {
+      if (savedVeggie.sellEnabled === undefined) {
         migratedVeggie.sellEnabled = true;
       }
       
@@ -1370,7 +1361,7 @@ function App() {
     purchaseUpgrade,
     canMakeRecipe,
     toggleAutoCanning
-  } = useCanningSystem(experience, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort, farmTier);
+  } = useCanningSystem(experience, veggies, setVeggies, heirloomOwned, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort, farmTier);
 
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
   const canningUnlocked = experience >= 5000;
@@ -1674,7 +1665,7 @@ function App() {
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
           {/* <button
             onClick={handleAddDebugMoney}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228833', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
+            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#2e7d32', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
             title="Add $15000 (Debug)"
           >
             Add $15000 (Debug)
@@ -1761,7 +1752,7 @@ function App() {
               <button
                 onClick={() => setShowAdvancedStash(true)}
                 style={{
-                  background: '#228833',
+                  background: '#2e7d32',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
@@ -1775,7 +1766,7 @@ function App() {
                   gap: '4px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#1e6b2b'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#228833'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#2e7d32'}
                 title="View detailed stash breakdown"
               >
                 <img src="./Money.png" alt="Stash" style={{ width: 18, height: 18, objectFit: 'contain' }} />
@@ -1954,6 +1945,7 @@ function App() {
           veggies={veggies}
           money={money}
           knowledge={knowledge}
+          heirloomOwned={heirloomOwned}
           startCanning={startCanning}
           completeCanning={completeCanning}
           canMakeRecipe={canMakeRecipe}
@@ -2104,7 +2096,10 @@ function App() {
                     <li><strong>Heatwave Chances:</strong> 1% chance all year</li>
                   </ul>
                   
-                  <h4>💡 Strategy Tips:</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                    Strategy Tips:
+                  </h4>
                   <ul>
                     <li><strong>Irrigation:</strong> Protects against Drought events</li>
                     <li><strong>Greenhouse:</strong> Essential upgrade! Eliminates Winter and Snow penalties</li>
@@ -2189,7 +2184,10 @@ function App() {
                     <li><strong>Current Progress:</strong> All growing vegetables and stashes cleared</li>
                   </ul>
                   
-                  <h4>💡 Strategy Tips:</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                    Strategy Tips:
+                  </h4>
                   <ul>
                     <li><strong>Prestige Timing:</strong> Buy a new farm when you have excess money, experience and knowledge</li>
                     <li><strong>Knowledge Planning:</strong> Don't spend knowledge right away, as it boosts experience gain</li>
@@ -2252,7 +2250,10 @@ function App() {
                     <li><strong>Example:</strong> Level 3 Better Seeds = 1.95× sale price (2.92× with Heirloom)</li>
                   </ul>
                   
-                  <h4>💡 Strategy Tips:</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                    Strategy Tips:
+                  </h4>
                   <ul>
                     <li><strong>Fertilizer Priority:</strong> Most cost-effective upgrade for increasing income</li>
                     <li><strong>Harvester First:</strong> Essential for idle gameplay and knowledge generation</li>
@@ -2316,7 +2317,10 @@ function App() {
                     <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
                   </ul>
                   
-                  <h4>💡 Strategy Tips:</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                    Strategy Tips:
+                  </h4>
                   <ul>
                     <li><strong>Knowledge Management:</strong> Knowledge factors into experience gain, so don't spend all of it at once.</li>
                   </ul>
@@ -2385,7 +2389,10 @@ function App() {
                     <li><strong>Red Button:</strong> Purchased but currently OFF</li>
                   </ul>
 
-                  <h4>💡 Auto-Purchaser Strategy:</h4>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> 
+                    Auto-Purchaser Strategy:
+                  </h4>
                   <ul>
                     <li><strong>Early Game:</strong> Buy Assistant first for consistent fertilizer upgrades</li>
                     <li><strong>Knowledge Phase:</strong> Add Cultivator when you have steady knowledge income</li>
@@ -2399,7 +2406,10 @@ function App() {
 
               {selectedInfoCategory === 'canning' && (
                 <div>
-                  <h4>🏺 Canning System</h4>
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                    Canning System
+                    </h4>
                   <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
                   
                   <h5>🎯 How Canning Works:</h5>
@@ -2440,7 +2450,10 @@ function App() {
                     <li><strong>Toggle Control:</strong> Can be turned on/off at any time after purchase</li>
                   </ul>
 
-                  <h4>💡 Canning Strategy:</h4>
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                    Canning Strategy:
+                    </h4>
                   <ul>
                     <li><strong>Start Simple:</strong> Begin with single-ingredient recipes to learn the system</li>
                     <li><strong>Upgrade Progressively:</strong> Buy Quick Hands first, then Family Recipe for better profits</li>

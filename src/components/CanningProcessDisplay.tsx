@@ -81,7 +81,7 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
                   backgroundColor: isCompleted ? '#f8fff8' : '#fff',
                   transition: 'all 0.2s ease',
                   fontSize: '11px',
-                  minHeight: '80px',
+                  minHeight: '60px',
                   display: 'flex',
                   flexDirection: 'column'
                 }}
@@ -100,14 +100,14 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
                 </div>
 
                 {/* Ingredients - abbreviated */}
-                <div style={{
+                {/* <div style={{
                   fontSize: '10px',
                   color: '#666',
                   marginBottom: '4px',
                   opacity: 0.8
                 }}>
                   {ingredientSummary}
-                </div>
+                </div> */}
 
                 {/* Progress bar - compact */}
                 <div style={{ 

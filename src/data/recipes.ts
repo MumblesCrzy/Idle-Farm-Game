@@ -26,7 +26,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ingredients: [{ veggieName: 'Lettuce', quantity: 3 }],
     baseProcessingTime: 35,
     baseSalePrice: 10, // Raw: 3 × $2 = $6, Canned: $10 (66% profit)
-    experienceRequired: 50, // Requires canning experience
+    experienceRequired: 500, // Requires canning experience
     category: 'simple'
   },
   
@@ -37,7 +37,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ingredients: [{ veggieName: 'Green Beans', quantity: 4 }],
     baseProcessingTime: 40,
     baseSalePrice: 20, // Raw: 4 × $3 = $12, Canned: $20 (66% profit)
-    experienceRequired: 150, // Requires canning experience
+    experienceRequired: 1500, // Requires canning experience
     category: 'simple'
   },
   
@@ -48,7 +48,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ingredients: [{ veggieName: 'Zucchini', quantity: 4 }],
     baseProcessingTime: 45,
     baseSalePrice: 27, // Raw: 4 × $4 = $16, Canned: $27 (68% profit)
-    experienceRequired: 300, // Requires canning experience
+    experienceRequired: 3000, // Requires canning experience
     category: 'simple'
   },
   
@@ -59,7 +59,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ingredients: [{ veggieName: 'Cucumbers', quantity: 5 }],
     baseProcessingTime: 50,
     baseSalePrice: 42, // Raw: 5 × $5 = $25, Canned: $42 (68% profit)
-    experienceRequired: 500, // Requires canning experience
+    experienceRequired: 5000, // Requires canning experience
     category: 'simple'
   },
   
@@ -77,7 +77,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 60,
     baseSalePrice: 25, // Raw: 2+4+6 = $12, Canned: $25 (108% profit)
-    experienceRequired: 800, // Requires canning experience
+    experienceRequired: 8000, // Requires canning experience
     category: 'complex'
   },
   
@@ -92,7 +92,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 75,
     baseSalePrice: 48, // Raw: 8+10+9 = $27, Canned: $48 (78% profit)
-    experienceRequired: 1200, // Requires canning experience
+    experienceRequired: 12000, // Requires canning experience
     category: 'complex'
   },
   
@@ -107,7 +107,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 90,
     baseSalePrice: 65, // Raw: 24+14+4 = $42, Canned: $65 (55% profit)
-    experienceRequired: 1800, // Requires canning experience
+    experienceRequired: 18000, // Requires canning experience
     category: 'complex'
   },
   
@@ -122,7 +122,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 85,
     baseSalePrice: 72, // Raw: 24+20+4 = $48, Canned: $72 (50% profit)
-    experienceRequired: 2500, // Requires canning experience
+    experienceRequired: 25000, // Requires canning experience
     category: 'complex'
   },
   
@@ -141,7 +141,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 120,
     baseSalePrice: 125, // Raw: 18+14+16+18 = $66, Canned: $125 (89% profit)
-    experienceRequired: 3500, // Requires canning experience
+    experienceRequired: 35000, // Requires canning experience
     category: 'gourmet'
   },
   
@@ -160,7 +160,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 150,
     baseSalePrice: 95, // Raw: 1+2+6+8+5+12+7 = $41, Canned: $95 (132% profit)
-    experienceRequired: 5000, // Requires canning experience
+    experienceRequired: 50000, // Requires canning experience
     category: 'gourmet'
   },
   
@@ -182,7 +182,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 300, // 5 minutes - a real commitment
     baseSalePrice: 350, // Raw: 2+4+6+8+10+12+14+16+18+20 = $110, Canned: $350 (218% profit)
-    experienceRequired: 8000, // Requires canning experience
+    experienceRequired: 80000, // Requires canning experience
     category: 'gourmet'
   },
   
@@ -200,7 +200,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 75,
     baseSalePrice: 85, // Raw: 28+12+10 = $50, Canned: $85 (70% profit)
-    experienceRequired: 4000, // Requires canning experience
+    experienceRequired: 40000, // Requires canning experience
     category: 'gourmet'
   },
   
@@ -215,7 +215,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     ],
     baseProcessingTime: 100,
     baseSalePrice: 110, // Raw: 24+27+14 = $65, Canned: $110 (69% profit)
-    experienceRequired: 6000, // Requires canning experience
+    experienceRequired: 60000, // Requires canning experience
     category: 'gourmet'
   }
 ];

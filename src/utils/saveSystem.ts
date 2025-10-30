@@ -48,7 +48,6 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 100,
       baseCost: 100,
-      upgradeCostScaling: 1.5,
       costCurrency: 'money' as const,
       effect: 1.0,
       unlocked: true
@@ -61,7 +60,6 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 150,
       baseCost: 150,
-      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 1.0,
       unlocked: true
@@ -74,7 +72,6 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 200,
       baseCost: 200,
-      upgradeCostScaling: 1.4,
       costCurrency: 'knowledge' as const,
       effect: 0,
       unlocked: true
@@ -87,7 +84,6 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 500,
       baseCost: 500,
-      upgradeCostScaling: 1.3,
       costCurrency: 'money' as const,
       maxLevel: 14,
       effect: 1,
@@ -101,7 +97,6 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 5000,
       baseCost: 5000,
-      upgradeCostScaling: 1.0,
       costCurrency: 'knowledge' as const,
       maxLevel: 1,
       effect: 0,
@@ -115,7 +110,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
     let updatedUpgrade = { ...upgrade, level: savedLevel };
     
     // Recalculate cost and effect based on level
-    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(updatedUpgrade.upgradeCostScaling, savedLevel));
+    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(1.5, savedLevel));
     
     // Recalculate effect based on type and level
     switch (updatedUpgrade.type) {
@@ -251,82 +246,16 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
 }
 
 // Save game state including canning
-// Helper function to create lean veggie data for save files
-function createLeanVeggieData(veggie: any) {
-  // Extract only autopurchaser owned and active properties (safely handle missing autoPurchasers)
-  const leanAutoPurchasers = veggie.autoPurchasers ? veggie.autoPurchasers.map((ap: any) => ({
-    owned: ap.owned,
-    active: ap.active
-  })) : [];
-
-  return {
-    id: veggie.name, // Using name as id for compatibility
-    growth: veggie.growth,
-    stash: veggie.stash,
-    unlocked: veggie.unlocked,
-    fertilizerLevel: veggie.fertilizerLevel,
-    harvesterOwned: veggie.harvesterOwned,
-    harvesterTimer: veggie.harvesterTimer,
-    betterSeedsLevel: veggie.betterSeedsLevel,
-    additionalPlotLevel: veggie.additionalPlotLevel,
-    autoPurchasers: leanAutoPurchasers
-  };
-}
-
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
-    // Create lean veggie data to reduce save file size
-    const leanVeggies = state.veggies.map(createLeanVeggieData);
-    
     const stateToSave = {
       ...state,
-      veggies: leanVeggies, // Replace with lean data
       canningVersion: CANNING_VERSION
     };
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (error) {
     console.error('saveGameStateWithCanning: Error saving to localStorage:', error);
   }
-}
-
-// Helper function to reconstruct full veggie data from lean save data
-export function reconstructVeggieData(leanVeggie: any, initialVeggieTemplate: any): any {
-  // Start with the full template
-  const fullVeggie = { ...initialVeggieTemplate };
-  
-  // Override with the saved lean data
-  fullVeggie.growth = leanVeggie.growth ?? fullVeggie.growth;
-  fullVeggie.stash = leanVeggie.stash ?? fullVeggie.stash;
-  fullVeggie.unlocked = leanVeggie.unlocked ?? fullVeggie.unlocked;
-  fullVeggie.fertilizerLevel = leanVeggie.fertilizerLevel ?? fullVeggie.fertilizerLevel;
-  fullVeggie.harvesterOwned = leanVeggie.harvesterOwned ?? fullVeggie.harvesterOwned;
-  fullVeggie.harvesterTimer = leanVeggie.harvesterTimer ?? fullVeggie.harvesterTimer;
-  fullVeggie.betterSeedsLevel = leanVeggie.betterSeedsLevel ?? fullVeggie.betterSeedsLevel;
-  fullVeggie.additionalPlotLevel = leanVeggie.additionalPlotLevel ?? fullVeggie.additionalPlotLevel;
-  
-  // Handle autoPurchasers - merge saved owned/active with template
-  if (leanVeggie.autoPurchasers && Array.isArray(leanVeggie.autoPurchasers)) {
-    fullVeggie.autoPurchasers = fullVeggie.autoPurchasers.map((templateAP: any, index: number) => {
-      const leanAP = leanVeggie.autoPurchasers[index];
-      if (leanAP) {
-        return {
-          ...templateAP,
-          owned: leanAP.owned ?? templateAP.owned,
-          active: leanAP.active ?? templateAP.active
-        };
-      }
-      return templateAP;
-    });
-  }
-  
-  return fullVeggie;
-}
-
-// Helper function to check if veggie data is in lean format
-export function isLeanVeggieData(veggie: any): boolean {
-  // Lean data has 'id' instead of 'name' and missing most properties
-  return veggie.id !== undefined && veggie.name === undefined && 
-         (veggie.growthRate === undefined || veggie.salePrice === undefined);
 }
 
 // Migrate old save data to include canning
@@ -371,7 +300,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 100,
           baseCost: 100,
-          upgradeCostScaling: 1.5,
           costCurrency: 'money',
           effect: 1.0,
           unlocked: true
@@ -384,7 +312,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 150,
           baseCost: 150,
-          upgradeCostScaling: 1.5,
           costCurrency: 'knowledge',
           effect: 1.0,
           unlocked: true
@@ -397,7 +324,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 200,
           baseCost: 200,
-          upgradeCostScaling: 1.4,
           costCurrency: 'knowledge',
           effect: 0,
           unlocked: true
@@ -410,7 +336,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 500,
           baseCost: 500,
-          upgradeCostScaling: 1.3,
           costCurrency: 'money',
           maxLevel: 14,
           effect: 1,
@@ -424,7 +349,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 5000,
           baseCost: 5000,
-          upgradeCostScaling: 1.0,
           costCurrency: 'knowledge',
           maxLevel: 1,
           effect: 0,
@@ -522,7 +446,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
         level: 0,
         cost: 5000,
         baseCost: 5000,
-        upgradeCostScaling: 1.0,
         costCurrency: 'knowledge',
         maxLevel: 1,
         effect: 0,

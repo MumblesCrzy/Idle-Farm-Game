@@ -7,6 +7,7 @@ import type { Recipe, CanningState } from '../types/canning';
 interface CanningPanelProps {
   canningState: CanningState;
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
+  heirloomOwned: boolean;
   onStartCanning: (recipeId: string) => boolean;
   onCollectCanning: (processIndex: number) => void;
   canMakeRecipe: (recipe: Recipe) => boolean;
@@ -22,6 +23,7 @@ type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 const CanningPanel: React.FC<CanningPanelProps> = ({
   canningState,
   veggies,
+  heirloomOwned,
   onStartCanning,
   onCollectCanning,
   canMakeRecipe,
@@ -49,10 +51,8 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
     }, 0);
     
     const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
-    
-    // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
-    // This keeps canning competitive but not overpowered
-    return Math.pow(1.25, averageBetterSeedsLevel);
+
+    return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
   };
 
   // Helper function to calculate effective sale price (including all multipliers)
@@ -124,7 +124,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
         case 'time':
           return a.processingTime - b.processingTime; // Ascending
         case 'difficulty':
-          return a.ingredients.length - b.ingredients.length; // Ascending
+          return b.ingredients.length - a.ingredients.length; // Descending
         default:
           return 0;
       }
@@ -154,6 +154,14 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
 
   const sortedRecipes = getSortedRecipes();
   const unlockedCount = canningState.recipes.filter(r => r.unlocked).length;
+  
+  // Find the next locked recipe (the one with the lowest experienceRequired above current experience)
+  const nextLockedRecipe = canningState.recipes
+    .filter(r => !r.unlocked)
+    .sort((a, b) => a.experienceRequired - b.experienceRequired)[0];
+
+  const nextRecipeExperience = nextLockedRecipe?.experienceRequired ?? 0;
+
   const totalRecipes = canningState.recipes.length;
 
   if (unlockedCount === 0) {
@@ -203,13 +211,16 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
             <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px' }} />
             Canning Recipes
           </h2>
-          <div style={{ fontSize: '11px', color: '#666' }}>
+          <div style={{ fontSize: '11px', color: '#666', textAlign: 'left' }}>
             {unlockedCount} of {totalRecipes} recipes unlocked
           </div>
           {canningState.totalItemsCanned > 0 && (
-            <div style={{ fontSize: '10px', color: '#2e7d2e', marginTop: '2px' }}>
-              Items Canned: {canningState.totalItemsCanned} | Experience: {canningState.canningExperience}
-            </div>
+              <div style={{ fontSize: '10px', color: '#2e7d2e', marginTop: '2px' }}>
+              Items Canned: {canningState.totalItemsCanned} | Experience: {canningState.canningExperience} 
+              {nextRecipeExperience > 0 && (
+                <span> | Next Recipe at {nextRecipeExperience} exp</span>
+              )}
+              </div>
           )}
         </div>
         
@@ -284,6 +295,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
                 veggies={veggies}
                 efficiencyMultiplier={efficiencyMultiplier}
                 speedMultiplier={speedMultiplier}
+                heirloomOwned={heirloomOwned}
               />
             ))}
           </div>
@@ -308,6 +320,7 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
         canMake={selectedRecipe ? canMakeRecipe(selectedRecipe) : false}
         efficiencyMultiplier={efficiencyMultiplier}
         speedMultiplier={speedMultiplier}
+        heirloomOwned={heirloomOwned}
       />
     </div>
   );

@@ -9,6 +9,7 @@ interface RecipeCardProps {
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
   efficiencyMultiplier?: number; // Family Recipe upgrade multiplier
   speedMultiplier?: number; // Quick Hands upgrade multiplier
+  heirloomOwned?: boolean; // Heirloom upgrade multiplier
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ 
@@ -18,7 +19,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   onShowDetails,
   veggies,
   efficiencyMultiplier = 1,
-  speedMultiplier = 1
+  speedMultiplier = 1,
+  heirloomOwned = false
 }) => {
   const getIngredientSummary = () => {
     // Create shorthand mapping for common veggies
@@ -26,7 +28,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       const shortNames: { [key: string]: string } = {
         'Radish': 'Rad',
         'Lettuce': 'Let',
-        'Green Beans': 'GB',
+        'Green Beans': 'GrB',
         'Broccoli': 'Bro',
         'Carrots': 'Car',
         'Tomatoes': 'Tom',
@@ -70,9 +72,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     
     const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
     
-    // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
-    // This keeps canning competitive but not overpowered
-    return Math.pow(1.25, averageBetterSeedsLevel);
+    return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
   };
 
   const getEffectiveProcessingTime = () => {
@@ -83,13 +83,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     const rawValue = getRawValue();
     const effectiveSalePrice = getEffectiveSalePrice();
     return effectiveSalePrice - rawValue;
-  };
-
-  const getProfitColor = () => {
-    const profit = getProfit();
-    if (profit > 0) return '#4CAF50';
-    if (profit === 0) return '#FF9800';
-    return '#f44336';
   };
 
   // Calculate reward amounts (assuming manual canning)
@@ -145,14 +138,14 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
           {recipe.name}
         </div>
         
-        <div style={{ 
+        {/*<div style={{ 
           fontSize: '11px', 
           color: '#666', 
           marginBottom: '6px',
           fontWeight: '500'
         }}>
           {getIngredientSummary()}
-        </div>
+        </div>*/}
         
         <div style={{ 
           display: 'flex', 

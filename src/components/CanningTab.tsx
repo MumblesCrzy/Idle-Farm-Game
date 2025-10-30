@@ -9,6 +9,7 @@ interface CanningTabProps {
   veggies: any;
   money: number;
   knowledge: number;
+  heirloomOwned: boolean;
   startCanning: (recipeId: string) => boolean;
   completeCanning: (processIndex: number) => void;
   canMakeRecipe: (recipe: any) => boolean;
@@ -26,6 +27,7 @@ const CanningTab: React.FC<CanningTabProps> = ({
   veggies,
   money,
   knowledge,
+  heirloomOwned,
   startCanning,
   completeCanning,
   canMakeRecipe,
@@ -43,6 +45,7 @@ const CanningTab: React.FC<CanningTabProps> = ({
         <CanningPanel
           canningState={canningState}
           veggies={veggies}
+          heirloomOwned={heirloomOwned}
           onStartCanning={startCanning}
           onCollectCanning={completeCanning}
           canMakeRecipe={canMakeRecipe}

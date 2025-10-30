@@ -46,7 +46,6 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 100,
       baseCost: 100,
-      upgradeCostScaling: 1.5,
       costCurrency: 'money' as const,
       effect: 1.0,
       unlocked: true
@@ -59,7 +58,6 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 150,
       baseCost: 150,
-      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 1.0,
       unlocked: true
@@ -72,7 +70,6 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 200,
       baseCost: 200,
-      upgradeCostScaling: 1.4,
       costCurrency: 'knowledge' as const,
       effect: 0,
       unlocked: true
@@ -85,7 +82,6 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 500,
       baseCost: 500,
-      upgradeCostScaling: 1.3,
       costCurrency: 'money' as const,
       maxLevel: 14,
       effect: 1,
@@ -99,7 +95,6 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 5000,
       baseCost: 5000,
-      upgradeCostScaling: 1.0,
       costCurrency: 'knowledge' as const,
       maxLevel: 1,
       effect: 0,
@@ -113,7 +108,7 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
     let updatedUpgrade = { ...upgrade, level: savedLevel };
     
     // Recalculate cost and effect based on level
-    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(updatedUpgrade.upgradeCostScaling, savedLevel));
+    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(1.5, savedLevel));
     
     // Recalculate effect based on type and level
     switch (updatedUpgrade.type) {

@@ -18,7 +18,8 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 100,
     baseCost: 100,
-    upgradeCostScaling: 1.5,
+    upgradeCostScaling: 2.1,
+    maxLevel: 18,
     costCurrency: 'money',
     effect: 1.0, // Multiplier for processing time
     unlocked: true
@@ -44,7 +45,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 200,
     baseCost: 200,
-    upgradeCostScaling: 1.4,
+    upgradeCostScaling: 1.5,
     costCurrency: 'knowledge',
     effect: 0, // Percentage chance for bonus
     unlocked: true
@@ -57,7 +58,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 500,
     baseCost: 500,
-    upgradeCostScaling: 1.3,
+    upgradeCostScaling: 1.7,
     costCurrency: 'money',
     maxLevel: 14,
     effect: 1, // Number of additional simultaneous processes
@@ -99,6 +100,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   experience: number,
   veggies: T[],
   setVeggies: React.Dispatch<React.SetStateAction<T[]>>,
+  heirloomOwned: boolean,
   money: number,
   setMoney: (value: number | ((prev: number) => number)) => void,
   knowledge: number,
@@ -309,7 +311,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       
       // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
       // This keeps canning competitive but not overpowered
-      return Math.pow(1.25, averageBetterSeedsLevel);
+      return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
     };
     
     const basePrice = recipe.baseSalePrice * (efficiencyUpgrade?.effect || 1) * getBetterSeedsMultiplier();
@@ -457,7 +459,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       }, 0);
       
       const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
-      return Math.pow(1.25, averageBetterSeedsLevel);
+      return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
     };
 
     const getEffectiveSalePrice = (recipe: Recipe) => {
@@ -489,7 +491,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         case 'time':
           return a.processingTime - b.processingTime; // Ascending (faster first)
         case 'difficulty':
-          return a.ingredients.length - b.ingredients.length; // Ascending (fewer ingredients first)
+          return b.ingredients.length - a.ingredients.length; // Descending (more ingredients first)
         default:
           return 0;
       }

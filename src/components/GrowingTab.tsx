@@ -144,7 +144,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
     } else if (autoPurchaser.owned && autoPurchaser.active) {
       return {
         padding: '0.4rem 0.6rem',
-        backgroundColor: '#228833',
+        backgroundColor: '#2e7d32',
         color: '#fff',
         border: 'none',
         borderRadius: '3px',
@@ -538,7 +538,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 🚫 HOLD
               </span>
             )}
-            <span style={{ fontWeight: 'bold', color: '#228833', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
+            <span style={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
             <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
               (~{daysToGrow} days to grow)
             </span>
@@ -547,7 +547,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             onClick={handleHarvest}
             disabled={veggies[activeVeggie].growth < 100}
             aria-label={`Harvest ${veggies[activeVeggie].name}`}
-            style={{ marginLeft: 'auto', fontSize: '1rem', padding: '4px 14px', background: '#228833', color: '#fff', border: 'none', borderRadius: '5px', minWidth: '90px', cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
+            style={{ marginLeft: 'auto', fontSize: '1rem', padding: '4px 14px', background: '#2e7d32', color: '#fff', border: 'none', borderRadius: '5px', minWidth: '90px', cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
           >
             {veggies[activeVeggie].growth < 100 ? 'Growing...' : 'Harvest'}
           </button>
@@ -790,7 +790,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
           
           return (
             <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-              <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>
+              <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>
                 Auto-Purchase: {7 - globalAutoPurchaseTimer} days
               </span>
               <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
@@ -815,31 +815,6 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
           );
         })()}
         
-        {/* Merchant Progress Bar */}
-        {autoSellOwned && (
-          <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-            <span style={{ color: '#228833', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days</span>
-            <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
-              <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
-              <span style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                color: '#222',
-                fontSize: '0.75rem',
-                pointerEvents: 'none',
-                userSelect: 'none',
-              }}>{Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%</span>
-            </div>
-          </div>
-        )}
-        
         {/* Sell All Button */}
         <button
           onClick={handleSell}
@@ -855,7 +830,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
   // Farm upgrades sidebar content
   const sidebarContent = (
     <>
-      <h2 style={{ textAlign: 'center', color: '#228833', marginBottom: '1rem' }}>Upgrades</h2>
+      <h2 style={{ textAlign: 'center', color: '#2e7d32', marginBottom: '1rem' }}>Upgrades</h2>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {/* Farmer's Almanac */}
@@ -951,6 +926,30 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             effect={'Doubles the effect of Better Seeds'}
           />
         </div>
+
+        {autoSellOwned && (
+            <div style={{ width: '100%', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days</span>
+              <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
+                <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
+                <span style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 'bold',
+                  color: '#222',
+                  fontSize: '0.75rem',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                }}>{Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%</span>
+              </div>
+            </div>
+        )}
       </div>
     </>
   );

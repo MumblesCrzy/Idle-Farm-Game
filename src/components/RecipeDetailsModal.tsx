@@ -7,6 +7,7 @@ interface RecipeDetailsModalProps {
   onClose: () => void;
   onStartCanning: (recipeId: string) => void;
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
+  heirloomOwned: boolean;
   canMake: boolean;
   efficiencyMultiplier?: number;
   speedMultiplier?: number;
@@ -18,6 +19,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
   onClose,
   onStartCanning,
   veggies,
+  heirloomOwned,
   canMake,
   efficiencyMultiplier = 1,
   speedMultiplier = 1
@@ -38,7 +40,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
     
     // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
     // This keeps canning competitive but not overpowered
-    return Math.pow(1.25, averageBetterSeedsLevel);
+    return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
   };
 
   const getRawValue = () => {
