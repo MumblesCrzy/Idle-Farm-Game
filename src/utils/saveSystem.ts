@@ -260,16 +260,8 @@ export function saveGameStateWithCanning(state: ExtendedGameState): void {
 
 // Migrate old save data to include canning
 function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
-  console.log('migrateCanningSaveData called:', {
-    hasCanningState: !!loaded.canningState,
-    canningVersion: loaded.canningVersion,
-    currentVersion: CANNING_VERSION,
-    needsMigration: !loaded.canningState || !loaded.canningVersion || loaded.canningVersion < CANNING_VERSION
-  });
-
   // If no canning data exists or version is outdated, create default
   if (!loaded.canningState || !loaded.canningVersion || loaded.canningVersion < CANNING_VERSION) {
-    console.log('Performing canning migration...');
     const defaultCanningState: CanningState = {
       recipes: INITIAL_RECIPES.map(config => ({
         id: config.id,
@@ -301,6 +293,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           cost: 100,
           baseCost: 100,
           costCurrency: 'money',
+          upgradeCostScaling: 2.1,
           effect: 1.0,
           unlocked: true
         },
@@ -312,6 +305,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 150,
           baseCost: 150,
+          upgradeCostScaling: 1.5,
           costCurrency: 'knowledge',
           effect: 1.0,
           unlocked: true
@@ -324,6 +318,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 200,
           baseCost: 200,
+          upgradeCostScaling: 1.5,
           costCurrency: 'knowledge',
           effect: 0,
           unlocked: true
@@ -336,6 +331,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 500,
           baseCost: 500,
+          upgradeCostScaling: 1.5,
           costCurrency: 'money',
           maxLevel: 14,
           effect: 1,
@@ -349,6 +345,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           level: 0,
           cost: 5000,
           baseCost: 5000,
+          upgradeCostScaling: 2.5,
           costCurrency: 'knowledge',
           maxLevel: 1,
           effect: 0,
@@ -377,15 +374,26 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
         });
       }
       
-      // Preserve upgrade levels - always use the default upgrades as base to ensure new upgrades are included
+      // Preserve upgrade levels and merge all properties from defaults
       if (originalCanningState.upgrades) {
-        originalCanningState.upgrades.forEach(savedUpgrade => {
-          const defaultUpgrade = defaultCanningState.upgrades.find(u => u.id === savedUpgrade.id);
-          if (defaultUpgrade) {
-            defaultUpgrade.level = savedUpgrade.level;
-            defaultUpgrade.cost = savedUpgrade.cost;
-            defaultUpgrade.effect = savedUpgrade.effect;
+        defaultCanningState.upgrades = defaultCanningState.upgrades.map(defaultUpgrade => {
+          const savedUpgrade = originalCanningState.upgrades.find(u => u.id === defaultUpgrade.id);
+          if (savedUpgrade) {
+            // Merge all properties, but keep default values for any missing fields
+            return {
+              ...defaultUpgrade,
+              ...savedUpgrade,
+              // Always enforce maxLevel and other critical properties from default
+              maxLevel: defaultUpgrade.maxLevel,
+              upgradeCostScaling: defaultUpgrade.upgradeCostScaling,
+              baseCost: defaultUpgrade.baseCost,
+              costCurrency: defaultUpgrade.costCurrency,
+              name: defaultUpgrade.name,
+              description: defaultUpgrade.description,
+              type: defaultUpgrade.type,
+            };
           }
+          return defaultUpgrade;
         });
       }
       
@@ -446,6 +454,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
         level: 0,
         cost: 5000,
         baseCost: 5000,
+        upgradeCostScaling: 2.5,
         costCurrency: 'knowledge',
         maxLevel: 1,
         effect: 0,
@@ -453,12 +462,6 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
       });
     }
   }
-  
-  console.log('Migration completed:', {
-    finalUpgrades: loaded.canningState?.upgrades?.map(u => u.id),
-    hasCannerUpgrade: loaded.canningState?.upgrades?.some(u => u.id === 'canner'),
-    canningVersion: loaded.canningVersion
-  });
 
   return loaded;
 }

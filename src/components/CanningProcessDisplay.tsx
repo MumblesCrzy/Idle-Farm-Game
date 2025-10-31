@@ -65,12 +65,6 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
 
             const isCompleted = process.completed || process.remainingTime <= 0;
 
-            // Create abbreviated ingredient list
-            const ingredientSummary = recipe.ingredients.map(ing => {
-              const shortName = ing.veggieName.substring(0, 3);
-              return `${shortName}×${ing.quantity}`;
-            }).join(', ');
-
             return (
               <div
                 key={index}

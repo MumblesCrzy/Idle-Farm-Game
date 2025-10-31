@@ -501,40 +501,24 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   // Auto-canning timer - runs every 10 seconds when Canner upgrade is purchased and enabled
   useEffect(() => {
     const cannerEnabled = cannerLevel > 0 && autoCanningEnabled;
-    
-    console.log('Auto-canning effect triggered:', {
-      cannerLevel,
-      autoCanningEnabled,
-      cannerEnabled
-    });
-    
+     
     if (!cannerEnabled) return;
     
     const autoCanningInterval = setInterval(() => {
-      console.log('Auto-canning interval triggered');
-      
+     
       // Use a fresh state getter to avoid stale closures
       setCanningState(currentState => {
         const currentActiveProcesses = currentState.activeProcesses.length;
         const currentMaxProcesses = currentState.maxSimultaneousProcesses;
-        
-        console.log('Auto-canning: Process check', {
-          currentActiveProcesses,
-          currentMaxProcesses,
-          hasSlots: currentActiveProcesses < currentMaxProcesses
-        });
-        
+               
         // Only try to start new processes if we have available slots
         if (currentActiveProcesses < currentMaxProcesses) {
           // Get unlocked recipes first
           const unlockedRecipes = currentState.recipes.filter(recipe => recipe.unlocked);
           
-          console.log('Auto-canning: Unlocked recipes', unlockedRecipes.map(r => r.name));
-          
+         
           // Sort recipes according to current preference
           const sortedRecipes = sortRecipes(unlockedRecipes);
-          
-          console.log('Auto-canning: Sorted recipes', sortedRecipes.map(r => r.name));
           
           // Find the first recipe that we can actually make (has enough ingredients)
           // Use current veggie state from ref to avoid stale closure issues
@@ -553,11 +537,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           }
           
           if (recipeToStart) {
-            console.log('Auto-canning: Found recipe with resources:', recipeToStart.name);
             // Start the recipe that has enough ingredients
             setTimeout(() => {
               const success = startCanning(recipeToStart.id, true);
-              console.log('Auto-canning: Start result', success);
             }, 0);
           } else {
             console.log('Auto-canning: No recipes have enough ingredients');
@@ -570,9 +552,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       });
     }, 10000); // 10 seconds
     
-    console.log('Auto-canning timer started');
     return () => {
-      console.log('Auto-canning timer stopped');
       clearInterval(autoCanningInterval);
     };
   }, [cannerLevel, autoCanningEnabled, unlockedRecipeCount]);

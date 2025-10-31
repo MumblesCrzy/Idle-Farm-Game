@@ -242,6 +242,7 @@ interface UpgradeButtonProps {
   flex?: boolean;
   effect?: string;
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
+  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 function UpgradeButton({ 
@@ -260,7 +261,8 @@ function UpgradeButton({
   level,
   flex = false,
   effect,
-  knowledgeCost
+  knowledgeCost,
+  formatNumber
 }: UpgradeButtonProps) {
   const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
   
@@ -361,8 +363,8 @@ function UpgradeButton({
           {!isOwned && !isMaxLevel && (
             <div style={{ fontSize: '11px', opacity: 0.9 }}>
               {knowledgeCost ? 
-                `$${cost} & ${knowledgeCost} Kn` : 
-                (currencyType === 'money' ? `$${cost}` : `${cost} Kn`)
+                `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn` : 
+                (currencyType === 'money' ? `$${formatNumber(cost, 1)}` : `${formatNumber(cost, 1)} Kn`)
               }
             </div>
           )}
@@ -460,7 +462,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
       }}>
         <img src="./Experience.png" alt="Growing Experience" style={{ width: 22, height: 22, verticalAlign: 'middle' }} />
         <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>
-          Growing Experience: {experience.toFixed(2)}
+          Growing Experience: {formatNumber(experience, 2)}
         </span>
       </div>
 
@@ -538,7 +540,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 🚫 HOLD
               </span>
             )}
-            <span style={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '1.1rem' }}>${veggies[activeVeggie].salePrice}</span>
+            <span style={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '1.1rem' }}>${formatNumber(veggies[activeVeggie].salePrice, 2)}</span>
             <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
               (~{daysToGrow} days to grow)
             </span>
@@ -648,7 +650,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
               <UpgradeButton
                 title={veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel
                   ? 'Fertilizer: MAX Level Reached'
-                  : `Fertilizer: +5% growth speed - Cost: $${veggies[activeVeggie].fertilizerCost}`}
+                  : `Fertilizer: +5% growth speed - Cost: $${formatNumber(veggies[activeVeggie].fertilizerCost, 1)}`}
                 imageSrc="./Fertilizer.png"
                 imageAlt="Fertilizer"
                 buttonText="Fertilizer"
@@ -662,6 +664,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 level={veggies[activeVeggie].fertilizerLevel}
                 flex={true}
                 effect={`Growth rate: ${veggies[activeVeggie].fertilizerLevel > 0 ? `+${(veggies[activeVeggie].fertilizerLevel * 5)}%` : '+0%'}`}
+                formatNumber={formatNumber}
               />
               <AutoPurchaserButton
                 autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'assistant')!}
@@ -677,7 +680,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
               <UpgradeButton
-                title={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${veggies[activeVeggie].betterSeedsCost}Kn`}
+                title={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${formatNumber(veggies[activeVeggie].betterSeedsCost, 1)}Kn`}
                 imageSrc="./Better Seeds.png"
                 imageAlt="Better Seeds"
                 buttonText="Better Seeds"
@@ -689,7 +692,8 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 disabled={knowledge < veggies[activeVeggie].betterSeedsCost}
                 level={veggies[activeVeggie].betterSeedsLevel}
                 flex={true}
-                effect={`Sale price: ${veggies[activeVeggie].betterSeedsLevel > 0 ? `+${Math.round(((heirloomOwned ? 1.5 : 1.25) ** veggies[activeVeggie].betterSeedsLevel - 1) * 100)}%` : '+0%'}`}
+                effect={`Sale price: ${veggies[activeVeggie].betterSeedsLevel > 0 ? `+${formatNumber(Math.round(((heirloomOwned ? 1.5 : 1.25) ** veggies[activeVeggie].betterSeedsLevel - 1) * 100), 2)}%` : '+0%'}`}
+                formatNumber={formatNumber}
               />
               <AutoPurchaserButton
                 autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'cultivator')!}
@@ -705,7 +709,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
               <UpgradeButton
-                title={totalPlotsUsed >= maxPlots ? 'Max Plots Reached' : `Additional Plot: +1 veggie/harvest - Cost: $${veggies[activeVeggie].additionalPlotCost}`}
+                title={totalPlotsUsed >= maxPlots ? 'Max Plots Reached' : `Additional Plot: +1 veggie/harvest - Cost: $${formatNumber(veggies[activeVeggie].additionalPlotCost, 1)}`}
                 imageSrc="./Additional Plot.png"
                 imageAlt="Additional Plot"
                 buttonText="Additional Plot"
@@ -719,6 +723,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                 level={veggies[activeVeggie].additionalPlotLevel}
                 flex={true}
                 effect={`Extra veggies per harvest: +${veggies[activeVeggie].additionalPlotLevel}`}
+                formatNumber={formatNumber}
               />
               <AutoPurchaserButton
                 autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'surveyor')!}
@@ -734,7 +739,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
           {/* Auto Harvester */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.5rem' }}>
             <UpgradeButton
-              title={veggies[activeVeggie].harvesterOwned ? 'Purchased' : `Auto Harvester - Cost: $${veggies[activeVeggie].harvesterCost}`}
+              title={veggies[activeVeggie].harvesterOwned ? 'Purchased' : `Auto Harvester - Cost: $${formatNumber(veggies[activeVeggie].harvesterCost, 1)}`}
               imageSrc="./Auto Harvester.png"
               imageAlt="Auto Harvester"
               buttonText="Auto Harvester"
@@ -746,6 +751,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
               disabled={veggies[activeVeggie].harvesterOwned || money < veggies[activeVeggie].harvesterCost}
               isOwned={veggies[activeVeggie].harvesterOwned}
               effect="Auto-harvests when ready"
+              formatNumber={formatNumber}
             />
           </div>
           
@@ -754,7 +760,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
                 <UpgradeButton
-                  title={`Harvester Speed: +5% speed - Cost: $${veggies[activeVeggie].harvesterSpeedCost}`}
+                  title={`Harvester Speed: +5% speed - Cost: $${formatNumber(veggies[activeVeggie].harvesterSpeedCost ?? 50, 1)}`}
                   imageSrc="./Harvester Speed.png"
                   imageAlt="Harvester Speed"
                   buttonText="Harvester Speed"
@@ -767,6 +773,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
                   level={veggies[activeVeggie].harvesterSpeedLevel ?? 0}
                   flex={true}
                   effect={`Harvest time: ${(veggies[activeVeggie].harvesterSpeedLevel ?? 0) > 0 ? `${Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))}s` : '50s'}`}
+                  formatNumber={formatNumber}
                 />
                 <AutoPurchaserButton
                   autoPurchaser={veggies[activeVeggie].autoPurchasers.find(ap => ap.id === 'mechanic')!}
@@ -848,6 +855,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             disabled={money < almanacCost}
             level={almanacLevel}
             effect={almanacLevel > 0 ? `Knowledge gain: +${(almanacLevel * 10)}%` : '+0%'}
+            formatNumber={formatNumber}
           />
         </div>
 
@@ -867,6 +875,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             disabled={irrigationOwned || money < irrigationCost || knowledge < irrigationKnCost}
             isOwned={irrigationOwned}
             effect="+15% growth rate, drought immunity"
+            formatNumber={formatNumber}
           />
         </div>
 
@@ -886,6 +895,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             disabled={autoSellOwned || money < MERCHANT_COST || knowledge < MERCHANT_KN_COST}
             isOwned={autoSellOwned}
             effect={`Auto-sells every ${MERCHANT_DAYS} days`}
+            formatNumber={formatNumber}
           />
         </div>
 
@@ -905,6 +915,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             disabled={greenhouseOwned || money < (GREENHOUSE_COST_PER_PLOT * maxPlots) || knowledge < (GREENHOUSE_KN_COST_PER_PLOT * maxPlots)}
             isOwned={greenhouseOwned}
             effect={'Winter immunity'}
+            formatNumber={formatNumber}
           />
         </div>
 
@@ -924,6 +935,7 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
             disabled={heirloomOwned || money < heirloomMoneyCost || knowledge < heirloomKnowledgeCost}
             isOwned={heirloomOwned}
             effect={'Doubles the effect of Better Seeds'}
+            formatNumber={formatNumber}
           />
         </div>
 

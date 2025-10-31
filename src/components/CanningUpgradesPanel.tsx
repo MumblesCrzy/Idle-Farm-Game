@@ -200,9 +200,24 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = ({
     }
   };
 
+  // Get known max level for an upgrade (defensive fallback)
+  const getKnownMaxLevel = (upgradeId: string): number | undefined => {
+    switch (upgradeId) {
+      case 'canning_speed':
+        return 18;
+      case 'simultaneous_processing':
+        return 14;
+      case 'canner':
+        return 1;
+      default:
+        return undefined;
+    }
+  };
+
   const getUpgradeTitle = (upgrade: CanningUpgrade): string => {
+    const effectiveMaxLevel = upgrade.maxLevel ?? getKnownMaxLevel(upgrade.id);
     let baseTitle = `${upgrade.name}: ${upgrade.description}`;
-    if (upgrade.maxLevel && upgrade.level >= upgrade.maxLevel) {
+    if (effectiveMaxLevel && upgrade.level >= effectiveMaxLevel) {
       baseTitle += ' | MAX LEVEL REACHED';
     }
     return baseTitle;
@@ -306,6 +321,7 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = ({
         }
         
         // Regular upgrade handling for all other upgrades
+        const effectiveMaxLevel = upgrade.maxLevel ?? getKnownMaxLevel(upgrade.id);
         return (
           <CanningUpgradeButton
             key={upgrade.id}
@@ -318,9 +334,9 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = ({
             cost={upgrade.cost}
             currencyType={upgrade.costCurrency}
             onClick={() => onPurchaseUpgrade(upgrade.id)}
-            isMaxLevel={upgrade.maxLevel ? upgrade.level >= upgrade.maxLevel : false}
+            isMaxLevel={effectiveMaxLevel ? upgrade.level >= effectiveMaxLevel : false}
             level={upgrade.level}
-            maxLevel={upgrade.maxLevel}
+            maxLevel={effectiveMaxLevel}
             effect={getUpgradeEffect(upgrade)}
           />
         );

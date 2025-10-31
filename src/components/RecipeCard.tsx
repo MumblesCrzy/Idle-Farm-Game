@@ -10,6 +10,7 @@ interface RecipeCardProps {
   efficiencyMultiplier?: number; // Family Recipe upgrade multiplier
   speedMultiplier?: number; // Quick Hands upgrade multiplier
   heirloomOwned?: boolean; // Heirloom upgrade multiplier
+  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ 
@@ -20,7 +21,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   veggies,
   efficiencyMultiplier = 1,
   speedMultiplier = 1,
-  heirloomOwned = false
+  heirloomOwned = false,
+  formatNumber
 }) => {
   const getIngredientSummary = () => {
     // Create shorthand mapping for common veggies
@@ -158,7 +160,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
             color: '#4CAF50',
             fontSize: '14px'
           }}>
-            ${getEffectiveSalePrice().toFixed(2)}
+            ${formatNumber(getEffectiveSalePrice(), 2)}
             {getBetterSeedsMultiplier() > 1 && (
               <span style={{ 
                 fontSize: '9px', 
@@ -166,7 +168,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
                 marginLeft: '2px',
                 fontWeight: 'normal'
               }}>
-                +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
+                +{formatNumber((getBetterSeedsMultiplier() - 1) * 100, 2)}%
               </span>
             )}
           </span>

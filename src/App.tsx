@@ -695,7 +695,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             const baseSalePrice = initialVeggies[index].salePrice;
             // Then apply the heirloom multiplier (1.5x per level instead of 1.25x)
             const newSalePrice = +(baseSalePrice * Math.pow(1.5, v.betterSeedsLevel)).toFixed(2);
-            console.log(`Updating ${v.name}: base=${baseSalePrice}, level=${v.betterSeedsLevel}, old=${v.salePrice}, new=${newSalePrice}`);
             return { ...v, salePrice: newSalePrice };
           }
           return v;
@@ -743,7 +742,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Calculate dynamic heirloom costs based on highest unlocked veggie using useMemo for proper reactivity
   const heirloomMoneyCost = useMemo(() => {
     const cost = HEIRLOOM_COST_PER_VEGGIE * (highestUnlockedVeggie + 1);
-    console.log(`Heirloom cost recalculated: highestUnlockedVeggie=${highestUnlockedVeggie}, cost=$${cost}`);
     return cost;
   }, [highestUnlockedVeggie]);
   const heirloomKnowledgeCost = useMemo(() => 
@@ -889,17 +887,13 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
             newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
 
-          console.log(`Auto-harvest unlock check: current exp=${experience}, gained=${totalExperienceGain}, projected=${projectedExperience}`);
-
           // Check for unlocks using projected experience
           newVeggies.forEach((veg, idx) => {
             if (!veg.unlocked && projectedExperience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
-              console.log(`Auto-unlocking ${veg.name} (index: ${idx}) - required: ${veg.experienceToUnlock}, projected: ${projectedExperience}`);
               newVeggies[idx] = { ...veg, unlocked: true };
               totalPlotsUsed++;
               // Update highest unlocked veggie if this is higher
               if (idx > highestUnlockedVeggie) {
-                console.log(`Auto-harvest unlocking new highest veggie: ${veg.name} (index: ${idx})`);
                 setHighestUnlockedVeggie(idx);
               }
             }
@@ -960,17 +954,13 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       const unlockOrder = updated
         .map((vg, idx) => ({ ...vg, idx }))
         .filter(vg => !vg.unlocked && newExperience >= vg.experienceToUnlock)
-        .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);
-      
-      console.log(`Checking veggie unlocks: current exp=${experience}, new exp=${newExperience}, eligible veggies=${unlockOrder.length}`);
+        .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);     
       
       for (let i = 0; i < unlockOrder.length && totalPlotsUsed < maxPlots; i++) {
         updated[unlockOrder[i].idx].unlocked = true;
         totalPlotsUsed++;
         // Update highest unlocked veggie if this is higher
         if (unlockOrder[i].idx > highestUnlockedVeggie) {
-          console.log(`Unlocking new highest veggie: ${updated[unlockOrder[i].idx].name} (index: ${unlockOrder[i].idx})`);
-          console.log(`New heirloom cost will be: $${HEIRLOOM_COST_PER_VEGGIE * (unlockOrder[i].idx + 1)} & ${HEIRLOOM_KN_PER_VEGGIE * (unlockOrder[i].idx + 1)} Kn`);
           setHighestUnlockedVeggie(unlockOrder[i].idx);
         }
       }
@@ -1370,11 +1360,9 @@ function App() {
   useEffect(() => {
     // If experience is significantly high, we likely just imported data
     if (experience > 10000) {
-      console.log('Detected imported data with experience:', experience);
       justImportedRef.current = true;
       // Reset the flag after a short delay to allow normal auto-saving later
       setTimeout(() => {
-        console.log('Re-enabling auto-save after import delay');
         justImportedRef.current = false;
       }, 5000);
     }
@@ -1389,19 +1377,11 @@ function App() {
   const performSave = useCallback(() => {
     // Don't auto-save if we just imported data
     if (justImportedRef.current) {
-      console.log('Skipping auto-save because data was just imported');
       justImportedRef.current = false;
       return;
     }
     
     if (canningState) {
-      console.log('Saving canning state:', {
-        upgradeCount: canningState.upgrades?.length,
-        recipeCount: canningState.recipes?.length,
-        unlockedRecipeCount: canningState.unlockedRecipes?.length,
-        canningExperience: canningState.canningExperience,
-        totalItemsCanned: canningState.totalItemsCanned
-      });
       const gameState = {
         veggies,
         money,
@@ -1647,7 +1627,6 @@ function App() {
       }
     });
 
-    console.log('All images preloading started');
   }, []); // Only run once on mount
 
   return (
@@ -1746,7 +1725,7 @@ function App() {
             </span>
             <span>
             <img src="./Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Knowledge: {knowledge.toFixed(2)}
+            Knowledge: {formatNumber(knowledge, 2)}
             </span>
             <span>
               <button
@@ -1804,14 +1783,14 @@ function App() {
                 title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
               >
               <span style={{ color: '#fff', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Buy Larger Farm:</span> ${formatNumber(farmCost, 1)}
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Buy Larger Farm:</span> ${formatNumber(farmCost, 2)}
                 <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
                 {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
                 <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
                 )}
                 {/* <div /> */}
                 <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 1) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 1) : 0}Kn
+                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 2) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 2) : 0}Kn
                 {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
               </span>
               </button>
@@ -2300,7 +2279,7 @@ function App() {
                   <h5>🏠 Greenhouse</h5>
                   <ul>
                     <li><strong>Effect:</strong> Complete immunity to Winter and Snow penalties</li>
-                    <li><strong>Cost:</strong> ${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
+                    <li><strong>Cost:</strong> ${GREENHOUSE_COST_PER_PLOT} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
                     <li><strong>Winter Protection:</strong> Prevents -90% growth penalty in Winter</li>
                     <li><strong>Snow Protection:</strong> Prevents -100% growth penalty during Snow</li>
                     <li><strong>Value:</strong> Transforms Winter from terrible to normal growing season</li>

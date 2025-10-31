@@ -68,12 +68,10 @@ const RandomIcon: React.FC<RandomIconProps> = ({
         // Generate random position and show
         const newPosition = getRandomPosition();
         setPosition(newPosition);
-        console.log('RandomIcon: Showing icon at position', newPosition);
         setVisible(true);
         
         // Delay the onAppear callback slightly to ensure the icon is rendered
         setTimeout(() => {
-          console.log('RandomIcon: Triggering onAppear callback');
           onAppear(); // Call appearance callback
         }, 100);
         // Schedule hiding after duration
@@ -93,12 +91,10 @@ const RandomIcon: React.FC<RandomIconProps> = ({
       
       const newPosition = getRandomPosition();
       setPosition(newPosition);
-      console.log('RandomIcon: Initial show at position', newPosition);
       setVisible(true);
       
       // Delay the onAppear callback slightly to ensure the icon is rendered
       setTimeout(() => {
-        console.log('RandomIcon: Triggering initial onAppear callback');
         onAppear(); // Call appearance callback
       }, 100);
       
@@ -146,7 +142,6 @@ const RandomIcon: React.FC<RandomIconProps> = ({
             animation: 'bounce 1.2s infinite alternate ease-in-out',
           }}
           onLoad={() => {
-            console.log('RandomIcon: Image loaded successfully');
             setImageLoaded(true);
           }}
           onError={(e) => {

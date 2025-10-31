@@ -11,6 +11,7 @@ interface RecipeDetailsModalProps {
   canMake: boolean;
   efficiencyMultiplier?: number;
   speedMultiplier?: number;
+  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
@@ -22,7 +23,8 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
   heirloomOwned,
   canMake,
   efficiencyMultiplier = 1,
-  speedMultiplier = 1
+  speedMultiplier = 1,
+  formatNumber
 }) => {
   if (!isVisible || !recipe) return null;
 
@@ -257,14 +259,14 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
             <div>
               <span style={{ color: '#666' }}>Sale Price:</span>
               <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                ${getEffectiveSalePrice().toFixed(2)}
+                ${formatNumber(getEffectiveSalePrice(), 2)}
                 {(efficiencyMultiplier !== 1 || getBetterSeedsMultiplier() !== 1) && (
                   <span style={{ 
                     fontSize: '10px', 
                     color: '#666', 
                     marginLeft: '4px' 
                   }}>
-                    (base: ${recipe.salePrice.toFixed(2)})
+                    (base: ${formatNumber(recipe.salePrice, 2)})
                   </span>
                 )}
                 {getBetterSeedsMultiplier() > 1 && (
@@ -273,7 +275,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
                     color: '#8BC34A', 
                     fontWeight: 'normal'
                   }}>
-                    Better Seeds: +{((getBetterSeedsMultiplier() - 1) * 100).toFixed(0)}%
+                    Better Seeds: +{formatNumber((getBetterSeedsMultiplier() - 1) * 100, 2)}%
                   </div>
                 )}
               </div>
@@ -281,7 +283,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
             <div>
               <span style={{ color: '#666' }}>Raw Value:</span>
               <div style={{ fontWeight: 'bold', color: '#666' }}>
-                ${getRawValue().toFixed(2)}
+                ${formatNumber(getRawValue(), 2)}
               </div>
             </div>
             <div>
@@ -290,7 +292,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
                 fontWeight: 'bold', 
                 color: getProfit() > 0 ? '#28a745' : '#dc3545' 
               }}>
-                ${getProfit().toFixed(2)} ({getProfitMargin().toFixed(0)}%)
+                ${formatNumber(getProfit(), 2)} ({getProfitMargin().toFixed(0)}%)
               </div>
             </div>
             <div>

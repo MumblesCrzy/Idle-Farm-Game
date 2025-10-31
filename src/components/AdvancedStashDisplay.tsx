@@ -186,7 +186,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
         <div className="stash-summary">
           <div className="summary-item">
             <span className="summary-label">Total Stash:</span>
-            <span className="summary-value">{totalStash}</span>
+            <span className="summary-value">{formatNumber(totalStash, 2)}</span>
           </div>
           <div className="summary-item">
             <span className="summary-label">Total Value:</span>
@@ -227,10 +227,10 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
                   <tr key={veggie.name}>
                     <td className="veggie-name">{veggie.name}</td>
                     <td className="stash-count">
-                      {veggie.stash}
+                      {formatNumber(veggie.stash, 2)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
-                        ${(veggie.salePrice).toFixed(2)} value
+                        ${formatNumber(veggie.salePrice, 2)} each
                         <br />
                         ${formatNumber(veggie.stash * veggie.salePrice, 2)} total value
                       </small>
@@ -277,7 +277,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
                       )}
                     </td>
                     <td className="yearly-growth">
-                      {formatNumber(totalYearlyProduction, 0)}
+                      {formatNumber(totalYearlyProduction, 2)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
                         {(1 + (veggie.additionalPlotLevel || 0))} per cycle
