@@ -1,44 +1,7 @@
 import React from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
-
-// Type definitions
-type AutoPurchaseConfig = {
-  id: string;
-  name: string;
-  purchaseType: string;
-  currencyType: 'money' | 'knowledge';
-  cycleDays: number;
-  owned: boolean;
-  active: boolean;
-  cost: number;
-  timer: number;
-};
-
-type Veggie = {
-  fertilizerMaxLevel: number;
-  harvesterSpeedLevel?: number;
-  harvesterSpeedCost?: number;
-  name: string;
-  growth: number;
-  growthRate: number;
-  stash: number;
-  unlocked: boolean;
-  experience: number;
-  experienceToUnlock: number;
-  fertilizerLevel: number;
-  fertilizerCost: number;
-  harvesterOwned: boolean;
-  harvesterCost: number;
-  harvesterTimer: number;
-  salePrice: number;
-  betterSeedsLevel: number;
-  betterSeedsCost: number;
-  additionalPlotLevel: number;
-  additionalPlotCost: number;
-  autoPurchasers: AutoPurchaseConfig[];
-  sellEnabled: boolean;
-};
+import type { Veggie, AutoPurchaseConfig } from '../types/game';
 
 interface GrowingTabProps {
   veggies: Veggie[];

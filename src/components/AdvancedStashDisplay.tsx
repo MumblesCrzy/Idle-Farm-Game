@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
+import type { Veggie } from '../types/game';
 import './AdvancedStashDisplay.css';
 
 // Utility function to format large numbers with shorthand notation
@@ -20,23 +22,6 @@ function formatNumber(num: number, decimalPlaces: number = 1): string {
   const formatted = value.toFixed(decimalPlaces);
   return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
 }
-
-// Constants from App.tsx
-const SEASON_BONUS = 0.1;
-
-const veggieSeasonBonuses: Record<string, string[]> = {
-  Radish: ['Spring', 'Fall'],
-  Lettuce: ['Spring', 'Fall'],
-  Carrots: ['Spring', 'Fall'],
-  Broccoli: ['Fall'],
-  Cabbage: ['Spring', 'Fall'],
-  Onions: ['Spring'],
-  'Green Beans': ['Summer'],
-  Zucchini: ['Summer'],
-  Cucumbers: ['Summer'],
-  Tomatoes: ['Summer'],
-  Peppers: ['Summer'],
-};
 
 // Calculate base growth rate with fertilizer bonus (no weather/season effects)
 const calculateBaseGrowthRate = (veggie: Veggie): number => {
@@ -87,31 +72,6 @@ const calculateYearlyProduction = (veggie: Veggie, greenhouseOwned: boolean): nu
   });
   
   return Math.floor(totalProduction);
-};
-
-type Veggie = {
-  fertilizerMaxLevel: number;
-  harvesterSpeedLevel?: number;
-  harvesterSpeedCost?: number;
-  name: string;
-  growth: number;
-  growthRate: number;
-  stash: number;
-  unlocked: boolean;
-  experience: number;
-  experienceToUnlock: number;
-  fertilizerLevel: number;
-  fertilizerCost: number;
-  harvesterOwned: boolean;
-  harvesterCost: number;
-  harvesterTimer: number;
-  salePrice: number;
-  betterSeedsLevel: number;
-  betterSeedsCost: number;
-  additionalPlotLevel: number;
-  additionalPlotCost: number;
-  autoPurchasers: any[];
-  sellEnabled: boolean;
 };
 
 type AdvancedStashDisplayProps = {
