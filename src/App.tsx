@@ -8,13 +8,11 @@ import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
-import type { Veggie, AutoPurchaseConfig, AutoPurchaseType, CurrencyType, GameState } from './types/game';
+import type { Veggie, GameState } from './types/game';
 import {
   RAIN_CHANCES,
   DROUGHT_CHANCES,
   STORM_CHANCES,
-  WEATHER_TYPES,
-  SEASON_BONUS,
   IRRIGATION_COST,
   IRRIGATION_KN_COST,
   MERCHANT_DAYS,
@@ -25,147 +23,20 @@ import {
   HEIRLOOM_COST_PER_VEGGIE,
   HEIRLOOM_KN_PER_VEGGIE,
   veggieSeasonBonuses,
-  COST_CONFIGS,
   GAME_STORAGE_KEY,
-  type WeatherType,
-  type CostConfig
+  type WeatherType
 } from './config/gameConstants';
+import {
+  formatNumber,
+  getVeggieGrowthBonus,
+  calculateExpRequirement,
+  calculateInitialCost,
+  calculateUpgradeCost,
+  createAutoPurchaserConfigs,
+  canMakePurchase,
+  getSeason
+} from './utils/gameCalculations';
 import './App.css';
-
-// Utility function to format large numbers with shorthand notation
-function formatNumber(num: number, decimalPlaces: number = 1): string {
-  if (num < 1000) {
-    return num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2)).replace(/\.?0+$/, '');
-  }
-  
-  const units = ['', 'K', 'M', 'B', 'T', 'Q'];
-  let unitIndex = 0;
-  let value = num;
-  
-  while (value >= 1000 && unitIndex < units.length - 1) {
-    value /= 1000;
-    unitIndex++;
-  }
-  
-  // For values >= 1000, always show at least 1 decimal place unless it's a whole number
-  const formatted = value.toFixed(decimalPlaces);
-  return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
-}
-
-// Returns the effective growth per tick for a veggie, factoring all bonuses/penalties
-function getVeggieGrowthBonus(
-  v: Veggie,
-  season: string,
-  currentWeather: string,
-  greenhouseOwned: boolean,
-  irrigationOwned: boolean
-): number {
-  let growthAmount = v.growthRate;
-  // Fertilizer bonus - 5% multiplicative increase per level
-  growthAmount *= (1 + v.fertilizerLevel * 0.05);
-  // Season bonus
-  const bonusSeasons = veggieSeasonBonuses[v.name] || [];
-  if (bonusSeasons.includes(season)) {
-    growthAmount += SEASON_BONUS;
-  }
-  // Weather effects
-  if (season === 'Winter' && !greenhouseOwned) {
-    growthAmount *= 0.1; // 90% penalty in winter unless greenhouse owned
-  }
-  // Drought penalty (unless irrigation)
-  if (currentWeather === 'Drought' && !irrigationOwned) {
-    growthAmount *= 0.5; // 50% penalty
-  }
-  // Irrigation water efficiency bonus (always active when owned)
-  if (irrigationOwned) {
-    growthAmount *= 1.15; // 15% growth bonus
-  }
-  // Rain bonus
-  if (currentWeather === 'Rain') {
-    growthAmount *= 1.2; // 20% bonus
-  }
-  // Storm bonus
-  if (currentWeather === 'Storm') {
-    growthAmount *= 1.1; // 10% bonus
-  }
-  // Heatwave penalty
-  if (currentWeather === 'Heatwave') {
-    if (season === 'Summer') {
-      growthAmount *= 0.7; // 30% penalty
-    } else if (season === 'Spring' || season === 'Fall') {
-      veggieSeasonBonuses[v.name].includes('Summer') ? growthAmount *= 1.1 : growthAmount *= 0.7; // 10% bonus for summer veggies, else 30% penalty
-    } else {
-      growthAmount *= 1.2; // 20% bonus in winter
-    }
-  }
-  if (currentWeather === 'Snow' && !greenhouseOwned) {
-    growthAmount *= 0.0; // 100% penalty
-  }
-  return Math.max(growthAmount, 0.01);
-}
-
-const calculateExpRequirement = (index: number): number => {
-  if (index === 0) return 0; // First veggie is free
-  return Math.floor(50 * Math.pow(1.9, index));
-};
-
-const calculateInitialCost = (type: keyof typeof COST_CONFIGS, index: number): number => {
-  const config = COST_CONFIGS[type];
-  const baseMultiplier = index === 0 ? config.firstVeggieDiscount : 1;
-  return Math.floor(config.baseValue * baseMultiplier * Math.pow(config.scalingFactor, index));
-};
-
-const calculateUpgradeCost = (type: keyof typeof COST_CONFIGS, currentLevel: number, baseCost: number): number => {
-  const config = COST_CONFIGS[type];
-  return Math.ceil(baseCost * Math.pow(config.levelScalingFactor, currentLevel) + 5 * currentLevel);
-};
-
-const createAutoPurchaserConfigs = (assistantCost: number, cultivatorCost: number, surveyorCost: number, mechanicCost: number): AutoPurchaseConfig[] => [
-  {
-    id: 'assistant',
-    name: 'Assistant',
-    purchaseType: 'fertilizer',
-    currencyType: 'money',
-    cycleDays: 7,
-    owned: false,
-    active: false,
-    cost: assistantCost,
-    timer: 0
-  },
-  {
-    id: 'cultivator',
-    name: 'Cultivator',
-    purchaseType: 'betterSeeds',
-    currencyType: 'knowledge',
-    cycleDays: 7,
-    owned: false,
-    active: false,
-    cost: cultivatorCost,
-    timer: 0
-  },
-  {
-    id: 'surveyor',
-    name: 'Surveyor',
-    purchaseType: 'additionalPlot',
-    currencyType: 'money',
-    cycleDays: 7,
-    owned: false,
-    active: false,
-    cost: surveyorCost,
-    timer: 0
-  },
-  {
-    id: 'mechanic',
-    name: 'Mechanic',
-    purchaseType: 'harvesterSpeed',
-    currencyType: 'money',
-    cycleDays: 7,
-    owned: false,
-    active: false,
-    cost: mechanicCost,
-    timer: 0
-  }
-];
 
 const initialVeggies: Veggie[] = [
   { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97, autoPurchasers: createAutoPurchaserConfigs(8, 10, 30*5, 38), sellEnabled: true },
@@ -179,54 +50,6 @@ const initialVeggies: Veggie[] = [
   { name: 'Broccoli', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(8), fertilizerLevel: 0, fertilizerCost: 90, harvesterOwned: false, harvesterCost: 3840, harvesterTimer: 0, salePrice: 9, betterSeedsLevel: 0, betterSeedsCost: 90, harvesterSpeedLevel: 0, harvesterSpeedCost: 12800, additionalPlotLevel: 0, additionalPlotCost: 3840, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(221, 294, 885*5, 1922), sellEnabled: true },
   { name: 'Onions', growth: 0, growthRate: 0.7692, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(9), fertilizerLevel: 0, fertilizerCost: 100, harvesterOwned: false, harvesterCost: 7680, harvesterTimer: 0, salePrice: 10, betterSeedsLevel: 0, betterSeedsCost: 100, harvesterSpeedLevel: 0, harvesterSpeedCost: 25600, additionalPlotLevel: 0, additionalPlotCost: 7680, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(309, 412, 1239*5, 2883), sellEnabled: true },
 ];
-
-// Auto-purchase utility functions
-const getAutoPurchaseCost = (veggie: Veggie, purchaseType: AutoPurchaseType): number => {
-  switch (purchaseType) {
-    case 'fertilizer':
-      return veggie.fertilizerCost;
-    case 'betterSeeds':
-      return veggie.betterSeedsCost;
-    case 'harvesterSpeed':
-      return veggie.harvesterSpeedCost || 0;
-    case 'additionalPlot':
-      return veggie.additionalPlotCost;
-    default:
-      return 0;
-  }
-};
-
-const canMakePurchase = (
-  veggie: Veggie, 
-  purchaseType: AutoPurchaseType, 
-  money: number, 
-  knowledge: number,
-  currencyType: CurrencyType = 'money',
-  veggies?: Veggie[],
-  maxPlots?: number
-): boolean => {
-  const cost = getAutoPurchaseCost(veggie, purchaseType);
-  const currency = currencyType === 'money' ? money : knowledge;
-  
-  switch (purchaseType) {
-    case 'fertilizer':
-      return currency >= cost && veggie.fertilizerLevel < veggie.fertilizerMaxLevel;
-    case 'betterSeeds':
-      return currency >= cost;
-    case 'harvesterSpeed':
-      return currency >= cost;
-    case 'additionalPlot':
-      if (!veggies || maxPlots === undefined) return currency >= cost;
-      // Check if we're already at max plots
-      const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
-      return currency >= cost && totalPlotsUsed < maxPlots;
-
-    default:
-      return false;
-  }
-};
-
-
 
 const createAutoPurchaseHandler = (
   autoPurchaseId: string,
@@ -296,13 +119,6 @@ const createAutoPurchaseHandler = (
 };
 
 const GameContext = createContext<GameState | undefined>(undefined);
-
-const getSeason = (day: number) => {
-  if (day >= 1 && day < 80) return 'Spring';
-  if (day >= 80 && day < 172) return 'Summer';
-  if (day >= 172 && day < 265) return 'Fall';
-  return 'Winter';
-};
 
 function saveGameState(state: any) {
   try {

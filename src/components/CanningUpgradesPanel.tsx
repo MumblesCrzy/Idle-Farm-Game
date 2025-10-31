@@ -1,25 +1,6 @@
 import React from 'react';
 import type { CanningUpgrade } from '../types/canning';
-
-// Utility function to format large numbers with shorthand notation
-function formatNumber(num: number, decimalPlaces: number = 1): string {
-  if (num < 1000) {
-    return num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2)).replace(/\.?0+$/, '');
-  }
-  
-  const units = ['', 'K', 'M', 'B', 'T', 'Q'];
-  let unitIndex = 0;
-  let value = num;
-  
-  while (value >= 1000 && unitIndex < units.length - 1) {
-    value /= 1000;
-    unitIndex++;
-  }
-  
-  // For values >= 1000, always show at least 1 decimal place unless it's a whole number
-  const formatted = value.toFixed(decimalPlaces);
-  return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
-}
+import { formatNumber } from '../utils/gameCalculations';
 
 interface UpgradeButtonProps {
   title: string;
