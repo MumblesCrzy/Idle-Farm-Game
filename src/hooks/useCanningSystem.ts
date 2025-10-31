@@ -539,7 +539,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           if (recipeToStart) {
             // Start the recipe that has enough ingredients
             setTimeout(() => {
-              const success = startCanning(recipeToStart.id, true);
+              startCanning(recipeToStart.id, true);
             }, 0);
           } else {
             console.log('Auto-canning: No recipes have enough ingredients');

@@ -24,40 +24,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
   heirloomOwned = false,
   formatNumber
 }) => {
-  const getIngredientSummary = () => {
-    // Create shorthand mapping for common veggies
-    const getShortName = (veggieName: string) => {
-      const shortNames: { [key: string]: string } = {
-        'Radish': 'Rad',
-        'Lettuce': 'Let',
-        'Green Beans': 'GrB',
-        'Broccoli': 'Bro',
-        'Carrots': 'Car',
-        'Tomatoes': 'Tom',
-        'Peppers': 'Pep',
-        'Onions': 'Oni',
-        'Cucumbers': 'Cuc',
-        'Zucchini': 'Zuc'
-      };
-      return shortNames[veggieName] || veggieName.substring(0, 3);
-    };
-    
-    // Show all ingredients with shorthand format and current amounts
-    return recipe.ingredients.map(ingredient => {
-      const shortName = getShortName(ingredient.veggieName);
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      const currentAmount = veggie?.stash || 0;
-      return `${shortName}×${ingredient.quantity}(${currentAmount})`;
-    }).join(' + ');
-  };
-
-  const getRawValue = () => {
-    return recipe.ingredients.reduce((total, ingredient) => {
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      return total + (veggie?.salePrice || 0) * ingredient.quantity;
-    }, 0);
-  };
-
   const getEffectiveSalePrice = () => {
     return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier();
   };
@@ -79,12 +45,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 
   const getEffectiveProcessingTime = () => {
     return Math.ceil(recipe.baseProcessingTime * speedMultiplier);
-  };
-
-  const getProfit = () => {
-    const rawValue = getRawValue();
-    const effectiveSalePrice = getEffectiveSalePrice();
-    return effectiveSalePrice - rawValue;
   };
 
   // Calculate reward amounts (assuming manual canning)

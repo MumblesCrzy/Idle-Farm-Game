@@ -3,8 +3,9 @@ import { INITIAL_RECIPES } from '../data/recipes';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
 import { CANNING_AUTO_PURCHASERS, DEFAULT_AUTO_CANNING_CONFIG } from '../utils/canningAutoPurchase';
 
+/* Commented out for future use - will be needed for lean save system
 // Convert full CanningState to lean progress format
-function canningStateToLeanProgress(canningState: CanningState): LeanCanningProgress {
+function _canningStateToLeanProgress(canningState: CanningState): LeanCanningProgress {
   const upgradeProgress: Record<string, number> = {};
   canningState.upgrades.forEach(upgrade => {
     upgradeProgress[upgrade.id] = upgrade.level;
@@ -35,8 +36,8 @@ function canningStateToLeanProgress(canningState: CanningState): LeanCanningProg
   };
 }
 
-// Convert lean progress back to full CanningState using current game constants
-function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[], experience: number): CanningState {
+// Convert lean progress back to full CanningState using current game constants (for future use)
+function _leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[], experience: number): CanningState {
   // Import the upgrades - we'll need to import them properly
   // For now, define them locally to avoid circular dependency
   const INITIAL_CANNING_UPGRADES = [
@@ -48,6 +49,8 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 100,
       baseCost: 100,
+      upgradeCostScaling: 2.1,
+      maxLevel: 18,
       costCurrency: 'money' as const,
       effect: 1.0,
       unlocked: true
@@ -60,6 +63,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 150,
       baseCost: 150,
+      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 1.0,
       unlocked: true
@@ -72,6 +76,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 200,
       baseCost: 200,
+      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 0,
       unlocked: true
@@ -84,6 +89,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 500,
       baseCost: 500,
+      upgradeCostScaling: 1.7,
       costCurrency: 'money' as const,
       maxLevel: 14,
       effect: 1,
@@ -97,6 +103,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
       level: 0,
       cost: 5000,
       baseCost: 5000,
+      upgradeCostScaling: 1.0,
       costCurrency: 'knowledge' as const,
       maxLevel: 1,
       effect: 0,
@@ -110,7 +117,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
     let updatedUpgrade = { ...upgrade, level: savedLevel };
     
     // Recalculate cost and effect based on level
-    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(1.5, savedLevel));
+    updatedUpgrade.cost = Math.ceil(updatedUpgrade.baseCost * Math.pow(updatedUpgrade.upgradeCostScaling, savedLevel));
     
     // Recalculate effect based on type and level
     switch (updatedUpgrade.type) {
@@ -176,6 +183,7 @@ function leanProgressToCanningState(progress: LeanCanningProgress, veggies: any[
     autoCanning: progress.autoCanning
   };
 }
+*/
 
 // CanningAutoPurchase type definition (since it's not exported from the utils file)
 type CanningAutoPurchase = {

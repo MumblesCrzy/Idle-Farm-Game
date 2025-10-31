@@ -1,6 +1,5 @@
 import type { CanningState, LeanCanningProgress } from '../types/canning';
 import { INITIAL_RECIPES } from '../data/recipes';
-import { DEFAULT_AUTO_CANNING_CONFIG } from '../utils/canningAutoPurchase';
 
 // Convert full CanningState to lean progress format
 export function canningStateToLeanProgress(canningState: CanningState): LeanCanningProgress {
@@ -46,6 +45,8 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 100,
       baseCost: 100,
+      upgradeCostScaling: 2.1,
+      maxLevel: 18,
       costCurrency: 'money' as const,
       effect: 1.0,
       unlocked: true
@@ -58,6 +59,7 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 150,
       baseCost: 150,
+      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 1.0,
       unlocked: true
@@ -70,6 +72,7 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 200,
       baseCost: 200,
+      upgradeCostScaling: 1.5,
       costCurrency: 'knowledge' as const,
       effect: 0,
       unlocked: true
@@ -82,6 +85,7 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 500,
       baseCost: 500,
+      upgradeCostScaling: 1.7,
       costCurrency: 'money' as const,
       maxLevel: 14,
       effect: 1,
@@ -95,6 +99,7 @@ export function leanProgressToCanningState(progress: LeanCanningProgress, veggie
       level: 0,
       cost: 5000,
       baseCost: 5000,
+      upgradeCostScaling: 1.0,
       costCurrency: 'knowledge' as const,
       maxLevel: 1,
       effect: 0,
