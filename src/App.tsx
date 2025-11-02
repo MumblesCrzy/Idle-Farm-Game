@@ -7,11 +7,12 @@ import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
+import SaveLoadSystem from './components/SaveLoadSystem';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
-import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
+import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
   RAIN_CHANCES,
@@ -764,8 +765,6 @@ function useGame() {
 }
 
 function App() {
-  // Ref for hidden file input
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { soundEnabled, setSoundEnabled } = useArchie();
   
   // ArchieIcon component adds a clickable character that
@@ -815,90 +814,6 @@ function App() {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
   }, []);
 
-  // Import save handler: triggers file input
-  const handleImportSave = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-      fileInputRef.current.click();
-    }
-  };
-
-  // File input change handler
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        
-        // Validate and migrate data with canning support
-        if (!validateCanningImport(data)) {
-          alert("Invalid save file format.");
-          return;
-        }
-        
-        // Save the imported data to localStorage
-        saveGameStateWithCanning(data);
-        
-        // Reload the page to reinitialize all systems with imported data
-        alert("Save imported successfully! The page will reload to apply all changes.");
-        window.location.reload();
-        
-      } catch (error) {
-        console.error('Import: Error during import:', error);
-        alert("Failed to import save file.");
-      }
-    };
-    reader.readAsText(file);
-  };
-  // Returns a serializable snapshot of the current game state
-  const getSerializableGameState = () => ({
-    veggies,
-    money,
-    experience,
-    knowledge,
-    activeVeggie,
-    day,
-    globalAutoPurchaseTimer,
-    greenhouseOwned,
-    heirloomOwned,
-    autoSellOwned,
-    almanacLevel,
-    almanacCost,
-    maxPlots,
-    farmTier,
-    irrigationOwned,
-    currentWeather,
-    canningState,
-    // Optionally add a version for future compatibility
-    saveVersion: 2
-  });
-
-  // Export save handler
-  const handleExportSave = () => {
-    const saveData = getSerializableGameState();
-    // Add timestamp and format filename
-    const date = new Date();
-    const timestamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}`;
-    const filename = `farm-idle-save_${timestamp}.json`;
-    
-    const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  // Reset game handler for UI button or logic
-  const handleResetGame = () => {
-    if (window.confirm('Are you sure you want to reset your game? This will erase all progress!')) {
-      resetGame();
-    }
-  };
   const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // Season system hook
@@ -1190,14 +1105,28 @@ function App() {
   }, []); // Only run once on mount
 
   return (
+    <SaveLoadSystem
+      veggies={veggies}
+      money={money}
+      experience={experience}
+      knowledge={knowledge}
+      activeVeggie={activeVeggie}
+      day={day}
+      globalAutoPurchaseTimer={globalAutoPurchaseTimer}
+      greenhouseOwned={greenhouseOwned}
+      heirloomOwned={heirloomOwned}
+      autoSellOwned={autoSellOwned}
+      almanacLevel={almanacLevel}
+      almanacCost={almanacCost}
+      maxPlots={maxPlots}
+      farmTier={farmTier}
+      irrigationOwned={irrigationOwned}
+      currentWeather={currentWeather}
+      canningState={canningState}
+      resetGame={resetGame}
+    >
+      {({ handleExportSave, handleImportSave, handleResetGame }) => (
     <>
-      <input 
-      type="file" 
-      ref={fileInputRef} 
-      style={{ display: 'none' }} 
-      onChange={handleFileChange} 
-      accept=".json"
-    />
     <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
     <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
       <div style={{ flex: 1 }}>
@@ -1343,6 +1272,8 @@ function App() {
       onToggleSell={handleToggleSell}
     />
     </>
+      )}
+    </SaveLoadSystem>
   );
 }
 
