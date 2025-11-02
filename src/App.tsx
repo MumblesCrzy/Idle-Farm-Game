@@ -5,6 +5,8 @@ import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
 import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
+import StatsDisplay from './components/StatsDisplay';
+import HeaderBar from './components/HeaderBar';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
@@ -1199,222 +1201,36 @@ function App() {
     <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
     <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
       <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem' }}>
-          {/* <button
-            onClick={handleAddDebugMoney}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#2e7d32', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Add $15000 (Debug)"
-          >
-            Add $15000 (Debug)
-          </button>
-          <button
-            onClick={handleAddDebugExperience}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228899', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Add 10 Exp (Debug)"
-          >
-            Add 100 Exp (Debug)
-          </button>
-          <button
-            onClick={handleAddDebugKnowledge}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#228899', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Add 10000 Kn (Debug)"
-          >
-            Add 10000 Kn (Debug)
-          </button> */}
-          <button
-            onClick={() => setShowInfoOverlay(true)}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: 'auto', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Info - Game Help"
-          >
-            Info
-          </button>
-          <button
-            onClick={() => setShowSettingsOverlay(true)}
-            style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px' }}
-            title="Settings"
-          >
-            Settings
-          </button>
-        </div>
-        <div className="day-counter">Year: {Math.floor(totalDaysElapsed / 365) + 1} | Day: {day} <span style={{marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
-          <img
-            src={`./${season}.png`}
-            alt={season}
-            style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
-          />
-          {season}
-          <span style={{ marginLeft: '1rem'}}></span>
-          <img
-            src={`./${currentWeather}.png`}
-            alt={currentWeather}
-            style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
-          />
-          <span>{currentWeather}</span>
-        </span></div>
-        <div style={{ marginBottom: '1rem' }} />
-        <div className="stats under-title" style={{ display: 'inline-flex', verticalAlign: 'middle', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', fontSize: '1.0rem', marginBottom: '1rem' }}>
-            <span style={{ position: 'relative' }}>
-              <img src="./Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-              Plots: {totalPlotsUsed} / {maxPlots}
-              <div 
-                style={{ 
-                  display: 'inline-block',
-                  marginLeft: '5px',
-                  width: '16px', 
-                  height: '16px', 
-                  backgroundColor: totalPlotsUsed >= maxPlots ? '#ffe0e0' : '#e0ffe0', 
-                  border: `1px solid ${totalPlotsUsed >= maxPlots ? '#ffaaaa' : '#aaffaa'}`,
-                  borderRadius: '50%', 
-                  textAlign: 'center', 
-                  lineHeight: '14px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: 'help'
-                }}
-                title={totalPlotsUsed >= maxPlots ? 
-                  'You\'ve reached your maximum plot limit! Buy a larger farm to unlock more plots for vegetables.' : 
-                  'Each vegetable and additional plot uses one plot.' }
-              >
-              </div>
-            </span>
-            <span>
-            <img src="./Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Money: ${formatNumber(money, 2)}
-            </span>
-            <span>
-            <img src="./Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
-            Knowledge: {formatNumber(knowledge, 2)}
-            </span>
-            <span>
-              <button
-                onClick={() => setShowAdvancedStash(true)}
-                style={{
-                  background: '#2e7d32',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '4px 8px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'background-color 0.2s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#1e6b2b'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#2e7d32'}
-                title="View detailed stash breakdown"
-              >
-                <img src="./Money.png" alt="Stash" style={{ width: 18, height: 18, objectFit: 'contain' }} />
-                Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}
-              </button>
-            </span>
-        </div>
-        {/* Farm upgrade UI: show when maxPlots reached - Fixed height container to prevent layout shifts */}
-        <div style={{ minHeight: totalPlotsUsed >= maxPlots ? 'auto' : '0', marginBottom: '1rem' }}>
-          {totalPlotsUsed >= maxPlots && (
-            <div>
-              <button
-                onClick={typeof handleBuyLargerFarm === 'function' ? handleBuyLargerFarm : undefined}
-                disabled={money < farmCost}
-                style={{ 
-                display: 'inline-flex', 
-                background: money >= farmCost ? '#2e7d32' : '#4a5568',
-                padding: '.5rem', 
-                gap: '1rem', 
-                verticalAlign: 'middle', 
-                fontSize: '1.0rem', 
-                borderRadius: '8px', 
-                textAlign: 'center', 
-                maxWidth: 1200,
-                border: money >= farmCost ? '2px solid #ffeb3b' : '1px solid #718096',
-                boxShadow: money >= farmCost ? '0 0 8px 2px #ffe066' : 'none',
-                cursor: money >= farmCost ? 'pointer' : 'not-allowed',
-                fontWeight: 'bold',
-                marginTop: '0.5rem',
-                marginBottom: '0.5rem',
-                transition: 'all 0.2s',
-                color: '#fff'
-                }} 
-                aria-label="Buy Larger Farm"
-                title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
-              >
-              <span style={{ color: '#fff', marginTop: '0.55rem', marginBottom: '0.55rem' }}>
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Buy Larger Farm:</span> ${formatNumber(farmCost, 2)}
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
-                {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
-                <span style={{ color: '#fbbf24', fontSize: '0.9rem', marginLeft: '0.5rem' }}>(capped at 2x current)</span>
-                )}
-                {/* <div /> */}
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Knowledge+:</span> +{((1.25 * ((typeof farmTier !== 'undefined' ? farmTier : 1)))).toFixed(2)} Kn/harvest
-                <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 2) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 2) : 0}Kn
-                {/* <span style={{ color: '#a7f3d0', fontWeight: 'bold', marginLeft: '0.5rem' }}></span>  */}
-              </span>
-              </button>
-            </div>
-          )}
-        </div>
-        
-        <div style={{ marginBottom: '1rem' }} />
-          
-          {/* Tab Navigation */}
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #444' }}>
-              <button
-                onClick={() => setActiveTab('growing')}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: activeTab === 'growing' ? '#4caf50' : '#333',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px 8px 0 0',
-                  cursor: 'pointer',
-                  fontWeight: activeTab === 'growing' ? 'bold' : 'normal',
-                  fontSize: '1rem',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-                Growing
-              </button>
-              <button
-                onClick={() => canningUnlocked ? setActiveTab('canning') : null}
-                disabled={!canningUnlocked}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  background: canningUnlocked 
-                    ? (activeTab === 'canning' ? '#ff8503' : '#333')
-                    : '#666',
-                  color: canningUnlocked ? '#fff' : '#bbb',
-                  border: 'none',
-                  borderRadius: '8px 8px 0 0',
-                  cursor: canningUnlocked ? 'pointer' : 'not-allowed',
-                  fontWeight: activeTab === 'canning' ? 'bold' : 'normal',
-                  fontSize: '1rem',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  flexDirection: 'column'
-                }}
-                title={canningUnlocked ? 'Canning System' : `Canning unlocks at ${Math.round(5000 - experience).toLocaleString()} more experience`}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
-                  Canning
-                </div>
-                {!canningUnlocked && (
-                    <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
-                    Req: {Math.round(5000 - experience).toLocaleString()} exp
-                    </div>
-                )}
-              </button>
-            </div>
-          </div>
+        <HeaderBar
+          activeTab={activeTab}
+          canningUnlocked={canningUnlocked}
+          experience={experience}
+          money={money}
+          farmCost={farmCost}
+          farmTier={farmTier}
+          totalPlotsUsed={totalPlotsUsed}
+          maxPlots={maxPlots}
+          knowledge={knowledge}
+          setActiveTab={setActiveTab}
+          setShowInfoOverlay={setShowInfoOverlay}
+          setShowSettingsOverlay={setShowSettingsOverlay}
+          handleBuyLargerFarm={handleBuyLargerFarm}
+          formatNumber={formatNumber}
+        />
+
+        <StatsDisplay
+          day={day}
+          totalDaysElapsed={totalDaysElapsed}
+          season={season}
+          currentWeather={currentWeather}
+          totalPlotsUsed={totalPlotsUsed}
+          maxPlots={maxPlots}
+          money={money}
+          knowledge={knowledge}
+          veggies={veggies}
+          setShowAdvancedStash={setShowAdvancedStash}
+          formatNumber={formatNumber}
+        />
 
           {/* Tab Content */}
           {activeTab === 'growing' && (
