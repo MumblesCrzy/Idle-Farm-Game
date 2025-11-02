@@ -7,6 +7,7 @@ import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
+import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -23,8 +24,7 @@ import {
   HEIRLOOM_COST_PER_VEGGIE,
   HEIRLOOM_KN_PER_VEGGIE,
   veggieSeasonBonuses,
-  GAME_STORAGE_KEY,
-  type WeatherType
+  GAME_STORAGE_KEY
 } from './config/gameConstants';
 import {
   formatNumber,
@@ -39,8 +39,7 @@ import {
 import {
   processVeggieGrowth,
   processAutoHarvest,
-  processVeggieUnlocks,
-  calculateWeatherChange
+  processVeggieUnlocks
 } from './utils/gameLoopProcessors';
 import './App.css';
 
@@ -142,8 +141,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setIrrigationOwned(true);
     }
   };
-  // Weather and irrigation state for growth calculation
-  const [currentWeather, setCurrentWeather] = useState<WeatherType>('Clear');
   // Only one declaration for irrigationOwned and setIrrigationOwned
   // Irrigation upgrade state
   
@@ -381,6 +378,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [totalDaysElapsed, setTotalDaysElapsed] = useState(loaded?.totalDaysElapsed ?? 0);
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(loaded?.globalAutoPurchaseTimer ?? 0);
   const [highestUnlockedVeggie, setHighestUnlockedVeggie] = useState(loaded?.highestUnlockedVeggie ?? 0);
+  
+  // Weather system hook
+  const { currentWeather, setCurrentWeather } = useWeatherSystem(day, 'Clear');
   
   // Calculate dynamic heirloom costs based on highest unlocked veggie using useMemo for proper reactivity
   const heirloomMoneyCost = useMemo(() => {
@@ -661,15 +661,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setMoney((m: number) => m + total);
   }, [setVeggies, setMoney]);
 
-  // Create a ref to track current weather without causing effect re-runs
-  const currentWeatherRef = useRef(currentWeather);
-  
-  // Update ref when weather changes
-  useEffect(() => {
-    currentWeatherRef.current = currentWeather;
-  }, [currentWeather]);
-
-  // Day counter timer combined with weather system
+  // Day counter timer with auto-sell and auto-purchase logic
   useEffect(() => {
     let dayIntervalId: number | null = null;
     
@@ -677,12 +669,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setTotalDaysElapsed((total: number) => total + 1);
       setDay((d: number) => {
         const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
-        // Handle weather changes inline with day changes to reduce state updates
-        const newSeason = getSeason(newDay);
-        const newWeather = calculateWeatherChange(newSeason, currentWeatherRef.current);
-        if (newWeather !== currentWeatherRef.current) {
-          setCurrentWeather(newWeather);
-        }
         
         // Auto-sell logic for merchant (every MERCHANT_DAYS)
         if (autoSellOwned && newDay % MERCHANT_DAYS === 0) {
