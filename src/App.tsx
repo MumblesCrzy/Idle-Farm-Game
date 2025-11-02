@@ -830,7 +830,8 @@ function App() {
   } = useCanningSystem(experience, veggies, setVeggies, heirloomOwned, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort, farmTier);
 
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
-  const canningUnlocked = experience >= 5000;
+  // Memoized to prevent recalculation on every render
+  const canningUnlocked = useMemo(() => experience >= 5000, [experience]);
 
   // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
@@ -953,8 +954,14 @@ function App() {
   // const handleAddDebugKnowledge = () => {
   //   setKnowledge((prev) => prev + 10000);
   // }
+  
   // Calculate totalPlotsUsed for UI
-  const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
+  // Memoized to prevent expensive recalculation on every render
+  const totalPlotsUsed = useMemo(() => 
+    veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0),
+    [veggies]
+  );
+  
   // Weather event logic: Rain and Drought, based on seasonal chance
   const rainDaysRef = useRef(0);
   const droughtDaysRef = useRef(0);
