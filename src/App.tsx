@@ -8,6 +8,7 @@ import CanningTab from './components/CanningTab';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
+import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { validateCanningImport, loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -33,8 +34,7 @@ import {
   calculateInitialCost,
   calculateUpgradeCost,
   createAutoPurchaserConfigs,
-  canMakePurchase,
-  getSeason
+  canMakePurchase
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
@@ -382,6 +382,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem(day, 'Clear');
   
+  // Season system hook
+  const { season } = useSeasonSystem(day);
+  
   // Calculate dynamic heirloom costs based on highest unlocked veggie using useMemo for proper reactivity
   const heirloomMoneyCost = useMemo(() => {
     const cost = HEIRLOOM_COST_PER_VEGGIE * (highestUnlockedVeggie + 1);
@@ -415,9 +418,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const timerRef = useRef<number | null>(null);
   // Growth timer for all unlocked veggies
   useEffect(() => {
-    // Memoize season calculation outside the interval
-    const season = getSeason(day);
-    
     timerRef.current = window.setInterval(() => {
       setVeggies((prev) => {
         const { veggies: newVeggies } = processVeggieGrowth(
@@ -438,7 +438,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         timerRef.current = null;
       }
     };
-  }, [day, greenhouseOwned, currentWeather, irrigationOwned]);
+  }, [season, currentWeather, greenhouseOwned, irrigationOwned]);
   // Greenhouse upgrade purchase handler
   const handleBuyGreenhouse = () => {
     const greenhouseCost = GREENHOUSE_COST_PER_PLOT * maxPlots;
@@ -899,6 +899,9 @@ function App() {
   };
   const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
+  // Season system hook
+  const { season } = useSeasonSystem(day);
+
   // Initialize canning system
   const {
     canningState,
@@ -1033,7 +1036,6 @@ function App() {
   // const handleAddDebugKnowledge = () => {
   //   setKnowledge((prev) => prev + 10000);
   // }
-  const season = getSeason(day);
   // Calculate totalPlotsUsed for UI
   const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
   // Weather event logic: Rain and Drought, based on seasonal chance
