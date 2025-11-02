@@ -36,6 +36,12 @@ import {
   canMakePurchase,
   getSeason
 } from './utils/gameCalculations';
+import {
+  processVeggieGrowth,
+  processAutoHarvest,
+  processVeggieUnlocks,
+  calculateWeatherChange
+} from './utils/gameLoopProcessors';
 import './App.css';
 
 const initialVeggies: Veggie[] = [
@@ -414,19 +420,14 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     timerRef.current = window.setInterval(() => {
       setVeggies((prev) => {
-        let needsUpdate = false;
-        const newVeggies = prev.map((v) => {
-          if (!v.unlocked || v.growth >= 100) return v;
-          const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned);
-          const newGrowth = Math.min(100, v.growth + growthAmount);
-          if (newGrowth !== v.growth) {
-            needsUpdate = true;
-            return { ...v, growth: newGrowth };
-          }
-          return v;
-        });
-        // Only return new array if there were actual changes
-        return needsUpdate ? newVeggies : prev;
+        const { veggies: newVeggies } = processVeggieGrowth(
+          prev,
+          season,
+          currentWeather,
+          greenhouseOwned,
+          irrigationOwned
+        );
+        return newVeggies;
       });
     }, 1000);
 
@@ -462,53 +463,12 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     const harvestTick = () => {
       setVeggies((prev) => {
-        let needsUpdate = false;
-        let totalExperienceGain = 0;
-        let totalKnowledgeGain = 0;
-        
-        const newVeggies = prev.map((v) => {
-          if (!v.harvesterOwned) return v;
-          
-          const speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
-          const timerMax = Math.max(1, Math.round(50 / speedMultiplier));
-          let newV = v;
-
-          // If timer is primed and veggie is ready, harvest immediately
-          if (v.harvesterTimer >= timerMax && v.growth >= 100) {
-            const harvestAmount = 1 + (v.additionalPlotLevel || 0);
-            const almanacMultiplier = 1 + (almanacLevel * 0.10);
-            const knowledgeGain = 0.5; // Auto harvest knowledge gain
-            
-            // Calculate experience gain for this harvest
-            const experienceGain = (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5);
-            totalExperienceGain += experienceGain;
-            totalKnowledgeGain += knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
-            
-            // Perform the harvest
-            newV = {
-              ...v,
-              stash: v.stash + harvestAmount,
-              growth: 0,
-              harvesterTimer: 0
-            };
-            
-            needsUpdate = true;
-          } 
-          // If timer is primed but veggie is not ready, keep timer at max
-          else if (v.harvesterTimer >= timerMax && v.growth < 100) {
-            if (v.harvesterTimer !== timerMax) {
-              needsUpdate = true;
-              newV = { ...v, harvesterTimer: timerMax };
-            }
-          }
-          // If timer is not primed, increment
-          else if (v.harvesterTimer < timerMax) {
-            needsUpdate = true;
-            newV = { ...v, harvesterTimer: v.harvesterTimer + 1 };
-          }
-
-          return newV;
-        });
+        const {
+          veggies: newVeggies,
+          experienceGain: totalExperienceGain,
+          knowledgeGain: totalKnowledgeGain,
+          needsUpdate
+        } = processAutoHarvest(prev, almanacLevel, farmTier, knowledge);
 
         // Update experience and knowledge for all harvests
         if (totalExperienceGain > 0 && day >= 1 && day <= 365) {
@@ -521,23 +481,21 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         // Handle unlocks after all harvests are processed using projected experience
         if (needsUpdate) {
           const projectedExperience = experience + totalExperienceGain;
-          let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
-            newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
-
-          // Check for unlocks using projected experience
-          newVeggies.forEach((veg, idx) => {
-            if (!veg.unlocked && projectedExperience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
-              newVeggies[idx] = { ...veg, unlocked: true };
-              totalPlotsUsed++;
-              // Update highest unlocked veggie if this is higher
-              if (idx > highestUnlockedVeggie) {
-                setHighestUnlockedVeggie(idx);
-              }
-            }
-          });
+          const { veggies: unlockedVeggies, highestUnlockedIndex } = processVeggieUnlocks(
+            newVeggies,
+            projectedExperience,
+            maxPlots
+          );
+          
+          // Update highest unlocked veggie if there were any unlocks
+          if (highestUnlockedIndex > highestUnlockedVeggie) {
+            setHighestUnlockedVeggie(highestUnlockedIndex);
+          }
+          
+          return unlockedVeggies;
         }
 
-        return needsUpdate ? newVeggies : prev;
+        return newVeggies;
       });
     };
 
@@ -721,7 +679,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
         // Handle weather changes inline with day changes to reduce state updates
         const newSeason = getSeason(newDay);
-        handleWeatherChange(newSeason);
+        const newWeather = calculateWeatherChange(newSeason, currentWeatherRef.current);
+        if (newWeather !== currentWeatherRef.current) {
+          setCurrentWeather(newWeather);
+        }
         
         // Auto-sell logic for merchant (every MERCHANT_DAYS)
         if (autoSellOwned && newDay % MERCHANT_DAYS === 0) {
@@ -736,33 +697,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         
         return newDay;
       });
-    };
-
-    const handleWeatherChange = (season: string) => {
-      // Only calculate new weather if needed
-      if (currentWeatherRef.current === 'Clear') {
-        const rainChance = RAIN_CHANCES[season] ?? 0.2;
-        const droughtChance = DROUGHT_CHANCES[season] ?? 0.03;
-        const stormChance = STORM_CHANCES[season] ?? 0.03;
-        const heatwaveChance = 0.01;
-        
-        const roll = Math.random();
-        let newWeather: WeatherType = 'Clear';
-        
-        if (roll < rainChance) {
-          newWeather = season === 'Winter' ? 'Snow' : 'Rain';
-        } else if (roll < rainChance + droughtChance) {
-          newWeather = 'Drought';
-        } else if (roll < rainChance + droughtChance + stormChance) {
-          newWeather = 'Storm';
-        } else if (roll < rainChance + droughtChance + stormChance + heatwaveChance) {
-          newWeather = 'Heatwave';
-        }
-        
-        if (newWeather !== currentWeather) {
-          setCurrentWeather(newWeather);
-        }
-      }
     };
 
     dayIntervalId = window.setInterval(updateDay, 1000);
