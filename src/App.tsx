@@ -16,6 +16,7 @@ import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
+import { useGameState } from './hooks/useGameState';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -138,6 +139,62 @@ function saveGameState(state: any) {
 }
 
 const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Load game state fresh each time - this ensures imports work correctly
+  const getLoadedState = () => {
+    const result = loadGameStateWithCanning();
+    return result;
+  };
+  const loaded = getLoadedState();
+  
+  // Initialize core game state with custom hook
+  const gameState = useGameState({
+    loadedState: loaded,
+    initialVeggies
+  });
+
+  // Destructure game state for easier access
+  const {
+    veggies,
+    setVeggies,
+    money,
+    setMoney,
+    experience,
+    setExperience,
+    knowledge,
+    setKnowledge,
+    day,
+    setDay,
+    totalDaysElapsed,
+    setTotalDaysElapsed,
+    activeVeggie,
+    setActiveVeggie,
+    farmTier,
+    setFarmTier,
+    maxPlots,
+    setMaxPlots,
+    farmCost,
+    setFarmCost,
+    FARM_BASE_COST,
+    highestUnlockedVeggie,
+    setHighestUnlockedVeggie,
+    irrigationOwned,
+    setIrrigationOwned,
+    greenhouseOwned,
+    setGreenhouseOwned,
+    heirloomOwned,
+    setHeirloomOwned,
+    autoSellOwned,
+    setAutoSellOwned,
+    almanacLevel,
+    setAlmanacLevel,
+    almanacCost,
+    setAlmanacCost,
+    totalPlotsUsed,
+    heirloomMoneyCost,
+    heirloomKnowledgeCost
+  } = gameState;
+
+  // Irrigation upgrade handler
   const irrigationCost = IRRIGATION_COST;
   const irrigationKnCost = IRRIGATION_KN_COST;
   const handleBuyIrrigation = () => {
@@ -147,27 +204,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setIrrigationOwned(true);
     }
   };
-  // Only one declaration for irrigationOwned and setIrrigationOwned
-  // Irrigation upgrade state
   
-  // Load game state fresh each time - this ensures imports work correctly
-  const getLoadedState = () => {
-    const result = loadGameStateWithCanning();
-    return result;
-  };
-  const loaded = getLoadedState();
-  
-  // Track farm tier (number of times farm has been purchased)
-  const [farmTier, setFarmTier] = useState<number>(loaded?.farmTier ?? 1);
-  const [irrigationOwned, setIrrigationOwned] = useState(loaded?.irrigationOwned ?? false);
   // Farm purchase/reset logic
-  const FARM_BASE_COST = 500;
-  const [farmCost, setFarmCost] = useState<number>(
-    loaded?.farmCost ?? Math.ceil(FARM_BASE_COST * Math.pow(1.85, (loaded?.farmTier ?? 1) - 1))
-  );
   const handleBuyLargerFarm = () => {
-    // Only allow if enough money and maxPlots reached
-    if (money < farmCost || totalPlotsUsed < maxPlots) return;
     // Calculate new maxPlots (capped at twice the current max)
     const experienceBonus = Math.floor(experience / 100);
     const uncappedMaxPlots = maxPlots + experienceBonus;
@@ -223,9 +262,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     });
   };
   // Removed duplicate loaded declaration and invalid farmTier type usage
-  // Farmer's Almanac upgrade state
-  const [almanacLevel, setAlmanacLevel] = useState(loaded?.almanacLevel ?? 0);
-  const [almanacCost, setAlmanacCost] = useState(loaded?.almanacCost ?? 10);
   // Farmer's Almanac purchase handler
   const handleBuyAlmanac = () => {
     if (money >= almanacCost) {
@@ -234,10 +270,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setAlmanacCost((cost: number) => Math.ceil(cost * 1.15 + 5));
     }
   };
-  // Heirloom Seeds upgrade state
-  const [heirloomOwned, setHeirloomOwned] = useState(loaded?.heirloomOwned ?? false);
-  // Auto Sell upgrade state
-  const [autoSellOwned, setAutoSellOwned] = useState(loaded?.autoSellOwned ?? false);
   // Auto Sell upgrade purchase handler
   const handleBuyAutoSell = () => {
     if (!autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST) {
@@ -288,8 +320,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     highestUnlockedVeggie: 0 // Reset to 0 for complete game reset
   });
   };
-  // Prestige mechanic: max plots
-  const [maxPlots, setMaxPlots] = useState<number>(loaded?.maxPlots ?? 4);
+  
   // Auto Harvester Speed upgrade purchase
   const handleBuyHarvesterSpeed = (index: number) => {
     const v = veggies[index];
@@ -305,8 +336,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       });
     }
   };
-  // Greenhouse upgrade state
-  const [greenhouseOwned, setGreenhouseOwned] = useState(loaded?.greenhouseOwned ?? false);
+  
   // Prestige: Better Seeds upgrade purchase
   const handleBuyBetterSeeds = (index: number) => {
     const v = veggies[index];
@@ -349,56 +379,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  // Migration function to add missing properties to saved veggie data
-  const migrateVeggieData = (loadedVeggies: any[]): Veggie[] => {
-    if (!loadedVeggies) return initialVeggies;
-    
-    return loadedVeggies.map((savedVeggie, index) => {
-      const initialVeggie = initialVeggies[index];
-      
-      // Add missing properties with defaults
-      const migratedVeggie: any = { ...savedVeggie };
-      
-      // If autoPurchasers is missing, add it from the initial veggie data
-      if (!savedVeggie.autoPurchasers) {
-        migratedVeggie.autoPurchasers = initialVeggie ? initialVeggie.autoPurchasers : createAutoPurchaserConfigs(8, 10, 30, 38);
-      }
-      
-      // If sellEnabled is missing, default to true (allow selling)
-      if (savedVeggie.sellEnabled === undefined) {
-        migratedVeggie.sellEnabled = true;
-      }
-      
-      return migratedVeggie;
-    });
-  };
-
-  const [veggies, setVeggies] = useState<Veggie[]>(loaded?.veggies ? migrateVeggieData(loaded.veggies) : initialVeggies);
-  const [money, setMoney] = useState(loaded?.money ?? 0);
-  // Helper: total plots used (unlocked veggies + additional plots)
-  const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);  
-  const [experience, setExperience] = useState(loaded?.experience ?? 0);
-  const [knowledge, setKnowledge] = useState(loaded?.knowledge ?? 0);
-  const [activeVeggie, setActiveVeggie] = useState(loaded?.activeVeggie ?? 0);
-  const [day, setDay] = useState(loaded?.day ?? 1);
-  const [totalDaysElapsed, setTotalDaysElapsed] = useState(loaded?.totalDaysElapsed ?? 0);
-  const [highestUnlockedVeggie, setHighestUnlockedVeggie] = useState(loaded?.highestUnlockedVeggie ?? 0);
-  
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem(day, 'Clear');
   
   // Season system hook
   const { season } = useSeasonSystem(day);
-  
-  // Calculate dynamic heirloom costs based on highest unlocked veggie using useMemo for proper reactivity
-  const heirloomMoneyCost = useMemo(() => {
-    const cost = HEIRLOOM_COST_PER_VEGGIE * (highestUnlockedVeggie + 1);
-    return cost;
-  }, [highestUnlockedVeggie]);
-  const heirloomKnowledgeCost = useMemo(() => 
-    HEIRLOOM_KN_PER_VEGGIE * (highestUnlockedVeggie + 1), 
-    [highestUnlockedVeggie]
-  );
   
   // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
   useEffect(() => {
