@@ -1,6 +1,15 @@
 import React, { memo } from 'react';
 import type { CanningUpgrade } from '../types/canning';
 import { formatNumber } from '../utils/gameCalculations';
+import styles from './CanningUpgradesPanel.module.css';
+import { 
+  CANNING_QUICK_HANDS, 
+  CANNING_FAMILY_RECIPE, 
+  CANNING_HEIRLOOM_TOUCH, 
+  CANNING_BATCH_CANNING, 
+  CANNING_CANNER, 
+  UPGRADE_FERTILIZER 
+} from '../config/assetPaths';
 
 interface UpgradeButtonProps {
   title: string;
@@ -37,51 +46,10 @@ function CanningUpgradeButton({
 }: UpgradeButtonProps) {
   const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
   
-  const getButtonStyle = () => {
-    if (isMaxLevel) {
-      return {
-        padding: '0.4rem 0.6rem',
-        backgroundColor: '#4a5568',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '3px',
-        cursor: 'default',
-        width: '100%',
-        minHeight: '45px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      };
-    } else if (disabled || !canAfford) {
-      return {
-        padding: '0.4rem 0.6rem',
-        backgroundColor: '#4a5568',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '3px',
-        cursor: 'not-allowed',
-        width: '100%',
-        minHeight: '45px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      };
-    } else {
-      return {
-        padding: '0.4rem 0.6rem',
-        backgroundColor: '#703c01ff',
-        color: '#fff',
-        border: '2px solid #ffeb3b',
-        borderRadius: '3px',
-        cursor: 'pointer',
-        width: '100%',
-        minHeight: '45px',
-        boxShadow: '0 0 6px 1px #ffe066',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      };
-    }
+  const getButtonClass = () => {
+    if (isMaxLevel) return `${styles.button} ${styles.maxLevel}`;
+    if (disabled || !canAfford) return `${styles.button} ${styles.disabled}`;
+    return `${styles.button} ${styles.canAfford}`;
   };
 
   const currencySymbol = currencyType === 'money' ? '$' : '';
@@ -90,40 +58,38 @@ function CanningUpgradeButton({
   return (
     <button
       title={title}
-      style={getButtonStyle()}
+      className={getButtonClass()}
       onClick={onClick}
       disabled={disabled || !canAfford || isMaxLevel}
     >
-      <img 
-        src={imageSrc} 
-        alt={imageAlt} 
-        style={{ 
-          width: '2.5em', 
-          height: '2.5em', 
-          objectFit: 'contain'
-        }} 
-      />
-      <div style={{ flex: 1, textAlign: 'left' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+      <div className={styles.imageWrapper}>
+        <img 
+          src={imageSrc} 
+          alt={imageAlt} 
+          className={styles.image}
+        />
+      </div>
+      <div className={styles.content}>
+        <div className={styles.name}>
           {buttonText}
           {level !== undefined && (
-            <span style={{ color: '#ccc', fontWeight: 'normal', marginLeft: '4px' }}>
+            <span className={styles.level}>
               {maxLevel ? `(${level}/${maxLevel})` : `(${level})`}
             </span>
           )}
         </div>
         {effect && (
-          <div style={{ fontSize: '11px', color: '#ccc', marginTop: '2px' }}>
+          <div className={styles.description}>
             {effect}
           </div>
         )}
         {!isMaxLevel && (
-          <div style={{ fontSize: '12px', color: '#fff', marginTop: '4px' }}>
+          <div className={styles.effect}>
             {currencySymbol}{formatNumber(cost, 1)}{currencyUnit}
           </div>
         )}
         {isMaxLevel && (
-          <div style={{ fontSize: '12px', color: '#ccc', marginTop: '4px' }}>
+          <div className={styles.cost}>
             MAX LEVEL
           </div>
         )}
@@ -167,17 +133,17 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = memo(({
   const getUpgradeImage = (upgrade: CanningUpgrade): string => {
     switch (upgrade.id) {
       case 'canning_speed':
-        return './Quick Hands.png'; // Reuse existing speed icon
+        return CANNING_QUICK_HANDS;
       case 'canning_efficiency':
-        return './Family Recipe.png'; // Reuse for efficiency
+        return CANNING_FAMILY_RECIPE;
       case 'preservation_mastery':
-        return './Heirloom Touch.png'; // Reuse for quality
+        return CANNING_HEIRLOOM_TOUCH;
       case 'simultaneous_processing':
-        return './Batch Canning.png'; // Reuse for multiple processes
+        return CANNING_BATCH_CANNING;
       case 'canner':
-        return './Canner.png'; // Use automation icon for Canner
+        return CANNING_CANNER;
       default:
-        return './Fertilizer.png'; // Default icon
+        return UPGRADE_FERTILIZER; // Default icon
     }
   };
 
@@ -205,11 +171,7 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = memo(({
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px'
-    }}>
+    <div className={styles.upgradesContainer}>
       {upgrades?.map(upgrade => {
         // Special handling for Canner upgrade to combine purchase and toggle
         if (upgrade.id === 'canner') {
@@ -238,61 +200,34 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = memo(({
             );
           } else {
             // Purchased - show as toggle button with canning upgrade styling
-            const getToggleButtonStyle = () => {
-              if (isEnabled) {
-                return {
-                  padding: '0.4rem 0.6rem',
-                  backgroundColor: '#703c01ff',
-                  color: '#fff',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  minHeight: '45px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                };
-              } else {
-                return {
-                  padding: '0.4rem 0.6rem',
-                  backgroundColor: '#4a5568',
-                  color: '#fff',
-                  border: '2px solid #6b7280',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  width: '100%',
-                  minHeight: '45px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                };
-              }
+            const getToggleButtonClass = () => {
+              return isEnabled 
+                ? `${styles.button} ${styles.canAfford}` 
+                : `${styles.button} ${styles.toggleOff}`;
             };
             
             return (
               <button
                 key={upgrade.id}
-                style={getToggleButtonStyle()}
+                className={getToggleButtonClass()}
                 onClick={onToggleAutoCanning}
                 title={`${isEnabled ? 'Disable' : 'Enable'} auto-canning. When enabled, automatically starts canning processes every 10 seconds.`}
               >
-                <img 
-                  src={getUpgradeImage(upgrade)} 
-                  alt={upgrade.name} 
-                  style={{ 
-                    width: '2.5em', 
-                    height: '2.5em', 
-                    objectFit: 'contain'
-                  }} 
-                />
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                <div className={styles.imageWrapper}>
+                  <img 
+                    src={getUpgradeImage(upgrade)} 
+                    alt={upgrade.name} 
+                    className={styles.image}
+                  />
+                </div>
+                <div className={styles.content}>
+                  <div className={styles.name}>
                     {upgrade.name}: {isEnabled ? 'ON' : 'OFF'}
-                    <span style={{ color: '#ccc', fontWeight: 'normal', marginLeft: '4px' }}>
+                    <span className={styles.level}>
                       (1/1)
                     </span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#ccc', marginTop: '2px' }}>
+                  <div className={styles.description}>
                     {isEnabled ? 'Automatically starting recipes' : 'Click to enable automation'}
                   </div>
                 </div>

@@ -1,0 +1,230 @@
+import React, { useState } from 'react';
+import styles from './DevTools.module.css';
+
+interface DevToolsProps {
+  onAddMoney: (amount: number) => void;
+  onAddExperience: (amount: number) => void;
+  onAddKnowledge: (amount: number) => void;
+  onSkipDays: (days: number) => void;
+  onUnlockAllVeggies?: () => void;
+  onUnlockAllRecipes?: () => void;
+  onMaxUpgrades?: () => void;
+  onResetGame?: () => void;
+}
+
+const DevTools: React.FC<DevToolsProps> = ({
+  onAddMoney,
+  onAddExperience,
+  onAddKnowledge,
+  onSkipDays,
+  onUnlockAllVeggies,
+  onUnlockAllRecipes,
+  onMaxUpgrades,
+  onResetGame
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [customMoney, setCustomMoney] = useState('1000');
+  const [customExp, setCustomExp] = useState('100');
+  const [customKnowledge, setCustomKnowledge] = useState('100');
+  const [customDays, setCustomDays] = useState('7');
+
+  // Only show in development mode
+  if (import.meta.env.PROD) {
+    return null;
+  }
+
+  return (
+    <div className={styles.container}>
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={styles.toggleButton}
+        title="Developer Tools"
+      >
+        🛠️ {isExpanded ? 'Hide' : 'Dev Tools'}
+      </button>
+
+      {isExpanded && (
+        <div className={styles.panel}>
+          <div className={styles.header}>
+            <h3 className={styles.title}>Developer Tools</h3>
+            <span className={styles.badge}>DEV MODE</span>
+          </div>
+
+          {/* Quick Resources Section */}
+          <div className={styles.section}>
+            <h4 className={styles.sectionTitle}>Quick Resources</h4>
+            <div className={styles.buttonGrid}>
+              <button onClick={() => onAddMoney(1000)} className={styles.button}>
+                +$1K
+              </button>
+              <button onClick={() => onAddMoney(10000)} className={styles.button}>
+                +$10K
+              </button>
+              <button onClick={() => onAddMoney(100000)} className={styles.button}>
+                +$100K
+              </button>
+              <button onClick={() => onAddExperience(100)} className={styles.button}>
+                +100 XP
+              </button>
+              <button onClick={() => onAddExperience(1000)} className={styles.button}>
+                +1K XP
+              </button>
+              <button onClick={() => onAddExperience(10000)} className={styles.button}>
+                +10K XP
+              </button>
+              <button onClick={() => onAddKnowledge(100)} className={styles.button}>
+                +100 Knowledge
+              </button>
+              <button onClick={() => onAddKnowledge(1000)} className={styles.button}>
+                +1K Knowledge
+              </button>
+              <button onClick={() => onAddKnowledge(10000)} className={styles.button}>
+                +10K Knowledge
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Amounts Section */}
+          <div className={styles.section}>
+            <h4 className={styles.sectionTitle}>Custom Amounts</h4>
+            <div className={styles.customInputGroup}>
+              <label className={styles.inputLabel}>
+                Money:
+                <input
+                  type="number"
+                  value={customMoney}
+                  onChange={(e) => setCustomMoney(e.target.value)}
+                  className={styles.input}
+                />
+                <button 
+                  onClick={() => onAddMoney(parseInt(customMoney) || 0)}
+                  className={styles.smallButton}
+                >
+                  Add
+                </button>
+              </label>
+
+              <label className={styles.inputLabel}>
+                Experience:
+                <input
+                  type="number"
+                  value={customExp}
+                  onChange={(e) => setCustomExp(e.target.value)}
+                  className={styles.input}
+                />
+                <button 
+                  onClick={() => onAddExperience(parseInt(customExp) || 0)}
+                  className={styles.smallButton}
+                >
+                  Add
+                </button>
+              </label>
+
+              <label className={styles.inputLabel}>
+                Knowledge:
+                <input
+                  type="number"
+                  value={customKnowledge}
+                  onChange={(e) => setCustomKnowledge(e.target.value)}
+                  className={styles.input}
+                />
+                <button 
+                  onClick={() => onAddKnowledge(parseInt(customKnowledge) || 0)}
+                  className={styles.smallButton}
+                >
+                  Add
+                </button>
+              </label>
+            </div>
+          </div>
+
+          {/* Time Control Section */}
+          <div className={styles.section}>
+            <h4 className={styles.sectionTitle}>Time Control</h4>
+            <div className={styles.timeControl}>
+              <button onClick={() => onSkipDays(1)} className={styles.button}>
+                +1 Day
+              </button>
+              <button onClick={() => onSkipDays(7)} className={styles.button}>
+                +1 Week
+              </button>
+              <button onClick={() => onSkipDays(30)} className={styles.button}>
+                +1 Month
+              </button>
+              <label className={styles.inputLabel}>
+                Custom:
+                <input
+                  type="number"
+                  value={customDays}
+                  onChange={(e) => setCustomDays(e.target.value)}
+                  className={styles.input}
+                  min="1"
+                />
+                <button 
+                  onClick={() => onSkipDays(parseInt(customDays) || 0)}
+                  className={styles.smallButton}
+                >
+                  Skip
+                </button>
+              </label>
+            </div>
+          </div>
+
+          {/* Unlock Actions Section */}
+          <div className={styles.section}>
+            <h4 className={styles.sectionTitle}>Unlock Actions</h4>
+            <div className={styles.actionButtons}>
+              {onUnlockAllVeggies && (
+                <button 
+                  onClick={onUnlockAllVeggies}
+                  className={styles.actionButton}
+                >
+                  🥕 Unlock All Veggies
+                </button>
+              )}
+              {onUnlockAllRecipes && (
+                <button 
+                  onClick={onUnlockAllRecipes}
+                  className={styles.actionButton}
+                >
+                  🥫 Unlock All Recipes
+                </button>
+              )}
+              {onMaxUpgrades && (
+                <button 
+                  onClick={onMaxUpgrades}
+                  className={styles.actionButton}
+                >
+                  ⬆️ Max All Upgrades
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          {onResetGame && (
+            <div className={`${styles.section} ${styles.dangerZone}`}>
+              <h4 className={styles.sectionTitle}>⚠️ Danger Zone</h4>
+              <button 
+                onClick={() => {
+                  if (window.confirm('Reset all game progress? This cannot be undone!')) {
+                    onResetGame();
+                  }
+                }}
+                className={styles.dangerButton}
+              >
+                Reset Game
+              </button>
+            </div>
+          )}
+
+          <div className={styles.footer}>
+            <small>Developer tools are only available in development mode</small>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DevTools;

@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import type { Recipe } from '../types/canning';
+import styles from './RecipeCard.module.css';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -58,110 +59,40 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
 
   return (
     <div
-      style={{
-        border: `2px solid ${canMake ? '#700e01' : '#ccc'}`,
-        borderRadius: '6px',
-        padding: '8px',
-        margin: '4px',
-        minWidth: '160px',
-        maxWidth: '180px',
-        backgroundColor: canMake ? '#f8fff8' : '#f5f5f5',
-        transition: 'all 0.2s ease',
-        opacity: canMake ? 1 : 0.7,
-        boxShadow: canMake ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-      }}
-      title={recipe.description} // Tooltip for entire card
+      className={`${styles.card} ${canMake ? styles.canMake : ''}`}
+      title={recipe.description}
     >
       {/* Clickable content area */}
       <div
-        style={{
-          cursor: 'pointer'
-        }}
+        className={styles.clickableArea}
         onClick={() => onShowDetails(recipe)}
-        onMouseEnter={(e) => {
-          if (canMake) {
-            e.currentTarget.parentElement!.style.transform = 'translateY(-2px)';
-            e.currentTarget.parentElement!.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.parentElement!.style.transform = 'translateY(0)';
-          e.currentTarget.parentElement!.style.boxShadow = canMake ? '0 1px 3px rgba(0,0,0,0.1)' : 'none';
-        }}
       >
-        <div 
-          style={{ 
-            fontWeight: 'bold', 
-            fontSize: '13px', 
-            marginBottom: '6px',
-            color: canMake ? '#333' : '#888'
-          }}
-        >
+        <div className={`${styles.recipeName} ${canMake ? styles.canMake : ''}`}>
           {recipe.name}
         </div>
         
-        {/*<div style={{ 
-          fontSize: '11px', 
-          color: '#666', 
-          marginBottom: '6px',
-          fontWeight: '500'
-        }}>
-          {getIngredientSummary()}
-        </div>*/}
-        
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginBottom: '8px'
-        }}>
-          <span style={{ 
-            fontWeight: 'bold', 
-            color: '#4CAF50',
-            fontSize: '14px'
-          }}>
+        <div className={styles.priceRow}>
+          <span className={styles.price}>
             ${formatNumber(getEffectiveSalePrice(), 2)}
             {getBetterSeedsMultiplier() > 1 && (
-              <span style={{ 
-                fontSize: '9px', 
-                color: '#8BC34A', 
-                marginLeft: '2px',
-                fontWeight: 'normal'
-              }}>
+              <span className={styles.betterSeedsBonus}>
                 +{formatNumber((getBetterSeedsMultiplier() - 1) * 100, 2)}%
               </span>
             )}
           </span>
-          <span style={{ 
-            fontSize: '11px', 
-            color: '#666' 
-          }}>
+          <span className={styles.time}>
             {getEffectiveProcessingTime()}s
           </span>
         </div>
         
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          fontSize: '10px', 
-          color: '#666',
-          marginBottom: '8px'
-        }}>
-          <span style={{ color: '#2196F3' }}>
+        <div className={styles.rewardsRow}>
+          <span className={styles.timeLabel}>
             +{getKnowledgeReward()} kn
           </span>
-          <span style={{ color: '#9C27B0' }}>
+          <span className={styles.knowledgeLabel}>
             +{getCanningExperienceReward()} exp
           </span>
         </div>
-        {/* <div style={{ 
-          fontSize: '11px', 
-          color: getProfitColor(),
-          fontWeight: 'bold',
-          marginBottom: '6px'
-        }}>
-          Profit: +${getProfit().toFixed(2)}
-        </div>         */}
       </div>
       
       {canMake && (
@@ -170,52 +101,20 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
             e.stopPropagation();
             onStartCanning(recipe.id);
           }}
-          style={{
-            width: '100%',
-            padding: '6px',
-            backgroundColor: '#700e01',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#620000';
-                                                        
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#700e01';
-          }}
+          className={styles.canningButton}
         >
           Start Canning
         </button>
       )}
             
       {!canMake && (
-        <div style={{
-          width: '100%',
-          padding: '6px',
-          backgroundColor: '#ccc',
-          color: '#666',
-          textAlign: 'center',
-          borderRadius: '4px',
-          fontSize: '11px',
-          boxSizing: 'border-box'
-        }}>
+        <div className={styles.missingIngredientsLabel}>
           Missing Ingredients
         </div>
       )}
       
       {recipe.timesCompleted > 0 && (
-        <div style={{
-          fontSize: '10px',
-          color: '#888',
-          textAlign: 'center',
-          marginTop: '4px'
-        }}>
+        <div className={styles.completionCount}>
           Made {recipe.timesCompleted} times
         </div>
       )}

@@ -1,0 +1,101 @@
+.upgradesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.button {
+  padding: 0.4rem 0.6rem;
+  background: #4a5568;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: default;
+  width: 100%;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.button.canAfford {
+  background: #703c01ff;
+  border: 2px solid #ffeb3b;
+  cursor: pointer;
+  box-shadow: 0 0 6px 1px #ffe066;
+}
+
+.button.canAfford:hover {
+  background: #8a4c01;
+  transform: translateY(-1px);
+  box-shadow: 0 0 8px 2px #ffe066;
+}
+
+.button.disabled {
+  background: #4a5568;
+  cursor: not-allowed;
+}
+
+.button.maxLevel {
+  background: #4a5568;
+  cursor: default;
+}
+
+.button.toggleOff {
+  background: #4a5568;
+  border: 2px solid #6b7280;
+  cursor: pointer;
+}
+
+.button.toggleOff:hover {
+  background: #5a6578;
+}
+
+.imageWrapper {
+  width: 2.5em;
+  height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  width: 2.5em;
+  height: 2.5em;
+  object-fit: contain;
+}
+
+.content {
+  flex: 1;
+  text-align: left;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.level {
+  color: #ccc;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.description {
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 2px;
+}
+
+.effect {
+  font-size: 12px;
+  color: #fff;
+  margin-top: 4px;
+}
+
+.cost {
+  font-size: 12px;
+  color: #ccc;
+  margin-top: 4px;
+}

@@ -1,0 +1,16 @@
+.title {
+  text-align: center;
+  color: #700e01;
+  margin-bottom: 1rem;
+}
+
+.container {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.content {
+  flex: 1;
+}

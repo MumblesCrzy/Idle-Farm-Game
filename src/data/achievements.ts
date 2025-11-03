@@ -1,4 +1,13 @@
 import type { Achievement } from '../types/achievements';
+import { 
+  VEGGIE_CARROT, 
+  ICON_PLOTS, 
+  VEGGIE_EGGPLANT, 
+  ICON_MONEY, 
+  ICON_GROWING, 
+  ICON_KNOWLEDGE, 
+  ICON_CANNING 
+} from '../config/assetPaths';
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
   // Farming Achievements
@@ -6,7 +15,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'first_harvest',
     name: 'First Harvest',
     description: 'Harvest your first vegetable',
-    icon: './Carrot.png',
+    icon: VEGGIE_CARROT,
     category: 'farming',
     requirement: {
       type: 'custom',
@@ -21,7 +30,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'veggie_collector',
     name: 'Veggie Collector',
     description: 'Unlock 5 different vegetables',
-    icon: './Plots.png',
+    icon: ICON_PLOTS,
     category: 'farming',
     requirement: {
       type: 'veggies_unlocked',
@@ -36,7 +45,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'master_gardener',
     name: 'Master Gardener',
     description: 'Unlock all vegetables',
-    icon: './Eggplant.png',
+    icon: VEGGIE_EGGPLANT,
     category: 'farming',
     requirement: {
       type: 'veggies_unlocked',
@@ -54,7 +63,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'penny_pincher',
     name: 'Penny Pincher',
     description: 'Accumulate $1,000',
-    icon: './Money.png',
+    icon: ICON_MONEY,
     category: 'wealth',
     requirement: {
       type: 'money',
@@ -65,7 +74,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'entrepreneur',
     name: 'Entrepreneur',
     description: 'Accumulate $10,000',
-    icon: './Money.png',
+    icon: ICON_MONEY,
     category: 'wealth',
     requirement: {
       type: 'money',
@@ -80,7 +89,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'millionaire',
     name: 'Millionaire',
     description: 'Accumulate $1,000,000',
-    icon: './Money.png',
+    icon: ICON_MONEY,
     category: 'wealth',
     requirement: {
       type: 'money',
@@ -99,7 +108,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'rookie_farmer',
     name: 'Rookie Farmer',
     description: 'Reach 100 experience',
-    icon: './Growing.png',
+    icon: ICON_GROWING,
     category: 'progression',
     requirement: {
       type: 'experience',
@@ -110,7 +119,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'seasoned_farmer',
     name: 'Seasoned Farmer',
     description: 'Reach 1,000 experience',
-    icon: './Growing.png',
+    icon: ICON_GROWING,
     category: 'progression',
     requirement: {
       type: 'experience',
@@ -125,7 +134,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'farm_master',
     name: 'Farm Master',
     description: 'Reach 10,000 experience',
-    icon: './Growing.png',
+    icon: ICON_GROWING,
     category: 'progression',
     requirement: {
       type: 'experience',
@@ -141,7 +150,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'knowledge_seeker',
     name: 'Knowledge Seeker',
     description: 'Accumulate 100 knowledge',
-    icon: './Knowledge.png',
+    icon: ICON_KNOWLEDGE,
     category: 'progression',
     requirement: {
       type: 'knowledge',
@@ -152,7 +161,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'wisdom_sage',
     name: 'Wisdom Sage',
     description: 'Accumulate 1,000 knowledge',
-    icon: './Knowledge.png',
+    icon: ICON_KNOWLEDGE,
     category: 'progression',
     requirement: {
       type: 'knowledge',
@@ -169,7 +178,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'preservation_novice',
     name: 'Preservation Novice',
     description: 'Can your first item',
-    icon: './Canning.png',
+    icon: ICON_CANNING,
     category: 'canning',
     requirement: {
       type: 'canning_items',
@@ -184,7 +193,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'canning_expert',
     name: 'Canning Expert',
     description: 'Can 100 items',
-    icon: './Canning.png',
+    icon: ICON_CANNING,
     category: 'canning',
     requirement: {
       type: 'canning_items',
@@ -199,7 +208,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'preservation_master',
     name: 'Preservation Master',
     description: 'Can 1,000 items',
-    icon: './Canning.png',
+    icon: ICON_CANNING,
     category: 'canning',
     requirement: {
       type: 'canning_items',
@@ -218,7 +227,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'expanding_horizons',
     name: 'Expanding Horizons',
     description: 'Upgrade your farm to tier 3',
-    icon: './Plots.png',
+    icon: ICON_PLOTS,
     category: 'special',
     requirement: {
       type: 'farm_tier',
@@ -233,7 +242,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'farming_empire',
     name: 'Farming Empire',
     description: 'Upgrade your farm to tier 10',
-    icon: './Plots.png',
+    icon: ICON_PLOTS,
     category: 'special',
     requirement: {
       type: 'farm_tier',

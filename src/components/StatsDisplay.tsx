@@ -1,5 +1,7 @@
 import React, { memo } from 'react';
 import type { Veggie } from '../types/game';
+import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE } from '../config/assetPaths';
+import styles from './StatsDisplay.module.css';
 
 interface StatsDisplayProps {
   day: number;
@@ -30,43 +32,34 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
 }) => {
   return (
     <>
-      <div className="day-counter">
+      <div className={styles.dayCounter}>
         Year: {Math.floor(totalDaysElapsed / 365) + 1} | Day: {day}{' '}
-        <span style={{ marginLeft: '1rem', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+        <span className={styles.seasonWeather}>
           <img
-            src={`./${season}.png`}
+            src={getSeasonImage(season)}
             alt={season}
-            style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
+            className={styles.seasonWeatherIcon}
           />
           {season}
-          <span style={{ marginLeft: '1rem' }}></span>
+          <span className={styles.spacer}></span>
           <img
-            src={`./${currentWeather}.png`}
+            src={getWeatherImage(currentWeather)}
             alt={currentWeather}
-            style={{ width: 28, height: 28, marginRight: 6, verticalAlign: 'middle', objectFit: 'contain' }}
+            className={styles.seasonWeatherIcon}
           />
           <span>{currentWeather}</span>
         </span>
       </div>
-      <div style={{ marginBottom: '1rem' }} />
-      <div className="stats under-title" style={{ display: 'inline-flex', verticalAlign: 'middle', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', fontSize: '1.0rem', marginBottom: '1rem' }}>
-        <span style={{ position: 'relative' }}>
-          <img src="./Plots.png" alt="Plots" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+      <div className={styles.divider} />
+      <div className={styles.stats}>
+        <span className={styles.statItem}>
+          <img src={ICON_PLOTS} alt="Plots" className={styles.statIcon} />
           Plots: {totalPlotsUsed} / {maxPlots}
           <div 
+            className={styles.plotIndicator}
             style={{ 
-              display: 'inline-block',
-              marginLeft: '5px',
-              width: '16px', 
-              height: '16px', 
               backgroundColor: totalPlotsUsed >= maxPlots ? '#ffe0e0' : '#e0ffe0', 
-              border: `1px solid ${totalPlotsUsed >= maxPlots ? '#ffaaaa' : '#aaffaa'}`,
-              borderRadius: '50%', 
-              textAlign: 'center', 
-              lineHeight: '14px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              cursor: 'help'
+              borderColor: totalPlotsUsed >= maxPlots ? '#ffaaaa' : '#aaffaa'
             }}
             title={totalPlotsUsed >= maxPlots ? 
               'You\'ve reached your maximum plot limit! Buy a larger farm to unlock more plots for vegetables.' : 
@@ -74,36 +67,21 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
           >
           </div>
         </span>
-        <span>
-          <img src="./Money.png" alt="Money" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+        <span className={styles.statItem}>
+          <img src={ICON_MONEY} alt="Money" className={styles.statIcon} />
           Money: ${formatNumber(money, 2)}
         </span>
-        <span>
-          <img src="./Knowledge.png" alt="Knowledge" style={{ width: 22, height: 22, verticalAlign: 'middle', marginRight: 4 }} />
+        <span className={styles.statItem}>
+          <img src={ICON_KNOWLEDGE} alt="Knowledge" className={styles.statIcon} />
           Knowledge: {formatNumber(knowledge, 2)}
         </span>
-        <span>
+        <span className={styles.statItemWithButton}>
           <button
             onClick={() => setShowAdvancedStash(true)}
-            style={{
-              background: '#2e7d32',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              fontWeight: '500',
-              transition: 'background-color 0.2s ease',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#1e6b2b'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#2e7d32'}
+            className={styles.stashButton}
             title="View detailed stash breakdown"
           >
-            <img src="./Money.png" alt="Stash" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            <img src={ICON_MONEY} alt="Stash" className={styles.stashIcon} />
             Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}
           </button>
         </span>

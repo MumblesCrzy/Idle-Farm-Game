@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { validateCanningImport, saveGameStateWithCanning } from '../utils/saveSystem';
 import type { Veggie } from '../types/game';
 import type { CanningState } from '../types/canning';
+import styles from './SaveLoadSystem.module.css';
 
 interface SaveLoadSystemProps {
   // Current game state to export
@@ -149,7 +150,7 @@ const SaveLoadSystem: React.FC<SaveLoadSystemProps> = ({
       <input 
         type="file" 
         ref={fileInputRef} 
-        style={{ display: 'none' }} 
+        className={styles.hiddenInput} 
         onChange={handleFileChange} 
         accept=".json"
       />

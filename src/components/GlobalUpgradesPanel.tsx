@@ -1,6 +1,14 @@
 import React from 'react';
 import UpgradeButton from './UpgradeButton';
 import ProgressBar from './ProgressBar';
+import styles from './GlobalUpgradesPanel.module.css';
+import { 
+  UPGRADE_FARMERS_ALMANAC, 
+  UPGRADE_IRRIGATION, 
+  UPGRADE_MERCHANT, 
+  UPGRADE_GREENHOUSE, 
+  UPGRADE_HEIRLOOM_SEEDS 
+} from '../config/assetPaths';
 
 interface GlobalUpgradesPanelProps {
   money: number;
@@ -67,14 +75,14 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
 }) => {
   return (
     <>
-      <h2 style={{ textAlign: 'center', color: '#2e7d32', marginBottom: '1rem' }}>Upgrades</h2>
+      <h2 className={styles.title}>Upgrades</h2>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div className={styles.upgradesContainer}>
         {/* Farmer's Almanac */}
         <div>
           <UpgradeButton
             title="Each level increases all veggie sale prices by 10%"
-            imageSrc="./Farmer's Almanac.png"
+            imageSrc={UPGRADE_FARMERS_ALMANAC}
             imageAlt="Farmer's Almanac"
             buttonText="Almanac"
             money={money}
@@ -93,7 +101,7 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
         <div>
           <UpgradeButton
             title="Negates drought penalty and provides +15% growth rate bonus."
-            imageSrc="./Irrigation.png"
+            imageSrc={UPGRADE_IRRIGATION}
             imageAlt="Irrigation"
             buttonText="Irrigation"
             money={money}
@@ -113,7 +121,7 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
         <div>
           <UpgradeButton
             title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
-            imageSrc="./Merchant.png"
+            imageSrc={UPGRADE_MERCHANT}
             imageAlt="Merchant"
             buttonText="Merchant"
             money={money}
@@ -133,7 +141,7 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
         <div>
           <UpgradeButton
             title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} & ${maxPlots} x ${formatNumber(GREENHOUSE_KN_COST_PER_PLOT, 1)} Kn).`}
-            imageSrc="./Greenhouse.png"
+            imageSrc={UPGRADE_GREENHOUSE}
             imageAlt="Greenhouse"
             buttonText="Greenhouse"
             money={money}
@@ -153,7 +161,7 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
         <div>
           <UpgradeButton
             title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${initialVeggies[highestUnlockedVeggie]?.name || 'Radish'} (${highestUnlockedVeggie + 1} × $${formatNumber(HEIRLOOM_COST_PER_VEGGIE, 1)} & ${highestUnlockedVeggie + 1} × ${formatNumber(HEIRLOOM_KN_PER_VEGGIE, 1)} Kn).`}
-            imageSrc="./Heirloom Seeds.png"
+            imageSrc={UPGRADE_HEIRLOOM_SEEDS}
             imageAlt="Heirloom Seeds"
             buttonText="Heirloom Seeds"
             money={money}
@@ -171,29 +179,17 @@ const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
 
         {/* Merchant Progress Bar */}
         {autoSellOwned && (
-          <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-            <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>
-              Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days
-            </span>
-            <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
-              <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
-              <span style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                color: '#222',
-                fontSize: '0.75rem',
-                pointerEvents: 'none',
-                userSelect: 'none',
-              }}>
-                {Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%
+          <div className={styles.progressSection}>
+            <div className={styles.progressContainer}>
+              <span className={styles.progressText}>
+                Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days
               </span>
+              <div className={styles.progressBarWrapper}>
+                <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
+                <span className={styles.progressLabel}>
+                  {Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%
+                </span>
+              </div>
             </div>
           </div>
         )}

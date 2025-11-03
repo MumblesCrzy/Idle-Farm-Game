@@ -4,6 +4,8 @@ import CanningProcessDisplay from './CanningProcessDisplay';
 import RecipeDetailsModal from './RecipeDetailsModal';
 import type { Recipe, CanningState } from '../types/canning';
 import { formatNumber } from '../utils/gameCalculations';
+import { ICON_CANNING } from '../config/assetPaths';
+import styles from './CanningPanel.module.css';
 
 interface CanningPanelProps {
   canningState: CanningState;
@@ -167,28 +169,12 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
 
   if (unlockedCount === 0) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '400px',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '12px',
-        padding: '40px',
-        textAlign: 'center'
-      }}>
-        <h2 style={{ color: '#666', marginBottom: '8px' }}>Canning System Locked</h2>
-        <p style={{ color: '#888', marginBottom: '16px', maxWidth: '300px' }}>
+      <div className={styles.lockedContainer}>
+        <h2 className={styles.lockedTitle}>Canning System Locked</h2>
+        <p className={styles.lockedDescription}>
           You need more experience to unlock canning recipes. Keep growing and harvesting vegetables!
         </p>
-        <div style={{ 
-          fontSize: '14px', 
-          color: '#666',
-          padding: '8px 16px',
-          backgroundColor: '#e3f2fd',
-          borderRadius: '6px'
-        }}>
+        <div className={styles.lockedRequirement}>
           First recipe unlocks at 5,000 experience
         </div>
       </div>
@@ -196,27 +182,19 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className={styles.container}>
       {/* Header with filters and stats - condensed */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '8px',
-        padding: '8px',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '6px'
-      }}>
+      <div className={styles.header}>
         <div>
-          <h2 style={{ margin: '0 0 2px 0', fontSize: '16px', color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px' }} />
+          <h2 className={styles.headerTitle}>
+            <img src={ICON_CANNING} alt="Canning" className={styles.headerIcon} />
             Canning Recipes
           </h2>
-          <div style={{ fontSize: '11px', color: '#666', textAlign: 'left' }}>
+          <div className={styles.headerUnlockCount}>
             {unlockedCount} of {totalRecipes} recipes unlocked
           </div>
           {canningState.totalItemsCanned > 0 && (
-              <div style={{ fontSize: '10px', color: '#2e7d2e', marginTop: '2px' }}>
+              <div className={styles.headerStats}>
               Items Canned: {canningState.totalItemsCanned} | Experience: {canningState.canningExperience} 
               {nextRecipeExperience > 0 && (
                 <span> | Next Recipe at {nextRecipeExperience} exp</span>
@@ -225,16 +203,11 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
           )}
         </div>
         
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <div className={styles.controls}>
           <select
             value={recipeFilter}
             onChange={(e) => setRecipeFilter(e.target.value as RecipeFilter)}
-            style={{
-              padding: '3px 6px',
-              borderRadius: '3px',
-              border: '1px solid #ddd',
-              fontSize: '11px'
-            }}
+            className={styles.select}
           >
             <option value="all">All Recipes</option>
             <option value="available">Can Make</option>
@@ -246,12 +219,7 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
           <select
             value={recipeSort}
             onChange={(e) => setRecipeSort(e.target.value as RecipeSort)}
-            style={{
-              padding: '3px 6px',
-              borderRadius: '3px',
-              border: '1px solid #ddd',
-              fontSize: '11px'
-            }}
+            className={styles.select}
           >
             <option value="profit">By Profit</option>
             <option value="name">By Name</option>
@@ -262,30 +230,18 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
       </div>
 
       {/* Recipe grid - condensed */}
-      <div style={{ flex: 1 }}>       
+      <div className={styles.content}>       
         {sortedRecipes.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '20px',
-            color: '#888',
-            backgroundColor: '#f9f9f9',
-            borderRadius: '6px',
-            margin: '6px'
-          }}>
+          <div className={styles.emptyState}>
             No recipes match the current filter.
             {recipeFilter === 'available' && (
-              <div style={{ fontSize: '11px', marginTop: '6px' }}>
+              <div className={styles.emptyStateHint}>
                 Try growing more vegetables to unlock ingredients!
               </div>
             )}
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-            gap: '8px',
-            padding: '0 18px 0px 0px'
-          }}>
+          <div className={styles.recipesGrid}>
             {sortedRecipes.map(recipe => (
               <RecipeCard
                 key={recipe.id}

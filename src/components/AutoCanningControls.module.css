@@ -1,0 +1,230 @@
+.container {
+  background-color: #f0f8ff;
+  border: 2px solid #4682b4;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  color: #1e3a8a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activeBadge {
+  font-size: 10px;
+  background: #22c55e;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.configButton {
+  padding: 4px 8px;
+  font-size: 11px;
+  background-color: #4682b4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.configButton:hover {
+  background-color: #3a6fa0;
+}
+
+.quickToggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.quickToggle.withConfig {
+  margin-bottom: 16px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.checkbox {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.recipeCount {
+  font-size: 10px;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.configPanel {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 12px;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.settingLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #374151;
+}
+
+.reserveInput {
+  margin-left: 4px;
+  width: 50px;
+  padding: 2px 4px;
+  font-size: 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #1e3a8a;
+}
+
+.recipeScrollList {
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.recipeItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  font-size: 11px;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 0.15s;
+}
+
+.recipeItem:hover {
+  background-color: #f8fafc;
+}
+
+.recipeName {
+  flex: 1;
+}
+
+.recipePrice {
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.priorityList {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.priorityItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px;
+  font-size: 11px;
+  background-color: #f8fafc;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.priorityNumber {
+  font-weight: bold;
+  color: #1e3a8a;
+}
+
+.priorityName {
+  flex: 1;
+}
+
+.priorityButton {
+  padding: 1px 4px;
+  font-size: 9px;
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.priorityButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.priorityButton:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.removeButton {
+  padding: 1px 4px;
+  font-size: 9px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  background: #dc2626;
+}
+
+.addToPrioritySection {
+  margin-top: 8px;
+}
+
+.addButton {
+  padding: 2px 4px;
+  font-size: 9px;
+  background-color: #e5e7eb;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.addButton:hover {
+  background-color: #d1d5db;
+}

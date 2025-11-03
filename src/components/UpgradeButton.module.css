@@ -1,0 +1,97 @@
+.button {
+  padding: 0.4rem 0.6rem;
+  background: #4a5568;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: default;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  transition: all 0.2s;
+  width: 16em;
+  min-height: 45px;
+  white-space: nowrap;
+}
+
+.button.canAfford {
+  background: #3a6318ff;
+  border: 2px solid #ffeb3b;
+  cursor: pointer;
+  box-shadow: 0 0 6px 1px #ffe066;
+}
+
+.button.canAfford:hover {
+  background: #4a7320;
+  transform: translateY(-1px);
+  box-shadow: 0 0 8px 2px #ffe066;
+}
+
+.button.cannotAfford {
+  background: #aaa;
+  cursor: not-allowed;
+}
+
+.button.maxLevel {
+  background: #722929ff;
+  cursor: not-allowed;
+}
+
+.button.disabled {
+  background: #3a6318ff;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.imageWrapper {
+  width: 2.5em;
+  height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image {
+  width: 2.5em;
+  height: 2.5em;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.content {
+  flex: 1;
+  text-align: left;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.level {
+  color: #888;
+  font-weight: normal;
+}
+
+.description {
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 2px;
+}
+
+.effect {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.cost {
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 4px;
+}
+
+.unlock {
+  font-size: 11px;
+  color: #ccc;
+  margin-top: 4px;
+}

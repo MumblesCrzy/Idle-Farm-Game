@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Recipe } from '../types/canning';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
+import styles from './AutoCanningControls.module.css';
 
 interface AutoCanningControlsProps {
   config: AutoCanningConfig;
@@ -68,37 +69,12 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
   };
 
   return (
-    <div style={{
-      backgroundColor: '#f0f8ff',
-      border: '2px solid #4682b4',
-      borderRadius: '8px',
-      padding: '12px',
-      marginTop: '16px'
-    }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '12px'
-      }}>
-        <h4 style={{
-          margin: 0,
-          fontSize: '14px',
-          color: '#1e3a8a',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+    <div className={styles.container}>
+      <div className={styles.headerRow}>
+        <h4 className={styles.title}>
           🤖 Auto-Canning System
           {config.enabled && (
-            <span style={{
-              fontSize: '10px',
-              background: '#22c55e',
-              color: 'white',
-              padding: '2px 6px',
-              borderRadius: '12px',
-              fontWeight: 'bold'
-            }}>
+            <span className={styles.activeBadge}>
               ACTIVE
             </span>
           )}
@@ -106,52 +82,26 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
         
         <button
           onClick={() => setShowConfig(!showConfig)}
-          style={{
-            padding: '4px 8px',
-            fontSize: '11px',
-            backgroundColor: '#4682b4',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
+          className={styles.configButton}
         >
           {showConfig ? 'Hide Config' : 'Configure'}
         </button>
       </div>
 
       {/* Quick toggle */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        marginBottom: showConfig ? '16px' : '0'
-      }}>
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          color: '#374151',
-          cursor: 'pointer'
-        }}>
+      <div className={`${styles.quickToggle} ${showConfig ? styles.withConfig : ''}`}>
+        <label className={styles.checkboxLabel}>
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={handleToggleEnabled}
-            style={{ transform: 'scale(1.2)' }}
+            className={styles.checkbox}
           />
           Enable Auto-Canning
         </label>
         
         {config.enabled && (
-          <div style={{
-            fontSize: '10px',
-            color: '#6b7280',
-            backgroundColor: '#f3f4f6',
-            padding: '2px 6px',
-            borderRadius: '4px'
-          }}>
+          <div className={styles.recipeCount}>
             {config.selectedRecipes.length} recipes selected
           </div>
         )}
@@ -159,24 +109,10 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
 
       {/* Configuration panel */}
       {showConfig && (
-        <div style={{
-          borderTop: '1px solid #cbd5e1',
-          paddingTop: '12px'
-        }}>
+        <div className={styles.configPanel}>
           {/* General settings */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
-            marginBottom: '16px'
-          }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '11px',
-              color: '#374151'
-            }}>
+          <div className={styles.settingsGrid}>
+            <label className={styles.settingLabel}>
               <input
                 type="checkbox"
                 checked={config.onlyUseExcess}
@@ -184,11 +120,12 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                   ...config,
                   onlyUseExcess: e.target.checked
                 })}
+                className={styles.checkbox}
               />
               Only use excess vegetables
             </label>
             
-            <div style={{ fontSize: '11px', color: '#374151' }}>
+            <div className={styles.settingLabel}>
               <label>
                 Reserve: 
                 <input
@@ -198,14 +135,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                     ...config,
                     excessThreshold: Math.max(0, parseInt(e.target.value) || 0)
                   })}
-                  style={{
-                    marginLeft: '4px',
-                    width: '50px',
-                    padding: '2px 4px',
-                    fontSize: '11px',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '2px'
-                  }}
+                  className={styles.reserveInput}
                   min="0"
                 />
               </label>
@@ -213,49 +143,25 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
           </div>
 
           {/* Recipe selection */}
-          <div style={{ marginBottom: '16px' }}>
-            <h5 style={{
-              margin: '0 0 8px 0',
-              fontSize: '12px',
-              color: '#1e3a8a'
-            }}>
+          <div className={styles.section}>
+            <h5 className={styles.sectionTitle}>
               Select Recipes to Auto-Make:
             </h5>
             
-            <div style={{
-              maxHeight: '120px',
-              overflowY: 'auto',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              padding: '4px'
-            }}>
+            <div className={styles.recipeScrollList}>
               {unlockedRecipes.map(recipe => (
                 <label
                   key={recipe.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '4px',
-                    fontSize: '11px',
-                    color: '#374151',
-                    cursor: 'pointer',
-                    borderRadius: '2px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  className={styles.recipeItem}
                 >
                   <input
                     type="checkbox"
                     checked={config.selectedRecipes.includes(recipe.id)}
                     onChange={() => handleToggleRecipe(recipe.id)}
+                    className={styles.checkbox}
                   />
-                  <span style={{ flex: 1 }}>{recipe.name}</span>
-                  <span style={{ color: '#6b7280', fontSize: '10px' }}>
+                  <span className={styles.recipeName}>{recipe.name}</span>
+                  <span className={styles.recipePrice}>
                     ${recipe.salePrice}
                   </span>
                 </label>
@@ -265,22 +171,12 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
 
           {/* Priority order */}
           {config.selectedRecipes.length > 1 && (
-            <div>
-              <h5 style={{
-                margin: '0 0 8px 0',
-                fontSize: '12px',
-                color: '#1e3a8a'
-              }}>
+            <div className={styles.section}>
+              <h5 className={styles.sectionTitle}>
                 Priority Order (higher = first):
               </h5>
               
-              <div style={{
-                border: '1px solid #cbd5e1',
-                borderRadius: '4px',
-                padding: '4px',
-                maxHeight: '100px',
-                overflowY: 'auto'
-              }}>
+              <div className={styles.priorityList}>
                 {config.priorityOrder.map((recipeId, index) => {
                   const recipe = recipes.find(r => r.id === recipeId);
                   if (!recipe) return null;
@@ -288,33 +184,17 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                   return (
                     <div
                       key={recipeId}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '2px',
-                        fontSize: '11px',
-                        backgroundColor: '#f8fafc',
-                        borderRadius: '2px',
-                        marginBottom: '2px'
-                      }}
+                      className={styles.priorityItem}
                     >
-                      <span style={{ fontWeight: 'bold', color: '#1e3a8a' }}>
+                      <span className={styles.priorityNumber}>
                         #{index + 1}
                       </span>
-                      <span style={{ flex: 1 }}>{recipe.name}</span>
+                      <span className={styles.priorityName}>{recipe.name}</span>
                       
                       <button
                         onClick={() => handleReorderRecipe(recipeId, 'up')}
                         disabled={index === 0}
-                        style={{
-                          padding: '1px 4px',
-                          fontSize: '9px',
-                          background: 'none',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '2px',
-                          cursor: index === 0 ? 'not-allowed' : 'pointer'
-                        }}
+                        className={styles.priorityButton}
                       >
                         ↑
                       </button>
@@ -322,29 +202,14 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                       <button
                         onClick={() => handleReorderRecipe(recipeId, 'down')}
                         disabled={index === config.priorityOrder.length - 1}
-                        style={{
-                          padding: '1px 4px',
-                          fontSize: '9px',
-                          background: 'none',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '2px',
-                          cursor: index === config.priorityOrder.length - 1 ? 'not-allowed' : 'pointer'
-                        }}
+                        className={styles.priorityButton}
                       >
                         ↓
                       </button>
                       
                       <button
                         onClick={() => handleRemoveFromPriority(recipeId)}
-                        style={{
-                          padding: '1px 4px',
-                          fontSize: '9px',
-                          background: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '2px',
-                          cursor: 'pointer'
-                        }}
+                        className={styles.removeButton}
                       >
                         ×
                       </button>
@@ -353,7 +218,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                 })}
                 
                 {/* Add to priority buttons */}
-                <div style={{ marginTop: '8px' }}>
+                <div className={styles.addToPrioritySection}>
                   {config.selectedRecipes
                     .filter(id => !config.priorityOrder.includes(id))
                     .map(recipeId => {
@@ -364,16 +229,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                         <button
                           key={recipeId}
                           onClick={() => handleAddToPriority(recipeId)}
-                          style={{
-                            padding: '2px 4px',
-                            fontSize: '9px',
-                            backgroundColor: '#e5e7eb',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '2px',
-                            cursor: 'pointer',
-                            marginRight: '4px',
-                            marginBottom: '2px'
-                          }}
+                          className={styles.addButton}
                         >
                           + {recipe.name}
                         </button>

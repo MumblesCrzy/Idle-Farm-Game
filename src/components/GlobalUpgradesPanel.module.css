@@ -1,0 +1,50 @@
+.title {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 1rem;
+}
+
+.upgradesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressSection {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.progressContainer {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.progressText {
+  color: #2e7d32;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.progressBarWrapper {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-top: 0.1rem;
+}
+
+.progressLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #333;
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+}

@@ -35,6 +35,8 @@ import {
   veggieSeasonBonuses,
   GAME_STORAGE_KEY
 } from './config/gameConstants';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING } from './config/assetPaths';
+import styles from './components/App.module.css';
 import {
   formatNumber,
   getVeggieGrowthBonus,
@@ -48,7 +50,6 @@ import {
   processAutoHarvest,
   processVeggieUnlocks
 } from './utils/gameLoopProcessors';
-import './App.css';
 
 const initialVeggies: Veggie[] = [
   { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97, autoPurchasers: createAutoPurchaserConfigs(8, 10, 30*5, 38), sellEnabled: true },
@@ -1071,36 +1072,8 @@ function App() {
 
   // Preload all images to prevent loading delays when switching tabs
   useEffect(() => {
-    const allImages = [
-      // Tab and UI icons
-      './Growing.png', './Canning.png', './Plots.png', './Money.png', './Knowledge.png', './Experience.png',
-      
-      // Season images
-      './Spring.png', './Summer.png', './Fall.png', './Winter.png',
-      
-      // Weather images
-      './Clear.png', './Rain.png', './Drought.png', './Storm.png', './Heatwave.png', './Snow.png',
-      
-      // All vegetable images
-      './Radish.png', './Carrots.png', './Broccoli.png', './Lettuce.png', './Onions.png', 
-      './Tomatoes.png', './Peppers.png', './Cucumbers.png', './Green Beans.png', './Zucchini.png',
-      
-      // Growing tab upgrade images
-      './Fertilizer.png', './Better Seeds.png', './Additional Plot.png', './Auto Harvester.png', './Harvester Speed.png',
-      './Farmer\'s Almanac.png', './Irrigation.png', './Merchant.png', './Greenhouse.png', './Heirloom Seeds.png',
-      
-      // Auto-purchaser images
-      './Assistant.png', './Cultivator.png', './Surveyor.png', './Mechanic.png',
-      
-      // Canning upgrade images
-      './Quick Hands.png', './Family Recipe.png', './Heirloom Touch.png', './Batch Canning.png', './Canner.png',
-      
-      // Special images
-      './Archie.png'
-    ];
-
     // Preload using both methods for maximum browser compatibility
-    allImages.forEach(src => {
+    ALL_IMAGES.forEach(src => {
       // Method 1: Create Image object for immediate loading
       const img = new Image();
       img.src = src;
@@ -1141,11 +1114,9 @@ function App() {
       {({ handleExportSave, handleImportSave, handleResetGame }) => (
     <>
     <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
-    <div className="container" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', minWidth: '1200px' }}>
-      <div style={{ flex: 1 }}>
+    <div className={styles.container}>
+      <div className={styles.mainContent}>
         <HeaderBar
-          activeTab={activeTab}
-          canningUnlocked={canningUnlocked}
           experience={experience}
           money={money}
           farmCost={farmCost}
@@ -1153,7 +1124,6 @@ function App() {
           totalPlotsUsed={totalPlotsUsed}
           maxPlots={maxPlots}
           knowledge={knowledge}
-          setActiveTab={setActiveTab}
           setShowInfoOverlay={setShowInfoOverlay}
           setShowSettingsOverlay={setShowSettingsOverlay}
           setShowAchievements={setShowAchievements}
@@ -1176,6 +1146,64 @@ function App() {
           setShowAdvancedStash={setShowAdvancedStash}
           formatNumber={formatNumber}
         />
+
+        {/* Tab Navigation */}
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #444' }}>
+            <button
+              onClick={() => setActiveTab('growing')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: activeTab === 'growing' ? '#4caf50' : '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                fontWeight: activeTab === 'growing' ? 'bold' : 'normal',
+                fontSize: '1rem',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <img src={ICON_GROWING} alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              Growing
+            </button>
+            <button
+              onClick={() => canningUnlocked ? setActiveTab('canning') : null}
+              disabled={!canningUnlocked}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: canningUnlocked 
+                  ? (activeTab === 'canning' ? '#ff8503' : '#333')
+                  : '#666',
+                color: canningUnlocked ? '#fff' : '#bbb',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: canningUnlocked ? 'pointer' : 'not-allowed',
+                fontWeight: activeTab === 'canning' ? 'bold' : 'normal',
+                fontSize: '1rem',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexDirection: 'column'
+              }}
+              title={canningUnlocked ? 'Canning System' : `Canning unlocks at ${Math.round(5000 - experience).toLocaleString()} more experience`}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <img src={ICON_CANNING} alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
+                Canning
+              </div>
+              {!canningUnlocked && (
+                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                  Req: {Math.round(5000 - experience).toLocaleString()} exp
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
 
           {/* Tab Content */}
           {activeTab === 'growing' && (

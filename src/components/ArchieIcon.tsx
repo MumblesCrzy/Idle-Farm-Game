@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
+import { SPECIAL_ARCHIE } from '../config/assetPaths';
 
 interface ArchieIconProps {
   setMoney: (value: React.SetStateAction<number>) => void;
@@ -42,7 +43,7 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, to
     <>
       {canAppear && (
         <RandomIcon
-          imagePath="./Archie.png"
+          imagePath={SPECIAL_ARCHIE}
           minInterval={30000} // 30 seconds minimum before appearing
           maxInterval={120000} // 2 minutes maximum before appearing
           duration={180000} // Stays visible for 3 minutes

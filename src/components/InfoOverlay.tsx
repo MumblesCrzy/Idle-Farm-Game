@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { InfoCategory } from '../types/game';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING } from '../config/assetPaths';
+import styles from './InfoOverlay.module.css';
 
 interface InfoOverlayProps {
   visible: boolean;
@@ -37,54 +39,16 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: '#ffffffff',
-        borderRadius: '8px',
-        padding: '20px',
-        maxWidth: '800px',
-        maxHeight: '600px',
-        width: '90%',
-        height: '80%',
-        display: 'flex',
-        flexDirection: 'row',
-        overflow: 'hidden'
-      }}>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         {/* Category Navigation */}
-        <div style={{
-          width: '200px',
-          borderRight: '2px solid #e0e0e0',
-          paddingRight: '15px',
-          marginRight: '15px'
-        }}>
-          <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#333' }}>Game Help</h3>
+        <div className={styles.sidebar}>
+          <h3 className={styles.header}>Game Help</h3>
           {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setSelectedInfoCategory(category.id)}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '10px',
-                marginBottom: '5px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: selectedInfoCategory === category.id ? '#007bff' : '#f8f9fa',
-                color: selectedInfoCategory === category.id ? '#fff' : '#333',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className={`${styles.sidebarButton} ${selectedInfoCategory === category.id ? styles.active : ''}`}
             >
               {category.label}
             </button>
@@ -92,33 +56,25 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
         </div>
         
         {/* Content Area */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <h3 style={{ margin: 0, color: '#333' }}>
+        <div className={styles.content}>
+          <div className={styles.contentHeader}>
+            <h3 className={styles.contentTitle}>
               {categoryTitles[selectedInfoCategory]}
             </h3>
             <button
               onClick={onClose}
-              style={{
-                padding: '5px 10px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: '#dc3545',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
+              className={styles.closeButton}
             >
               Close
             </button>
           </div>
           
           {/* Content based on selected category */}
-          <div style={{ lineHeight: '1.6', color: '#555', textAlign: 'left' }}>
+          <div className={styles.contentBody}>
             {selectedInfoCategory === 'seasons' && (
               <div>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_GROWING} alt="Growing" className={styles.sectionIcon} />
                   Seasons
                 </h4>
                 <p>The game cycles through four seasons: <strong>Spring → Summer → Fall → Winter</strong>. Each season lasts ~90 days and affects how your vegetables grow.</p>
@@ -159,8 +115,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Heatwave Chances:</strong> 1% chance all year</li>
                 </ul>
                 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -248,8 +204,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Current Progress:</strong> All growing vegetables and stashes cleared</li>
                 </ul>
                 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -263,8 +219,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
             {selectedInfoCategory === 'veggies' && (
               <div>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Growing.png" alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_GROWING} alt="Growing" className={styles.sectionIcon} />
                   Per-Vegetable Upgrades
                 </h4>
                 <p>Each vegetable has its own individual upgrades that only affect that specific crop:</p>
@@ -315,8 +271,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Example:</strong> Level 3 Better Seeds = 1.95× sale price (2.92× with Heirloom)</li>
                 </ul>
                 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -383,8 +339,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
                 </ul>
                 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />  
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -456,8 +412,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Red Button:</strong> Purchased but currently OFF</li>
                 </ul>
 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} /> 
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} /> 
                   Auto-Purchaser Strategy:
                 </h4>
                 <ul>
@@ -473,8 +429,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
             {selectedInfoCategory === 'canning' && (
               <div>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Canning.png" alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_CANNING} alt="Canning" className={styles.sectionIcon} />
                   Canning System
                 </h4>
                 <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
@@ -517,8 +473,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Toggle Control:</strong> Can be turned on/off at any time after purchase</li>
                 </ul>
 
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <img src="./Idea.png" alt="Idea" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />
                   Canning Strategy:
                 </h4>
                 <ul>

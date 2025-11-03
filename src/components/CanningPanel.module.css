@@ -1,0 +1,115 @@
+.lockedContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+}
+
+.lockedTitle {
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.lockedDescription {
+  color: #888;
+  margin-bottom: 16px;
+  max-width: 300px;
+}
+
+.lockedRequirement {
+  font-size: 14px;
+  color: #666;
+  padding: 8px 16px;
+  background-color: #e3f2fd;
+  border-radius: 6px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.headerTitle {
+  margin: 0 0 2px 0;
+  font-size: 16px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.headerIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.headerUnlockCount {
+  font-size: 11px;
+  color: #666;
+  text-align: left;
+}
+
+.headerStats {
+  font-size: 10px;
+  color: #2e7d2e;
+  margin-top: 2px;
+}
+
+.controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.select {
+  padding: 3px 6px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.select:hover {
+  border-color: #bbb;
+}
+
+.content {
+  flex: 1;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  margin: 6px;
+}
+
+.emptyStateHint {
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.recipesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 0 18px 0 0;
+}

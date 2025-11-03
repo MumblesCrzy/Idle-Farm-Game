@@ -1,0 +1,175 @@
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.button {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  margin-left: auto;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 28px;
+}
+
+.button:hover {
+  background: #218838;
+}
+
+.achievementsButton {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  margin-left: 0.5rem;
+  background: #ffc107;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 28px;
+  font-weight: bold;
+}
+
+.achievementsButton:hover {
+  background: #e0a800;
+}
+
+.settingsButton {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  margin-left: 0.5rem;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 28px;
+}
+
+.settingsButton:hover {
+  background: #5a6268;
+}
+
+.farmUpgradeContainer {
+  min-height: 0;
+  margin-bottom: 1rem;
+}
+
+.farmUpgradeButton {
+  display: inline-flex;
+  padding: 0.5rem;
+  gap: 1rem;
+  vertical-align: middle;
+  font-size: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 1200px;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+  color: #fff;
+}
+
+.farmUpgradeButton:enabled {
+  background: #2e7d32;
+  border: 2px solid #ffeb3b;
+  box-shadow: 0 0 8px 2px #ffe066;
+  cursor: pointer;
+}
+
+.farmUpgradeButton:disabled {
+  background: #4a5568;
+  border: 1px solid #718096;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.farmUpgradeBox {
+  background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.farmUpgradeText {
+  color: #fff;
+  margin-top: 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+.farmUpgradeLabel {
+  color: #a7f3d0;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.farmUpgradeCap {
+  color: #fbbf24;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.divider {
+  margin-bottom: 1rem;
+}
+
+.tabsContainer {
+  margin-bottom: 1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #444;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: #f0f0f0;
+  border: none;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab:hover {
+  background: #e0e0e0;
+}
+
+.tab.active {
+  background: #2e7d32;
+  color: white;
+  border-bottom: 3px solid #1b5e20;
+}
+
+.tabIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.tabContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tabLockText {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 2px;
+}
+
+.tabIconDisabled {
+  opacity: 0.5;
+}

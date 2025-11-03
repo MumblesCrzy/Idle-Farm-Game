@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import type { Achievement } from '../types/achievements';
+import styles from './AchievementNotification.module.css';
 
 interface AchievementNotificationProps {
   achievement: Achievement | null;
@@ -23,103 +24,34 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
   if (!achievement) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '80px',
-      right: '20px',
-      backgroundColor: '#fff',
-      border: '3px solid #ffc107',
-      borderRadius: '12px',
-      padding: '16px',
-      minWidth: '300px',
-      maxWidth: '400px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-      zIndex: 2000,
-      animation: 'slideIn 0.3s ease-out'
-    }}>
-      <style>
-        {`
-          @keyframes slideIn {
-            from {
-              transform: translateX(120%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-        `}
-      </style>
-      
-      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-        <div style={{
-          backgroundColor: '#ffc107',
-          borderRadius: '50%',
-          padding: '8px',
-          marginRight: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <span style={{ fontSize: '24px' }}>🏆</span>
+    <div className={styles.notification}>
+      <div className={styles.content}>
+        <div className={styles.iconContainer}>
+          <span className={styles.icon}>🏆</span>
         </div>
         
-        <div style={{ flex: 1 }}>
-          <div style={{
-            fontSize: '12px',
-            fontWeight: 'bold',
-            color: '#ffc107',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '4px'
-          }}>
+        <div className={styles.textContainer}>
+          <div className={styles.badge}>
             Achievement Unlocked!
           </div>
           
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '8px'
-          }}>
+          <div className={styles.titleContainer}>
             <img
               src={achievement.icon}
               alt={achievement.name}
-              style={{
-                width: '24px',
-                height: '24px',
-                marginRight: '8px'
-              }}
+              className={styles.achievementIcon}
             />
-            <h3 style={{
-              margin: 0,
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#333'
-            }}>
+            <h3 className={styles.title}>
               {achievement.name}
             </h3>
           </div>
           
-          <p style={{
-            margin: '0 0 8px 0',
-            fontSize: '13px',
-            color: '#666',
-            lineHeight: '1.4'
-          }}>
+          <p className={styles.description}>
             {achievement.description}
           </p>
           
           {achievement.reward && achievement.reward.message && (
-            <div style={{
-              backgroundColor: '#fff3cd',
-              border: '1px solid #ffc107',
-              borderRadius: '6px',
-              padding: '8px',
-              fontSize: '12px',
-              color: '#856404',
-              fontWeight: '500'
-            }}>
+            <div className={styles.rewards}>
               {achievement.reward.message}
             </div>
           )}
@@ -127,16 +59,7 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
         
         <button
           onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '18px',
-            color: '#999',
-            cursor: 'pointer',
-            padding: '0',
-            marginLeft: '8px',
-            lineHeight: '1'
-          }}
+          className={styles.closeButton}
           title="Dismiss"
         >
           ×

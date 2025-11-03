@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
+import styles from './CanningTab.module.css';
 
 interface CanningTabProps {
   canningState: any;
@@ -40,8 +41,8 @@ const CanningTab: React.FC<CanningTabProps> = memo(({
 }) => {
   // Main canning content
   const mainContent = (
-    <div style={{ marginBottom: '.75rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1 }}>
+    <div className={styles.container}>
+      <div className={styles.content}>
         <CanningPanel
           canningState={canningState}
           veggies={veggies}
@@ -61,7 +62,7 @@ const CanningTab: React.FC<CanningTabProps> = memo(({
   // Canning upgrades sidebar
   const sidebarContent = (
     <>
-      <h2 style={{ textAlign: 'center', color: '#700e01', marginBottom: '1rem' }}>Upgrades</h2>
+      <h2 className={styles.title}>Upgrades</h2>
       <CanningUpgradesPanel
         upgrades={canningState?.upgrades}
         money={money}

@@ -1,0 +1,227 @@
+.card {
+  padding: 8px;
+  background: #f5f5f5;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  margin: 4px;
+  min-width: 160px;
+  max-width: 180px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.card.canMake {
+  border-color: #700e01;
+  background: #f8fff8;
+  opacity: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card.selected {
+  background: #d4edda;
+  border-color: #2e7d32;
+  border-width: 3px;
+}
+
+.clickableArea {
+  cursor: pointer;
+}
+
+.recipeName {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #888;
+}
+
+.recipeName.canMake {
+  color: #333;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.price {
+  font-weight: bold;
+  color: #4CAF50;
+  font-size: 14px;
+}
+
+.betterSeedsBonus {
+  font-size: 9px;
+  color: #8BC34A;
+  margin-left: 2px;
+  font-weight: normal;
+}
+
+.time {
+  font-size: 11px;
+  color: #666;
+}
+
+.rewardsRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-right: 10px;
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.timeLabel {
+  color: #2196F3;
+}
+
+.knowledgeLabel {
+  color: #9C27B0;
+}
+
+.requirements {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #666;
+}
+
+.requirements.locked {
+  background: #fee;
+  color: #c33;
+}
+
+.ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ingredient {
+  padding: 4px 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #555;
+}
+
+.ingredient.insufficient {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.startButton {
+  flex: 1;
+  padding: 8px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.startButton:hover:not(:disabled) {
+  background: #1b5e20;
+}
+
+.startButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.detailsButton {
+  flex: 1;
+  padding: 8px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.detailsButton:hover {
+  background: #1565c0;
+}
+
+.canningButton {
+  width: 100%;
+  padding: 6px;
+  background: #700e01;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.canningButton:hover {
+  background: #620000;
+}
+
+.missingIngredientsLabel {
+  width: 100%;
+  padding: 6px;
+  background: #ccc;
+  color: #666;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 11px;
+  box-sizing: border-box;
+}
+
+.completionCount {
+  font-size: 10px;
+  color: #888;
+  text-align: center;
+  margin-top: 4px;
+}
+

@@ -1,0 +1,100 @@
+.dayCounter {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.seasonWeather {
+  margin-left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.seasonWeatherIcon {
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+.spacer {
+  margin-left: 1rem;
+}
+
+.divider {
+  margin-bottom: 1rem;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.statItem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.statItemWithButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.plotIndicator {
+  display: inline-block;
+  margin-left: 5px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 14px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: help;
+}
+
+.statIcon {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.stashButton {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stashButton:hover {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.stashIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}

@@ -4,6 +4,17 @@ import ProgressBar from './ProgressBar';
 import UpgradeButton from './UpgradeButton';
 import GlobalUpgradesPanel from './GlobalUpgradesPanel';
 import type { Veggie, AutoPurchaseConfig } from '../types/game';
+import { 
+  getVeggieImage, 
+  getAutoPurchaserImage, 
+  ICON_EXPERIENCE, 
+  UPGRADE_FERTILIZER, 
+  UPGRADE_BETTER_SEEDS, 
+  UPGRADE_ADDITIONAL_PLOT, 
+  UPGRADE_AUTO_HARVESTER, 
+  UPGRADE_HARVESTER_SPEED 
+} from '../config/assetPaths';
+import styles from './GrowingTab.module.css';
 
 interface GrowingTabProps {
   veggies: Veggie[];
@@ -154,7 +165,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
   };
 
   const getImageSrc = () => {
-    return `./${autoPurchaser.name}.png`;
+    return getAutoPurchaserImage(autoPurchaser.name);
   };
 
   const getImageAlt = () => {
@@ -245,49 +256,28 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
   const mainContent = (
     <>
       {/* Growing Experience Display */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '0.5rem', 
-        marginBottom: '1rem',
-        padding: '0.5rem',
-        backgroundColor: '#f0f8ff',
-        border: '1px solid #4CAF50',
-        borderRadius: '8px'
-      }}>
-        <img src="./Experience.png" alt="Growing Experience" style={{ width: 22, height: 22, verticalAlign: 'middle' }} />
-        <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>
+      <div className={styles.experienceDisplay}>
+        <img src={ICON_EXPERIENCE} alt="Growing Experience" className={styles.experienceIcon} />
+        <span className={styles.experienceText}>
           Growing Experience: {formatNumber(experience, 2)}
         </span>
       </div>
 
       {/* Veggie Selection */}
       <div className="veggie-selector">
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'nowrap',
-            gap: '0.5rem',
-            overflowX: 'auto',
-            fontSize: '0.9rem',
-            marginLeft: '-0.5rem',
-            marginRight: '-0.5rem',
-            minWidth: 0,
-          }}
+        <div className={styles.veggieSelectorContainer}
         >
           {veggies.map((v, i) => (
             v.unlocked ? (
               <button
                 key={v.name}
-                className={[ 
+                className={`${styles.veggieSelectorButton} ${[ 
                   i === activeVeggie ? 'active' : '',
                   v.growth >= 100 ? 'ready' : ''
-                ].filter(Boolean).join(' ')}
+                ].filter(Boolean).join(' ')}`}
                 onClick={() => setActiveVeggie(i)}
                 aria-label={`Select ${v.name}`}
                 disabled={i === activeVeggie}
-                style={{ minWidth: '96px' }}
               >
                 {v.name}
               </button>
@@ -296,11 +286,11 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
                 key={v.name} 
                 disabled 
                 aria-label={`Locked veggie`} 
-                style={{ minWidth: '96px' }}
+                className={styles.veggieSelectorButton}
                 title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`}
               >
                 {totalPlotsUsed >= maxPlots ? (
-                  <span style={{ color: '#e44', fontWeight: 'bold' }}>Need Larger Farm</span>
+                  <span className={styles.needLargerFarm}>Need Larger Farm</span>
                 ) : (
                   `Exp: ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}`
                 )}
@@ -309,34 +299,26 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           ))}
         </div>
       </div>
-      <div style={{ marginBottom: '1rem' }} />
+      <div className={styles.spacer} />
       
       {/* Veggie Panel */}
       <div className="veggie-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className={styles.veggiePanelHeader}>
+          <h2 className={styles.veggiePanelTitle}>
             <img
               title={`Bonus Growth: ${veggieSeasonBonuses[veggies[activeVeggie].name]}`}
-              src={`./${veggies[activeVeggie].name}.png`}
+              src={getVeggieImage(veggies[activeVeggie].name)}
               alt={veggies[activeVeggie].name}
-              style={{ width: '1.5em', height: '1.5em', objectFit: 'contain', marginRight: 'auto', verticalAlign: 'middle' }}
+              className={styles.veggieImage}
             />
             {veggies[activeVeggie].name}
             {!veggies[activeVeggie].sellEnabled && (
-              <span style={{ 
-                fontSize: '0.8rem', 
-                color: '#f44336', 
-                fontWeight: 'bold',
-                backgroundColor: '#ffebee',
-                padding: '2px 6px',
-                borderRadius: '12px',
-                border: '1px solid #f44336'
-              }} title="This vegetable is set to stockpile (won't auto-sell)">
+              <span className={styles.stockpileBadge} title="This vegetable is set to stockpile (won't auto-sell)">
                 🚫 HOLD
               </span>
             )}
-            <span style={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '1.1rem' }}>${formatNumber(veggies[activeVeggie].salePrice, 2)}</span>
-            <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#888' }}>
+            <span className={styles.salePrice}>${formatNumber(veggies[activeVeggie].salePrice, 2)}</span>
+            <span className={styles.daysToGrow}>
               (~{daysToGrow} days to grow)
             </span>
           </h2>
@@ -344,24 +326,14 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
             onClick={handleHarvest}
             disabled={veggies[activeVeggie].growth < 100}
             aria-label={`Harvest ${veggies[activeVeggie].name}`}
-            style={{ marginLeft: 'auto', fontSize: '1rem', padding: '4px 14px', background: '#2e7d32', color: '#fff', border: 'none', borderRadius: '5px', minWidth: '90px', cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
+            className={styles.harvestButton}
+            style={{ cursor: veggies[activeVeggie].growth < 100 ? 'not-allowed' : 'pointer' }}
           >
             {veggies[activeVeggie].growth < 100 ? 'Growing...' : 'Harvest'}
           </button>
           <button
             onClick={() => handleToggleSell(activeVeggie)}
-            style={{
-              marginLeft: '0.5rem',
-              fontSize: '1rem',
-              padding: '4px 14px',
-              background: veggies[activeVeggie].sellEnabled ? '#4CAF50' : '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              minWidth: '90px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
+            className={veggies[activeVeggie].sellEnabled ? styles.sellButton : styles.holdButton}
             title={veggies[activeVeggie].sellEnabled ? 'Sell enabled (click to disable and stockpile)' : 'Sell disabled (click to enable selling)'}
           >
             {veggies[activeVeggie].sellEnabled ? '💰 Sell' : '🚫 Hold'}
@@ -370,25 +342,11 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
         
         {/* Progress Bars */}
         <div 
-          style={{ position: 'relative', width: '100%', marginTop: '0.5rem', marginBottom: '0.5rem', height: '22px' }}
+          className={styles.progressBarWrapper}
           title={`Growth Progress: ${Math.max(0, Math.ceil((100 - veggies[activeVeggie].growth) / growthMultiplier))} seconds until grown`}
         >
           <ProgressBar value={veggies[activeVeggie].growth} max={100} height={22} />
-          <span style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            color: '#222',
-            fontSize: '1rem',
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}>
+          <span className={styles.progressBarLabel}>
             {`${Math.floor(veggies[activeVeggie].growth)}%`}
           </span>
         </div>
@@ -396,7 +354,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
         {/* Auto Harvester Progress Bar */}
         {veggies[activeVeggie].harvesterOwned && (
           <div 
-            style={{ position: 'relative', width: '100%', marginTop: '0.25rem', height: '22px' }}
+            className={styles.harvesterProgressWrapper}
             title={`Auto Harvester: ${Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))) - veggies[activeVeggie].harvesterTimer} seconds until next harvest attempt`}
           >
             <ProgressBar
@@ -405,21 +363,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
               color="#627beeff"
               height={22}
             />
-            <span style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              color: '#222',
-              fontSize: '1rem',
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}>
+            <span className={styles.progressBarLabel}>
               {`${Math.floor(
                 (veggies[activeVeggie].harvesterTimer /
                 Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))) * 100
@@ -431,22 +375,15 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
         <br />
         
         {/* Upgrades Grid */}
-        <div style={{
-          marginTop: '1rem',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1rem',
-          alignItems: 'start',
-          maxWidth: '700px'
-        }}>
+        <div className={styles.upgradesGrid}>
           {/* Fertilizer */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+          <div className={styles.upgradeColumn}>
+            <div className={styles.upgradeRow}>
               <UpgradeButton
                 title={veggies[activeVeggie].fertilizerLevel >= veggies[activeVeggie].fertilizerMaxLevel
                   ? 'Fertilizer: MAX Level Reached'
                   : `Fertilizer: +5% growth speed - Cost: $${formatNumber(veggies[activeVeggie].fertilizerCost, 1)}`}
-                imageSrc="./Fertilizer.png"
+                imageSrc={UPGRADE_FERTILIZER}
                 imageAlt="Fertilizer"
                 buttonText="Fertilizer"
                 money={money}
@@ -472,11 +409,11 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           </div>
           
           {/* Better Seeds */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+          <div className={styles.upgradeColumn}>
+            <div className={styles.upgradeRow}>
               <UpgradeButton
                 title={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${formatNumber(veggies[activeVeggie].betterSeedsCost, 1)}Kn`}
-                imageSrc="./Better Seeds.png"
+                imageSrc={UPGRADE_BETTER_SEEDS}
                 imageAlt="Better Seeds"
                 buttonText="Better Seeds"
                 money={money}
@@ -501,11 +438,11 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           </div>
           
           {/* Additional Plot */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+          <div className={styles.upgradeColumn}>
+            <div className={styles.upgradeRow}>
               <UpgradeButton
                 title={totalPlotsUsed >= maxPlots ? 'Max Plots Reached' : `Additional Plot: +1 veggie/harvest - Cost: $${formatNumber(veggies[activeVeggie].additionalPlotCost, 1)}`}
-                imageSrc="./Additional Plot.png"
+                imageSrc={UPGRADE_ADDITIONAL_PLOT}
                 imageAlt="Additional Plot"
                 buttonText="Additional Plot"
                 money={money}
@@ -532,10 +469,10 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           </div>
           
           {/* Auto Harvester */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: '0.5rem' }}>
+          <div className={styles.upgradeColumnWithMargin}>
             <UpgradeButton
               title={veggies[activeVeggie].harvesterOwned ? 'Purchased' : `Auto Harvester - Cost: $${formatNumber(veggies[activeVeggie].harvesterCost, 1)}`}
-              imageSrc="./Auto Harvester.png"
+              imageSrc={UPGRADE_AUTO_HARVESTER}
               imageAlt="Auto Harvester"
               buttonText="Auto Harvester"
               money={money}
@@ -552,11 +489,11 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           
           {/* Harvester Speed */}
           {veggies[activeVeggie].harvesterOwned && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem' }}>
+            <div className={styles.upgradeColumn}>
+              <div className={styles.upgradeRow}>
                 <UpgradeButton
                   title={`Harvester Speed: +5% speed - Cost: $${formatNumber(veggies[activeVeggie].harvesterSpeedCost ?? 50, 1)}`}
-                  imageSrc="./Harvester Speed.png"
+                  imageSrc={UPGRADE_HARVESTER_SPEED}
                   imageAlt="Harvester Speed"
                   buttonText="Harvester Speed"
                   money={money}
@@ -584,34 +521,20 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
       </div>
       
       {/* Progress Bars and Sell Button */}
-      <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div className={styles.autoPurchaseSection}>
         {/* Auto-Purchase Progress Bar */}
         {(() => {
           const activeAutoPurchasers = veggies[activeVeggie].autoPurchasers.filter(ap => ap.owned && ap.active);
           if (activeAutoPurchasers.length === 0) return null;
           
           return (
-            <div style={{ width: '100%', marginBottom: '0.25rem' }}>
-              <span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '0.85rem' }}>
+            <div className={styles.autoPurchaseProgressContainer}>
+              <span className={styles.autoPurchaseLabel}>
                 Auto-Purchase: {7 - globalAutoPurchaseTimer} days
               </span>
-              <div style={{ position: 'relative', width: '100%', height: '12px', marginTop: '0.1rem' }}>
+              <div className={styles.autoPurchaseProgressWrapper}>
                 <ProgressBar value={globalAutoPurchaseTimer} max={7} height={12} color="#4caf50" />
-                <span style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  color: '#222',
-                  fontSize: '0.75rem',
-                  pointerEvents: 'none',
-                  userSelect: 'none',
-                }}>{Math.floor((globalAutoPurchaseTimer / 7) * 100)}%</span>
+                <span className={styles.autoPurchaseProgressLabel}>{Math.floor((globalAutoPurchaseTimer / 7) * 100)}%</span>
               </div>
             </div>
           );
