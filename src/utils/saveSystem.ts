@@ -3,6 +3,11 @@ import { INITIAL_RECIPES } from '../data/recipes';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
 import { CANNING_AUTO_PURCHASERS, DEFAULT_AUTO_CANNING_CONFIG } from '../utils/canningAutoPurchase';
 
+/**
+ * Commented out for future use - will be needed for lean save system
+ * These functions convert between full CanningState and lean progress format
+ * to reduce save file size while maintaining all necessary data.
+ */
 /* Commented out for future use - will be needed for lean save system
 // Convert full CanningState to lean progress format
 function _canningStateToLeanProgress(canningState: CanningState): LeanCanningProgress {
@@ -185,7 +190,9 @@ function _leanProgressToCanningState(progress: LeanCanningProgress, veggies: any
 }
 */
 
-// CanningAutoPurchase type definition (since it's not exported from the utils file)
+/**
+ * CanningAutoPurchase type definition for save system compatibility
+ */
 type CanningAutoPurchase = {
   id: string;
   name: string;
@@ -198,7 +205,10 @@ type CanningAutoPurchase = {
   costCurrency: 'money' | 'knowledge';
 };
 
-// Extended game state that includes canning
+/**
+ * Extended game state interface that includes all game systems.
+ * Supports both old and new save formats for backward compatibility.
+ */
 export interface ExtendedGameState {
   // Existing game state
   veggies: any[];
@@ -238,10 +248,17 @@ export interface ExtendedGameState {
   achievementState?: any; // AchievementState type from achievements.ts
 }
 
+/** Current version number for canning save data format */
 const CANNING_VERSION = 3; // Incremented to force migration for canner upgrade
+
+/** LocalStorage key for game state persistence */
 const GAME_STORAGE_KEY = 'farmIdleGameState';
 
-// Load game state with canning migration
+/**
+ * Loads game state from localStorage with automatic canning system migration.
+ * Handles backward compatibility for older save formats.
+ * @returns The loaded and migrated game state, or null if no save exists
+ */
 export function loadGameStateWithCanning(): ExtendedGameState | null {
   try {
     const raw = localStorage.getItem(GAME_STORAGE_KEY);
@@ -256,7 +273,11 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
   }
 }
 
-// Save game state including canning
+/**
+ * Saves game state to localStorage including all canning data.
+ * Automatically sets the current canning version for future migration checks.
+ * @param state - The complete game state to save
+ */
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
     const stateToSave = {
@@ -269,7 +290,12 @@ export function saveGameStateWithCanning(state: ExtendedGameState): void {
   }
 }
 
-// Migrate old save data to include canning
+/**
+ * Migrates old save data to include canning system or update to latest canning version.
+ * Creates default canning state if none exists, preserves existing progress during updates.
+ * @param loaded - The loaded game state to migrate
+ * @returns Updated game state with current canning version
+ */
 function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
   // If no canning data exists or version is outdated, create default
   if (!loaded.canningState || !loaded.canningVersion || loaded.canningVersion < CANNING_VERSION) {
@@ -477,7 +503,12 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
   return loaded;
 }
 
-// Extend veggie data to include canning upgrades
+/**
+ * Extends veggie data to include canning-specific upgrade fields.
+ * Adds canningYieldLevel, canningYieldCost, canningQualityLevel, and canningQualityCost.
+ * @param veggies - Array of vegetable data to extend
+ * @returns Updated veggie array with canning upgrade fields
+ */
 export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
   return veggies.map(veggie => {
     // Add canning upgrade fields if they don't exist
@@ -502,6 +533,12 @@ export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
   });
 }
 
+/**
+ * Validates imported game save data structure.
+ * Checks for required fields and correct data types to prevent corrupted imports.
+ * @param data - The data to validate
+ * @returns True if data is a valid ExtendedGameState
+ */
 export function validateCanningImport(data: any): data is ExtendedGameState {
   try {
     // Basic validation

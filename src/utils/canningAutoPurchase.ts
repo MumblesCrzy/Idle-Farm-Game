@@ -1,6 +1,9 @@
 import type { CanningAutoPurchase } from '../types/canning';
 
-// Auto-purchaser configurations for canning system
+/**
+ * Pre-configured auto-purchaser definitions for the canning system.
+ * Each auto-purchaser automatically purchases a specific canning upgrade on a timer cycle.
+ */
 export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
   {
     id: 'canning_engineer',
@@ -48,16 +51,29 @@ export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
   }
 ];
 
-// Auto-canning system that automatically starts canning processes
+/**
+ * Configuration for the auto-canning system that automatically starts canning processes.
+ * Controls which recipes to make, priority order, and resource management.
+ */
 export interface AutoCanningConfig {
+  /** Whether auto-canning is enabled */
   enabled: boolean;
-  selectedRecipes: string[]; // Recipe IDs to auto-make
-  priorityOrder: string[]; // Order to attempt recipes
-  onlyUseExcess: boolean; // Only use vegetables above a certain threshold
-  excessThreshold: number; // How many vegetables to keep in reserve
-  pauseWhenFull: boolean; // Pause when max processes reached
+  /** Recipe IDs that should be auto-made */
+  selectedRecipes: string[];
+  /** Order to attempt recipes (higher priority first) */
+  priorityOrder: string[];
+  /** Only use vegetables above the excess threshold */
+  onlyUseExcess: boolean;
+  /** How many vegetables to keep in reserve when using excess mode */
+  excessThreshold: number;
+  /** Pause auto-canning when max simultaneous processes are reached */
+  pauseWhenFull: boolean;
 }
 
+/**
+ * Default configuration for auto-canning system.
+ * Safe defaults that won't consume player resources unexpectedly.
+ */
 export const DEFAULT_AUTO_CANNING_CONFIG: AutoCanningConfig = {
   enabled: false,
   selectedRecipes: [],
@@ -67,7 +83,13 @@ export const DEFAULT_AUTO_CANNING_CONFIG: AutoCanningConfig = {
   pauseWhenFull: true
 };
 
-// Helper functions for auto-purchaser logic
+/**
+ * Checks if player can afford to purchase an auto-purchaser
+ * @param autoPurchaser - The auto-purchaser to check affordability for
+ * @param money - Current money amount
+ * @param knowledge - Current knowledge amount
+ * @returns True if the player has enough of the required currency
+ */
 export function canAffordAutoPurchaser(
   autoPurchaser: CanningAutoPurchase,
   money: number,
@@ -77,6 +99,14 @@ export function canAffordAutoPurchaser(
   return currency >= autoPurchaser.cost;
 }
 
+/**
+ * Determines if an auto-purchaser should attempt to purchase its associated upgrade
+ * @param autoPurchaser - The auto-purchaser to check
+ * @param upgrade - The canning upgrade to potentially purchase
+ * @param money - Current money amount
+ * @param knowledge - Current knowledge amount
+ * @returns True if the auto-purchaser should make the purchase
+ */
 export function shouldPurchaseUpgrade(
   autoPurchaser: CanningAutoPurchase,
   upgrade: any, // CanningUpgrade type
@@ -97,7 +127,14 @@ export function shouldPurchaseUpgrade(
   return currency >= upgrade.cost;
 }
 
-// Auto-canning recipe selection logic
+/**
+ * Selects the best recipe to auto-make based on configuration and available resources.
+ * Considers priority order, ingredient availability, and profit margins.
+ * @param availableRecipes - Array of recipes that can potentially be made
+ * @param veggies - Current vegetable stash data
+ * @param config - Auto-canning configuration
+ * @returns Recipe ID to make, or null if no eligible recipes
+ */
 export function selectBestRecipe(
   availableRecipes: any[], // Recipe[] type
   veggies: Array<{name: string, stash: number, salePrice: number}>,
@@ -166,6 +203,12 @@ export function selectBestRecipe(
   return eligibleRecipes[0].id;
 }
 
+/**
+ * Calculates profit for a recipe (sale price minus raw ingredient value)
+ * @param recipe - The recipe to calculate profit for
+ * @param veggies - Current vegetable data with sale prices
+ * @returns The profit amount (can be negative if recipe loses money)
+ */
 function calculateRecipeProfit(recipe: any, veggies: Array<{name: string, stash: number, salePrice: number}>): number {
   const rawValue = recipe.ingredients.reduce((total: number, ingredient: any) => {
     const veggie = veggies.find(v => v.name === ingredient.veggieName);
@@ -175,7 +218,12 @@ function calculateRecipeProfit(recipe: any, veggies: Array<{name: string, stash:
   return recipe.salePrice - rawValue;
 }
 
-// Timer management for auto-purchasers
+/**
+ * Updates timers for all owned and active auto-purchasers
+ * @param autoPurchasers - Array of auto-purchaser configurations
+ * @param daysPassed - Number of days that have passed
+ * @returns Updated array with incremented timers
+ */
 export function updateAutoPurchaserTimers(
   autoPurchasers: CanningAutoPurchase[],
   daysPassed: number
@@ -186,6 +234,16 @@ export function updateAutoPurchaserTimers(
   }));
 }
 
+/**
+ * Processes auto-purchase attempts for all eligible auto-purchasers.
+ * Attempts to purchase upgrades when timers are ready and resources are available.
+ * @param autoPurchasers - Array of auto-purchaser configurations
+ * @param upgrades - Array of available canning upgrades
+ * @param money - Current money amount
+ * @param knowledge - Current knowledge amount
+ * @param onPurchaseUpgrade - Callback function to execute the upgrade purchase
+ * @returns Updated array with reset timers for successful purchases
+ */
 export function processAutoPurchases(
   autoPurchasers: CanningAutoPurchase[],
   upgrades: any[], // CanningUpgrade[] type
