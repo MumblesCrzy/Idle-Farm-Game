@@ -110,6 +110,8 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
       </div>
     </>
   );
-};
+});
+
+StatsDisplay.displayName = 'StatsDisplay';
 
 export default StatsDisplay;

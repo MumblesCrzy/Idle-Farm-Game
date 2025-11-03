@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
 import UpgradeButton from './UpgradeButton';
@@ -190,7 +190,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
   );
 }
 
-const GrowingTab: React.FC<GrowingTabProps> = (props) => {
+const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
   const {
     veggies,
     activeVeggie,
@@ -679,6 +679,8 @@ const GrowingTab: React.FC<GrowingTabProps> = (props) => {
       sidebarStyle={sidebarStyle}
     />
   );
-};
+});
+
+GrowingTab.displayName = 'GrowingTab';
 
 export default GrowingTab;

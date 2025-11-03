@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
 import type { Veggie } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
@@ -65,7 +65,7 @@ type AdvancedStashDisplayProps = {
   onToggleSell: (index: number) => void;
 };
 
-const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
+const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
   visible,
   onClose,
   veggies,
@@ -243,6 +243,8 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+AdvancedStashDisplay.displayName = 'AdvancedStashDisplay';
 
 export default AdvancedStashDisplay;

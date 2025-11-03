@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import RecipeCard from './RecipeCard';
 import CanningProcessDisplay from './CanningProcessDisplay';
 import RecipeDetailsModal from './RecipeDetailsModal';
@@ -21,7 +21,7 @@ interface CanningPanelProps {
 type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
 type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
-const CanningPanel: React.FC<CanningPanelProps> = ({
+const CanningPanel: React.FC<CanningPanelProps> = memo(({
   canningState,
   veggies,
   heirloomOwned,
@@ -327,6 +327,8 @@ const CanningPanel: React.FC<CanningPanelProps> = ({
       />
     </div>
   );
-};
+});
+
+CanningPanel.displayName = 'CanningPanel';
 
 export default CanningPanel;

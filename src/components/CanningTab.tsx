@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
@@ -21,7 +21,7 @@ interface CanningTabProps {
   onRecipeSortChange: (sort: 'name' | 'profit' | 'time' | 'difficulty') => void;
 }
 
-const CanningTab: React.FC<CanningTabProps> = ({
+const CanningTab: React.FC<CanningTabProps> = memo(({
   canningState,
   canningUnlocked,
   veggies,
@@ -90,6 +90,8 @@ const CanningTab: React.FC<CanningTabProps> = ({
       sidebarStyle={sidebarStyle}
     />
   );
-};
+});
+
+CanningTab.displayName = 'CanningTab';
 
 export default CanningTab;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface HeaderBarProps {
   activeTab: 'growing' | 'canning';
@@ -20,7 +20,7 @@ interface HeaderBarProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const HeaderBar: React.FC<HeaderBarProps> = ({
+const HeaderBar: React.FC<HeaderBarProps> = memo(({
   activeTab,
   canningUnlocked,
   experience,
@@ -170,6 +170,8 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       </div>
     </>
   );
-};
+});
+
+HeaderBar.displayName = 'HeaderBar';
 
 export default HeaderBar;

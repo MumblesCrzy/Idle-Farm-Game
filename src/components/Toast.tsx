@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import './Toast.css';
 
 interface ToastProps {
@@ -9,7 +9,7 @@ interface ToastProps {
   onClose: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({ 
+const Toast: React.FC<ToastProps> = memo(({ 
   message, 
   duration = 3000, 
   type = 'success', 
@@ -43,6 +43,8 @@ const Toast: React.FC<ToastProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Toast.displayName = 'Toast';
 
 export default Toast;

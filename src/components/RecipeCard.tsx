@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Recipe } from '../types/canning';
 
 interface RecipeCardProps {
@@ -13,7 +13,7 @@ interface RecipeCardProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ 
+const RecipeCard: React.FC<RecipeCardProps> = memo(({ 
   recipe, 
   canMake, 
   onStartCanning, 
@@ -221,6 +221,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
       )}
     </div>
   );
-};
+});
+
+RecipeCard.displayName = 'RecipeCard';
 
 export default RecipeCard;
