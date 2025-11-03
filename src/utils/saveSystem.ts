@@ -233,6 +233,9 @@ export interface ExtendedGameState {
     canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
     canningRecipeSort?: 'name' | 'profit' | 'time' | 'difficulty';
   };
+  
+  // Achievement state
+  achievementState?: any; // AchievementState type from achievements.ts
 }
 
 const CANNING_VERSION = 3; // Incremented to force migration for canner upgrade

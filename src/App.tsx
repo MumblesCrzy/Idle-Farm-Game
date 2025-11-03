@@ -8,10 +8,14 @@ import CanningTab from './components/CanningTab';
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
+import AchievementDisplay from './components/AchievementDisplay';
+import AchievementNotification from './components/AchievementNotification';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
+import { useAchievements } from './hooks/useAchievements';
+import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -36,8 +40,7 @@ import {
   calculateExpRequirement,
   calculateInitialCost,
   calculateUpgradeCost,
-  createAutoPurchaserConfigs,
-  canMakePurchase
+  createAutoPurchaserConfigs
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
@@ -379,7 +382,6 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [activeVeggie, setActiveVeggie] = useState(loaded?.activeVeggie ?? 0);
   const [day, setDay] = useState(loaded?.day ?? 1);
   const [totalDaysElapsed, setTotalDaysElapsed] = useState(loaded?.totalDaysElapsed ?? 0);
-  const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(loaded?.globalAutoPurchaseTimer ?? 0);
   const [highestUnlockedVeggie, setHighestUnlockedVeggie] = useState(loaded?.highestUnlockedVeggie ?? 0);
   
   // Weather system hook
@@ -664,6 +666,22 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setMoney((m: number) => m + total);
   }, [setVeggies, setMoney]);
 
+  // Initialize auto-purchase system
+  const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
+    veggies,
+    setVeggies,
+    money,
+    knowledge,
+    maxPlots,
+    handlers: {
+      handleBuyFertilizer,
+      handleBuyBetterSeeds,
+      handleBuyHarvesterSpeed,
+      handleBuyAdditionalPlot
+    },
+    initialTimer: loaded?.globalAutoPurchaseTimer ?? 0
+  });
+
   // Day counter timer with auto-sell and auto-purchase logic
   useEffect(() => {
     let dayIntervalId: number | null = null;
@@ -681,7 +699,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           }, 100); // Small delay to ensure state is updated
         }
         
-        // Process all auto-purchaser timers using the new generic system
+        // Increment auto-purchase timer each day
         setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
         
         return newDay;
@@ -696,58 +714,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         dayIntervalId = null;
       }
     };
-  }, [autoSellOwned, handleSell]);
-
-  // Auto-purchase logic - separate effect that triggers when timer reaches 7
-  useEffect(() => {
-    if (globalAutoPurchaseTimer >= 7) {
-      // Reset timer first
-      setGlobalAutoPurchaseTimer(0);
-      
-      // Process all auto-purchases for each veggie
-      veggies.forEach((v, veggieIndex) => {
-        // Process each active auto-purchaser for this veggie
-        for (const ap of v.autoPurchasers) {
-          if (ap.owned && ap.active) {
-            // Try to make purchase if possible
-            if (canMakePurchase(v, ap.purchaseType, money, knowledge, ap.currencyType, veggies, maxPlots)) {
-              // Call the appropriate existing handler function
-              switch (ap.purchaseType) {
-                case 'fertilizer':
-                  handleBuyFertilizer(veggieIndex);
-                  break;
-                case 'betterSeeds':
-                  handleBuyBetterSeeds(veggieIndex);
-                  break;
-                case 'harvesterSpeed':
-                  handleBuyHarvesterSpeed(veggieIndex);
-                  break;
-                case 'additionalPlot':
-                  handleBuyAdditionalPlot(veggieIndex);
-                  break;
-              }
-            } else if (ap.purchaseType === 'additionalPlot' && ap.id === 'surveyor') {
-              // If Surveyor can't buy more plots due to max limit, turn it off
-              const totalPlotsUsed = veggies.filter(veg => veg.unlocked).length + veggies.reduce((sum, veg) => sum + (veg.additionalPlotLevel || 0), 0);
-              if (totalPlotsUsed >= maxPlots) {
-                setVeggies((prevVeggies) => {
-                  const updated = [...prevVeggies];
-                  const v2 = { ...updated[veggieIndex] };
-                  v2.autoPurchasers = v2.autoPurchasers.map(autopurchaser => 
-                    autopurchaser.id === 'surveyor' 
-                      ? { ...autopurchaser, active: false }
-                      : autopurchaser
-                  );
-                  updated[veggieIndex] = v2;
-                  return updated;
-                });
-              }
-            }
-          }
-        }
-      });
-    }
-  }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handleBuyFertilizer, handleBuyBetterSeeds, handleBuyHarvesterSpeed, handleBuyAdditionalPlot, setVeggies]);
+  }, [autoSellOwned, handleSell, setGlobalAutoPurchaseTimer]);
 
 
 
@@ -778,6 +745,9 @@ function App() {
   
   // Advanced stash overlay state
   const [showAdvancedStash, setShowAdvancedStash] = useState(false);
+
+  // Achievements overlay state
+  const [showAchievements, setShowAchievements] = useState(false);
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'growing' | 'canning'>('growing');
@@ -833,6 +803,36 @@ function App() {
   // Memoized to prevent recalculation on every render
   const canningUnlocked = useMemo(() => experience >= 5000, [experience]);
 
+  // Initialize achievement system
+  const [initialAchievementState] = useState(() => {
+    try {
+      const loaded = loadGameStateWithCanning();
+      return loaded?.achievementState || undefined;
+    } catch (error) {
+      console.error('Error loading achievement state:', error);
+      return undefined;
+    }
+  });
+
+  const {
+    achievements,
+    totalUnlocked,
+    lastUnlockedId,
+    checkAchievements,
+    clearLastUnlocked
+  } = useAchievements(
+    initialAchievementState,
+    (moneyReward, knowledgeReward) => {
+      if (moneyReward > 0) setMoney(prev => prev + moneyReward);
+      if (knowledgeReward > 0) setKnowledge(prev => prev + knowledgeReward);
+    }
+  );
+
+  // Get the last unlocked achievement for notification
+  const lastUnlockedAchievement = lastUnlockedId 
+    ? achievements.find(a => a.id === lastUnlockedId) || null
+    : null;
+
   // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
     // If experience is significantly high, we likely just imported data
@@ -880,13 +880,34 @@ function App() {
         currentWeather,
         highestUnlockedVeggie,
         canningState,
-        uiPreferences
+        uiPreferences,
+        achievementState: {
+          achievements,
+          totalUnlocked,
+          lastUnlockedId
+        }
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId]);
+
+  // Check achievements periodically
+  useEffect(() => {
+    const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
+    const canningItemsTotal = canningState?.totalItemsCanned || 0;
+    
+    checkAchievements({
+      money,
+      experience,
+      knowledge,
+      veggiesUnlocked,
+      canningItemsTotal,
+      farmTier,
+      totalHarvests: 0 // This would need to be tracked separately if needed
+    });
+  }, [money, experience, knowledge, veggies, canningState, farmTier, checkAchievements]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed
@@ -1150,6 +1171,9 @@ function App() {
           setActiveTab={setActiveTab}
           setShowInfoOverlay={setShowInfoOverlay}
           setShowSettingsOverlay={setShowSettingsOverlay}
+          setShowAchievements={setShowAchievements}
+          totalAchievements={achievements.length}
+          unlockedAchievements={totalUnlocked}
           handleBuyLargerFarm={handleBuyLargerFarm}
           formatNumber={formatNumber}
         />
@@ -1277,6 +1301,20 @@ function App() {
       irrigationOwned={irrigationOwned}
       day={day}
       onToggleSell={handleToggleSell}
+    />
+
+    {/* Achievements Overlay */}
+    <AchievementDisplay
+      visible={showAchievements}
+      onClose={() => setShowAchievements(false)}
+      achievements={achievements}
+      totalUnlocked={totalUnlocked}
+    />
+
+    {/* Achievement Notification */}
+    <AchievementNotification
+      achievement={lastUnlockedAchievement}
+      onClose={clearLastUnlocked}
     />
     </>
       )}

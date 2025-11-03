@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Veggie } from '../types/game';
 
 interface StatsDisplayProps {
@@ -15,7 +15,7 @@ interface StatsDisplayProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const StatsDisplay: React.FC<StatsDisplayProps> = ({
+const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
   day,
   totalDaysElapsed,
   season,

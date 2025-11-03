@@ -13,6 +13,9 @@ interface HeaderBarProps {
   setActiveTab: (tab: 'growing' | 'canning') => void;
   setShowInfoOverlay: (show: boolean) => void;
   setShowSettingsOverlay: (show: boolean) => void;
+  setShowAchievements: (show: boolean) => void;
+  totalAchievements?: number;
+  unlockedAchievements?: number;
   handleBuyLargerFarm: () => void;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
@@ -30,6 +33,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   setActiveTab,
   setShowInfoOverlay,
   setShowSettingsOverlay,
+  setShowAchievements,
+  totalAchievements = 0,
+  unlockedAchievements = 0,
   handleBuyLargerFarm,
   formatNumber
 }) => {
@@ -43,6 +49,13 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           title="Info - Game Help"
         >
           Info
+        </button>
+        <button
+          onClick={() => setShowAchievements(true)}
+          style={{ fontSize: '0.85rem', padding: '2px 10px', marginLeft: '0.5rem', background: '#ffc107', color: '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', height: '28px', fontWeight: 'bold' }}
+          title={`Achievements: ${unlockedAchievements}/${totalAchievements} unlocked`}
+        >
+          🏆 {unlockedAchievements}/{totalAchievements}
         </button>
         <button
           onClick={() => setShowSettingsOverlay(true)}

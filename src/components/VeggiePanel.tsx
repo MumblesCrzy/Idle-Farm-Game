@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 type VeggiePanelProps = {
   name: string;
@@ -10,7 +10,7 @@ type VeggiePanelProps = {
   onToggleSell: () => void;
 };
 
-const VeggiePanel: React.FC<VeggiePanelProps> = ({ name, growth, stash, onHarvest, canHarvest, sellEnabled, onToggleSell }) => (
+const VeggiePanel: React.FC<VeggiePanelProps> = memo(({ name, growth, stash, onHarvest, canHarvest, sellEnabled, onToggleSell }) => (
   <div className="veggie-panel">
     <h2>{name}</h2>
     <div className="progress-bar">
@@ -43,6 +43,8 @@ const VeggiePanel: React.FC<VeggiePanelProps> = ({ name, growth, stash, onHarves
       </span>
     </div>
   </div>
-);
+));
+
+VeggiePanel.displayName = 'VeggiePanel';
 
 export default VeggiePanel;

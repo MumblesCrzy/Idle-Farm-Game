@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 type UpgradePanelProps = {
   upgrades: Array<{
@@ -9,7 +9,7 @@ type UpgradePanelProps = {
   }>;
 };
 
-const UpgradePanel: React.FC<UpgradePanelProps> = ({ upgrades }) => (
+const UpgradePanel: React.FC<UpgradePanelProps> = memo(({ upgrades }) => (
   <div className="upgrade-panel">
     <h3>Upgrades</h3>
     {upgrades.map((upg) => (
@@ -21,6 +21,8 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({ upgrades }) => (
       </div>
     ))}
   </div>
-);
+));
+
+UpgradePanel.displayName = 'UpgradePanel';
 
 export default UpgradePanel;
