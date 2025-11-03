@@ -2,6 +2,7 @@ import type { Veggie } from '../types/game';
 import type { WeatherType } from '../config/gameConstants';
 import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
+import { processUnlocks } from './unlockSystem';
 
 /**
  * Calculates new weather based on season and random chance
@@ -160,22 +161,11 @@ export function processVeggieUnlocks(
   veggies: Veggie[];
   highestUnlockedIndex: number;
 } {
-  const newVeggies = [...veggies];
-  let highestUnlockedIndex = -1;
-  
-  let totalPlotsUsed = newVeggies.filter(vg => vg.unlocked).length +
-    newVeggies.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
-
-  // Check for unlocks
-  newVeggies.forEach((veg, idx) => {
-    if (!veg.unlocked && experience >= veg.experienceToUnlock && totalPlotsUsed < maxPlots) {
-      newVeggies[idx] = { ...veg, unlocked: true };
-      totalPlotsUsed++;
-      highestUnlockedIndex = Math.max(highestUnlockedIndex, idx);
-    }
-  });
-  
-  return { veggies: newVeggies, highestUnlockedIndex };
+  const result = processUnlocks(veggies, experience, maxPlots);
+  return {
+    veggies: result.veggies,
+    highestUnlockedIndex: result.highestUnlockedIndex
+  };
 }
 
 /**
