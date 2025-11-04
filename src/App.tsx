@@ -10,6 +10,7 @@ import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
+import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
@@ -1207,81 +1208,85 @@ function App() {
 
           {/* Tab Content */}
           {activeTab === 'growing' && (
-            <GrowingTab
-              veggies={veggies}
-              activeVeggie={activeVeggie}
-              totalPlotsUsed={totalPlotsUsed}
-              maxPlots={maxPlots}
-              money={money}
-              knowledge={knowledge}
-              experience={experience}
-              day={day}
-              globalAutoPurchaseTimer={globalAutoPurchaseTimer}
-              autoSellOwned={autoSellOwned}
-              season={season}
-              currentWeather={currentWeather}
-              greenhouseOwned={greenhouseOwned}
-              irrigationOwned={irrigationOwned}
-              heirloomOwned={heirloomOwned}
-              almanacLevel={almanacLevel}
-              almanacCost={almanacCost}
-              irrigationCost={irrigationCost}
-              irrigationKnCost={irrigationKnCost}
-              heirloomMoneyCost={heirloomMoneyCost}
-              heirloomKnowledgeCost={heirloomKnowledgeCost}
-              highestUnlockedVeggie={highestUnlockedVeggie}
-              farmTier={farmTier}
-              MERCHANT_DAYS={MERCHANT_DAYS}
-              MERCHANT_COST={MERCHANT_COST}
-              MERCHANT_KN_COST={MERCHANT_KN_COST}
-              GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
-              GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
-              HEIRLOOM_COST_PER_VEGGIE={HEIRLOOM_COST_PER_VEGGIE}
-              HEIRLOOM_KN_PER_VEGGIE={HEIRLOOM_KN_PER_VEGGIE}
-              initialVeggies={initialVeggies}
-              veggieSeasonBonuses={veggieSeasonBonuses}
-              daysToGrow={daysToGrow}
-              growthMultiplier={growthMultiplier}
-              setActiveVeggie={setActiveVeggie}
-              handleHarvest={handleHarvest}
-              handleToggleSell={handleToggleSell}
-              handleSell={handleSell}
-              handleBuyFertilizer={handleBuyFertilizer}
-              handleBuyHarvester={handleBuyHarvester}
-              handleBuyBetterSeeds={handleBuyBetterSeeds}
-              handleBuyAdditionalPlot={handleBuyAdditionalPlot}
-              handleBuyHarvesterSpeed={handleBuyHarvesterSpeed}
-              handleBuyAutoPurchaser={handleBuyAutoPurchaser}
-              handleBuyAlmanac={handleBuyAlmanac}
-              handleBuyIrrigation={handleBuyIrrigation}
-              handleBuyAutoSell={handleBuyAutoSell}
-              handleBuyGreenhouse={handleBuyGreenhouse}
-              handleBuyHeirloom={handleBuyHeirloom}
-              formatNumber={formatNumber}
-            />
+            <PerformanceWrapper id="GrowingTab">
+              <GrowingTab
+                veggies={veggies}
+                activeVeggie={activeVeggie}
+                totalPlotsUsed={totalPlotsUsed}
+                maxPlots={maxPlots}
+                money={money}
+                knowledge={knowledge}
+                experience={experience}
+                day={day}
+                globalAutoPurchaseTimer={globalAutoPurchaseTimer}
+                autoSellOwned={autoSellOwned}
+                season={season}
+                currentWeather={currentWeather}
+                greenhouseOwned={greenhouseOwned}
+                irrigationOwned={irrigationOwned}
+                heirloomOwned={heirloomOwned}
+                almanacLevel={almanacLevel}
+                almanacCost={almanacCost}
+                irrigationCost={irrigationCost}
+                irrigationKnCost={irrigationKnCost}
+                heirloomMoneyCost={heirloomMoneyCost}
+                heirloomKnowledgeCost={heirloomKnowledgeCost}
+                highestUnlockedVeggie={highestUnlockedVeggie}
+                farmTier={farmTier}
+                MERCHANT_DAYS={MERCHANT_DAYS}
+                MERCHANT_COST={MERCHANT_COST}
+                MERCHANT_KN_COST={MERCHANT_KN_COST}
+                GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
+                GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
+                HEIRLOOM_COST_PER_VEGGIE={HEIRLOOM_COST_PER_VEGGIE}
+                HEIRLOOM_KN_PER_VEGGIE={HEIRLOOM_KN_PER_VEGGIE}
+                initialVeggies={initialVeggies}
+                veggieSeasonBonuses={veggieSeasonBonuses}
+                daysToGrow={daysToGrow}
+                growthMultiplier={growthMultiplier}
+                setActiveVeggie={setActiveVeggie}
+                handleHarvest={handleHarvest}
+                handleToggleSell={handleToggleSell}
+                handleSell={handleSell}
+                handleBuyFertilizer={handleBuyFertilizer}
+                handleBuyHarvester={handleBuyHarvester}
+                handleBuyBetterSeeds={handleBuyBetterSeeds}
+                handleBuyAdditionalPlot={handleBuyAdditionalPlot}
+                handleBuyHarvesterSpeed={handleBuyHarvesterSpeed}
+                handleBuyAutoPurchaser={handleBuyAutoPurchaser}
+                handleBuyAlmanac={handleBuyAlmanac}
+                handleBuyIrrigation={handleBuyIrrigation}
+                handleBuyAutoSell={handleBuyAutoSell}
+                handleBuyGreenhouse={handleBuyGreenhouse}
+                handleBuyHeirloom={handleBuyHeirloom}
+                formatNumber={formatNumber}
+              />
+            </PerformanceWrapper>
           )}
 
 
       
       {/* Canning Tab Content */}
       {activeTab === 'canning' && (
-        <CanningTab
-          canningState={canningState}
-          canningUnlocked={canningUnlocked}
-          veggies={veggies}
-          money={money}
-          knowledge={knowledge}
-          heirloomOwned={heirloomOwned}
-          startCanning={startCanning}
-          completeCanning={completeCanning}
-          canMakeRecipe={canMakeRecipe}
-          purchaseUpgrade={purchaseUpgrade}
-          toggleAutoCanning={toggleAutoCanning}
-          recipeFilter={uiPreferences.canningRecipeFilter}
-          recipeSort={uiPreferences.canningRecipeSort}
-          onRecipeFilterChange={setCanningRecipeFilter}
-          onRecipeSortChange={setCanningRecipeSort}
-        />
+        <PerformanceWrapper id="CanningTab">
+          <CanningTab
+            canningState={canningState}
+            canningUnlocked={canningUnlocked}
+            veggies={veggies}
+            money={money}
+            knowledge={knowledge}
+            heirloomOwned={heirloomOwned}
+            startCanning={startCanning}
+            completeCanning={completeCanning}
+            canMakeRecipe={canMakeRecipe}
+            purchaseUpgrade={purchaseUpgrade}
+            toggleAutoCanning={toggleAutoCanning}
+            recipeFilter={uiPreferences.canningRecipeFilter}
+            recipeSort={uiPreferences.canningRecipeSort}
+            onRecipeFilterChange={setCanningRecipeFilter}
+            onRecipeSortChange={setCanningRecipeSort}
+          />
+        </PerformanceWrapper>
       )}
       </div>
     </div>

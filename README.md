@@ -7,25 +7,10 @@ Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest
 
 The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, advanced automation systems, and a variety of upgrades to optimize your farm.
 
-## ✨ Latest Updates (v1.3) - NEW!
-### 🤖 Advanced Automation System
-- **🛡️ Auto-Purchasers**: Four intelligent automation systems that purchase upgrades automatically every 7 days
-  - **Assistant**: Auto-purchases Fertilizer upgrades using money
-  - **Cultivator**: Auto-purchases Better Seeds upgrades using knowledge  
-  - **Surveyor**: Auto-purchases Additional Plot upgrades using money (respects plot limits)
-  - **Mechanic**: Auto-purchases Harvester Speed upgrades using money
-- **⚡ Smart Management**: Auto-purchasers automatically turn off when they can't make purchases (e.g., Surveyor at max plots)
-- **📊 Progress Tracking**: Unified 7-day progress bar shows time until next auto-purchase cycle
-- **🎛️ Individual Control**: Each auto-purchaser can be toggled on/off independently
-- **💡 Dynamic Pricing**: Heirloom Seeds cost now updates immediately when unlocking new vegetables
-
-### 🎮 Enhanced User Experience  
-- **📚 Expanded Help System**: New comprehensive "Auto-Purchasers" section in Info display
-- **🎨 Visual Feedback**: Color-coded button states show auto-purchaser status at a glance
-  - Gray: Not purchased, can't afford
-  - Yellow glow: Not purchased, affordable
-  - Green: Purchased and active
-  - Red: Purchased but inactive
+## ✨ Latest Updates (v0.5.0) - NEW!
+### Canning
+- **Canning Tab**: New gameplay feature that's more active than the growing tab.
+- **Larger Value**: Get more money for your veggies, and get even more knowledge processing them.
 
 ## Gameplay Overview
 
@@ -114,12 +99,12 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ## Roadmap
 
 ### 🎯 Next Priority Features
-- **Canning System**: New skill tree to process vegetables into canned goods (Increased sale price)
 - **Weather & Event Log**: Track historical weather patterns and special events
 - **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush
 
 ### 🔮 Future Features
 - **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.
+- **Orchard**: Slower growers, but larger payouts.
 - **Guilds**: 
   - Growers - They help things grow through strange rituals that shun technology
   - Engineers - They help make machines smarter, but lose the feel for the earth
