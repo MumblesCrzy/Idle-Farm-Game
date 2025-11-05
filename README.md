@@ -1,100 +1,158 @@
 
 # Farm Idle Game
 
-Grow, upgrade, and master the seasons—build your farming empire one plot at a time!
+Grow, harvest, preserve, and profit—build your farming empire one plot at a time!
 
-Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and sell a variety of veggies, unlock powerful upgrades, and weather the changing seasons. Expand your farm, prestige for bigger rewards, and see how far your green thumb can take you!
+Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and process a variety of veggies into preserved goods. Unlock powerful upgrades, weather the changing seasons, expand your farm, and prestige for bigger rewards. Balance active canning gameplay with passive farming automation to maximize your profits!
 
-The game features persistent progress, a prestige system, farm expansion, weather events, comprehensive in-game documentation, advanced automation systems, and a variety of upgrades to optimize your farm.
+The game features two complete gameplay systems (Growing & Canning), persistent progress, a prestige/knowledge system, farm expansion, dynamic weather events, comprehensive in-game documentation, advanced automation systems, and extensive accessibility features.
 
-## ✨ Latest Updates (v0.5.0) - NEW!
-### Canning
-- **Canning Tab**: New gameplay feature that's more active than the growing tab.
-- **Larger Value**: Get more money for your veggies, and get even more knowledge processing them.
+## ✨ Latest Updates (v0.5.0)
+### 🥫 Canning System - Major Content Expansion!
+- **Complete New Game Feature**: Entirely new Canning tab unlocked at 5,000 experience
+- **Recipe Processing**: Transform vegetables into preserved goods for profit, experience, and knowledge
+- **Multiple Recipe System**: Complex ingredient combinations with different processing times
+- **Simultaneous Processing**: Run several canning processes at once (upgradeable)
+- **Five Canning Upgrades**: Speed, profit, duplication, slots, and full automation
+- **Auto-Canning System**: Intelligent automated recipe selection every 10 seconds
+- **Strategic Resource Management**: New layer of optimization and decision-making
+
+### 🎨 Enhanced Game Experience
+- **Unified Tab System**: Professional, consistent UI across Growing and Canning tabs
+- **Improved Farm Tiers**: Retain tiered vegetable unlocks when purchasing larger farms
+- **Shorthand Numbers**: All large numbers displayed in easy-to-read format (1.2K, 3.5M, etc.)
+- **Streamlined Saves**: Optimized save system with better performance and backward compatibility
 
 ## Gameplay Overview
 
-- **Veggie Growth:** All unlocked veggies grow simultaneously, each with a unique growth rate and seasonal bonus. Growth progress is shown with a progress bar, and the number of days required to grow updates dynamically with the season and upgrades.
-- **Harvesting:** Click the harvest button to collect grown veggies and add them to your stash. Auto Harvester upgrades can automate this process for each veggie.
-- **Selling:** Sell all veggies in your stash for money at any time. Each veggie has a unique sale price, which can be increased with the Better Seeds upgrade.
-- **Farm Expansion & Prestige:** As you reach the max number of plots, you can buy a larger farm. This resets upgrades and experience, but increases your max plots and gives a permanent knowledge multiplier bonus based on your farm tier. Money above the farm cost is kept.
-- **Plot Limits:** Unlocking new veggies and buying additional plots is limited by your current max plots. Upgrade your farm to expand further.
+### 🌱 Growing System
+- **Simultaneous Growth:** All unlocked veggies grow at the same time, each with unique growth rates and seasonal bonuses
+- **Visual Progress:** Real-time progress bars show growth percentages and estimated days to maturity
+- **Harvesting:** Click to collect grown veggies or use Auto Harvester upgrades for automation
+- **Strategic Selling:** Choose which vegetables to sell or stockpile with per-veggie sell controls (💰/🚫)
+- **Reward Balance:** Manual harvesting gives 100% experience/knowledge; auto-harvesting gives 50% of each
+
+### 🥫 Canning System (Unlocks at 5,000 Experience)
+- **Recipe Processing:** Convert raw vegetables into preserved goods for higher profits
+- **Multiple Recipes:** Various recipes with different ingredient requirements and processing times
+- **Processing Slots:** Run multiple recipes simultaneously (upgradeable with Batch Canning)
+- **Smart Automation:** Auto-Canning intelligently selects and processes recipes every 10 seconds
+- **Enhanced Rewards:** Earn money, experience, AND knowledge from completed recipes
+- **Resource Management:** Balance between selling fresh vegetables vs. processing them
+
+### 🏆 Progression Systems
+- **Experience Unlocking:** Gain experience from harvesting to unlock 10 unique vegetables in sequence
+- **Farm Expansion:** Purchase larger farms to increase max plots (retains vegetable unlocks!)
+- **Prestige/Knowledge:** Earn knowledge points from harvesting and canning to buy permanent upgrades
+- **Farm Tiers:** Higher tiers provide permanent knowledge multipliers and increase starting experience
 
 ### Upgrade Details
 
-#### Per-Veggie Upgrades
+#### Per-Veggie Upgrades (Growing Tab)
 
-- **Fertilizer:** Increases growth rate for the selected veggie by +1% per level.
-- **Auto Harvester:** Automates harvesting for the selected veggie, collecting crops every 50 seconds if ready.
-- **Harvester Speed:** Increases the speed of auto harvesting for the selected veggie.
-- **Additional Plot:** Increases the number of veggies harvested per cycle for the selected veggie.
-- **Better Seeds (Prestige):** Purchased with knowledge points. Permanently increases the sale price for the selected veggie.
-- **Plot Limit:** Additional plots can be purchased for each veggie, up to your current max plots.
+- **Fertilizer:** Increases growth rate by +5% per level for the selected veggie
+- **Auto Harvester:** Automatically harvests the selected veggie every 50 seconds when ready
+- **Harvester Speed:** Reduces auto-harvest delay, making automation faster
+- **Additional Plot:** Increases harvest yield per cycle for the selected veggie
+- **Better Seeds (Knowledge):** Permanently increases sale price for the selected veggie
+- **Plot Limit:** Purchase additional plot capacity for each veggie (respects max plots)
+- **Sell Control:** Toggle 💰 Sell / 🚫 Hold to control which veggies are sold by Auto Sell and Merchant
+
+#### Canning Upgrades (Canning Tab - Unlocks at 5,000 XP)
+
+- **Quick Hands:** Reduces processing time for all recipes (faster production)
+- **Family Recipe:** Increases money reward from all completed recipes (+10% per level)
+- **Heirloom Touch:** Chance to duplicate recipe output (more rewards per process)
+- **Batch Canning:** Adds additional processing slots (run more recipes simultaneously)
+- **Canner (Automation):** Automatically processes recipes every 10 seconds with intelligent selection
 
 #### Global Upgrades
 
-- **Farmer's Almanac:** Increases knowledge gain rate by 10% per purchase.
-- **Irrigation:** Negates drought penalties for all veggies during drought weather events. Persists across page refreshes.
-- **Greenhouse:** Removes winter growth penalty for all veggies. Cost scales with farm size ($1,000 + 100 Knowledge per plot).
-- **Heirloom Seeds:** Increases the Better Seeds multiplier for all veggies, making prestige upgrades more effective. Cost scales with highest unlocked veggie.
-- **Auto Sell:** Automatically sells all harvested veggies every 7 days.
-- **Merchant:** Buys all veggies every 7 days, providing a periodic income boost.
+- **Farmer's Almanac:** Increases knowledge gain rate by +10% per purchase
+- **Irrigation:** Provides constant +15% growth rate bonus AND negates drought penalties (all weather)
+- **Greenhouse:** Removes winter and snow growth penalties for all veggies (scales with farm size)
+- **Heirloom Seeds:** Increases Better Seeds multiplier effectiveness for all veggies
+- **Auto Sell:** Automatically sells all harvestable veggies every 7 days (respects sell toggles)
+- **Merchant:** Buys all veggies every 7 days for periodic income boost (respects sell toggles)
 
-#### Auto-Purchaser System (NEW!)
+#### Auto-Purchaser System
 
-- **Assistant:** Automatically purchases Fertilizer upgrades using money every 7 days
-- **Cultivator:** Automatically purchases Better Seeds upgrades using knowledge every 7 days  
-- **Surveyor:** Automatically purchases Additional Plot upgrades using money every 7 days (respects plot limits)
-- **Mechanic:** Automatically purchases Harvester Speed upgrades using money every 7 days
-- **Smart Management:** Auto-purchasers turn off when they can't make purchases and prevent manual activation at limits
-- **Unified Progress:** All auto-purchasers share a single 7-day timer with visual progress bar
-
-Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow) interact with these global upgrades to further influence growth rates and harvest efficiency.
-
-- **Unlock System:** Gain experience by harvesting to unlock new veggies in a set order. Experience and knowledge are displayed rounded to two decimal places.
-- **Seasons & Weather:** Seasons change automatically, affecting growth rates. Random weather events (Rain, Drought, Storm, Heatwave, Snow) can boost or penalize growth. Irrigation negates drought penalties, and a Greenhouse negates winter and snow penalties.
-- **Prestige System:** Earn knowledge points for every veggie harvested (manual or auto) during the year. Manual harvesting grants 1.0 knowledge while auto harvesting grants 0.5 knowledge, rewarding active play. Spend points on permanent upgrades like Better Seeds. Farm tier increases your knowledge multiplier bonus.
-- **Persistent Save:** Game progress is automatically saved and loaded using localStorage. Export/import functionality allows backup and sharing saves. Refreshing the page will not reset your progress. Farm tier, max plots, and irrigation status are all saved.
-- **Modern UI:** Clean, responsive interface with comprehensive help system, organized settings panel, and clear feedback. Purchasable upgrades are highlighted for convenience.
+- **Assistant:** Auto-purchases Fertilizer upgrades every 7 days using money
+- **Cultivator:** Auto-purchases Better Seeds upgrades every 7 days using knowledge
+- **Surveyor:** Auto-purchases Additional Plot upgrades every 7 days using money (respects limits)
+- **Mechanic:** Auto-purchases Harvester Speed upgrades every 7 days using money
+- **Smart Management:** Auto-purchasers disable when unable to purchase and show helpful tooltips
+- **Unified Timer:** All auto-purchasers share a single 7-day cycle with visual progress bar
 
 ## Features
 
-### 🌱 Core Gameplay
-- Grow a variety of veggies with different growth rates and seasonal bonuses
-- Unlock new veggies by gaining experience through harvesting
-- **Balanced Rewards**: Manual harvesting gives full experience and knowledge; auto-harvest gives 50% experience and 50% knowledge
-- Unified harvest system ensuring consistent behavior across all harvesting methods
-- **Archie Bonus**: Rare clickable character appears randomly for bonus money rewards with streak multipliers
+### 🌱 Growing System
+- Grow 10 unique vegetables with different growth rates and seasonal bonuses
+- Unlock new veggies by gaining experience through harvesting (manual or auto)
+- **Balanced Rewards**: Manual harvesting gives 100% XP/knowledge; auto-harvest gives 50% each
+- Individual sell controls (💰/🚫) for strategic stockpiling vs. selling
+- Advanced Stash Display showing quantities, values, growth rates, and production forecasts
+- Real-time progress bars and dynamic day-to-harvest calculations
 
-### 🔧 Upgrade Systems
-- **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, and Additional Plot upgrades
-- **Auto-Purchase System**: Four intelligent automation systems (Assistant, Cultivator, Surveyor, Mechanic)
+### 🥫 Canning System (Unlocks at 5,000 XP)
+- Transform raw vegetables into preserved goods for higher profits
+- Multiple recipes with varying ingredient requirements and processing times
+- Run several canning processes simultaneously (upgradeable slots)
+- Five dedicated canning upgrades: speed, profit, duplication, slots, automation
+- Auto-Canning system with intelligent recipe selection
+- Earn money, experience, AND knowledge from completed recipes
+
+### 🔧 Upgrade & Automation Systems
+- **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, Additional Plot, Better Seeds, Plot Limits
+- **Canning Upgrades**: Quick Hands, Family Recipe, Heirloom Touch, Batch Canning, Canner
+- **Four Auto-Purchaser Systems**: Assistant (Fertilizer), Cultivator (Better Seeds), Surveyor (Plots), Mechanic (Speed)
 - **Global Upgrades**: Farmer's Almanac, Irrigation, Greenhouse, Heirloom Seeds, Auto Sell, Merchant
-- **Prestige/Knowledge System**: Earn and spend knowledge points on permanent upgrades
+- **Smart Management**: Auto-purchasers disable intelligently with helpful status tooltips
 
 ### 🌦️ Environmental Systems
-- Dynamic seasonal effects with specific veggie bonuses
-- Random weather events affecting growth rates
-- Environmental protection upgrades (Irrigation for drought, Greenhouse for winter)
+- **Four Dynamic Seasons:** Spring, Summer, Fall, Winter - each lasting ~90 days with unique bonuses
+- **Seasonal Veggie Bonuses:** Each vegetable has preferred seasons for +0.1% growth bonus
+- **Weather Events:** Clear, Rain (+20% growth), Drought (-50%), Storm (+10%), Heatwave (+25%), Snow (0% in Winter)
+- **Environmental Protection:** 
+  - **Irrigation:** +15% growth bonus in ALL conditions + drought protection ($750 + 75 Knowledge)
+  - **Greenhouse:** Removes Winter (-90%) and Snow (-100%) penalties (scales with farm size)
 
-### 💾 Save & Settings Management
-- **Persistent Progress**: Automatic localStorage saving with full game state preservation
-- **Export/Import**: Timestamped save exports with import validation
-- **Settings Panel**: Organized interface for save management and game actions
-- **Safety Features**: Confirmation dialogs for destructive actions
+### 💾 Save & Progression
+- **Auto-Save System:** Persistent progress saved to localStorage automatically
+- **Export/Import:** Timestamped save files for backup and sharing
+- **Backward Compatibility:** Seamless migration when new features are added
+- **Year & Day Tracking:** Long-term progression display showing "Year: X | Day: Y"
+- **Safe Reset:** Confirmation dialogs prevent accidental progress loss
 
-### 📚 Player Experience
-- **Complete In-Game Documentation**: Comprehensive help system with strategic guides
-- **Four Help Categories**: Seasons & Weather, Farm & Experience, Veggie Upgrades, Farm Upgrades
-- **Beginner-Friendly**: Detailed explanations of complex mechanics and optimal strategies
-- **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
-- **Modern UI**: Clean, responsive interface with intuitive navigation and helpful feedback
-- **Enhanced Stash Display**: Visual inventory showing individual veggie amounts on the left side
-
-### 🏆 Progression Systems
-- Farm expansion and prestige mechanic with permanent bonuses
+### 🏆 Progression & Prestige
+- Farm expansion with tier-based bonuses and retained vegetable unlocks
 - Experience-based unlocking system with plot limitations
-- Merchant and auto sell upgrades for passive income generation
+- Knowledge/prestige system with permanent upgrade purchases
+- Merchant and Auto Sell for passive income generation
+- Farm tier multipliers for long-term knowledge gains
+
+### 📚 Player Experience & Accessibility
+- **Complete In-Game Documentation**: Comprehensive help system covering all mechanics
+- **Help Categories**: Seasons & Weather, Farm & Experience, Veggie Upgrades, Farm Upgrades, Canning System
+- **Beginner-Friendly**: Detailed explanations with strategic guides and optimal play tips
+- **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
+- **Unified Tab Interface**: Professional, consistent UI across Growing and Canning systems
+- **Shorthand Numbers**: All large values displayed in readable format (K, M, B, etc.)
+- **Archie Bonus**: Rare clickable character for bonus money with streak multipliers and sound effects 🐕
+- **Accessibility Features**: 
+  - 80+ ARIA labels for screen reader support
+  - Keyboard navigation with focus trapping in modals
+  - 50+ images with proper alt text (decorative vs informative)
+  - Landmark regions for easy navigation
+  - Audio mute controls for sound effects
+
+### 🔧 Technical Excellence
+- **React + TypeScript**: Modern React 19 with full TypeScript support and strict mode
+- **Vite Build System**: Fast development server and optimized production builds
+- **Component Architecture**: Modular, reusable components with unified BaseTab system
+- **State Management**: Centralized game state with efficient localStorage persistence
+- **Performance Optimized**: Reduced re-renders and streamlined game loops
+- **Test Coverage**: Comprehensive test suite with Vitest and Testing Library
 
 ## Roadmap
 
@@ -122,29 +180,49 @@ Environmental upgrades and weather effects (Rain, Drought, Storm, Heatwave, Snow
 ### 🎮 New Player Guide
 
 1. **Start Simple**: Begin with Radish and focus on Fertilizer upgrades for faster growth
-2. **Use the Help System**: Click the "Info" button for comprehensive guides on all game mechanics
-3. **Manual vs Auto**: Manual harvesting gives full experience/knowledge; auto gives 50% - balance active play with idle progression
-4. **Plot Management**: Watch plot warnings! Don't fill all plots with additional plots or you can't unlock new vegetables
-5. **Weather Awareness**: Check the weather icon and plan around seasonal bonuses for your vegetables
-6. **Upgrade Timing**: Major upgrades like Greenhouse scale with your farm size - plan purchases carefully
-7. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money!
-8. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
-9. **Save Management**: Use the Settings panel to export saves regularly as backups
+2. **Use the Help System**: Click the "Info" button in either tab for comprehensive guides on all game mechanics
+3. **Manual vs Auto**: Manual harvesting gives 100% XP/knowledge; auto gives 50% each - balance active play with idle progression
+4. **Unlock Canning**: Focus on reaching 5,000 experience to unlock the Canning tab for a whole new gameplay layer
+5. **Plot Management**: Watch plot warnings! Don't fill all plots with Additional Plots or you can't unlock new vegetables
+6. **Weather Awareness**: Check the weather icon and plan around seasonal bonuses for your vegetables
+7. **Sell Strategy**: Use 💰/🚫 toggles to stockpile valuable vegetables for canning while auto-selling cheaper ones
+8. **Upgrade Timing**: Major upgrades like Greenhouse scale with farm size - plan purchases carefully
+9. **Canning Strategy**: Once unlocked, balance selling raw vegetables vs. processing them for higher profits
+10. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money and builds streaks!
+11. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
+12. **Save Management**: Use the Settings panel to export saves regularly as backups
 
 ### 🔧 For Developers
 
-- **React + TypeScript**: Modern React with full TypeScript support
-- **Vite Build System**: Fast development and optimized production builds
+- **React + TypeScript**: Modern React 19 with full TypeScript support and strict mode
+- **Vite Build System**: Fast development and optimized production builds (338KB JS)
 - **State Management**: Centralized game state with localStorage persistence
-- **Component Architecture**: Modular overlay system for easy feature expansion
+- **Component Architecture**: Modular BaseTab system with reusable upgrade panels
+- **Test Suite**: Comprehensive tests with Vitest, Testing Library, and coverage reporting
+- **Build Commands**:
+  - `npm run dev` - Start development server
+  - `npm run build` - Production build with type checking
+  - `npm run test` - Run test suite in watch mode
+  - `npm run coverage` - Generate test coverage report
+  - `npm run lint` - Run ESLint checks
 
-## 📋 Recent Changes (v1.3)
+## 📋 Recent Changes (v0.5.0)
 
 ### Major Features Added
-- **Complete Automation**: Four intelligent Auto-Purchaser systems handle all upgrade types
-- **Visual Excellence**: 4-state color system provides instant status feedback  
-- **Code Quality**: Massive architecture improvement with reusable components
-- **Continuted Documentation**: Comprehensive in-game guides for all automation features
+- **Complete Canning System**: Entirely new gameplay feature with recipes, processing, and automation
+- **Unified Tab Interface**: Professional UI across Growing and Canning systems
+- **Year Counter**: Long-term progression tracking
+- **Improved Farm Tiers**: Retain vegetable unlocks when purchasing larger farms
+- **Streamlined Save System**: Optimized performance with backward compatibility
+- **Accessibility**: 80+ ARIA labels, keyboard navigation, screen reader support
+
+### Previous Updates
+- **v0.4.0**: Advanced Stash Display, Vegetable Sell Controls, Enhanced Archie with sound
+- **v0.3.0**: Four Auto-Purchaser systems (Assistant, Cultivator, Surveyor, Mechanic)
+- **v0.2.0**: Archie bonus system, comprehensive help documentation, experience rebalancing
+- **v0.1.0**: Initial release with growing, seasons, weather, prestige system
+
+For detailed release notes, see the `docs/` folder.
 
 ---
 
