@@ -18,7 +18,11 @@ const VeggiePanel: React.FC<VeggiePanelProps> = memo(({ name, growth, stash, onH
       <div className="progress" style={{ width: `${growth}%` }}></div>
     </div>
     <span>Growth: {Math.floor(growth)}%</span>
-    <button onClick={onHarvest} disabled={!canHarvest}>
+    <button 
+      onClick={onHarvest} 
+      disabled={!canHarvest}
+      aria-label={`Harvest ${name}. Growth: ${Math.floor(growth)}%. Stash: ${stash}. ${canHarvest ? 'Ready to harvest' : 'Not ready yet'}`}
+    >
       Harvest
     </button>
     <div>Stash: {stash}</div>
@@ -30,6 +34,11 @@ const VeggiePanel: React.FC<VeggiePanelProps> = memo(({ name, growth, stash, onH
           background: sellEnabled ? '#4CAF50' : '#f44336',
         }}
         title={sellEnabled ? 'Auto-sell enabled (click to disable)' : 'Auto-sell disabled (click to enable)'}
+        aria-label={sellEnabled 
+          ? `Auto-sell enabled for ${name}. Click to disable and stockpile instead` 
+          : `Auto-sell disabled for ${name}. Click to enable and sell on harvest`
+        }
+        aria-pressed={sellEnabled}
       >
         {sellEnabled ? '💰 Sell' : '🚫 Hold'}
       </button>

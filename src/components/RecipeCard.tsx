@@ -66,6 +66,15 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
       <div
         className={styles.clickableArea}
         onClick={() => onShowDetails(recipe)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onShowDetails(recipe);
+          }
+        }}
+        aria-label={`View details for ${recipe.name}. Sells for $${formatNumber(getEffectiveSalePrice(), 2)}. Takes ${getEffectiveProcessingTime()} seconds. Rewards ${getKnowledgeReward()} knowledge and ${getCanningExperienceReward()} canning experience`}
       >
         <div className={`${styles.recipeName} ${canMake ? styles.canMake : ''}`}>
           {recipe.name}
@@ -102,6 +111,7 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
             onStartCanning(recipe.id);
           }}
           className={styles.canningButton}
+          aria-label={`Start canning ${recipe.name}. Will use ${recipe.ingredients.map(ing => `${ing.quantity} ${ing.veggieName}`).join(', ')}`}
         >
           Start Canning
         </button>

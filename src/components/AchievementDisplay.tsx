@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Achievement } from '../types/achievements';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './AchievementDisplay.module.css';
 
 interface AchievementDisplayProps {
@@ -15,6 +16,8 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
   achievements,
   totalUnlocked
 }) => {
+  const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
+  
   if (!visible) return null;
 
   // Group achievements by category
@@ -38,18 +41,26 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div 
+        className={styles.modal}
+        ref={containerRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="achievements-modal-title"
+      >
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.titleContainer}>
-            <h2 className={styles.title}>🏆 Achievements</h2>
-            <p className={styles.stats}>
+            <h2 id="achievements-modal-title" className={styles.title}>🏆 Achievements</h2>
+            <p className={styles.stats} aria-live="polite">
               {totalUnlocked} of {totalAchievements} unlocked ({Math.round((totalUnlocked / totalAchievements) * 100)}%)
             </p>
           </div>
           <button
             onClick={onClose}
             className={styles.closeButton}
+            aria-label={`Close achievements modal (press Escape). ${totalUnlocked} of ${totalAchievements} achievements unlocked`}
           >
             Close
           </button>
@@ -61,7 +72,12 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
             className={styles.progressBar}
             style={{
               width: `${(totalUnlocked / totalAchievements) * 100}%`
-            }} 
+            }}
+            role="progressbar"
+            aria-valuenow={totalUnlocked}
+            aria-valuemin={0}
+            aria-valuemax={totalAchievements}
+            aria-label={`Achievement progress: ${totalUnlocked} out of ${totalAchievements} completed`}
           />
         </div>
 
@@ -83,7 +99,7 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
                   {category.label}
                 </h3>
                 
-                <div className={styles.achievementsGrid}>
+                <div className={styles.achievementsGrid} role="list" aria-label={`${category.label} achievements`}>
                   {categoryAchievements.map(achievement => (
                     <div
                       key={achievement.id}
@@ -91,19 +107,23 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
                       style={{
                         border: achievement.unlocked ? `2px solid ${category.color}` : undefined
                       }}
+                      role="listitem"
+                      aria-label={`${achievement.name}. ${achievement.unlocked ? 'Unlocked' : 'Locked'}. ${achievement.description}`}
                     >
                       <div className={styles.achievementHeader}>
                         <img
                           src={achievement.icon}
-                          alt={achievement.name}
+                          alt=""
                           className={styles.achievementIcon}
                           style={{
                             filter: achievement.unlocked ? 'none' : 'grayscale(100%)'
                           }}
+                          aria-hidden="true"
                         />
                         <div className={styles.achievementTitleContainer}>
                           <h4 className={`${styles.achievementTitle} ${achievement.unlocked ? styles.unlocked : ''}`}>
                             {achievement.name}
+                            {achievement.unlocked && <span className="sr-only"> (Unlocked)</span>}
                           </h4>
                           {achievement.unlocked && achievement.unlockedAt && (
                             <p className={styles.achievementDate}>

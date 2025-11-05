@@ -399,13 +399,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, []); // Run only once on mount with empty dependency array since loaded is stable    
 
   // Change browser tab title if any veggie is ready to harvest
+  // Only update when ready state changes to avoid screen reader announcement spam
+  const hasReadyVeggies = veggies.some(v => v.growth >= 100);
   useEffect(() => {
-    if (veggies.some(v => v.growth >= 100)) {
+    if (hasReadyVeggies) {
       document.title = '🌱 Farm Idle Game';
     } else {
       document.title = 'Farm Idle Game';
     }
-  }, [veggies]);
+  }, [hasReadyVeggies]); // Only trigger when ready state changes, not on every growth update
   
   const timerRef = useRef<number | null>(null);
   // Growth timer for all unlocked veggies
@@ -1117,36 +1119,40 @@ function App() {
     <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
     <div className={styles.container}>
       <div className={styles.mainContent}>
-        <HeaderBar
-          experience={experience}
-          money={money}
-          farmCost={farmCost}
-          farmTier={farmTier}
-          totalPlotsUsed={totalPlotsUsed}
-          maxPlots={maxPlots}
-          knowledge={knowledge}
-          setShowInfoOverlay={setShowInfoOverlay}
-          setShowSettingsOverlay={setShowSettingsOverlay}
-          setShowAchievements={setShowAchievements}
-          totalAchievements={achievements.length}
-          unlockedAchievements={totalUnlocked}
-          handleBuyLargerFarm={handleBuyLargerFarm}
-          formatNumber={formatNumber}
-        />
+        <header role="banner">
+          <HeaderBar
+            experience={experience}
+            money={money}
+            farmCost={farmCost}
+            farmTier={farmTier}
+            totalPlotsUsed={totalPlotsUsed}
+            maxPlots={maxPlots}
+            knowledge={knowledge}
+            setShowInfoOverlay={setShowInfoOverlay}
+            setShowSettingsOverlay={setShowSettingsOverlay}
+            setShowAchievements={setShowAchievements}
+            totalAchievements={achievements.length}
+            unlockedAchievements={totalUnlocked}
+            handleBuyLargerFarm={handleBuyLargerFarm}
+            formatNumber={formatNumber}
+          />
+        </header>
 
-        <StatsDisplay
-          day={day}
-          totalDaysElapsed={totalDaysElapsed}
-          season={season}
-          currentWeather={currentWeather}
-          totalPlotsUsed={totalPlotsUsed}
-          maxPlots={maxPlots}
-          money={money}
-          knowledge={knowledge}
-          veggies={veggies}
-          setShowAdvancedStash={setShowAdvancedStash}
-          formatNumber={formatNumber}
-        />
+        <aside role="complementary" aria-label="Game statistics">
+          <StatsDisplay
+            day={day}
+            totalDaysElapsed={totalDaysElapsed}
+            season={season}
+            currentWeather={currentWeather}
+            totalPlotsUsed={totalPlotsUsed}
+            maxPlots={maxPlots}
+            money={money}
+            knowledge={knowledge}
+            veggies={veggies}
+            setShowAdvancedStash={setShowAdvancedStash}
+            formatNumber={formatNumber}
+          />
+        </aside>
 
         {/* Tab Navigation */}
         <div style={{ marginBottom: '1rem' }}>
@@ -1207,9 +1213,10 @@ function App() {
         </div>
 
           {/* Tab Content */}
-          {activeTab === 'growing' && (
-            <PerformanceWrapper id="GrowingTab">
-              <GrowingTab
+          <main role="main" id="main-content">
+            {activeTab === 'growing' && (
+              <PerformanceWrapper id="GrowingTab">
+                <GrowingTab
                 veggies={veggies}
                 activeVeggie={activeVeggie}
                 totalPlotsUsed={totalPlotsUsed}
@@ -1288,6 +1295,7 @@ function App() {
           />
         </PerformanceWrapper>
       )}
+      </main>
       </div>
     </div>
     

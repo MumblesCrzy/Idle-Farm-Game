@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Recipe } from '../types/canning';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface RecipeDetailsModalProps {
   recipe: Recipe | null;
@@ -26,6 +27,8 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
   speedMultiplier = 1,
   formatNumber
 }) => {
+  const { containerRef, handleTabKey } = useFocusTrap(isVisible, onClose);
+  
   if (!isVisible || !recipe) return null;
 
   // Calculate better seeds multiplier based on ingredient better seeds levels
@@ -101,8 +104,17 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000
-    }}>
-      <div style={{
+    }}
+    onClick={onClose}
+    >
+      <div 
+        ref={containerRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recipe-modal-title"
+        onClick={(e) => e.stopPropagation()}
+        style={{
         backgroundColor: 'white',
         borderRadius: '12px',
         padding: '24px',
@@ -121,7 +133,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
           borderBottom: '2px solid #f0f0f0',
           paddingBottom: '12px'
         }}>
-          <h2 style={{
+          <h2 id="recipe-modal-title" style={{
             margin: 0,
             fontSize: '20px',
             color: '#333'
@@ -130,6 +142,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
           </h2>
           <button
             onClick={onClose}
+            aria-label={`Close ${recipe.name} details. Press Escape to close`}
             style={{
               background: 'none',
               border: 'none',
@@ -347,6 +360,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
                 onStartCanning(recipe.id);
                 onClose();
               }}
+              aria-label={`Start canning ${recipe.name}`}
               style={{
                 padding: '12px 24px',
                 backgroundColor: '#28a745',
@@ -372,6 +386,7 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
             <div>
               <button
                 disabled
+                aria-label={`Cannot start canning ${recipe.name}. Missing ingredients: ${getMissingIngredients().map(ing => ing.veggieName).join(', ')}`}
                 style={{
                   padding: '12px 24px',
                   backgroundColor: '#ccc',

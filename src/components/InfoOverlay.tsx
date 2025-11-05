@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { InfoCategory } from '../types/game';
 import { ICON_GROWING, ICON_IDEA, ICON_CANNING } from '../config/assetPaths';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './InfoOverlay.module.css';
 
 interface InfoOverlayProps {
@@ -17,6 +18,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
   GREENHOUSE_KN_COST_PER_PLOT 
 }) => {
   const [selectedInfoCategory, setSelectedInfoCategory] = useState<InfoCategory>('seasons');
+  const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
 
   if (!visible) return null;
 
@@ -40,15 +42,24 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div 
+        className={styles.modal}
+        ref={containerRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="info-modal-title"
+      >
         {/* Category Navigation */}
         <div className={styles.sidebar}>
-          <h3 className={styles.header}>Game Help</h3>
+          <h3 id="info-modal-title" className={styles.header}>Game Help</h3>
           {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setSelectedInfoCategory(category.id)}
               className={`${styles.sidebarButton} ${selectedInfoCategory === category.id ? styles.active : ''}`}
+              aria-label={`View ${category.label} information`}
+              aria-current={selectedInfoCategory === category.id ? 'page' : undefined}
             >
               {category.label}
             </button>
@@ -64,6 +75,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
             <button
               onClick={onClose}
               className={styles.closeButton}
+              aria-label="Close game help modal (press Escape)"
             >
               Close
             </button>
@@ -74,7 +86,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
             {selectedInfoCategory === 'seasons' && (
               <div>
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_GROWING} alt="Growing" className={styles.sectionIcon} />
+                  <img src={ICON_GROWING} alt="" className={styles.sectionIcon} />
                   Seasons
                 </h4>
                 <p>The game cycles through four seasons: <strong>Spring → Summer → Fall → Winter</strong>. Each season lasts ~90 days and affects how your vegetables grow.</p>
@@ -116,7 +128,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
                 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -205,7 +217,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
                 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -220,7 +232,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
             {selectedInfoCategory === 'veggies' && (
               <div>
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_GROWING} alt="Growing" className={styles.sectionIcon} />
+                  <img src={ICON_GROWING} alt="" aria-hidden="true" className={styles.sectionIcon} />
                   Per-Vegetable Upgrades
                 </h4>
                 <p>Each vegetable has its own individual upgrades that only affect that specific crop:</p>
@@ -272,7 +284,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
                 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -340,7 +352,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
                 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />  
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />  
                   Strategy Tips:
                 </h4>
                 <ul>
@@ -413,7 +425,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} /> 
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} /> 
                   Auto-Purchaser Strategy:
                 </h4>
                 <ul>
@@ -430,7 +442,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
             {selectedInfoCategory === 'canning' && (
               <div>
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_CANNING} alt="Canning" className={styles.sectionIcon} />
+                  <img src={ICON_CANNING} alt="" aria-hidden="true" className={styles.sectionIcon} />
                   Canning System
                 </h4>
                 <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
@@ -474,7 +486,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </ul>
 
                 <h4 className={styles.sectionTitle}>
-                  <img src={ICON_IDEA} alt="Idea" className={styles.sectionIcon} />
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />
                   Canning Strategy:
                 </h4>
                 <ul>
@@ -495,3 +507,4 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 };
 
 export default InfoOverlay;
+

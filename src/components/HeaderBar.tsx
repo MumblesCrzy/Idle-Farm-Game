@@ -42,6 +42,7 @@ const HeaderBar: React.FC<HeaderBarProps> = memo(({
           onClick={() => setShowInfoOverlay(true)}
           className={styles.button}
           title="Info - Game Help"
+          aria-label="Open game help and information"
         >
           Info
         </button>
@@ -49,6 +50,7 @@ const HeaderBar: React.FC<HeaderBarProps> = memo(({
           onClick={() => setShowAchievements(true)}
           className={styles.achievementsButton}
           title={`Achievements: ${unlockedAchievements}/${totalAchievements} unlocked`}
+          aria-label={`View achievements. ${unlockedAchievements} of ${totalAchievements} unlocked`}
         >
           🏆 {unlockedAchievements}/{totalAchievements}
         </button>
@@ -56,6 +58,7 @@ const HeaderBar: React.FC<HeaderBarProps> = memo(({
           onClick={() => setShowSettingsOverlay(true)}
           className={styles.settingsButton}
           title="Settings"
+          aria-label="Open settings menu for save management and sound options"
         >
           Settings
         </button>

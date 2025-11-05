@@ -31,7 +31,6 @@ interface UpgradeButtonProps {
 function CanningUpgradeButton({ 
   title, 
   imageSrc, 
-  imageAlt, 
   buttonText, 
   money, 
   knowledge, 
@@ -65,7 +64,8 @@ function CanningUpgradeButton({
       <div className={styles.imageWrapper}>
         <img 
           src={imageSrc} 
-          alt={imageAlt} 
+          alt="" 
+          aria-hidden="true"
           className={styles.image}
         />
       </div>
@@ -216,7 +216,8 @@ const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = memo(({
                 <div className={styles.imageWrapper}>
                   <img 
                     src={getUpgradeImage(upgrade)} 
-                    alt={upgrade.name} 
+                    alt="" 
+                    aria-hidden="true"
                     className={styles.image}
                   />
                 </div>

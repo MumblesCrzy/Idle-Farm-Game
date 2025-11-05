@@ -257,7 +257,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
     <>
       {/* Growing Experience Display */}
       <div className={styles.experienceDisplay}>
-        <img src={ICON_EXPERIENCE} alt="Growing Experience" className={styles.experienceIcon} />
+        <img src={ICON_EXPERIENCE} alt="" aria-hidden="true" className={styles.experienceIcon} />
         <span className={styles.experienceText}>
           Growing Experience: {formatNumber(experience, 2)}
         </span>
@@ -276,7 +276,8 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
                   v.growth >= 100 ? 'ready' : ''
                 ].filter(Boolean).join(' ')}`}
                 onClick={() => setActiveVeggie(i)}
-                aria-label={`Select ${v.name}`}
+                aria-label={`${v.name}. Growth: ${Math.floor(v.growth)}%. Stash: ${v.stash}${i === activeVeggie ? '. Currently selected' : ''}`}
+                aria-current={i === activeVeggie ? 'true' : undefined}
                 disabled={i === activeVeggie}
               >
                 {v.name}
@@ -285,7 +286,10 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
               <button 
                 key={v.name} 
                 disabled 
-                aria-label={`Locked veggie`} 
+                aria-label={totalPlotsUsed >= maxPlots 
+                  ? `${v.name}. Locked. You need to expand your farm to unlock more vegetables`
+                  : `${v.name}. Locked. Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`
+                }
                 className={styles.veggieSelectorButton}
                 title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`}
               >
@@ -308,7 +312,8 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
             <img
               title={`Bonus Growth: ${veggieSeasonBonuses[veggies[activeVeggie].name]}`}
               src={getVeggieImage(veggies[activeVeggie].name)}
-              alt={veggies[activeVeggie].name}
+              alt=""
+              aria-hidden="true"
               className={styles.veggieImage}
             />
             {veggies[activeVeggie].name}
@@ -335,6 +340,10 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
             onClick={() => handleToggleSell(activeVeggie)}
             className={veggies[activeVeggie].sellEnabled ? styles.sellButton : styles.holdButton}
             title={veggies[activeVeggie].sellEnabled ? 'Sell enabled (click to disable and stockpile)' : 'Sell disabled (click to enable selling)'}
+            aria-label={veggies[activeVeggie].sellEnabled 
+              ? `Auto-sell enabled for ${veggies[activeVeggie].name}. Click to disable and stockpile instead` 
+              : `Auto-sell disabled for ${veggies[activeVeggie].name}. Click to enable and sell on harvest`}
+            aria-pressed={veggies[activeVeggie].sellEnabled}
           >
             {veggies[activeVeggie].sellEnabled ? '💰 Sell' : '🚫 Hold'}
           </button>

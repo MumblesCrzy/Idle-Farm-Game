@@ -37,14 +37,14 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
         <span className={styles.seasonWeather}>
           <img
             src={getSeasonImage(season)}
-            alt={season}
+            alt={`Current season: ${season}`}
             className={styles.seasonWeatherIcon}
           />
           {season}
           <span className={styles.spacer}></span>
           <img
             src={getWeatherImage(currentWeather)}
-            alt={currentWeather}
+            alt={`Current weather: ${currentWeather}`}
             className={styles.seasonWeatherIcon}
           />
           <span>{currentWeather}</span>
@@ -53,7 +53,7 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
       <div className={styles.divider} />
       <div className={styles.stats}>
         <span className={styles.statItem}>
-          <img src={ICON_PLOTS} alt="Plots" className={styles.statIcon} />
+          <img src={ICON_PLOTS} alt="" className={styles.statIcon} aria-hidden="true" />
           Plots: {totalPlotsUsed} / {maxPlots}
           <div 
             className={styles.plotIndicator}
@@ -61,6 +61,10 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
               backgroundColor: totalPlotsUsed >= maxPlots ? '#ffe0e0' : '#e0ffe0', 
               borderColor: totalPlotsUsed >= maxPlots ? '#ffaaaa' : '#aaffaa'
             }}
+            role="status"
+            aria-label={totalPlotsUsed >= maxPlots ? 
+              'Plot limit reached. Buy a larger farm to unlock more plots.' : 
+              `${maxPlots - totalPlotsUsed} plots available`}
             title={totalPlotsUsed >= maxPlots ? 
               'You\'ve reached your maximum plot limit! Buy a larger farm to unlock more plots for vegetables.' : 
               'Each vegetable and additional plot uses one plot.' }
@@ -68,11 +72,11 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
           </div>
         </span>
         <span className={styles.statItem}>
-          <img src={ICON_MONEY} alt="Money" className={styles.statIcon} />
+          <img src={ICON_MONEY} alt="" className={styles.statIcon} aria-hidden="true" />
           Money: ${formatNumber(money, 2)}
         </span>
         <span className={styles.statItem}>
-          <img src={ICON_KNOWLEDGE} alt="Knowledge" className={styles.statIcon} />
+          <img src={ICON_KNOWLEDGE} alt="" className={styles.statIcon} aria-hidden="true" />
           Knowledge: {formatNumber(knowledge, 2)}
         </span>
         <span className={styles.statItemWithButton}>
@@ -80,8 +84,9 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
             onClick={() => setShowAdvancedStash(true)}
             className={styles.stashButton}
             title="View detailed stash breakdown"
+            aria-label={`View detailed stash breakdown. Total stash: ${veggies.reduce((sum, v) => sum + v.stash, 0)} vegetables`}
           >
-            <img src={ICON_MONEY} alt="Stash" className={styles.stashIcon} />
+            <img src={ICON_MONEY} alt="" className={styles.stashIcon} aria-hidden="true" />
             Stash: {veggies.reduce((sum, v) => sum + v.stash, 0)}
           </button>
         </span>

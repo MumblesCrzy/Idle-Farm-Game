@@ -92,10 +92,12 @@ const VeggieCanningUpgrades: React.FC<VeggieCanningUpgradesProps> = ({
             gap: '4px'
           }}
           title={`Canning Yield: Each harvest gives +20% extra vegetables for canning (Level ${canningYieldLevel})`}
+          aria-label={`Purchase canning yield upgrade for ${veggie.name}. Level ${canningYieldLevel}. Costs $${canningYieldCost}`}
         >
           <img 
             src="./Additional Plot.png" 
-            alt="Canning Yield" 
+            alt="" 
+            aria-hidden="true"
             style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
           />
           <div>Yield ({canningYieldLevel})</div>
@@ -122,10 +124,12 @@ const VeggieCanningUpgrades: React.FC<VeggieCanningUpgradesProps> = ({
             gap: '4px'
           }}
           title={`Canning Quality: When using this vegetable in recipes, +15% final sale price (Level ${canningQualityLevel})`}
+          aria-label={`Purchase canning quality upgrade for ${veggie.name}. Level ${canningQualityLevel}. Costs ${canningQualityCost} knowledge`}
         >
           <img 
             src="./Heirloom Seeds.png" 
-            alt="Canning Quality" 
+            alt="" 
+            aria-hidden="true"
             style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
           />
           <div>Quality ({canningQualityLevel})</div>

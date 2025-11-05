@@ -4,7 +4,7 @@ import styles from './UpgradeButton.module.css';
 export interface UpgradeButtonProps {
   title: string;
   imageSrc: string;
-  imageAlt: string;
+  imageAlt?: string;
   buttonText: string;
   money: number;
   knowledge: number;
@@ -24,7 +24,6 @@ export interface UpgradeButtonProps {
 const UpgradeButton: React.FC<UpgradeButtonProps> = ({ 
   title, 
   imageSrc, 
-  imageAlt, 
   buttonText, 
   money, 
   knowledge, 
@@ -56,8 +55,9 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
         <div className={styles.imageWrapper}>
           <img 
             src={imageSrc} 
-            alt={imageAlt} 
+            alt="" 
             className={styles.image}
+            aria-hidden="true"
           />
         </div>
         <div className={styles.content}>
@@ -95,6 +95,32 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
     );
   };
 
+  const getAriaLabel = () => {
+    let label = buttonText;
+    if (level !== undefined) {
+      label += ` level ${level}`;
+    }
+    if (effect) {
+      label += `. ${effect}`;
+    }
+    if (isOwned) {
+      label += '. Already owned';
+    } else if (isMaxLevel) {
+      label += '. Maximum level reached';
+    } else {
+      const costText = knowledgeCost 
+        ? `Costs $${formatNumber(cost, 1)} and ${formatNumber(knowledgeCost, 1)} knowledge`
+        : currencyType === 'money' 
+          ? `Costs $${formatNumber(cost, 1)}`
+          : `Costs ${formatNumber(cost, 1)} knowledge`;
+      label += `. ${costText}`;
+      if (!canAfford) {
+        label += '. Cannot afford';
+      }
+    }
+    return label;
+  };
+
   return (
     <button
       title={title}
@@ -102,6 +128,8 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
       style={flex ? { flex: 1 } : undefined}
       onClick={onClick}
       disabled={disabled || !canAfford || isMaxLevel || isOwned}
+      aria-label={getAriaLabel()}
+      aria-disabled={disabled || !canAfford || isMaxLevel || isOwned}
     >
       {renderButtonContent()}
     </button>

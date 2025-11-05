@@ -83,6 +83,8 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
         <button
           onClick={() => setShowConfig(!showConfig)}
           className={styles.configButton}
+          aria-label={showConfig ? 'Hide auto-canning configuration' : 'Show auto-canning configuration'}
+          aria-expanded={showConfig}
         >
           {showConfig ? 'Hide Config' : 'Configure'}
         </button>
@@ -96,6 +98,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
             checked={config.enabled}
             onChange={handleToggleEnabled}
             className={styles.checkbox}
+            aria-label="Enable or disable auto-canning system"
           />
           Enable Auto-Canning
         </label>
@@ -121,6 +124,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                   onlyUseExcess: e.target.checked
                 })}
                 className={styles.checkbox}
+                aria-label="Only use excess vegetables for auto-canning"
               />
               Only use excess vegetables
             </label>
@@ -137,6 +141,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                   })}
                   className={styles.reserveInput}
                   min="0"
+                  aria-label="Minimum vegetables to reserve before auto-canning"
                 />
               </label>
             </div>
@@ -159,6 +164,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                     checked={config.selectedRecipes.includes(recipe.id)}
                     onChange={() => handleToggleRecipe(recipe.id)}
                     className={styles.checkbox}
+                    aria-label={`Enable auto-canning for ${recipe.name}`}
                   />
                   <span className={styles.recipeName}>{recipe.name}</span>
                   <span className={styles.recipePrice}>
@@ -195,6 +201,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                         onClick={() => handleReorderRecipe(recipeId, 'up')}
                         disabled={index === 0}
                         className={styles.priorityButton}
+                        aria-label={`Move ${recipe.name} up in priority`}
                       >
                         ↑
                       </button>
@@ -203,6 +210,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                         onClick={() => handleReorderRecipe(recipeId, 'down')}
                         disabled={index === config.priorityOrder.length - 1}
                         className={styles.priorityButton}
+                        aria-label={`Move ${recipe.name} down in priority`}
                       >
                         ↓
                       </button>
@@ -210,6 +218,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                       <button
                         onClick={() => handleRemoveFromPriority(recipeId)}
                         className={styles.removeButton}
+                        aria-label={`Remove ${recipe.name} from priority list`}
                       >
                         ×
                       </button>
@@ -230,6 +239,7 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
                           key={recipeId}
                           onClick={() => handleAddToPriority(recipeId)}
                           className={styles.addButton}
+                          aria-label={`Add ${recipe.name} to priority list`}
                         >
                           + {recipe.name}
                         </button>

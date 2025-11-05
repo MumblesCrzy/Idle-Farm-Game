@@ -187,7 +187,7 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
       <div className={styles.header}>
         <div>
           <h2 className={styles.headerTitle}>
-            <img src={ICON_CANNING} alt="Canning" className={styles.headerIcon} />
+            <img src={ICON_CANNING} alt="" aria-hidden="true" className={styles.headerIcon} />
             Canning Recipes
           </h2>
           <div className={styles.headerUnlockCount}>
@@ -208,6 +208,7 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
             value={recipeFilter}
             onChange={(e) => setRecipeFilter(e.target.value as RecipeFilter)}
             className={styles.select}
+            aria-label="Filter recipes by category"
           >
             <option value="all">All Recipes</option>
             <option value="available">Can Make</option>
@@ -220,6 +221,7 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
             value={recipeSort}
             onChange={(e) => setRecipeSort(e.target.value as RecipeSort)}
             className={styles.select}
+            aria-label="Sort recipes by"
           >
             <option value="profit">By Profit</option>
             <option value="name">By Name</option>

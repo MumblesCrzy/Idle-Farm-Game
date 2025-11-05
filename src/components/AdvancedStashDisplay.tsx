@@ -2,6 +2,7 @@ import React, { useEffect, memo } from 'react';
 import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
 import type { Veggie } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import './AdvancedStashDisplay.css';
 
 // Calculate base growth rate with fertilizer bonus (no weather/season effects)
@@ -74,25 +75,18 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
   // irrigationOwned, // Will be used in later calculation todos
   // day // Will be used in later calculation todos
 }) => {
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
+  const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
 
+  // Prevent body scroll when overlay is open
+  useEffect(() => {
     if (visible) {
-      document.addEventListener('keydown', handleKeyDown);
-      // Prevent body scroll when overlay is open
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [visible, onClose]);
+  }, [visible]);
 
   // Handle backdrop click
   const handleBackdropClick = (event: React.MouseEvent) => {
@@ -112,13 +106,20 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
 
   return (
     <div className="advanced-stash-overlay" onClick={handleBackdropClick}>
-      <div className="advanced-stash-content">
+      <div 
+        className="advanced-stash-content"
+        ref={containerRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stash-modal-title"
+      >
         <div className="advanced-stash-header">
-          <h2>Advanced Stash Details</h2>
+          <h2 id="stash-modal-title">Advanced Stash Details</h2>
           <button 
             className="close-button" 
             onClick={onClose}
-            aria-label="Close stash details"
+            aria-label="Close stash details (press Escape)"
           >
             ×
           </button>

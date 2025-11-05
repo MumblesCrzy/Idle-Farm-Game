@@ -26,7 +26,7 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
       {processes.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>
-            <img src={ICON_CANNING} alt="Canning" className={styles.emptyIconImage} />
+            <img src={ICON_CANNING} alt="" aria-hidden="true" className={styles.emptyIconImage} />
           </div>
           <div className={styles.emptyText}>No active canning processes</div>
           <div className={styles.emptyHint}>

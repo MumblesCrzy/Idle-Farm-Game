@@ -1,4 +1,5 @@
 import React from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './SettingsOverlay.module.css';
 
 interface SettingsOverlayProps {
@@ -20,16 +21,26 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
   handleImportSave,
   handleResetGame
 }) => {
+  const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
+  
   if (!visible) return null;
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div 
+        className={styles.modal}
+        ref={containerRef}
+        onKeyDown={handleTabKey}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-modal-title"
+      >
         <div className={styles.header}>
-          <h3 className={styles.title}>Settings</h3>
+          <h3 id="settings-modal-title" className={styles.title}>Settings</h3>
           <button
             onClick={onClose}
             className={styles.closeButton}
+            aria-label="Close settings modal (press Escape)"
           >
             Close
           </button>
@@ -42,12 +53,14 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
               <button
                 onClick={handleExportSave}
                 className={styles.exportButton}
+                aria-label="Export save file to download as JSON"
               >
                 Export Save
               </button>
               <button
                 onClick={handleImportSave}
                 className={styles.importButton}
+                aria-label="Import save file from JSON"
               >
                 Import Save
               </button>
@@ -61,6 +74,8 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 className={`${styles.soundButton} ${soundEnabled ? styles.soundButtonOn : styles.soundButtonOff}`}
+                aria-label={soundEnabled ? 'Sound effects enabled. Click to disable' : 'Sound effects disabled. Click to enable'}
+                aria-pressed={soundEnabled}
               >
                 {soundEnabled ? '🔊 ON' : '🔇 OFF'}
               </button>
@@ -76,11 +91,12 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
                   handleResetGame();
                 }}
                 className={styles.resetButton}
+                aria-label="Reset game to beginning. Warning: This will permanently delete all progress"
               >
                 Reset Game
               </button>
             </div>
-            <p className={styles.warning}>
+            <p className={styles.warning} role="alert">
               This will permanently delete all progress!
             </p>
           </div>
