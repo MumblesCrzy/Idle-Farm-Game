@@ -12,7 +12,6 @@ interface CanningPanelProps {
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
   heirloomOwned: boolean;
   onStartCanning: (recipeId: string) => boolean;
-  onCollectCanning: (processIndex: number) => void;
   canMakeRecipe: (recipe: Recipe) => boolean;
   recipeFilter?: RecipeFilter;
   recipeSort?: RecipeSort;
@@ -28,7 +27,6 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
   veggies,
   heirloomOwned,
   onStartCanning,
-  onCollectCanning,
   canMakeRecipe,
   recipeFilter: propRecipeFilter,
   recipeSort: propRecipeSort,
@@ -266,7 +264,6 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
       <CanningProcessDisplay
         processes={canningState.activeProcesses}
         recipes={canningState.recipes}
-        onCollect={onCollectCanning}
         maxSimultaneousProcesses={canningState.maxSimultaneousProcesses}
       />
 

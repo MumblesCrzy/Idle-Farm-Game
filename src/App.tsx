@@ -18,6 +18,7 @@ import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
+import { useGameLoop } from './hooks/useGameLoop';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -409,30 +410,20 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   }, [hasReadyVeggies]); // Only trigger when ready state changes, not on every growth update
   
-  const timerRef = useRef<number | null>(null);
-  // Growth timer for all unlocked veggies
-  useEffect(() => {
-    timerRef.current = window.setInterval(() => {
-      setVeggies((prev) => {
-        const { veggies: newVeggies } = processVeggieGrowth(
-          prev,
-          season,
-          currentWeather,
-          greenhouseOwned,
-          irrigationOwned
-        );
-        return newVeggies;
-      });
-    }, 1000);
+  // Growth timer for all unlocked veggies - using requestAnimationFrame for Chrome compatibility
+  useGameLoop(() => {
+    setVeggies((prev) => {
+      const { veggies: newVeggies } = processVeggieGrowth(
+        prev,
+        season,
+        currentWeather,
+        greenhouseOwned,
+        irrigationOwned
+      );
+      return newVeggies;
+    });
+  }, 1000, [season, currentWeather, greenhouseOwned, irrigationOwned]);
 
-    // Cleanup function
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [season, currentWeather, greenhouseOwned, irrigationOwned]);
   // Greenhouse upgrade purchase handler
   const handleBuyGreenhouse = () => {
     const greenhouseCost = GREENHOUSE_COST_PER_PLOT * maxPlots;
@@ -444,65 +435,63 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  // Memoize harvester speed levels to avoid unnecessary effect re-runs
-  const harvesterSpeedLevelsString = veggies.map(v => v.harvesterSpeedLevel ?? 0).join(',');
-  const harvesterSpeedLevels = useMemo(() => 
-    veggies.map(v => v.harvesterSpeedLevel ?? 0), 
-    [harvesterSpeedLevelsString]
-  );
-
-  // Auto Harvester timer for each veggie
+  // Auto Harvester timer for each veggie - using requestAnimationFrame for Chrome compatibility
+  // Use refs to avoid restarting the loop when values change
+  const almanacLevelRef = useRef(almanacLevel);
+  const farmTierRef = useRef(farmTier);
+  const knowledgeRef = useRef(knowledge);
+  const dayRef = useRef(day);
+  const experienceRef = useRef(experience);
+  const maxPlotsRef = useRef(maxPlots);
+  const highestUnlockedVeggieRef = useRef(highestUnlockedVeggie);
+  
   useEffect(() => {
-    let intervalId: number | null = null;
-    
-    const harvestTick = () => {
-      setVeggies((prev) => {
-        const {
-          veggies: newVeggies,
-          experienceGain: totalExperienceGain,
-          knowledgeGain: totalKnowledgeGain,
-          needsUpdate
-        } = processAutoHarvest(prev, almanacLevel, farmTier, knowledge);
+    almanacLevelRef.current = almanacLevel;
+    farmTierRef.current = farmTier;
+    knowledgeRef.current = knowledge;
+    dayRef.current = day;
+    experienceRef.current = experience;
+    maxPlotsRef.current = maxPlots;
+    highestUnlockedVeggieRef.current = highestUnlockedVeggie;
+  }, [almanacLevel, farmTier, knowledge, day, experience, maxPlots, highestUnlockedVeggie]);
+  
+  useGameLoop(() => {
+    setVeggies((prev) => {
+      const {
+        veggies: newVeggies,
+        experienceGain: totalExperienceGain,
+        knowledgeGain: totalKnowledgeGain,
+        needsUpdate
+      } = processAutoHarvest(prev, almanacLevelRef.current, farmTierRef.current, knowledgeRef.current);
 
-        // Update experience and knowledge for all harvests
-        if (totalExperienceGain > 0 && day >= 1 && day <= 365) {
-          setTimeout(() => {
-            setKnowledge((k: number) => k + totalKnowledgeGain);
-            setExperience((exp: number) => exp + totalExperienceGain);
-          }, 0);
-        }
-
-        // Handle unlocks after all harvests are processed using projected experience
-        if (needsUpdate) {
-          const projectedExperience = experience + totalExperienceGain;
-          const { veggies: unlockedVeggies, highestUnlockedIndex } = processVeggieUnlocks(
-            newVeggies,
-            projectedExperience,
-            maxPlots
-          );
-          
-          // Update highest unlocked veggie if there were any unlocks
-          if (highestUnlockedIndex > highestUnlockedVeggie) {
-            setHighestUnlockedVeggie(highestUnlockedIndex);
-          }
-          
-          return unlockedVeggies;
-        }
-
-        return newVeggies;
-      });
-    };
-
-    intervalId = window.setInterval(harvestTick, 1000);
-
-    // Cleanup function
-    return () => {
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
+      // Update experience and knowledge for all harvests
+      if (totalExperienceGain > 0 && dayRef.current >= 1 && dayRef.current <= 365) {
+        setTimeout(() => {
+          setKnowledge((k: number) => k + totalKnowledgeGain);
+          setExperience((exp: number) => exp + totalExperienceGain);
+        }, 0);
       }
-    };
-  }, [almanacLevel, farmTier, experience, maxPlots, harvesterSpeedLevels]);
+
+      // Handle unlocks after all harvests are processed using projected experience
+      if (needsUpdate) {
+        const projectedExperience = experienceRef.current + totalExperienceGain;
+        const { veggies: unlockedVeggies, highestUnlockedIndex } = processVeggieUnlocks(
+          newVeggies,
+          projectedExperience,
+          maxPlotsRef.current
+        );
+        
+        // Update highest unlocked veggie if there were any unlocks
+        if (highestUnlockedIndex > highestUnlockedVeggieRef.current) {
+          setHighestUnlockedVeggie(highestUnlockedIndex);
+        }
+        
+        return unlockedVeggies;
+      }
+
+      return newVeggies;
+    });
+  }, 1000, []); // Empty deps - refs prevent loop restart
 
   // Unified harvest logic for both auto and manual harvest
   const harvestVeggie = (index: number, isAutoHarvest: boolean = false) => {
@@ -671,39 +660,34 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     initialTimer: loaded?.globalAutoPurchaseTimer ?? 0
   });
 
-  // Day counter timer with auto-sell and auto-purchase logic
+  // Day counter timer with auto-sell and auto-purchase logic - using requestAnimationFrame for Chrome compatibility
+  const autoSellOwnedRef = useRef(autoSellOwned);
+  const handleSellRef = useRef(handleSell);
+  
   useEffect(() => {
-    let dayIntervalId: number | null = null;
-    
-    const updateDay = () => {
-      setTotalDaysElapsed((total: number) => total + 1);
-      setDay((d: number) => {
-        const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
-        
-        // Auto-sell logic for merchant (every MERCHANT_DAYS)
-        if (autoSellOwned && newDay % MERCHANT_DAYS === 0) {
-          // Trigger auto-sell using the existing handleSell function
-          setTimeout(() => {
-            handleSell();
-          }, 100); // Small delay to ensure state is updated
-        }
-        
-        // Increment auto-purchase timer each day
-        setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
-        
-        return newDay;
-      });
-    };
-
-    dayIntervalId = window.setInterval(updateDay, 1000);
-
-    return () => {
-      if (dayIntervalId !== null) {
-        clearInterval(dayIntervalId);
-        dayIntervalId = null;
+    autoSellOwnedRef.current = autoSellOwned;
+    handleSellRef.current = handleSell;
+  }, [autoSellOwned, handleSell]);
+  
+  useGameLoop(() => {
+    setTotalDaysElapsed((total: number) => total + 1);
+    setDay((d: number) => {
+      const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
+      
+      // Auto-sell logic for merchant (every MERCHANT_DAYS)
+      if (autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0) {
+        // Trigger auto-sell using the existing handleSell function
+        setTimeout(() => {
+          handleSellRef.current();
+        }, 100); // Small delay to ensure state is updated
       }
-    };
-  }, [autoSellOwned, handleSell, setGlobalAutoPurchaseTimer]);
+      
+      // Increment auto-purchase timer each day
+      setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
+      
+      return newDay;
+    });
+  }, 1000, []); // Empty deps - refs prevent loop restart
 
 
 
@@ -782,7 +766,7 @@ function App() {
   const {
     canningState,
     startCanning,
-    completeCanning,
+    completeCanning: _completeCanning, // Used internally by useCanningSystem for auto-collection
     purchaseUpgrade,
     canMakeRecipe,
     toggleAutoCanning
@@ -1284,7 +1268,6 @@ function App() {
             knowledge={knowledge}
             heirloomOwned={heirloomOwned}
             startCanning={startCanning}
-            completeCanning={completeCanning}
             canMakeRecipe={canMakeRecipe}
             purchaseUpgrade={purchaseUpgrade}
             toggleAutoCanning={toggleAutoCanning}

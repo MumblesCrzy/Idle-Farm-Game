@@ -50,39 +50,41 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
         aria-modal="true"
         aria-labelledby="info-modal-title"
       >
-        {/* Category Navigation */}
-        <div className={styles.sidebar}>
-          <h3 id="info-modal-title" className={styles.header}>Game Help</h3>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedInfoCategory(category.id)}
-              className={`${styles.sidebarButton} ${selectedInfoCategory === category.id ? styles.active : ''}`}
-              aria-label={`View ${category.label} information`}
-              aria-current={selectedInfoCategory === category.id ? 'page' : undefined}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
+        <h3 id="info-modal-title" className={styles.header}>Game Help</h3>
         
-        {/* Content Area */}
-        <div className={styles.content}>
-          <div className={styles.contentHeader}>
-            <h3 className={styles.contentTitle}>
-              {categoryTitles[selectedInfoCategory]}
-            </h3>
-            <button
-              onClick={onClose}
-              className={styles.closeButton}
-              aria-label="Close game help modal (press Escape)"
-            >
-              Close
-            </button>
+        <div className={styles.container}>
+          {/* Category Navigation */}
+          <div className={styles.sidebar}>
+            {categories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedInfoCategory(category.id)}
+                className={`${styles.sidebarButton} ${selectedInfoCategory === category.id ? styles.active : ''}`}
+                aria-label={`View ${category.label} information`}
+                aria-current={selectedInfoCategory === category.id ? 'page' : undefined}
+              >
+                {category.label}
+              </button>
+            ))}
           </div>
           
-          {/* Content based on selected category */}
-          <div className={styles.contentBody}>
+          {/* Content Area */}
+          <div className={styles.content}>
+            <div className={styles.contentHeader}>
+              <h3 className={styles.contentTitle}>
+                {categoryTitles[selectedInfoCategory]}
+              </h3>
+              <button
+                onClick={onClose}
+                className={styles.closeButton}
+                aria-label="Close game help modal (press Escape)"
+              >
+                Close
+              </button>
+            </div>
+            
+            {/* Content based on selected category */}
+            <div className={styles.contentBody}>
             {selectedInfoCategory === 'seasons' && (
               <div>
                 <h4 className={styles.sectionTitle}>
@@ -500,6 +502,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

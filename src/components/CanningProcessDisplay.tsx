@@ -7,14 +7,12 @@ import styles from './CanningProcessDisplay.module.css';
 interface CanningProcessDisplayProps {
   processes: CanningProcess[];
   recipes: Recipe[];
-  onCollect: (processIndex: number) => void;
   maxSimultaneousProcesses?: number;
 }
 
 const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
   processes,
   recipes,
-  onCollect,
   maxSimultaneousProcesses
 }) => {
   return (
@@ -35,7 +33,9 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
         </div>
       ) : (
         <div className={styles.processesList}>
-          {processes.map((process, index) => {
+          {processes
+            .filter(process => !process.completed && process.remainingTime > 0)
+            .map((process, index) => {
             const recipe = recipes.find(r => r.id === process.recipeId);
             if (!recipe) return null;
 
@@ -43,15 +43,13 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
             const elapsed = totalTime - process.remainingTime;
             const progressPercent = (elapsed / totalTime) * 100;
 
-            const isCompleted = process.completed || process.remainingTime <= 0;
-
             return (
               <div
                 key={index}
-                className={`${styles.process} ${isCompleted ? styles.completed : ''}`}
+                className={styles.process}
               >
                 {/* Recipe name - truncated */}
-                <div className={`${styles.recipeName} ${isCompleted ? styles.completed : ''}`}>
+                <div className={styles.recipeName}>
                   {recipe.name}
                 </div>
 
@@ -61,24 +59,15 @@ const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
                     value={progressPercent}
                     max={100}
                     height={12}
-                    color={isCompleted ? '#4CAF50' : '#2196F3'}
+                    color='#2196F3'
                   />
                 </div>
 
                 {/* Status/Action - compact */}
                 <div className={styles.statusRow}>
-                  {isCompleted ? (
-                    <button
-                      onClick={() => onCollect(index)}
-                      className={styles.collectButton}
-                    >
-                      Collect ${recipe.salePrice.toFixed(2)}
-                    </button>
-                  ) : (
-                    <div className={styles.timeRemaining}>
-                      {process.remainingTime}s ({Math.floor(progressPercent)}%)
-                    </div>
-                  )}
+                  <div className={styles.timeRemaining}>
+                    {process.remainingTime}s ({Math.floor(progressPercent)}%)
+                  </div>
                 </div>
               </div>
             );

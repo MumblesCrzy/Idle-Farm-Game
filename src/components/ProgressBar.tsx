@@ -20,7 +20,7 @@ const ProgressBar: React.FC<ProgressBarProps> = memo(({ value, max = 100, color,
         background: color || '#4caf50',
         height: '100%',
         borderRadius: '6px',
-        transition: 'width 0.3s',
+        transition: 'width 0.3s, background 0.3s ease',
       }}
     ></div>
   </div>

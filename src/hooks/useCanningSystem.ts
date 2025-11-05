@@ -7,6 +7,7 @@ import type {
   CanningIngredient 
 } from '../types/canning';
 import { INITIAL_RECIPES, calculateRecipeProfit } from '../data/recipes';
+import { useGameLoop } from './useGameLoop';
 
 // Initial canning upgrades that affect the canning process
 const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
@@ -397,30 +398,28 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     return true;
   }, [canningState.upgrades, money, knowledge, setMoney, setKnowledge, updateUpgradeEffects, updateUpgradeCosts]);
   
-  // Process timer updates for active canning
-  useEffect(() => {
-    if (canningState.activeProcesses.length === 0) return;
+  // Process timer updates for active canning - using requestAnimationFrame for Chrome compatibility
+  const hasActiveProcesses = canningState.activeProcesses.length > 0;
+  
+  useGameLoop(() => {
+    if (!hasActiveProcesses) return;
     
-    const interval = setInterval(() => {
-      setCanningState(prev => {
-        const updatedProcesses = prev.activeProcesses.map(process => {
-          const newRemainingTime = Math.max(0, process.remainingTime - 1);
-          return {
-            ...process,
-            remainingTime: newRemainingTime,
-            completed: newRemainingTime <= 0
-          };
-        });
-        
+    setCanningState(prev => {
+      const updatedProcesses = prev.activeProcesses.map(process => {
+        const newRemainingTime = Math.max(0, process.remainingTime - 1);
         return {
-          ...prev,
-          activeProcesses: updatedProcesses
+          ...process,
+          remainingTime: newRemainingTime,
+          completed: newRemainingTime <= 0
         };
       });
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [canningState.activeProcesses.length]);
+      
+      return {
+        ...prev,
+        activeProcesses: updatedProcesses
+      };
+    });
+  }, 1000, [hasActiveProcesses]);
 
   // Handle completed processes in a separate effect to avoid race conditions
   useEffect(() => {
@@ -499,63 +498,57 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   }, [recipeSort, veggies, canningState.upgrades]);
 
   // Auto-canning timer - runs every 10 seconds when Canner upgrade is purchased and enabled
-  useEffect(() => {
-    const cannerEnabled = cannerLevel > 0 && autoCanningEnabled;
-     
+  // Using requestAnimationFrame for Chrome compatibility
+  const cannerEnabled = cannerLevel > 0 && autoCanningEnabled;
+  
+  useGameLoop(() => {
     if (!cannerEnabled) return;
     
-    const autoCanningInterval = setInterval(() => {
-     
-      // Use a fresh state getter to avoid stale closures
-      setCanningState(currentState => {
-        const currentActiveProcesses = currentState.activeProcesses.length;
-        const currentMaxProcesses = currentState.maxSimultaneousProcesses;
-               
-        // Only try to start new processes if we have available slots
-        if (currentActiveProcesses < currentMaxProcesses) {
-          // Get unlocked recipes first
-          const unlockedRecipes = currentState.recipes.filter(recipe => recipe.unlocked);
+    // Use a fresh state getter to avoid stale closures
+    setCanningState(currentState => {
+      const currentActiveProcesses = currentState.activeProcesses.length;
+      const currentMaxProcesses = currentState.maxSimultaneousProcesses;
+             
+      // Only try to start new processes if we have available slots
+      if (currentActiveProcesses < currentMaxProcesses) {
+        // Get unlocked recipes first
+        const unlockedRecipes = currentState.recipes.filter(recipe => recipe.unlocked);
+        
+       
+        // Sort recipes according to current preference
+        const sortedRecipes = sortRecipes(unlockedRecipes);
+        
+        // Find the first recipe that we can actually make (has enough ingredients)
+        // Use current veggie state from ref to avoid stale closure issues
+        let recipeToStart = null;
+        for (const recipe of sortedRecipes) {
+          // Check if we have enough ingredients using current veggie state
+          const hasIngredients = recipe.ingredients.every(ingredient => {
+            const veggie = currentVeggiesRef.current[ingredient.veggieIndex];
+            return veggie && veggie.stash >= ingredient.quantity;
+          });
           
-         
-          // Sort recipes according to current preference
-          const sortedRecipes = sortRecipes(unlockedRecipes);
-          
-          // Find the first recipe that we can actually make (has enough ingredients)
-          // Use current veggie state from ref to avoid stale closure issues
-          let recipeToStart = null;
-          for (const recipe of sortedRecipes) {
-            // Check if we have enough ingredients using current veggie state
-            const hasIngredients = recipe.ingredients.every(ingredient => {
-              const veggie = currentVeggiesRef.current[ingredient.veggieIndex];
-              return veggie && veggie.stash >= ingredient.quantity;
-            });
-            
-            if (hasIngredients) {
-              recipeToStart = recipe;
-              break;
-            }
+          if (hasIngredients) {
+            recipeToStart = recipe;
+            break;
           }
-          
-          if (recipeToStart) {
-            // Start the recipe that has enough ingredients
-            setTimeout(() => {
-              startCanning(recipeToStart.id, true);
-            }, 0);
-          } else {
-            console.log('Auto-canning: No recipes have enough ingredients');
-          }
-        } else {
-          console.log('Auto-canning: All process slots full');
         }
         
-        return currentState; // Return unchanged state
-      });
-    }, 10000); // 10 seconds
-    
-    return () => {
-      clearInterval(autoCanningInterval);
-    };
-  }, [cannerLevel, autoCanningEnabled, unlockedRecipeCount]);
+        if (recipeToStart) {
+          // Start the recipe that has enough ingredients
+          setTimeout(() => {
+            startCanning(recipeToStart.id, true);
+          }, 0);
+        } else {
+          console.log('Auto-canning: No recipes have enough ingredients');
+        }
+      } else {
+        console.log('Auto-canning: All process slots full');
+      }
+      
+      return currentState; // Return unchanged state
+    });
+  }, 10000, [cannerEnabled, unlockedRecipeCount]); // 10 seconds
   
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {

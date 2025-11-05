@@ -122,12 +122,6 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
           Missing Ingredients
         </div>
       )}
-      
-      {recipe.timesCompleted > 0 && (
-        <div className={styles.completionCount}>
-          Made {recipe.timesCompleted} times
-        </div>
-      )}
     </div>
   );
 });
