@@ -1,7 +1,6 @@
 import React from 'react';
 import ProgressBar from './ProgressBar';
 import type { CanningProcess, Recipe } from '../types/canning';
-import { ICON_CANNING } from '../config/assetPaths';
 import styles from './CanningProcessDisplay.module.css';
 
 interface CanningProcessDisplayProps {

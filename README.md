@@ -7,21 +7,24 @@ Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest
 
 The game features two complete gameplay systems (Growing & Canning), persistent progress, a prestige/knowledge system, farm expansion, dynamic weather events, comprehensive in-game documentation, advanced automation systems, and extensive accessibility features.
 
-## ✨ Latest Updates (v0.5.0)
-### 🥫 Canning System - Major Content Expansion!
-- **Complete New Game Feature**: Entirely new Canning tab unlocked at 5,000 experience
-- **Recipe Processing**: Transform vegetables into preserved goods for profit, experience, and knowledge
-- **Multiple Recipe System**: Complex ingredient combinations with different processing times
-- **Simultaneous Processing**: Run several canning processes at once (upgradeable)
-- **Five Canning Upgrades**: Speed, profit, duplication, slots, and full automation
-- **Auto-Canning System**: Intelligent automated recipe selection every 10 seconds
-- **Strategic Resource Management**: New layer of optimization and decision-making
+## ✨ Latest Updates (v0.6.0)
+### ⚡ Chrome 142+ Compatibility - CRITICAL FIX!
+- **Game Freezing Fixed**: Resolved critical issue where game would freeze in Chrome 142+ with Memory Saver
+- **requestAnimationFrame System**: All game timers now use browser-optimized animation frames
+- **Universal Compatibility**: Game runs smoothly across all modern browsers without workarounds
+- **Reliable Timing**: Consistent, accurate game loops regardless of browser settings
 
-### 🎨 Enhanced Game Experience
-- **Unified Tab System**: Professional, consistent UI across Growing and Canning tabs
-- **Improved Farm Tiers**: Retain tiered vegetable unlocks when purchasing larger farms
-- **Shorthand Numbers**: All large numbers displayed in easy-to-read format (1.2K, 3.5M, etc.)
-- **Streamlined Saves**: Optimized save system with better performance and backward compatibility
+### 🎨 UI Polish & Quality of Life
+- **Auto-Collection**: Canning processes automatically disappear when complete (no manual collection needed)
+- **Smooth Transitions**: Progress bars smoothly transition colors instead of flashing
+- **Centered Layout**: Game properly centered on screen for better visual presentation
+- **Professional Feel**: Cleaner, more polished user experience throughout
+
+### Previous Major Update (v0.5.0)
+- **Canning System**: Complete new gameplay feature with recipes, processing, and automation
+- **Unified Tab System**: Professional UI across Growing and Canning tabs
+- **Improved Farm Tiers**: Retain vegetable unlocks when purchasing larger farms
+- **Streamlined Saves**: Optimized save system with backward compatibility
 
 ## Gameplay Overview
 
@@ -195,8 +198,9 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 ### 🔧 For Developers
 
 - **React + TypeScript**: Modern React 19 with full TypeScript support and strict mode
-- **Vite Build System**: Fast development and optimized production builds (338KB JS)
-- **State Management**: Centralized game state with localStorage persistence
+- **Vite Build System**: Fast development and optimized production builds (337KB JS)
+- **Custom Game Loop**: requestAnimationFrame-based `useGameLoop` hook for reliable timing
+- **State Management**: Centralized game state with localStorage persistence and ref-based access patterns
 - **Component Architecture**: Modular BaseTab system with reusable upgrade panels
 - **Test Suite**: Comprehensive tests with Vitest, Testing Library, and coverage reporting
 - **Build Commands**:
@@ -206,17 +210,28 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
   - `npm run coverage` - Generate test coverage report
   - `npm run lint` - Run ESLint checks
 
-## 📋 Recent Changes (v0.5.0)
+## 📋 Recent Changes (v0.6.0)
 
-### Major Features Added
-- **Complete Canning System**: Entirely new gameplay feature with recipes, processing, and automation
-- **Unified Tab Interface**: Professional UI across Growing and Canning systems
-- **Year Counter**: Long-term progression tracking
-- **Improved Farm Tiers**: Retain vegetable unlocks when purchasing larger farms
-- **Streamlined Save System**: Optimized performance with backward compatibility
-- **Accessibility**: 80+ ARIA labels, keyboard navigation, screen reader support
+### Critical Fixes
+- **Chrome 142+ Compatibility**: Fixed game freezing with Memory Saver/Energy Saver enabled
+- **requestAnimationFrame System**: All 5 game timers converted to browser-optimized animation frames
+- **Reliable Timing**: Veggie growth, auto-harvest, day counter, canning progress, and auto-canning all run consistently
+- **No Workarounds Needed**: Game works perfectly in all browsers without settings changes
+
+### UI Improvements
+- **Auto-Collection**: Canning processes automatically disappear when complete
+- **Smooth Transitions**: Progress bars transition colors smoothly (no flashing)
+- **Centered Layout**: Game properly centered on screen for better presentation
+- **InfoOverlay Fix**: Restored proper side-by-side layout for help documentation
+
+### Technical Improvements
+- **Custom useGameLoop Hook**: Reusable game loop with delta time calculation
+- **Ref-Based State Access**: Prevents loop restarts when state updates
+- **Cleaner Architecture**: Simplified canning collection logic and removed manual collection
+- **Performance**: More efficient game loops with consistent timing
 
 ### Previous Updates
+- **v0.5.0**: Complete Canning System, Unified Tab Interface, Improved Farm Tiers
 - **v0.4.0**: Advanced Stash Display, Vegetable Sell Controls, Enhanced Archie with sound
 - **v0.3.0**: Four Auto-Purchaser systems (Assistant, Cultivator, Surveyor, Mechanic)
 - **v0.2.0**: Archie bonus system, comprehensive help documentation, experience rebalancing
