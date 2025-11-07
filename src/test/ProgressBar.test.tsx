@@ -78,7 +78,7 @@ describe('ProgressBar', () => {
     expect(progress).toHaveStyle({
       height: '100%',
       borderRadius: '6px',
-      transition: 'width 0.3s'
+      transition: 'width 0.3s, background 0.3s ease'
     })
   })
 

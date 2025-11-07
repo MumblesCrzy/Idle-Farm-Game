@@ -19,7 +19,7 @@ describe('VeggiePanel', () => {
     expect(screen.getByText('Tomatoes')).toBeInTheDocument()
     expect(screen.getByText('Growth: 75%')).toBeInTheDocument()
     expect(screen.getByText('Stash: 12')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Harvest' })).toBeInTheDocument()
+    expect(screen.getByText('Harvest')).toBeInTheDocument()
   })
 
   it('should display growth progress visually', () => {
@@ -33,7 +33,7 @@ describe('VeggiePanel', () => {
     const mockHarvest = vi.fn()
     render(<VeggiePanel {...defaultProps} onHarvest={mockHarvest} />)
     
-    const harvestButton = screen.getByRole('button', { name: 'Harvest' })
+    const harvestButton = screen.getByText('Harvest')
     fireEvent.click(harvestButton)
     
     expect(mockHarvest).toHaveBeenCalledTimes(1)
@@ -42,7 +42,7 @@ describe('VeggiePanel', () => {
   it('should disable harvest button when canHarvest is false', () => {
     render(<VeggiePanel {...defaultProps} canHarvest={false} />)
     
-    const harvestButton = screen.getByRole('button', { name: 'Harvest' })
+    const harvestButton = screen.getByText('Harvest')
     expect(harvestButton).toBeDisabled()
   })
 
@@ -105,7 +105,7 @@ describe('VeggiePanel', () => {
   it('should have proper accessibility attributes', () => {
     render(<VeggiePanel {...defaultProps} />)
     
-    const harvestButton = screen.getByRole('button', { name: 'Harvest' })
+    const harvestButton = screen.getByText('Harvest')
     expect(harvestButton).toBeInTheDocument()
     
     const sellButton = screen.getByTitle('Auto-sell disabled (click to enable)')

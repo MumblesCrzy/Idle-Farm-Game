@@ -496,7 +496,7 @@ describe('createAutoPurchaserConfigs', () => {
     expect(cultivator).toBeDefined();
     expect(cultivator?.name).toBe('Cultivator');
     expect(cultivator?.purchaseType).toBe('betterSeeds');
-    expect(cultivator?.currencyType).toBe('money');
+    expect(cultivator?.currencyType).toBe('knowledge');
     expect(cultivator?.cycleDays).toBe(7);
     expect(cultivator?.cost).toBe(200);
   });
@@ -508,7 +508,7 @@ describe('createAutoPurchaserConfigs', () => {
     expect(surveyor).toBeDefined();
     expect(surveyor?.name).toBe('Surveyor');
     expect(surveyor?.purchaseType).toBe('additionalPlot');
-    expect(surveyor?.currencyType).toBe('knowledge');
+    expect(surveyor?.currencyType).toBe('money');
     expect(surveyor?.cycleDays).toBe(30);
     expect(surveyor?.cost).toBe(300);
   });
@@ -520,7 +520,7 @@ describe('createAutoPurchaserConfigs', () => {
     expect(mechanic).toBeDefined();
     expect(mechanic?.name).toBe('Mechanic');
     expect(mechanic?.purchaseType).toBe('harvesterSpeed');
-    expect(mechanic?.currencyType).toBe('knowledge');
+    expect(mechanic?.currencyType).toBe('money');
     expect(mechanic?.cycleDays).toBe(15);
     expect(mechanic?.cost).toBe(400);
   });

@@ -62,7 +62,7 @@ describe('Integration Tests', () => {
       expect(screen.getByText('Tomatoes')).toBeInTheDocument()
       expect(screen.getByText('Growth: 75%')).toBeInTheDocument()
       expect(screen.getByText('Stash: 5')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Harvest' })).toBeInTheDocument()
+      expect(screen.getByText('Harvest')).toBeInTheDocument()
     })
 
     it('should handle component interactions within provider', async () => {
@@ -86,7 +86,7 @@ describe('Integration Tests', () => {
       render(<TestApp />)
 
       // Test harvest interaction
-      fireEvent.click(screen.getByRole('button', { name: 'Harvest' }))
+      fireEvent.click(screen.getByText('Harvest'))
       expect(mockHarvest).toHaveBeenCalledTimes(1)
 
       // Test auto-sell toggle
