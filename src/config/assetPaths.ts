@@ -12,6 +12,15 @@ export const ICON_KNOWLEDGE = './Knowledge.png';
 export const ICON_EXPERIENCE = './Experience.png';
 export const ICON_IDEA = './Idea.png';
 export const ICON_LEARNING = './Learning.png';
+export const ICON_AUTOMATION = './Automation.png';
+export const ICON_HARVEST = './Harvest.png';
+export const ICON_UPGRADE = './Upgrade.png';
+export const ICON_MILESTONE = './Milestone.png';
+export const ICON_RECIPE = './Recipe.png';
+export const ICON_TROPHY = './Trophy.png';
+export const ICON_MERCHANT = './Merchant.png';
+export const ICON_SCROLL = './Scroll.png';
+export const ICON_DETAIL = './Detail.png';
 
 // Season Images
 export const SEASON_SPRING = './Spring.png';
@@ -39,7 +48,7 @@ export const VEGGIE_PEPPERS = './Peppers.png';
 export const VEGGIE_CUCUMBERS = './Cucumbers.png';
 export const VEGGIE_GREEN_BEANS = './Green Beans.png';
 export const VEGGIE_ZUCCHINI = './Zucchini.png';
-export const VEGGIE_EGGPLANT = './Eggplant.png'; // Used in achievements (may not have actual file)
+export const VEGGIE_EGGPLANT = './Eggplant.png';
 
 // Growing Tab Upgrade Images
 export const UPGRADE_FERTILIZER = './Fertilizer.png';

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import type { Achievement } from '../types/achievements';
+import { ICON_TROPHY } from '../config/assetPaths';
 import styles from './AchievementNotification.module.css';
 
 interface AchievementNotificationProps {
@@ -27,7 +28,7 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
     <div className={styles.notification}>
       <div className={styles.content}>
         <div className={styles.iconContainer}>
-          <span className={styles.icon}>🏆</span>
+          <img src={ICON_TROPHY} alt="" className={styles.icon} />
         </div>
         
         <div className={styles.textContainer}>

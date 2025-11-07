@@ -17,6 +17,7 @@ interface AutoPurchaseParams {
   maxPlots: number;
   handlers: AutoPurchaseHandlers;
   initialTimer?: number;
+  onPurchaseCallback?: (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => void;
 }
 
 /**
@@ -33,7 +34,8 @@ export const useAutoPurchase = ({
   knowledge,
   maxPlots,
   handlers,
-  initialTimer = 0
+  initialTimer = 0,
+  onPurchaseCallback
 }: AutoPurchaseParams) => {
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(initialTimer);
 
@@ -47,19 +49,43 @@ export const useAutoPurchase = ({
           if (ap.owned && ap.active) {
             // Check if we can afford and make the purchase
             if (canMakePurchase(v, ap.purchaseType, money, knowledge, ap.currencyType, veggies, maxPlots)) {
+              // Get current upgrade level before purchase
+              let currentLevel = 0;
+              let upgradeCost = 0;
+              
               switch (ap.purchaseType) {
                 case 'fertilizer':
+                  currentLevel = v.fertilizerLevel;
+                  upgradeCost = v.fertilizerCost;
                   handlers.handleBuyFertilizer(veggieIndex);
                   break;
                 case 'betterSeeds':
+                  currentLevel = v.betterSeedsLevel;
+                  upgradeCost = v.betterSeedsCost;
                   handlers.handleBuyBetterSeeds(veggieIndex);
                   break;
                 case 'harvesterSpeed':
+                  currentLevel = v.harvesterSpeedLevel || 0;
+                  upgradeCost = v.harvesterSpeedCost || 0;
                   handlers.handleBuyHarvesterSpeed(veggieIndex);
                   break;
                 case 'additionalPlot':
+                  currentLevel = v.additionalPlotLevel || 0;
+                  upgradeCost = v.additionalPlotCost;
                   handlers.handleBuyAdditionalPlot(veggieIndex);
                   break;
+              }
+              
+              // Log the purchase if callback provided
+              if (onPurchaseCallback) {
+                onPurchaseCallback(
+                  v.name,
+                  ap.name,
+                  ap.purchaseType,
+                  currentLevel + 1, // New level after purchase
+                  upgradeCost,
+                  ap.currencyType
+                );
               }
             }
 
@@ -81,7 +107,7 @@ export const useAutoPurchase = ({
         }
       });
     }
-  }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handlers, setVeggies]);
+  }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handlers, setVeggies, onPurchaseCallback]);
 
   return {
     globalAutoPurchaseTimer,

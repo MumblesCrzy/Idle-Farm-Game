@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import type { WeatherType } from '../config/gameConstants';
-import { calculateWeatherChange } from '../utils/gameLoopProcessors';
-import { getSeason } from '../utils/gameCalculations';
 
 /**
  * Custom hook to manage weather state and transitions
- * @param day - Current day number (1-365)
  * @param initialWeather - Initial weather state (default: 'Clear')
  * @returns Object with current weather and setter function
+ * 
+ * NOTE: Weather transitions are now managed in App.tsx with event logging.
+ * This hook only provides state management.
  */
-export function useWeatherSystem(day: number, initialWeather: WeatherType = 'Clear') {
+export function useWeatherSystem(initialWeather: WeatherType = 'Clear') {
   const [currentWeather, setCurrentWeather] = useState<WeatherType>(initialWeather);
   const currentWeatherRef = useRef(currentWeather);
   
@@ -18,15 +18,8 @@ export function useWeatherSystem(day: number, initialWeather: WeatherType = 'Cle
     currentWeatherRef.current = currentWeather;
   }, [currentWeather]);
   
-  // Update weather based on day/season changes
-  useEffect(() => {
-    const season = getSeason(day);
-    const newWeather = calculateWeatherChange(season, currentWeatherRef.current);
-    
-    if (newWeather !== currentWeatherRef.current) {
-      setCurrentWeather(newWeather);
-    }
-  }, [day]); // Only trigger when day changes
+  // NOTE: Weather changes are now managed in App.tsx with event logging
+  // This hook only provides state management, not automatic weather transitions
   
   return {
     currentWeather,

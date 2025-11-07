@@ -15,6 +15,10 @@ interface StatsDisplayProps {
   veggies: Veggie[];
   setShowAdvancedStash: (show: boolean) => void;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  experience: number;
+  farmCost: number;
+  farmTier: number;
+  handleBuyLargerFarm: () => void;
 }
 
 const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
@@ -28,7 +32,11 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
   knowledge,
   veggies,
   setShowAdvancedStash,
-  formatNumber
+  formatNumber,
+  experience,
+  farmCost,
+  farmTier,
+  handleBuyLargerFarm
 }) => {
   return (
     <>
@@ -91,6 +99,29 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
           </button>
         </span>
       </div>
+      
+      {/* Farm Upgrade Button */}
+      {totalPlotsUsed >= maxPlots && (
+        <div className={styles.farmUpgradeContainer}>
+          <button
+            onClick={handleBuyLargerFarm}
+            disabled={money < farmCost}
+            className={styles.farmUpgradeButton}
+            aria-label="Buy Larger Farm"
+            title="New max plots formula: Current max plots + (Experience ÷ 100), capped at 2× current max plots. Example: 4 plots + (500 exp ÷ 100) = 8 plots maximum"
+          >
+            <span className={styles.farmUpgradeText}>
+              <span className={styles.farmUpgradeLabel}>Buy Larger Farm:</span> ${formatNumber(farmCost, 2)}
+              <span className={styles.farmUpgradeLabel}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
+              {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
+                <span className={styles.farmUpgradeCap}>(capped at 2x current)</span>
+              )}
+              <span className={styles.farmUpgradeLabel}>Knowledge+:</span> +{((1.25 * farmTier)).toFixed(2)} Kn/harvest
+              <span className={styles.farmUpgradeLabel}>Money/Knowledge kept:</span> ${money > farmCost ? formatNumber(money - farmCost, 2) : 0} / {knowledge > 0 ? formatNumber(Math.floor(knowledge), 2) : 0}Kn
+            </span>
+          </button>
+        </div>
+      )}
     </>
   );
 });

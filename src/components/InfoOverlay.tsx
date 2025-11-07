@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING } from '../config/assetPaths';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './InfoOverlay.module.css';
 
@@ -108,7 +108,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Winter:</strong> No bonuses</li>
                 </ul>
                 
-                <h4>🌦️ Weather System</h4>
+                <h4 className={styles.sectionTitle}>
+                  <img src={WEATHER_CLEAR} alt="" className={styles.sectionIcon} />
+                  Weather System
+                </h4>
                 <p>Weather changes randomly each day with different probabilities by season:</p>
                 
                 <h5>Weather Effects:</h5>
@@ -142,7 +145,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
             {selectedInfoCategory === 'farm' && (
               <div>
-                <h4>🎓 Experience System</h4>
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_EXPERIENCE} alt="" className={styles.sectionIcon} />
+                  Experience System
+                </h4>
                 <p>Experience is earned every time you harvest any vegetable. Each vegetable requires a certain amount of experience to unlock:</p>
                 
                 <h5>Vegetable Unlock Requirements:</h5>
@@ -159,8 +165,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Onions:</strong> 9,921 exp</li>
                 </ul>
                 <p><em>Formula: 50 × 1.8^(index) for each vegetable</em></p>
-                
-                <h4>🧠 Knowledge Currency</h4>
+
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_KNOWLEDGE} alt="" className={styles.sectionIcon} />
+                  Knowledge Currency
+                </h4>
                 <p>Knowledge is a secondary currency earned from harvesting vegetables:</p>
                 
                 <h5>Knowledge Earning:</h5>
@@ -179,8 +188,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Irrigation:</strong> 50 Knowledge + $500 (protects against Drought)</li>
                   <li><strong>Heirloom Seeds:</strong> Cost scales with highest unlocked veggie ever ($2,500 + 200 Knowledge per veggie level)</li>
                 </ul>
-                
-                <h4>🏡 Plot System</h4>
+
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_PLOTS} alt="" className={styles.sectionIcon} />
+                  Plot System
+                </h4>
                 <p>Each vegetable can have multiple plots. More plots = more simultaneous growing!</p>
                 
                 <h5>Plot Limitations:</h5>
@@ -192,7 +204,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Solution:</strong> Expand your farm when you reach the maximum plots to increase your limit</li>
                 </ul>
                 
-                <h4>🚜 Farm Expansion (Prestige)</h4>
+                <h4 className={styles.sectionTitle}>
+                  <img src={UPGRADE_ADDITIONAL_PLOT} alt="" className={styles.sectionIcon} />
+                  Farm Expansion (Prestige)
+                </h4>
                 <p>When you've used all available plots, you can buy a larger farm to reset progress but gain permanent bonuses:</p>
                 
                 <h5>Farm Purchase Requirements:</h5>
@@ -238,8 +253,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   Per-Vegetable Upgrades
                 </h4>
                 <p>Each vegetable has its own individual upgrades that only affect that specific crop:</p>
-                
-                <h5>🧪 Fertilizer (Growth Speed)</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_FERTILIZER} alt="" className={styles.sectionIcon} />
+                  Fertilizer (Growth Speed)
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> +5% multiplicative growth rate per level</li>
                   <li><strong>Base Cost:</strong> $5 for Radish, scales by 1.4× per vegetable</li>
@@ -248,7 +266,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Example:</strong> Level 10 = +50% growth (1.5× speed)</li>
                 </ul>
                 
-                <h5>🤖 Auto Harvester</h5>
+                <h5><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto Harvester</h5>
                 <ul>
                   <li><strong>Function:</strong> Automatically harvests when vegetables reach 100% growth</li>
                   <li><strong>Base Timer:</strong> 50 seconds between harvest attempts</li>
@@ -257,8 +275,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Knowledge:</strong> Auto harvest gives +0.5 Knowledge vs +1 for manual</li>
                   <li><strong>Experience:</strong> Auto harvest gives 50% of the experience compared to manual harvest</li>
                 </ul>
-                
-                <h5>⚡ Harvester Speed</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_HARVESTER_SPEED} alt="" className={styles.sectionIcon} />
+                  Harvester Speed
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> +5% harvester speed per level</li>
                   <li><strong>Formula:</strong> Timer = 50 ÷ (1 + level × 0.05) ticks</li>
@@ -266,8 +287,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Level Scaling:</strong> Cost increases by 1.25× per level</li>
                   <li><strong>Example:</strong> Level 10 = 33 seconds between harvests</li>
                 </ul>
-                
-                <h5>📦 Additional Plots</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_ADDITIONAL_PLOT} alt="" className={styles.sectionIcon} />
+                  Additional Plots
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Each level adds +1 plot for that vegetable</li>
                   <li><strong>Harvesting:</strong> Each plot harvests +1 additional vegetable</li>
@@ -275,8 +299,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Level Scaling:</strong> Cost increases by 1.5× per level</li>
                   <li><strong>Plot Limit:</strong> Total plots across ALL vegetables cannot exceed farm limit</li>
                 </ul>
-                
-                <h5>🌟 Better Seeds (Knowledge Upgrade)</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_BETTER_SEEDS} alt="" className={styles.sectionIcon} />
+                  Better Seeds (Knowledge Upgrade)
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Increases sale price by 1.25× per level (1.5× with Heirloom Seeds)</li>
                   <li><strong>Currency:</strong> Costs Knowledge, not money</li>
@@ -303,8 +330,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
               <div>
                 <h4>🏗️ Global Farm Upgrades</h4>
                 <p>These upgrades affect your entire farm and apply to all vegetables:</p>
-                
-                <h5>📚 Farmer's Almanac (Knowledge Multiplier)</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_FARMERS_ALMANAC} alt="" className={styles.sectionIcon} />
+                  Farmer's Almanac (Knowledge Multiplier)
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> +10% to ALL knowledge gains per level</li>
                   <li><strong>Formula:</strong> Knowledge × (1 + almanac level × 0.10)</li>
@@ -313,8 +343,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Example:</strong> Level 5 Almanac = +50% knowledge from all sources</li>
                   <li><strong>Progression:</strong> $10 → $17 → $25 → $34 → $44...</li>
                 </ul>
-                
-                <h5>💧 Irrigation System</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_IRRIGATION} alt="" className={styles.sectionIcon} />
+                  Irrigation System
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Complete immunity to Drought weather penalty</li>
                   <li><strong>Cost:</strong> $500 + 50 Knowledge (one-time purchase, per farm)</li>
@@ -323,7 +356,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
                 </ul>
 
-                <h5>🏪 Merchant (Auto-Sell)</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_MERCHANT} alt="" className={styles.sectionIcon} />
+                  Merchant (Auto-Sell)
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Automatically sells vegetables from stash every day</li>
                   <li><strong>Cost:</strong> $1,000 + 100 Knowledge (one-time purchase, per farm)</li>
@@ -333,7 +369,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
                 </ul>
 
-                <h5>🏠 Greenhouse</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_GREENHOUSE} alt="" className={styles.sectionIcon} />
+                  Greenhouse
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Complete immunity to Winter and Snow penalties</li>
                   <li><strong>Cost:</strong> ${GREENHOUSE_COST_PER_PLOT} + {GREENHOUSE_KN_COST_PER_PLOT} Knowledge per plot (scales with max plots)</li>
@@ -342,8 +381,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Value:</strong> Transforms Winter from terrible to normal growing season</li>
                   <li><strong>Note:</strong> Resets when you buy a larger farm (prestige)</li>
                 </ul>
-                
-                <h5>🌟 Heirloom Seeds</h5>
+
+                <h5 className={styles.sectionTitle}>
+                  <img src={UPGRADE_HEIRLOOM_SEEDS} alt="" className={styles.sectionIcon} />
+                  Heirloom Seeds
+                </h5>
                 <ul>
                   <li><strong>Effect:</strong> Improves Better Seeds upgrade from 1.25× to 1.5× per level</li>
                   <li><strong>Cost:</strong> $2,500 + 200 Knowledge per highest vegetable unlocked</li>
@@ -365,10 +407,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
             {selectedInfoCategory === 'autopurchase' && (
               <div>
-                <h4>🤖 Auto-Purchaser System</h4>
+                <h4><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '24px', height: '24px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto-Purchaser System</h4>
                 <p>Auto-Purchasers automatically buy upgrades for you every 7 days when active and affordable. Each vegetable has its own set of auto-purchasers that operate independently.</p>
                 
-                <h5>🎯 How Auto-Purchasers Work:</h5>
+                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> How Auto-Purchasers Work:</h5>
                 <ul>
                   <li><strong>Timer:</strong> All auto-purchasers share a unified 7-day cycle timer</li>
                   <li><strong>Purchase Check:</strong> When timer reaches 0, each active auto-purchaser attempts to buy its upgrade</li>
@@ -378,7 +420,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Manual Control:</strong> You can toggle each auto-purchaser ON/OFF at any time after purchase</li>
                 </ul>
                 
-                <h5>🎯 Purchase Priority System:</h5>
+                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Purchase Priority System:</h5>
                 <ul>
                   <li><strong>Vegetable Order:</strong> Radish → Lettuce → Green Beans → Zucchini → Cucumbers → Tomatoes → Peppers → Carrots → Broccoli → Onions</li>
                   <li><strong>Auto-Purchaser Order:</strong> Assistant → Cultivator → Surveyor → Mechanic</li>
@@ -386,7 +428,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Currency Limits:</strong> If multiple auto-purchasers need the same currency, earlier vegetables get priority</li>
                 </ul>
 
-                <h5>🤝 Assistant</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={AUTO_ASSISTANT} alt="" className={styles.sectionIcon} />
+                  Assistant
+                </h5>
                 <ul>
                   <li><strong>Purchases:</strong> Upgrades Fertilizer automatically</li>
                   <li><strong>Currency:</strong> Uses Money ($)</li>
@@ -394,7 +439,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Strategy:</strong> Essential for idle progression on fertilizer</li>
                 </ul>
 
-                <h5>🧑‍🌾 Cultivator</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={AUTO_CULTIVATOR} alt="" className={styles.sectionIcon} />
+                  Cultivator
+                </h5>
                 <ul>
                   <li><strong>Purchases:</strong> Upgrades Better Seeds automatically</li>
                   <li><strong>Currency:</strong> Uses Knowledge (Kn)</li>
@@ -402,7 +450,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Strategy:</strong> Crucial for scaling income without manual management</li>
                 </ul>
 
-                <h5>🗺️ Surveyor</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={AUTO_SURVEYOR} alt="" className={styles.sectionIcon} />
+                  Surveyor
+                </h5>
                 <ul>
                   <li><strong>Purchases:</strong> Upgrades Additional Plot automatically</li>
                   <li><strong>Currency:</strong> Uses Money ($)</li>
@@ -410,7 +461,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Strategy:</strong> Increases vegetables per harvest for exponential growth</li>
                 </ul>
 
-                <h5>🔧 Mechanic</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={AUTO_MECHANIC} alt="" className={styles.sectionIcon} />
+                  Mechanic
+                </h5>
                 <ul>
                   <li><strong>Purchases:</strong> Upgrades Harvester Speed automatically</li>
                   <li><strong>Currency:</strong> Uses Money ($)</li>
@@ -418,7 +472,10 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Strategy:</strong> Only useful after buying the Auto Harvester</li>
                 </ul>
 
-                <h5>🎮 Button States & Visual Guide:</h5>
+                <h5 className={styles.sectionTitle}>
+                  <img src={ICON_LEARNING} alt="" className={styles.sectionIcon} />
+                  Button States & Visual Guide:
+                </h5>
                 <ul>
                   <li><strong>Gray Button:</strong> Not purchased and can't afford</li>
                   <li><strong>Yellow Glow:</strong> Not purchased but affordable - click to buy!</li>
@@ -449,7 +506,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                 </h4>
                 <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
                 
-                <h5>🎯 How Canning Works:</h5>
+                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> How Canning Works:</h5>
                 <ul>
                   <li><strong>Unlock Requirement:</strong> Reach 5,000 experience to access canning</li>
                   <li><strong>Recipe Requirements:</strong> Each recipe needs specific vegetables in specific quantities</li>
@@ -458,8 +515,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Experience Rewards:</strong> Gain both money and canning experience from completed recipes</li>
                   <li><strong>Knowledge Rewards:</strong> Earn knowledge points based on recipe complexity</li>
                 </ul>
-                
-                <h5>📋 Recipe Information:</h5>
+
+                <h5><img src={ICON_RECIPE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> 📋 Recipe Information:</h5>
                 <ul>
                   <li><strong>Small Cards:</strong> Show ingredients, profit, processing time, and reward amounts</li>
                   <li><strong>Knowledge Reward:</strong> 2 knowledge per ingredient (reduced for auto-canning)</li>
@@ -469,7 +526,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Recipe Sorting:</strong> Sort by name, profit, time, or difficulty</li>
                 </ul>
 
-                <h5>⚙️ Canning Upgrades:</h5>
+                <h5><img src={ICON_UPGRADE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Canning Upgrades:</h5>
                 <ul>
                   <li><strong>Quick Hands:</strong> Reduces processing time for faster production</li>
                   <li><strong>Family Recipe:</strong> Increases sale price of canned goods</li>
@@ -478,7 +535,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Canner (Auto-Canning):</strong> Automatically starts recipes every 10 seconds</li>
                 </ul>
 
-                <h5>🤖 Auto-Canning System:</h5>
+                <h5><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto-Canning System:</h5>
                 <ul>
                   <li><strong>How it Works:</strong> Automatically selects and starts recipes every 10 seconds</li>
                   <li><strong>Recipe Selection:</strong> Picks the first available recipe in your selected sort order</li>

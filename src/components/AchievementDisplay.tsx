@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Achievement } from '../types/achievements';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { ICON_TROPHY } from '../config/assetPaths';
 import styles from './AchievementDisplay.module.css';
 
 interface AchievementDisplayProps {
@@ -52,7 +53,10 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.titleContainer}>
-            <h2 id="achievements-modal-title" className={styles.title}>🏆 Achievements</h2>
+            <h2 id="achievements-modal-title" className={styles.title}>
+              <img src={ICON_TROPHY} alt="" style={{ width: '24px', height: '24px', verticalAlign: 'middle', marginRight: '6px' }} />
+              Achievements
+            </h2>
             <p className={styles.stats} aria-live="polite">
               {totalUnlocked} of {totalAchievements} unlocked ({Math.round((totalUnlocked / totalAchievements) * 100)}%)
             </p>

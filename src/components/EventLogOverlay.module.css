@@ -1,0 +1,410 @@
+/* Event Log Overlay Styles */
+
+/* Overlay container - positioned on right side */
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  z-index: 900;
+  pointer-events: none; /* Allow clicks through to main game area */
+}
+
+/* Panel - the actual visible container */
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(10px);
+  border-left: 2px solid #444;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  pointer-events: auto; /* Panel itself captures clicks */
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid #444;
+}
+
+.title {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.headerControls {
+  display: flex;
+  gap: 8px;
+}
+
+.compactButton {
+  padding: 6px 10px;
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.compactButton:hover {
+  background: #666;
+}
+
+.closeButton {
+  padding: 6px 10px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background: #c82333;
+}
+
+/* Filter Bar */
+.filterBar {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #444;
+  overflow-x: auto;
+}
+
+.categoryFilters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.categoryButton {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.categoryButton:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #777;
+}
+
+.categoryButtonActive {
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.categoryLabel {
+  font-size: 11px;
+}
+
+.categoryCount {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 4px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Search Bar */
+.searchBar {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #444;
+  display: flex;
+  gap: 8px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.searchInput::placeholder {
+  color: #999;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #4CAF50;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.clearFiltersButton {
+  padding: 6px 12px;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.clearFiltersButton:hover {
+  background: #f57c00;
+}
+
+/* Controls */
+.controls {
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #444;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.autoScrollLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  cursor: pointer;
+}
+
+.clearButton {
+  padding: 4px 10px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background-color 0.2s;
+}
+
+.clearButton:hover {
+  background: #c82333;
+}
+
+/* Event List */
+.eventList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.eventList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.eventList::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.eventList::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.eventList::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  text-align: center;
+  padding: 20px;
+}
+
+.emptyState p {
+  margin: 0 0 10px 0;
+}
+
+/* Event Entry */
+.eventEntry {
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid #4CAF50;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+}
+
+.eventEntry:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.eventEntryCompact {
+  padding: 6px 8px;
+}
+
+.eventHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.eventIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.eventIcon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.eventTimestamp {
+  color: #aaa;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.eventCategory {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+.eventMessage {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.eventDetails {
+  color: #ccc;
+  font-size: 11px;
+  line-height: 1.3;
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.eventMetadata {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.metadataItem {
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  font-size: 10px;
+  color: #ffd700;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* Footer */
+.footer {
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerStat {
+  color: #999;
+  font-size: 11px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .overlay {
+    width: 100%;
+  }
+  
+  .panel {
+    width: 100%;
+  }
+  
+  .categoryFilters {
+    flex-wrap: wrap;
+  }
+  
+  .categoryButton {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .categoryLabel {
+    display: none; /* Hide labels on mobile, show only icons */
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 16px;
+  }
+  
+  .eventMessage {
+    font-size: 12px;
+  }
+  
+  .eventDetails {
+    font-size: 10px;
+  }
+}
