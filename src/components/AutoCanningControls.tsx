@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Recipe } from '../types/canning';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
+import { ICON_AUTOMATION } from '../config/assetPaths';
 import styles from './AutoCanningControls.module.css';
 
 interface AutoCanningControlsProps {
@@ -72,7 +73,8 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
     <div className={styles.container}>
       <div className={styles.headerRow}>
         <h4 className={styles.title}>
-          🤖 Auto-Canning System
+          <img src={ICON_AUTOMATION} alt="Auto-Canning" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} />
+          Auto-Canning System
           {config.enabled && (
             <span className={styles.activeBadge}>
               ACTIVE

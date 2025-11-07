@@ -31,6 +31,22 @@ body {
   min-height: 100vh;
 }
 
+/* Itch.io viewport simulation - toggle in Settings */
+body.itch-viewport {
+  background: #1a1a1a;
+}
+
+body.itch-viewport #root {
+  width: 1600px !important;
+  height: 800px !important;
+  max-width: 1600px !important;
+  max-height: 800px !important;
+  overflow: auto;
+  border: 2px solid #646cff;
+  box-shadow: 0 0 20px rgba(100, 108, 255, 0.3);
+  position: relative;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

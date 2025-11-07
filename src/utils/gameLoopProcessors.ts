@@ -44,7 +44,7 @@ export function calculateWeatherChange(season: string, currentWeather: WeatherTy
  * @param currentWeather - Current weather conditions
  * @param greenhouseOwned - Whether greenhouse upgrade is owned
  * @param irrigationOwned - Whether irrigation upgrade is owned
- * @returns Object with updated veggies array and whether any updates occurred
+ * @returns Object with updated veggies array, whether any updates occurred, and array of completed veggies
  */
 export function processVeggieGrowth(
   veggies: Veggie[],
@@ -52,8 +52,9 @@ export function processVeggieGrowth(
   currentWeather: string,
   greenhouseOwned: boolean,
   irrigationOwned: boolean
-): { veggies: Veggie[]; needsUpdate: boolean } {
+): { veggies: Veggie[]; needsUpdate: boolean; completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> } {
   let needsUpdate = false;
+  const completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> = [];
   
   const newVeggies = veggies.map((v) => {
     if (!v.unlocked || v.growth >= 100) return v;
@@ -63,12 +64,19 @@ export function processVeggieGrowth(
     
     if (newGrowth !== v.growth) {
       needsUpdate = true;
-      return { ...v, growth: newGrowth };
+      const updatedVeggie = { ...v, growth: newGrowth };
+      
+      // Track when a veggie completes growth (reaches 100%)
+      if (v.growth < 100 && newGrowth >= 100) {
+        completedGrowth.push({ veggie: updatedVeggie, growthBonus: growthAmount });
+      }
+      
+      return updatedVeggie;
     }
     return v;
   });
   
-  return { veggies: needsUpdate ? newVeggies : veggies, needsUpdate };
+  return { veggies: needsUpdate ? newVeggies : veggies, needsUpdate, completedGrowth };
 }
 
 /**
@@ -89,10 +97,12 @@ export function processAutoHarvest(
   experienceGain: number;
   knowledgeGain: number;
   needsUpdate: boolean;
+  harvestedVeggies: Array<{ veggie: Veggie; amount: number; expGain: number; knGain: number }>;
 } {
   let needsUpdate = false;
   let totalExperienceGain = 0;
   let totalKnowledgeGain = 0;
+  const harvestedVeggies: Array<{ veggie: Veggie; amount: number; expGain: number; knGain: number }> = [];
   
   const newVeggies = veggies.map((v) => {
     if (!v.harvesterOwned) return v;
@@ -109,8 +119,10 @@ export function processAutoHarvest(
       
       // Calculate experience gain for this harvest
       const experienceGain = (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5);
+      const totalKnGain = knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
+      
       totalExperienceGain += experienceGain;
-      totalKnowledgeGain += knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
+      totalKnowledgeGain += totalKnGain;
       
       // Perform the harvest
       newV = {
@@ -119,6 +131,14 @@ export function processAutoHarvest(
         growth: 0,
         harvesterTimer: 0
       };
+      
+      // Track this harvest for logging
+      harvestedVeggies.push({
+        veggie: v,
+        amount: harvestAmount,
+        expGain: experienceGain,
+        knGain: totalKnGain
+      });
       
       needsUpdate = true;
     } 
@@ -142,7 +162,8 @@ export function processAutoHarvest(
     veggies: needsUpdate ? newVeggies : veggies,
     experienceGain: totalExperienceGain,
     knowledgeGain: totalKnowledgeGain,
-    needsUpdate
+    needsUpdate,
+    harvestedVeggies
   };
 }
 

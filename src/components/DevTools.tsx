@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from './DevTools.module.css';
+import { ICON_CANNING } from '../config/assetPaths';
 
 interface DevToolsProps {
   onAddMoney: (amount: number) => void;
@@ -187,7 +188,8 @@ const DevTools: React.FC<DevToolsProps> = ({
                   onClick={onUnlockAllRecipes}
                   className={styles.actionButton}
                 >
-                  🥫 Unlock All Recipes
+                  <img src={ICON_CANNING} alt="" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                  Unlock All Recipes
                 </button>
               )}
               {onMaxUpgrades && (

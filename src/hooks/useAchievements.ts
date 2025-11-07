@@ -22,7 +22,8 @@ interface UseAchievementsReturn {
 
 export function useAchievements(
   initialState?: AchievementState,
-  onReward?: (money: number, knowledge: number) => void
+  onReward?: (money: number, knowledge: number) => void,
+  onAchievementUnlock?: (achievement: Achievement) => void
 ): UseAchievementsReturn {
   // Initialize achievements from saved state or defaults
   const [achievementState, setAchievementState] = useState<AchievementState>(() => {
@@ -91,6 +92,11 @@ export function useAchievements(
           hasChanges = true;
           newlyUnlocked = updated.achievements[i];
           
+          // Call achievement unlock callback if provided
+          if (onAchievementUnlock) {
+            onAchievementUnlock(updated.achievements[i]);
+          }
+          
           // Grant rewards if they exist
           if (achievement.reward && onReward) {
             onReward(
@@ -108,7 +114,7 @@ export function useAchievements(
     });
 
     return newlyUnlocked;
-  }, [checkRequirement, onReward]);
+  }, [checkRequirement, onReward, onAchievementUnlock]);
 
   // Clear the last unlocked achievement (after showing notification)
   const clearLastUnlocked = useCallback(() => {

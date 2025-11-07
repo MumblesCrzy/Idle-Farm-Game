@@ -246,6 +246,14 @@ export interface ExtendedGameState {
   
   // Achievement state
   achievementState?: any; // AchievementState type from achievements.ts
+  
+  // Event log state
+  eventLogState?: {
+    entries: any[];
+    maxEntries?: number;
+    unreadCount?: number;
+    lastReadId?: string;
+  };
 }
 
 /** Current version number for canning save data format */

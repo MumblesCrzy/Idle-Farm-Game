@@ -283,6 +283,15 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       activeProcesses: [...prev.activeProcesses, process]
     }));
     
+    // Call event logging callback if available
+    const globalCanningStartCallback = (window as any).globalCanningStartCallback;
+    if (globalCanningStartCallback) {
+      const ingredientsList = recipe.ingredients
+        .map(ing => `${ing.quantity} ${ing.veggieName}`)
+        .join(', ');
+      globalCanningStartCallback(recipe.name, ingredientsList, processingTime, automated);
+    }
+    
     return true;
   }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies]);
   
@@ -338,6 +347,12 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     // Add money and knowledge
     setMoney(prev => prev + totalEarnings);
     setKnowledge(prev => prev + knowledgeReward);
+    
+    // Call event logging callback if available
+    const globalCanningCompleteCallback = (window as any).globalCanningCompleteCallback;
+    if (globalCanningCompleteCallback) {
+      globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, process.automated);
+    }
     
     // Remove completed process
     setCanningState(prev => ({

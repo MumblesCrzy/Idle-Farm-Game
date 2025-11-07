@@ -188,3 +188,101 @@ export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopu
 
 export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
+
+// ============================================================================
+// EVENT LOG TYPES
+// ============================================================================
+
+/**
+ * Categories for event log entries
+ */
+export type EventCategory = 
+  | 'weather'       // Weather changes (rain, drought, storms, etc.)
+  | 'growth'        // Growth milestones (veggie ready, unlocks)
+  | 'harvest'       // Manual and auto-harvest events
+  | 'auto-purchase' // Auto-purchaser activities
+  | 'merchant'      // Merchant sales and manual sells
+  | 'canning'       // Canning activities (start, complete, upgrades)
+  | 'upgrade'       // Major upgrade purchases (greenhouse, irrigation, etc.)
+  | 'milestone';    // Major achievements (farm tier, experience milestones)
+
+/**
+ * Priority levels for event log entries
+ * Affects visual styling and importance
+ */
+export type EventPriority = 'critical' | 'important' | 'normal' | 'minor';
+
+/**
+ * Timestamp for event log entries using in-game time
+ */
+export interface EventTimestamp {
+  year: number;      // Farm tier (1-based)
+  day: number;       // Day of year (1-365)
+  totalDays: number; // Total days elapsed since game start
+}
+
+/**
+ * Metadata attached to events for filtering and display
+ */
+export interface EventMetadata {
+  // Common fields
+  veggieName?: string;
+  veggieIndex?: number;
+  amount?: number;
+  cost?: number;
+  moneyGained?: number;
+  knowledgeGained?: number;
+  experienceGained?: number;
+  
+  // Weather specific
+  weatherType?: WeatherType;
+  previousWeather?: WeatherType;
+  
+  // Upgrade specific
+  upgradeType?: string;
+  upgradeLevel?: number;
+  
+  // Canning specific
+  recipeName?: string;
+  processingTime?: number;
+  
+  // Auto-purchase specific
+  autoPurchaserName?: string;
+  autoPurchaserActive?: boolean;
+  
+  // Merchant specific
+  veggiesSold?: Array<{ name: string; quantity: number; earnings: number }>;
+}
+
+/**
+ * Individual event log entry
+ */
+export interface EventLogEntry {
+  id: string;              // Unique identifier (timestamp + random)
+  timestamp: EventTimestamp;
+  category: EventCategory;
+  priority: EventPriority;
+  message: string;         // Human-readable message
+  details?: string;        // Optional additional details
+  metadata?: EventMetadata; // Structured data for filtering/display
+  icon?: string;           // Optional emoji or icon identifier
+}
+
+/**
+ * Event log state and configuration
+ */
+export interface EventLogState {
+  entries: EventLogEntry[];
+  maxEntries: number;      // Maximum number of entries to keep (default: 100)
+  unreadCount: number;     // Number of unread events
+  lastReadId?: string;     // ID of last read event
+}
+
+/**
+ * Filter state for event log display
+ */
+export interface EventLogFilter {
+  categories: EventCategory[]; // Empty array = show all
+  priority?: EventPriority;    // Minimum priority to show
+  searchTerm?: string;         // Text search filter
+}

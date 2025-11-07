@@ -3,11 +3,24 @@ import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
+import EventLogOverlay from './components/EventLogOverlay';
 import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
+
+// Module-level harvest callback for event logging
+let globalHarvestCallback: ((veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) | null = null;
+
+// Module-level auto-purchase callback for event logging
+let globalAutoPurchaseCallback: ((veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => void) | null = null;
+
+// Module-level merchant sale callback for event logging
+let globalMerchantSaleCallback: ((totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => void) | null = null;
+
+// Module-level achievement unlock callback for event logging
+let globalAchievementUnlockCallback: ((achievement: any) => void) | null = null;
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
 import { PerformanceWrapper } from './components/PerformanceWrapper';
@@ -19,6 +32,7 @@ import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
 import { useGameLoop } from './hooks/useGameLoop';
+import { useEventLog } from './hooks/useEventLog';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -37,7 +51,7 @@ import {
   veggieSeasonBonuses,
   GAME_STORAGE_KEY
 } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, ICON_TROPHY, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -205,6 +219,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setMoney((m: number) => m - irrigationCost);
       setKnowledge((k: number) => k - irrigationKnCost);
       setIrrigationOwned(true);
+      
+      // Log irrigation purchase milestone
+      if (globalAchievementUnlockCallback) {
+        globalAchievementUnlockCallback({
+          name: 'Irrigation System',
+          description: 'Installed irrigation system (Drought no longer affects crops)',
+          reward: null,
+          category: 'milestone'
+        });
+      }
     }
   };
   
@@ -242,6 +266,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setIrrigationOwned(false); // Preserve irrigation state
     setGlobalAutoPurchaseTimer(0); // Reset auto-purchaser timer
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
+    
+    // Log farm tier upgrade milestone
+    if (globalAchievementUnlockCallback) {
+      globalAchievementUnlockCallback({
+        name: `Farm Tier ${newFarmTier}`,
+        description: `Upgraded to Farm Tier ${newFarmTier} with ${newMaxPlots} max plots`,
+        reward: null,
+        category: 'milestone'
+      });
+    }
+    
     // Save to localStorage
     saveGameState({
       veggies: initialVeggies.map(v => ({ ...v })),
@@ -279,6 +314,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setMoney((m: number) => m - MERCHANT_COST);
       setKnowledge((k: number) => k - MERCHANT_KN_COST);
       setAutoSellOwned(true);
+      
+      // Log auto-sell purchase milestone
+      if (globalAchievementUnlockCallback) {
+        globalAchievementUnlockCallback({
+          name: 'Merchant Partnership',
+          description: 'Unlocked auto-sell (Merchant buys stashed veggies every 7 days)',
+          reward: null,
+          category: 'milestone'
+        });
+      }
     }
   };
   // Reset game handler
@@ -365,6 +410,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setKnowledge((k: number) => k - heirloomKnowledgeCost);
       setHeirloomOwned(true);
       
+      // Log heirloom purchase milestone
+      if (globalAchievementUnlockCallback) {
+        globalAchievementUnlockCallback({
+          name: 'Heirloom Seeds Unlocked',
+          description: 'Unlocked Heirloom Seeds (Better Seeds now 1.5x more effective)',
+          reward: null,
+          category: 'milestone'
+        });
+      }
+      
       // Retroactively update all vegetable prices to reflect the heirloom bonus
       setVeggies((prev) => {
         return prev.map((v, index) => {
@@ -383,7 +438,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
 
   // Weather system hook
-  const { currentWeather, setCurrentWeather } = useWeatherSystem(day, 'Clear');
+  const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
   
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -398,18 +453,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setHighestUnlockedVeggie(currentHighest);
     }
   }, []); // Run only once on mount with empty dependency array since loaded is stable    
-
-  // Change browser tab title if any veggie is ready to harvest
-  // Only update when ready state changes to avoid screen reader announcement spam
-  const hasReadyVeggies = veggies.some(v => v.growth >= 100);
-  useEffect(() => {
-    if (hasReadyVeggies) {
-      document.title = '🌱 Farm Idle Game';
-    } else {
-      document.title = 'Farm Idle Game';
-    }
-  }, [hasReadyVeggies]); // Only trigger when ready state changes, not on every growth update
-  
+ 
   // Growth timer for all unlocked veggies - using requestAnimationFrame for Chrome compatibility
   useGameLoop(() => {
     setVeggies((prev) => {
@@ -432,6 +476,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setMoney((m: number) => m - greenhouseCost);
       setKnowledge((k: number) => k - greenhouseKnCost);
       setGreenhouseOwned(true);
+      
+      // Log greenhouse purchase milestone
+      if (globalAchievementUnlockCallback) {
+        globalAchievementUnlockCallback({
+          name: 'Greenhouse Purchased',
+          description: `Built a greenhouse for ${maxPlots} plots (All plots grow year-round)`,
+          reward: null,
+          category: 'milestone'
+        });
+      }
     }
   };
 
@@ -461,8 +515,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         veggies: newVeggies,
         experienceGain: totalExperienceGain,
         knowledgeGain: totalKnowledgeGain,
-        needsUpdate
+        needsUpdate,
+        harvestedVeggies
       } = processAutoHarvest(prev, almanacLevelRef.current, farmTierRef.current, knowledgeRef.current);
+
+      // Log auto-harvests if callback is set
+      if (globalHarvestCallback && harvestedVeggies.length > 0) {
+        harvestedVeggies.forEach(({ veggie, amount, expGain, knGain }) => {
+          globalHarvestCallback!(veggie.name, amount, expGain, knGain, true);
+        });
+      }
 
       // Update experience and knowledge for all harvests
       if (totalExperienceGain > 0 && dayRef.current >= 1 && dayRef.current <= 365) {
@@ -494,7 +556,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, 1000, []); // Empty deps - refs prevent loop restart
 
   // Unified harvest logic for both auto and manual harvest
-  const harvestVeggie = (index: number, isAutoHarvest: boolean = false) => {
+  const harvestVeggie = (index: number, isAutoHarvest: boolean = false, onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) => {
     // Calculate harvest amount before the state update
     const v = veggies[index];
     if (v.growth < 100) return; // Early exit if not ready to harvest
@@ -510,6 +572,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       ? (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5)
       : harvestAmount + knowledge * 0.01;
     const newExperience = experience + experienceGain;
+    
+    // Calculate total knowledge gain including all bonuses
+    const totalKnowledgeGain = knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
     
     setVeggies((prev) => {
       const updated = [...prev];
@@ -547,7 +612,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
     if (day >= 1 && day <= 365) {
-      setKnowledge((k: number) => k + knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1)));
+      setKnowledge((k: number) => k + totalKnowledgeGain);
       
       // Apply experience based on harvest type (auto vs manual)
       if (isAutoHarvest) {
@@ -558,11 +623,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
       }
     }
+    
+    // Call harvest callback if provided
+    if (onHarvestCallback) {
+      onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
+    }
   };
 
   // Manual harvest button uses unified logic
   const handleHarvest = () => {
-    harvestVeggie(activeVeggie, false);
+    harvestVeggie(activeVeggie, false, globalHarvestCallback || undefined);
   }
 
   // Toggle sell enabled for a specific veggie
@@ -628,12 +698,23 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
 
   // Sell handler - memoized to prevent useEffect re-runs
-  const handleSell = useCallback(() => {
+  const handleSell = useCallback((isAutoSell: boolean = false) => {
     let total = 0;
+    const soldVeggies: Array<{ name: string; quantity: number; earnings: number }> = [];
+    
     setVeggies((prev) => {
       total = prev.reduce((sum, v) => {
         // Only include vegetables that are enabled for selling
-        return v.sellEnabled ? sum + v.stash * v.salePrice : sum;
+        if (v.sellEnabled && v.stash > 0) {
+          const earnings = v.stash * v.salePrice;
+          soldVeggies.push({
+            name: v.name,
+            quantity: v.stash,
+            earnings: earnings
+          });
+          return sum + earnings;
+        }
+        return sum;
       }, 0);
       return prev.map((v) => ({
         ...v,
@@ -642,6 +723,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }));
     });
     setMoney((m: number) => m + total);
+    
+    // Log the sale if callback is set and something was sold
+    if (globalMerchantSaleCallback && total > 0) {
+      (globalMerchantSaleCallback as (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => void)(total, soldVeggies, isAutoSell);
+    }
   }, [setVeggies, setMoney]);
 
   // Initialize auto-purchase system
@@ -657,7 +743,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       handleBuyHarvesterSpeed,
       handleBuyAdditionalPlot
     },
-    initialTimer: loaded?.globalAutoPurchaseTimer ?? 0
+    initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
+    onPurchaseCallback: globalAutoPurchaseCallback || undefined
   });
 
   // Day counter timer with auto-sell and auto-purchase logic - using requestAnimationFrame for Chrome compatibility
@@ -678,7 +765,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       if (autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0) {
         // Trigger auto-sell using the existing handleSell function
         setTimeout(() => {
-          handleSellRef.current();
+          handleSellRef.current(true); // true = auto-sell
         }, 100); // Small delay to ensure state is updated
       }
       
@@ -721,6 +808,9 @@ function App() {
 
   // Achievements overlay state
   const [showAchievements, setShowAchievements] = useState(false);
+
+  // Event log overlay state
+  const [showEventLog, setShowEventLog] = useState(false);
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'growing' | 'canning'>('growing');
@@ -798,6 +888,12 @@ function App() {
     (moneyReward, knowledgeReward) => {
       if (moneyReward > 0) setMoney(prev => prev + moneyReward);
       if (knowledgeReward > 0) setKnowledge(prev => prev + knowledgeReward);
+    },
+    (achievement) => {
+      // Call the global callback if it's set
+      if (globalAchievementUnlockCallback) {
+        globalAchievementUnlockCallback(achievement);
+      }
     }
   );
 
@@ -805,6 +901,173 @@ function App() {
   const lastUnlockedAchievement = lastUnlockedId 
     ? achievements.find(a => a.id === lastUnlockedId) || null
     : null;
+
+  // Initialize event log system
+  const [initialEventLogState] = useState(() => {
+    try {
+      const loaded = loadGameStateWithCanning();
+      const savedState = loaded?.eventLogState;
+      if (savedState) {
+        // Ensure all required properties are present
+        return {
+          entries: savedState.entries || [],
+          maxEntries: savedState.maxEntries || 100,
+          unreadCount: savedState.unreadCount || 0,
+          lastReadId: savedState.lastReadId
+        };
+      }
+      return undefined;
+    } catch (error) {
+      console.error('Error loading event log state:', error);
+      return undefined;
+    }
+  });
+
+  const eventLog = useEventLog({
+    maxEntries: 100,
+    initialState: initialEventLogState,
+    farmTier,
+    day,
+    totalDaysElapsed
+  });
+
+  // Set up harvest logging callback
+  useEffect(() => {
+    globalHarvestCallback = (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
+      eventLog.addEvent('harvest', `Harvested ${veggieName}`, {
+        priority: 'normal',
+        details: isAuto 
+          ? `Auto-harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`
+          : `Manually harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`,
+        icon: isAuto ? ICON_AUTOMATION : ICON_HARVEST,
+        metadata: {
+          veggieName,
+          amount,
+          moneyGained: 0, // Harvesting doesn't directly give money
+          knowledgeGained: knGain,
+          experienceGained: expGain
+        }
+      });
+    };
+    
+    return () => {
+      globalHarvestCallback = null;
+    };
+  }, [eventLog]);
+
+  // Set up auto-purchase logging callback
+  useEffect(() => {
+    globalAutoPurchaseCallback = (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => {
+      const upgradeNames: Record<string, string> = {
+        'fertilizer': 'Fertilizer',
+        'betterSeeds': 'Better Seeds',
+        'harvesterSpeed': 'Harvester Speed',
+        'additionalPlot': 'Additional Plot'
+      };
+      
+      const costDisplay = currencyType === 'money' ? `$${cost}` : `${cost} knowledge`;
+      
+      eventLog.addEvent('auto-purchase', `${autoPurchaserName} bought ${upgradeNames[upgradeType]}`, {
+        priority: 'minor',
+        details: `${veggieName} ${upgradeNames[upgradeType]} upgraded to level ${upgradeLevel} (${costDisplay})`,
+        icon: ICON_AUTOMATION,
+        metadata: {
+          veggieName,
+          autoPurchaserName,
+          upgradeType,
+          upgradeLevel,
+          cost
+        }
+      });
+    };
+    
+    return () => {
+      globalAutoPurchaseCallback = null;
+    };
+  }, [eventLog]);
+
+  // Set up merchant sale logging callback
+  useEffect(() => {
+    globalMerchantSaleCallback = (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => {
+      // Create summary of what was sold
+      const veggiesList = veggiesSold.map(v => `${v.quantity} ${v.name}`).join(', ');
+      
+      eventLog.addEvent('merchant', isAutoSell ? 'Merchant auto-sold vegetables' : 'Sold vegetables to merchant', {
+        priority: 'important',
+        details: `Sold ${veggiesList} for $${totalMoney}`,
+        icon: isAutoSell ? ICON_MERCHANT : ICON_MONEY,
+        metadata: {
+          moneyGained: totalMoney,
+          veggiesSold: veggiesSold
+        }
+      });
+    };
+    
+    return () => {
+      globalMerchantSaleCallback = null;
+    };
+  }, [eventLog]);
+
+  // Set up canning logging callbacks
+  useEffect(() => {
+    (window as any).globalCanningStartCallback = (recipeName: string, ingredients: string, processingTime: number, isAuto: boolean) => {
+      eventLog.addEvent('canning', isAuto ? `Auto-canning started: ${recipeName}` : `Started canning: ${recipeName}`, {
+        priority: 'minor',
+        details: `Using ${ingredients} (${processingTime}s)`,
+        icon: isAuto ? ICON_AUTOMATION : ICON_CANNING,
+        metadata: {
+          recipeName,
+          processingTime
+        }
+      });
+    };
+    
+    (window as any).globalCanningCompleteCallback = (recipeName: string, moneyEarned: number, knowledgeEarned: number, itemsProduced: number, isAuto: boolean) => {
+      const bonusText = itemsProduced > 1 ? ` (${itemsProduced} items!)` : '';
+      eventLog.addEvent('canning', isAuto ? `Auto-canning completed: ${recipeName}` : `Completed canning: ${recipeName}`, {
+        priority: 'normal',
+        details: `Earned $${moneyEarned.toFixed(2)} and ${knowledgeEarned} knowledge${bonusText}`,
+        icon: isAuto ? '✅' : '🎉',
+        metadata: {
+          recipeName,
+          moneyGained: moneyEarned,
+          knowledgeGained: knowledgeEarned
+        }
+      });
+    };
+    
+    return () => {
+      (window as any).globalCanningStartCallback = null;
+      (window as any).globalCanningCompleteCallback = null;
+    };
+  }, [eventLog]);
+
+  // Set up achievement/milestone logging callback
+  useEffect(() => {
+    globalAchievementUnlockCallback = (achievement: any) => {
+      const rewardText = achievement.reward 
+        ? (() => {
+            const parts: string[] = [];
+            if (achievement.reward.money) parts.push(`+$${achievement.reward.money}`);
+            if (achievement.reward.knowledge) parts.push(`+${achievement.reward.knowledge} knowledge`);
+            return parts.length > 0 ? ` (${parts.join(', ')})` : '';
+          })()
+        : '';
+      
+      eventLog.addEvent('milestone', `Achievement unlocked: ${achievement.name}`, {
+        priority: 'important',
+        details: `${achievement.description}${rewardText}`,
+        icon: '🏆',
+        metadata: {
+          // Store achievement details in metadata
+        }
+      });
+    };
+    
+    return () => {
+      globalAchievementUnlockCallback = null;
+    };
+  }, [eventLog]);
 
   // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
@@ -858,13 +1121,14 @@ function App() {
           achievements,
           totalUnlocked,
           lastUnlockedId
-        }
+        },
+        eventLogState: eventLog.getState()
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -961,19 +1225,119 @@ function App() {
   const droughtDaysRef = useRef(0);
   const stormDaysRef = useRef(0);
   const heatwaveDaysRef = useRef(0);
+  const previousWeatherRef = useRef(currentWeather);
+  const lastDayProcessedRef = useRef(day);
+  const previousSeasonRef = useRef(season);
+  const previousVeggieGrowthRef = useRef<Map<string, number>>(new Map());
+  
+  // Track growth completions
   useEffect(() => {
-  const rainChance = RAIN_CHANCES[season] ?? 0.2;
-  const droughtChance = DROUGHT_CHANCES[season] ?? 0.03;
-  const stormChance = STORM_CHANCES[season] ?? 0.03;
-  const heatwaveChance = 0.01; // Example: 1% chance per day
+    veggies.forEach((veggie) => {
+      if (!veggie.unlocked) return;
+      
+      const prevGrowth = previousVeggieGrowthRef.current.get(veggie.name) || 0;
+      
+      // Check if this veggie just completed growth (crossed 100% threshold)
+      if (prevGrowth < 100 && veggie.growth >= 100) {
+        const growthBonus = getVeggieGrowthBonus(veggie, season, currentWeather, greenhouseOwned, irrigationOwned);
+        const bonusPercent = ((growthBonus / veggie.growthRate) * 100 - 100).toFixed(0);
+        
+        let bonusText = '';
+        if (growthBonus > veggie.growthRate) {
+          bonusText = ` (+${bonusPercent}% bonus)`;
+        } else if (growthBonus < veggie.growthRate) {
+          bonusText = ` (${bonusPercent}% penalty)`;
+        }
+        
+        eventLog.addEvent('growth', `${veggie.name} ready to harvest`, {
+          priority: 'normal',
+          details: `Growth completed${bonusText}`,
+          icon: ICON_GROWING,
+          metadata: {
+            veggieName: veggie.name
+          }
+        });
+      }
+      
+      // Update the tracked growth value
+      previousVeggieGrowthRef.current.set(veggie.name, veggie.growth);
+    });
+  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog]);
+  
+  // Track season changes
+  useEffect(() => {
+    if (previousSeasonRef.current !== season) {
+      // Log season change
+      const seasonEmojis: Record<string, string> = {
+        'Spring': SEASON_SPRING,
+        'Summer': SEASON_SUMMER,
+        'Fall': SEASON_FALL,
+        'Winter': SEASON_WINTER
+      };
+      
+      const seasonDetails: Record<string, string> = {
+        'Spring': 'Bonus growth for: Radish, Lettuce, Carrots, Cabbage, Onions',
+        'Summer': 'Bonus growth for: Green Beans, Zucchini, Cucumbers, Tomatoes, Peppers',
+        'Fall': 'Bonus growth for: Radish, Lettuce, Carrots, Broccoli, Cabbage',
+        'Winter': 'No bonuses. -90% growth penalty without Greenhouse'
+      };
+      
+      eventLog.addEvent('weather', `${season} has arrived`, {
+        priority: 'important',
+        details: seasonDetails[season],
+        icon: seasonEmojis[season],
+        metadata: {
+          weatherType: currentWeather,
+          previousWeather: currentWeather
+        }
+      });
+      
+      previousSeasonRef.current = season;
+    }
+  }, [season, currentWeather, eventLog]);
+  
+  useEffect(() => {
+    // Only process weather changes once per day
+    if (lastDayProcessedRef.current === day) {
+      return;
+    }
+    lastDayProcessedRef.current = day;
+    
+    const rainChance = RAIN_CHANCES[season] ?? 0.2;
+    const droughtChance = DROUGHT_CHANCES[season] ?? 0.03;
+    const stormChance = STORM_CHANCES[season] ?? 0.03;
+    const heatwaveChance = 0.01; // Example: 1% chance per day
+    
+    const prevWeather = previousWeatherRef.current;
+    
     // Only roll for events if weather is clear
     if (currentWeather === 'Clear') {
       const roll = Math.random();
       if (roll < rainChance) {
         if(season === 'Winter') {
           setCurrentWeather('Snow');
+          // Log snow event
+          eventLog.addEvent('weather', 'Snow begins to fall', {
+            priority: 'important',
+            details: 'All vegetables stop growing unless you have a Greenhouse',
+            icon: WEATHER_SNOW,
+            metadata: {
+              weatherType: 'Snow',
+              previousWeather: prevWeather
+            }
+          });
         } else {
           setCurrentWeather('Rain');
+          // Log rain event
+          eventLog.addEvent('weather', 'Rain begins to fall', {
+            priority: 'important',
+            details: 'All vegetables receive +20% growth bonus',
+            icon: WEATHER_RAIN,
+            metadata: {
+              weatherType: 'Rain',
+              previousWeather: prevWeather
+            }
+          });
         }
         rainDaysRef.current = 1;
         droughtDaysRef.current = 0;
@@ -981,18 +1345,54 @@ function App() {
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance) {
         setCurrentWeather('Drought');
+        // Log drought event
+        eventLog.addEvent('weather', 'Drought has begun', {
+          priority: 'critical',
+          details: irrigationOwned 
+            ? 'Irrigation system protecting crops from drought' 
+            : '-50% growth penalty. Consider purchasing Irrigation',
+          icon: WEATHER_DROUGHT,
+          metadata: {
+            weatherType: 'Drought',
+            previousWeather: prevWeather
+          }
+        });
         droughtDaysRef.current = 1;
         rainDaysRef.current = 0;
         stormDaysRef.current = 0;
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance + stormChance) {
         setCurrentWeather('Storm');
+        // Log storm event
+        eventLog.addEvent('weather', 'Severe storm approaching', {
+          priority: 'important',
+          details: 'All vegetables receive +10% growth bonus',
+          icon: WEATHER_STORM,
+          metadata: {
+            weatherType: 'Storm',
+            previousWeather: prevWeather
+          }
+        });
         stormDaysRef.current = 1;
         rainDaysRef.current = 0;
         droughtDaysRef.current = 0;
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance + stormChance + heatwaveChance) {
         setCurrentWeather('Heatwave');
+        // Log heatwave event
+        eventLog.addEvent('weather', 'Heatwave has begun', {
+          priority: 'critical',
+          details: season === 'Summer' 
+            ? '-30% growth penalty in Summer'
+            : season === 'Winter'
+            ? '+20% growth bonus in Winter'
+            : '+20% bonus to summer vegetables',
+          icon: WEATHER_HEATWAVE,
+          metadata: {
+            weatherType: 'Heatwave',
+            previousWeather: prevWeather
+          }
+        });
         heatwaveDaysRef.current = 1;
         rainDaysRef.current = 0;
         droughtDaysRef.current = 0;
@@ -1008,7 +1408,18 @@ function App() {
     if (currentWeather === 'Rain' || currentWeather === 'Snow') {
       rainDaysRef.current++;
       if (rainDaysRef.current > 3) {
+        const weatherThatCleared = currentWeather; // Capture before state change
         setCurrentWeather('Clear');
+        // Log weather clearing
+        eventLog.addEvent('weather', `${weatherThatCleared === 'Snow' ? 'Snow' : 'Rain'} has cleared`, {
+          priority: 'normal',
+          details: 'Weather returns to normal',
+          icon: WEATHER_CLEAR,
+          metadata: {
+            weatherType: 'Clear',
+            previousWeather: weatherThatCleared
+          }
+        });
         rainDaysRef.current = 0;
       }
     }
@@ -1018,6 +1429,16 @@ function App() {
       droughtDaysRef.current++;
       if (droughtDaysRef.current > 5) {
         setCurrentWeather('Clear');
+        // Log drought ending
+        eventLog.addEvent('weather', 'Drought has ended', {
+          priority: 'normal',
+          details: 'Weather returns to normal',
+          icon: WEATHER_CLEAR,
+          metadata: {
+            weatherType: 'Clear',
+            previousWeather: 'Drought'
+          }
+        });
         droughtDaysRef.current = 0;
       }
     }
@@ -1026,6 +1447,16 @@ function App() {
       stormDaysRef.current++;
       if (stormDaysRef.current > 2) {
         setCurrentWeather('Clear');
+        // Log storm ending
+        eventLog.addEvent('weather', 'Storm has passed', {
+          priority: 'normal',
+          details: 'Weather returns to normal',
+          icon: WEATHER_CLEAR,
+          metadata: {
+            weatherType: 'Clear',
+            previousWeather: 'Storm'
+          }
+        });
         stormDaysRef.current = 0;
       }
     }
@@ -1036,17 +1467,40 @@ function App() {
         // If heatwave was in summer, trigger drought next
         if (season === 'Summer') {
           setCurrentWeather('Drought');
+          // Log heatwave causing drought
+          eventLog.addEvent('weather', 'Heatwave causes drought', {
+            priority: 'critical',
+            details: 'The intense heat has dried out the soil',
+            icon: WEATHER_HEATWAVE,
+            metadata: {
+              weatherType: 'Drought',
+              previousWeather: 'Heatwave'
+            }
+          });
           droughtDaysRef.current = 1;
           rainDaysRef.current = 0;
           stormDaysRef.current = 0;
           heatwaveDaysRef.current = 0;
         } else {
           setCurrentWeather('Clear');
+          // Log heatwave ending
+          eventLog.addEvent('weather', 'Heatwave has ended', {
+            priority: 'normal',
+            details: 'Weather returns to normal',
+            icon: WEATHER_CLEAR,
+            metadata: {
+              weatherType: 'Clear',
+              previousWeather: 'Heatwave'
+            }
+          });
           heatwaveDaysRef.current = 0;
         }
       }
     }
-  }, [day, season, currentWeather]);
+    
+    // Update previous weather ref at the end
+    previousWeatherRef.current = currentWeather;
+  }, [day, season, eventLog, irrigationOwned, setCurrentWeather, setKnowledge]);
   const v = veggies[activeVeggie];
   const growthMultiplier = getVeggieGrowthBonus(
     v,
@@ -1105,20 +1559,13 @@ function App() {
       <div className={styles.mainContent}>
         <header role="banner">
           <HeaderBar
-            experience={experience}
-            money={money}
-            farmCost={farmCost}
-            farmTier={farmTier}
-            totalPlotsUsed={totalPlotsUsed}
-            maxPlots={maxPlots}
-            knowledge={knowledge}
             setShowInfoOverlay={setShowInfoOverlay}
             setShowSettingsOverlay={setShowSettingsOverlay}
             setShowAchievements={setShowAchievements}
+            setShowEventLog={setShowEventLog}
             totalAchievements={achievements.length}
             unlockedAchievements={totalUnlocked}
-            handleBuyLargerFarm={handleBuyLargerFarm}
-            formatNumber={formatNumber}
+            unreadEventCount={eventLog.unreadCount}
           />
         </header>
 
@@ -1135,6 +1582,10 @@ function App() {
             veggies={veggies}
             setShowAdvancedStash={setShowAdvancedStash}
             formatNumber={formatNumber}
+            experience={experience}
+            farmCost={farmCost}
+            farmTier={farmTier}
+            handleBuyLargerFarm={handleBuyLargerFarm}
           />
         </aside>
 
@@ -1324,6 +1775,18 @@ function App() {
     <AchievementNotification
       achievement={lastUnlockedAchievement}
       onClose={clearLastUnlocked}
+    />
+
+    {/* Event Log Overlay */}
+    <EventLogOverlay
+      visible={showEventLog}
+      onClose={() => setShowEventLog(false)}
+      entries={eventLog.entries}
+      unreadCount={eventLog.unreadCount}
+      onMarkAsRead={eventLog.markAllAsRead}
+      onClearAll={eventLog.clearEvents}
+      getFilteredEvents={eventLog.getFilteredEvents}
+      getCategoryCounts={eventLog.getCategoryCounts}
     />
     </>
       )}
