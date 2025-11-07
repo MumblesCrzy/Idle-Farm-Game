@@ -18,6 +18,7 @@ interface UseAchievementsReturn {
   lastUnlockedId: string | null;
   checkAchievements: (gameState: GameStateForAchievements) => Achievement | null;
   clearLastUnlocked: () => void;
+  resetAchievements: () => void;
 }
 
 export function useAchievements(
@@ -124,11 +125,24 @@ export function useAchievements(
     }));
   }, []);
 
+  // Reset all achievements to initial locked state
+  const resetAchievements = useCallback(() => {
+    setAchievementState({
+      achievements: INITIAL_ACHIEVEMENTS.map(ach => ({
+        ...ach,
+        unlocked: false
+      })),
+      totalUnlocked: 0,
+      lastUnlockedId: null
+    });
+  }, []);
+
   return {
     achievements: achievementState.achievements,
     totalUnlocked: achievementState.totalUnlocked,
     lastUnlockedId: achievementState.lastUnlockedId,
     checkAchievements,
-    clearLastUnlocked
+    clearLastUnlocked,
+    resetAchievements
   };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+// import React, { useState, useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './SettingsOverlay.module.css';
 
@@ -22,23 +22,23 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
   handleResetGame
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
-  const [itchViewport, setItchViewport] = useState(false);
+  // const [itchViewport, setItchViewport] = useState(false);
   
-  // Check for itch viewport mode on mount
-  useEffect(() => {
-    setItchViewport(document.body.classList.contains('itch-viewport'));
-  }, [visible]);
+  // // Check for itch viewport mode on mount
+  // useEffect(() => {
+  //   setItchViewport(document.body.classList.contains('itch-viewport'));
+  // }, [visible]);
   
-  const toggleItchViewport = () => {
-    const newValue = !itchViewport;
-    setItchViewport(newValue);
+  // const toggleItchViewport = () => {
+  //   const newValue = !itchViewport;
+  //   setItchViewport(newValue);
     
-    if (newValue) {
-      document.body.classList.add('itch-viewport');
-    } else {
-      document.body.classList.remove('itch-viewport');
-    }
-  };
+  //   if (newValue) {
+  //     document.body.classList.add('itch-viewport');
+  //   } else {
+  //     document.body.classList.remove('itch-viewport');
+  //   }
+  // };
   
   if (!visible) return null;
 

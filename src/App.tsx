@@ -21,6 +21,16 @@ let globalMerchantSaleCallback: ((totalMoney: number, veggiesSold: Array<{ name:
 
 // Module-level achievement unlock callback for event logging
 let globalAchievementUnlockCallback: ((achievement: any) => void) | null = null;
+
+// Module-level achievement reset function
+let globalResetAchievements: (() => void) | null = null;
+
+// Module-level event log clear function
+let globalClearEventLog: (() => void) | null = null;
+
+// Module-level flag to prevent auto-save after game reset
+let justReset = false;
+
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
 import { PerformanceWrapper } from './components/PerformanceWrapper';
@@ -51,7 +61,7 @@ import {
   veggieSeasonBonuses,
   GAME_STORAGE_KEY
 } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, ICON_TROPHY, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -247,10 +257,22 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Calculate starting experience based on farm tier to unlock appropriate vegetables
     // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
     const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
+    
+    // Reset veggies with fresh auto-purchaser configs
+    const resetVeggies = initialVeggies.map(v => ({
+      ...v,
+      autoPurchasers: createAutoPurchaserConfigs(
+        v.autoPurchasers[0].cost,
+        v.autoPurchasers[1].cost,
+        v.autoPurchasers[2].cost,
+        v.autoPurchasers[3].cost
+      )
+    }));
+    
     // Save current state of irrigation
     // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
     // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
-    setVeggies(initialVeggies.map(v => ({ ...v })));
+    setVeggies(resetVeggies);
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(startingExperience);
     setKnowledge(knowledgeKept);
@@ -279,7 +301,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     
     // Save to localStorage
     saveGameState({
-      veggies: initialVeggies.map(v => ({ ...v })),
+      veggies: resetVeggies,
       money: moneyKept > 0 ? moneyKept : 0,
       experience: startingExperience,
       knowledge: knowledgeKept,
@@ -328,7 +350,25 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
   // Reset game handler
   const resetGame = () => {
+  // Prevent auto-save from running for 5 seconds after reset
+  justReset = true;
+  setTimeout(() => {
+    justReset = false;
+  }, 5000);
+  
   localStorage.removeItem(GAME_STORAGE_KEY);
+  
+  // Create fresh veggies with reset auto-purchasers
+  const resetVeggies = initialVeggies.map(v => ({
+    ...v,
+    autoPurchasers: createAutoPurchaserConfigs(
+      v.autoPurchasers[0].cost,
+      v.autoPurchasers[1].cost,
+      v.autoPurchasers[2].cost,
+      v.autoPurchasers[3].cost
+    )
+  }));
+  
   setFarmTier(1);
   setDay(1);
   setTotalDaysElapsed(0);
@@ -337,7 +377,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setExperience(0);
   setKnowledge(0);
   setActiveVeggie(0);
-  setVeggies(initialVeggies.map(v => ({ ...v })));
+  setVeggies(resetVeggies);
   setAlmanacLevel(0);
   setAlmanacCost(10);
   setIrrigationOwned(false);
@@ -347,7 +387,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setCurrentWeather('Clear');
   setFarmCost(FARM_BASE_COST);
   setHighestUnlockedVeggie(0); // Reset highest unlocked veggie for complete reset
-  // Also force experience to 0 in localStorage
+  // Reset achievements to locked state
+  if (globalResetAchievements) {
+    globalResetAchievements();
+  }
+  // Clear event log
+  if (globalClearEventLog) {
+    globalClearEventLog();
+  }
+  // Save reset state to localStorage
   saveGameState({
     farmTier: 1,
     day: 1,
@@ -356,7 +404,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     experience: 0,
     knowledge: 0,
     activeVeggie: 0,
-    veggies: initialVeggies.map(v => ({ ...v })),
+    veggies: resetVeggies,
     almanacLevel: 0,
     almanacCost: 10,
     irrigationOwned: false,
@@ -882,7 +930,8 @@ function App() {
     totalUnlocked,
     lastUnlockedId,
     checkAchievements,
-    clearLastUnlocked
+    clearLastUnlocked,
+    resetAchievements
   } = useAchievements(
     initialAchievementState,
     (moneyReward, knowledgeReward) => {
@@ -896,6 +945,9 @@ function App() {
       }
     }
   );
+
+  // Make resetAchievements available to resetGame function
+  globalResetAchievements = resetAchievements;
 
   // Get the last unlocked achievement for notification
   const lastUnlockedAchievement = lastUnlockedId 
@@ -930,6 +982,9 @@ function App() {
     day,
     totalDaysElapsed
   });
+
+  // Make event log clear function available to resetGame
+  globalClearEventLog = eventLog.clearEvents;
 
   // Set up harvest logging callback
   useEffect(() => {
@@ -1088,9 +1143,12 @@ function App() {
   const justImportedRef = useRef<boolean>(false);
 
   const performSave = useCallback(() => {
-    // Don't auto-save if we just imported data
+    // Don't auto-save if we just imported data or just reset the game
     if (justImportedRef.current) {
       justImportedRef.current = false;
+      return;
+    }
+    if (justReset) {
       return;
     }
     
