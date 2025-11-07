@@ -193,6 +193,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setDay,
     totalDaysElapsed,
     setTotalDaysElapsed,
+    totalHarvests,
+    setTotalHarvests,
     activeVeggie,
     setActiveVeggie,
     farmTier,
@@ -372,6 +374,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setFarmTier(1);
   setDay(1);
   setTotalDaysElapsed(0);
+  setTotalHarvests(0);
   setMaxPlots(4);
   setMoney(0);
   setExperience(0);
@@ -404,6 +407,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     experience: 0,
     knowledge: 0,
     activeVeggie: 0,
+    totalHarvests: 0,
     veggies: resetVeggies,
     almanacLevel: 0,
     almanacCost: 10,
@@ -672,6 +676,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
     }
     
+    // Increment total harvests counter
+    setTotalHarvests((prev: number) => prev + 1);
+    
     // Call harvest callback if provided
     if (onHarvestCallback) {
       onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
@@ -827,7 +834,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
       {children}
     </GameContext.Provider>
   );
@@ -895,7 +902,7 @@ function App() {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
   }, []);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1161,6 +1168,7 @@ function App() {
         activeVeggie,
         day,
         totalDaysElapsed,
+        totalHarvests,
         globalAutoPurchaseTimer,
         greenhouseOwned,
         heirloomOwned,
@@ -1186,7 +1194,7 @@ function App() {
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -1200,9 +1208,9 @@ function App() {
       veggiesUnlocked,
       canningItemsTotal,
       farmTier,
-      totalHarvests: 0 // This would need to be tracked separately if needed
+      totalHarvests
     });
-  }, [money, experience, knowledge, veggies, canningState, farmTier, checkAchievements]);
+  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, checkAchievements]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed

@@ -106,6 +106,10 @@ export interface GameState {
   totalDaysElapsed: number;
   setTotalDaysElapsed: React.Dispatch<React.SetStateAction<number>>;
   
+  // Statistics
+  totalHarvests: number;
+  setTotalHarvests: React.Dispatch<React.SetStateAction<number>>;
+  
   // Auto-Purchase System
   globalAutoPurchaseTimer: number;
   setGlobalAutoPurchaseTimer: React.Dispatch<React.SetStateAction<number>>;

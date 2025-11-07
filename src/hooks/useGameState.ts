@@ -22,6 +22,7 @@ interface LoadedGameState {
   maxPlots?: number;
   highestUnlockedVeggie?: number;
   globalAutoPurchaseTimer?: number;
+  totalHarvests?: number;
 }
 
 interface UseGameStateParams {
@@ -71,6 +72,9 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
   // Time state
   const [day, setDay] = useState(loadedState?.day ?? 1);
   const [totalDaysElapsed, setTotalDaysElapsed] = useState(loadedState?.totalDaysElapsed ?? 0);
+
+  // Statistics state
+  const [totalHarvests, setTotalHarvests] = useState(loadedState?.totalHarvests ?? 0);
 
   // UI/Selection state
   const [activeVeggie, setActiveVeggie] = useState(loadedState?.activeVeggie ?? 0);
@@ -126,6 +130,10 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
     setDay,
     totalDaysElapsed,
     setTotalDaysElapsed,
+
+    // Statistics
+    totalHarvests,
+    setTotalHarvests,
 
     // Selection
     activeVeggie,
