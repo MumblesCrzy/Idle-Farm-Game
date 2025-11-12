@@ -6,6 +6,9 @@ import SettingsOverlay from './components/SettingsOverlay';
 import EventLogOverlay from './components/EventLogOverlay';
 import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
+import TreeFarmTab from './components/TreeFarmTab';
+import WorkshopTab from './components/WorkshopTab';
+import ShopfrontTab from './components/ShopfrontTab';
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
@@ -43,6 +46,7 @@ import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useEventLog } from './hooks/useEventLog';
+import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import type { Veggie, GameState } from './types/game';
 import {
@@ -61,7 +65,7 @@ import {
   veggieSeasonBonuses,
   GAME_STORAGE_KEY
 } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -222,6 +226,22 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     heirloomMoneyCost,
     heirloomKnowledgeCost
   } = gameState;
+
+  // Initialize Christmas Tree Shop event
+  const [initialChristmasState] = useState(() => {
+    try {
+      const loaded = getLoadedState();
+      return loaded?.christmasEventState || undefined;
+    } catch (error) {
+      console.error('Error loading Christmas event state:', error);
+      return undefined;
+    }
+  });
+
+  const christmasEvent: UseChristmasEventReturn = useChristmasEvent({
+    initialState: initialChristmasState,
+    farmTier,
+  });
 
   // Irrigation upgrade handler
   const irrigationCost = IRRIGATION_COST;
@@ -805,11 +825,13 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Day counter timer with auto-sell and auto-purchase logic - using requestAnimationFrame for Chrome compatibility
   const autoSellOwnedRef = useRef(autoSellOwned);
   const handleSellRef = useRef(handleSell);
+  const christmasEventRef = useRef(christmasEvent);
   
   useEffect(() => {
     autoSellOwnedRef.current = autoSellOwned;
     handleSellRef.current = handleSell;
-  }, [autoSellOwned, handleSell]);
+    christmasEventRef.current = christmasEvent;
+  }, [autoSellOwned, handleSell, christmasEvent]);
   
   useGameLoop(() => {
     setTotalDaysElapsed((total: number) => total + 1);
@@ -829,12 +851,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       
       return newDay;
     });
+    
+    // Process Christmas tree growth each day
+    if (christmasEventRef.current?.isEventActive) {
+      christmasEventRef.current.processTreeGrowth();
+    }
   }, 1000, []); // Empty deps - refs prevent loop restart
 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent }}>
       {children}
     </GameContext.Provider>
   );
@@ -868,7 +895,8 @@ function App() {
   const [showEventLog, setShowEventLog] = useState(false);
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'growing' | 'canning'>('growing');
+  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'christmas'>('growing');
+  const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
   
   // Load initial canning state fresh each time
   const [initialCanningState] = useState(() => {
@@ -902,7 +930,7 @@ function App() {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
   }, []);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent } = useGame();
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1188,13 +1216,14 @@ function App() {
           totalUnlocked,
           lastUnlockedId
         },
-        eventLogState: eventLog.getState()
+        eventLogState: eventLog.getState(),
+        christmasEventState: christmasEvent?.eventState
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -1620,7 +1649,13 @@ function App() {
     >
       {({ handleExportSave, handleImportSave, handleResetGame }) => (
     <>
-    <ArchieIcon setMoney={setMoney} money={money} experience={experience} totalPlotsUsed={totalPlotsUsed} />
+    <ArchieIcon 
+      setMoney={setMoney} 
+      money={money} 
+      experience={experience} 
+      totalPlotsUsed={totalPlotsUsed}
+      isChristmasEventActive={christmasEvent?.isEventActive ?? false}
+    />
     <div className={styles.container}>
       <div className={styles.mainContent}>
         <header role="banner">
@@ -1652,6 +1687,8 @@ function App() {
             farmCost={farmCost}
             farmTier={farmTier}
             handleBuyLargerFarm={handleBuyLargerFarm}
+            holidayCheer={christmasEvent?.holidayCheer ?? 0}
+            isChristmasEventActive={christmasEvent?.isEventActive ?? false}
           />
         </aside>
 
@@ -1698,15 +1735,47 @@ function App() {
                 gap: '0.5rem',
                 flexDirection: 'column'
               }}
-              title={canningUnlocked ? 'Canning System' : `Canning unlocks at ${Math.round(5000 - experience).toLocaleString()} more experience`}
+              title={canningUnlocked ? 'Canning System' : `Canning unlocks at 5000 Growing experience`}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <img src={ICON_CANNING} alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
                 Canning
               </div>
-              {!canningUnlocked && (
+              {/* {!canningUnlocked && (
                 <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
                   Req: {Math.round(5000 - experience).toLocaleString()} exp
+                </div>
+              )} */}
+            </button>
+            <button
+              onClick={() => christmasEvent?.isEventActive ? setActiveTab('christmas') : null}
+              disabled={!christmasEvent?.isEventActive}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: christmasEvent?.isEventActive 
+                  ? (activeTab === 'christmas' ? '#B80000' : '#3A3638')
+                  : '#666',
+                color: christmasEvent?.isEventActive ? '#ECEDE8' : '#bbb',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: christmasEvent?.isEventActive ? 'pointer' : 'not-allowed',
+                fontWeight: activeTab === 'christmas' ? 'bold' : 'normal',
+                fontSize: '1rem',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexDirection: 'column'
+              }}
+              title={christmasEvent?.isEventActive ? 'Christmas Tree Shop (Nov 1 - Dec 25)' : 'Available November 1st - December 25th'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <img src={TREE_DECORATED} alt="Tree Shop" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: christmasEvent?.isEventActive ? 1 : 0.5 }} />
+                Tree Shop
+              </div>
+              {!christmasEvent?.isEventActive && (
+                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                  Nov 1 - Dec 25
                 </div>
               )}
             </button>
@@ -1793,6 +1862,129 @@ function App() {
             onRecipeFilterChange={setCanningRecipeFilter}
             onRecipeSortChange={setCanningRecipeSort}
           />
+        </PerformanceWrapper>
+      )}
+
+      {/* Christmas Tree Shop Tab Content */}
+      {activeTab === 'christmas' && christmasEvent?.isEventActive && christmasEvent && (
+        <PerformanceWrapper id="ChristmasTab">
+          {/* Christmas Sub-Tab Navigation */}
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            marginBottom: '1rem',
+            borderBottom: '2px solid #ddd',
+            paddingBottom: '0.5rem',
+          }}>
+            <button
+              onClick={() => setChristmasSubTab('farm')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: christmasSubTab === 'farm' ? '#175034' : '#ECEDE8',
+                color: christmasSubTab === 'farm' ? 'white' : '#3A3638',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: christmasSubTab === 'farm' ? 'bold' : 'normal',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <img src={ICON_TREE_SHOP} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              Tree Farm
+            </button>
+            <button
+              onClick={() => setChristmasSubTab('workshop')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: christmasSubTab === 'workshop' ? '#23705D' : '#ECEDE8',
+                color: christmasSubTab === 'workshop' ? 'white' : '#3A3638',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: christmasSubTab === 'workshop' ? 'bold' : 'normal',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <img src={ICON_TREE_WORKSHOP} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              Workshop
+            </button>
+            <button
+              onClick={() => setChristmasSubTab('shopfront')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: christmasSubTab === 'shopfront' ? '#B80000' : '#ECEDE8',
+                color: christmasSubTab === 'shopfront' ? 'white' : '#3A3638',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: christmasSubTab === 'shopfront' ? 'bold' : 'normal',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <img src={ICON_TREE_STOREFRONT} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              Shopfront
+            </button>
+          </div>
+
+          {/* Tree Farm Sub-Tab */}
+          {christmasSubTab === 'farm' && (
+            <TreeFarmTab
+              treePlots={christmasEvent.treePlots}
+              materials={christmasEvent.materials}
+              treeInventory={christmasEvent.eventState.treeInventory}
+              upgrades={christmasEvent.eventState.upgrades}
+              holidayCheer={christmasEvent.holidayCheer}
+              plantTree={christmasEvent.plantTree}
+              harvestTree={christmasEvent.harvestTree}
+              harvestAllTrees={christmasEvent.harvestAllTrees}
+              purchaseUpgrade={christmasEvent.purchaseUpgrade}
+              formatNumber={formatNumber}
+            />
+          )}
+
+          {/* Workshop Sub-Tab */}
+          {christmasSubTab === 'workshop' && (
+            <WorkshopTab
+              materials={christmasEvent.materials}
+              treeInventory={christmasEvent.eventState.treeInventory}
+              craftItem={(recipeId) => christmasEvent.craftItem(recipeId, 1)}
+              decorateTree={christmasEvent.decorateTree}
+              addToDecorationQueue={christmasEvent.addToDecorationQueue}
+              automationEnabled={christmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false}
+              formatNumber={formatNumber}
+              upgrades={christmasEvent.eventState.upgrades}
+              holidayCheer={christmasEvent.holidayCheer}
+              purchaseUpgrade={christmasEvent.purchaseUpgrade}
+            />
+          )}
+
+          {/* Shopfront Sub-Tab */}
+          {christmasSubTab === 'shopfront' && (
+            <ShopfrontTab
+              treeInventory={christmasEvent.eventState.treeInventory}
+              materials={christmasEvent.materials}
+              sellTrees={christmasEvent.sellTrees}
+              sellGarland={(christmasEvent as any).sellGarland || (() => {})}
+              sellCandle={(christmasEvent as any).sellCandle || (() => {})}
+              demandMultiplier={christmasEvent.eventState.marketDemand.demandMultiplier}
+              holidayCheer={christmasEvent.holidayCheer}
+              upgrades={christmasEvent.eventState.upgrades}
+              dailyBonusAvailable={christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]}
+              claimDailyBonus={christmasEvent.claimDailyBonus}
+              passiveCheerPerSecond={christmasEvent.eventState.passiveCheerPerSecond}
+              formatNumber={formatNumber}
+              purchaseUpgrade={christmasEvent.purchaseUpgrade}
+            />
+          )}
         </PerformanceWrapper>
       )}
       </main>

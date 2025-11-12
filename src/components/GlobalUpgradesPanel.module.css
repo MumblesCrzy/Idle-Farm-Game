@@ -1,13 +1,18 @@
-.title {
-  text-align: center;
-  color: #2e7d32;
-  margin-bottom: 1rem;
-}
+/* Global Upgrades Panel Styles */
 
+/* Base styles */
 .upgradesContainer {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Color overrides for Growing theme */
+
+.title {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 1rem;
 }
 
 .progressSection {

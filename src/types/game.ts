@@ -177,6 +177,34 @@ export interface GameState {
   
   // Game Management
   resetGame: () => void;
+  
+  // Christmas Event (seasonal)
+  christmasEvent?: {
+    eventState: any;
+    isEventActive: boolean;
+    holidayCheer: number;
+    earnCheer: (amount: number) => void;
+    spendCheer: (amount: number) => boolean;
+    treePlots: any[];
+    materials: any;
+    plantTree: (plotIndex: number, treeType: 'pine' | 'spruce' | 'fir') => void;
+    harvestTree: (plotIndex: number) => void;
+    harvestAllTrees: () => void;
+    craftItem: (recipeId: string, quantity: number) => boolean;
+    decorateTree: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => boolean;
+    addToDecorationQueue: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => void;
+    removeFromQueue: (queueItemId: string) => void;
+    sellTrees: (variant: any, quantity: number) => void;
+    sellAllTrees: () => void;
+    claimDailyBonus: () => boolean;
+    totalTreesSold: number;
+    purchaseUpgrade: (upgradeId: string) => boolean;
+    claimMilestone: (milestoneId: string) => boolean;
+    toggleCosmetic: (cosmeticId: string) => void;
+    updatePassiveIncome: (deltaTime: number) => void;
+    processTreeGrowth: () => void;
+    checkEventActive: () => boolean;
+  };
 }
 
 // ============================================================================
@@ -188,7 +216,7 @@ export interface BaseTabProps {
   active: boolean;
 }
 
-export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning';
+export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas';
 
 export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';

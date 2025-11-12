@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react';
 import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
-import { SPECIAL_ARCHIE } from '../config/assetPaths';
+import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES } from '../config/assetPaths';
 
 interface ArchieIconProps {
   setMoney: (value: React.SetStateAction<number>) => void;
   money: number;
   experience: number;
   totalPlotsUsed: number;
+  isChristmasEventActive?: boolean;
 }
 
 const ARCHIE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, totalPlotsUsed }) => {
+const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, totalPlotsUsed, isChristmasEventActive = false }) => {
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak } = useArchie();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -38,12 +39,15 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, to
   const currentTime = Date.now();
   const timeSinceLastClick = currentTime - lastClickTime;
   const canAppear = timeSinceLastClick >= ARCHIE_COOLDOWN;
+
+  // Use pinecones image during Christmas event, otherwise use default Archie
+  const archieImage = isChristmasEventActive ? SPECIAL_ARCHIE_PINECONES : SPECIAL_ARCHIE;
   
   return (
     <>
       {canAppear && (
         <RandomIcon
-          imagePath={SPECIAL_ARCHIE}
+          imagePath={archieImage}
           minInterval={30000} // 30 seconds minimum before appearing
           maxInterval={120000} // 2 minutes maximum before appearing
           duration={180000} // Stays visible for 3 minutes

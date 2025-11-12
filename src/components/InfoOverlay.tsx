@@ -28,7 +28,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     { id: 'veggies', label: 'Veggie Upgrades' },
     { id: 'upgrades', label: 'Farm Upgrades' },
     { id: 'autopurchase', label: 'Auto-Purchasers' },
-    { id: 'canning', label: 'Canning System' }
+    { id: 'canning', label: 'Canning System' },
+    { id: 'christmas', label: '🎄 Tree Shop' }
   ];
 
   const categoryTitles: Record<InfoCategory, string> = {
@@ -37,7 +38,8 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     veggies: 'Veggie Upgrades',
     upgrades: 'Farm Upgrades',
     autopurchase: 'Auto-Purchasers',
-    canning: 'Canning System'
+    canning: 'Canning System',
+    christmas: '🎄 Christmas Tree Shop'
   };
 
   return (
@@ -555,6 +557,57 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Manage Ingredients:</strong> Keep a good stock of common vegetables for consistent canning</li>
                   <li><strong>Sort by Profit:</strong> Default sorting helps maximize income per time invested</li>
                   <li><strong>Batch Processing:</strong> Upgrade simultaneous processes to handle multiple recipes</li>
+                </ul>
+              </div>
+            )}
+
+            {selectedInfoCategory === 'christmas' && (
+              <div>
+                <h4 className={styles.sectionTitle}>
+                  🎄 Christmas Tree Shop Event
+                </h4>
+                <p>The Christmas Tree Shop is a seasonal event available from <strong>November 1st - December 25th</strong>. Grow Christmas trees, craft decorations, and sell decorated trees to earn Holiday Cheer!</p>
+                
+                <h5>🌲 Tree Farming:</h5>
+                <ul>
+                  <li><strong>Growth Time:</strong> Trees take 5-7 in-game years to grow (varies by type)</li>
+                  <li><strong>Tree Types:</strong> Pine (7 years), Spruce (6 years), Fir (5 years)</li>
+                  <li><strong>Harvesting:</strong> Harvest mature trees to collect Wood, Pinecones, and Branches</li>
+                  <li><strong>Perfect Trees:</strong> ⭐ Perfect trees give 2x materials and 10 Holiday Cheer (vs 5 for normal)</li>
+                  <li><strong>Luxury Trees:</strong> ✨ Luxury trees give 3x materials and 15 Holiday Cheer</li>
+                  <li><strong>Plot Expansion:</strong> Start with 6 plots, upgrade to unlock up to 12 plots</li>
+                </ul>
+
+                <h5>🎨 Workshop (Coming Soon):</h5>
+                <ul>
+                  <li><strong>Craft Decorations:</strong> Use materials to craft ornaments, garland, and candles</li>
+                  <li><strong>Decorate Trees:</strong> Add decorations to trees before selling for bonus value</li>
+                  <li><strong>Automation Queue:</strong> Unlock Elves' Bench to automate decoration crafting</li>
+                </ul>
+
+                <h5>🏪 Shopfront (Coming Soon):</h5>
+                <ul>
+                  <li><strong>Sell Trees:</strong> Sell decorated trees for Holiday Cheer</li>
+                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +10% garland, +15% candles)</li>
+                  <li><strong>Demand Multiplier:</strong> Prices increase as Christmas approaches</li>
+                  <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day</li>
+                </ul>
+
+                <h5>⬆️ Stage 1 Upgrades (Evergreen Farming):</h5>
+                <ul>
+                  <li><strong>Pine/Spruce/Fir Saplings:</strong> Unlock new tree types</li>
+                  <li><strong>Fertilized Soil:</strong> +25% growth speed for all trees</li>
+                  <li><strong>Greenhouse Extension:</strong> Protect trees from snowstorms</li>
+                  <li><strong>Evergreen Essence:</strong> 10% chance for Perfect Trees</li>
+                </ul>
+
+                <h5>🎁 Event Strategy:</h5>
+                <ul>
+                  <li>Start by planting Pine trees (unlocked by default)</li>
+                  <li>Upgrade to faster-growing trees (Spruce, Fir) as you earn Holiday Cheer</li>
+                  <li>Purchase Fertilized Soil early for +25% growth speed on all trees</li>
+                  <li>Perfect trees are rare but very valuable - watch for the ⭐ badge!</li>
+                  <li>Event progress persists year-to-year, so you can continue next season</li>
                 </ul>
               </div>
             )}

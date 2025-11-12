@@ -21,6 +21,7 @@ export const ICON_TROPHY = './Trophy.png';
 export const ICON_MERCHANT = './Merchant.png';
 export const ICON_SCROLL = './Scroll.png';
 export const ICON_DETAIL = './Detail.png';
+export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event currency
 
 // Season Images
 export const SEASON_SPRING = './Spring.png';
@@ -49,6 +50,28 @@ export const VEGGIE_CUCUMBERS = './Cucumbers.png';
 export const VEGGIE_GREEN_BEANS = './Green Beans.png';
 export const VEGGIE_ZUCCHINI = './Zucchini.png';
 export const VEGGIE_EGGPLANT = './Eggplant.png';
+
+// Christmas Tree Images
+export const TREE_SAPLING = './Sapling.png';
+export const TREE_PINE = './Pine Tree.png';
+export const TREE_SPRUCE = './Spruce.png';
+export const TREE_FIR = './Fir.png';
+export const TREE_DECORATED = './Decorated Tree.png';
+
+// Christmas Materials
+export const MATERIAL_WOOD = './Wood.png';
+export const MATERIAL_PINECONE = './Pinecone.png';
+export const MATERIAL_BRANCH = './Branch.png';
+
+// Christmas Decorations
+export const DECORATION_WREATH = './Wreath.png';
+export const DECORATION_GARLAND = './Garland.png';
+export const DECORATION_CANDLE = './Candle.png';
+
+// Christmas Event Icons
+export const ICON_TREE_SHOP = './Tree Shop.png';
+export const ICON_TREE_WORKSHOP = './Tree Workshop.png';
+export const ICON_TREE_STOREFRONT = './Tree Storefront.png';
 
 // Growing Tab Upgrade Images
 export const UPGRADE_FERTILIZER = './Fertilizer.png';
@@ -79,6 +102,7 @@ export const CANNING_CANNER = './Canner.png';
 
 // Special Images
 export const SPECIAL_ARCHIE = './Archie.png';
+export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones.png';
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
 
@@ -163,6 +187,29 @@ export const ALL_IMAGES = [
   CANNING_BATCH_CANNING,
   CANNING_CANNER,
   
+  // Christmas tree images
+  TREE_SAPLING,
+  TREE_PINE,
+  TREE_SPRUCE,
+  TREE_FIR,
+  TREE_DECORATED,
+  
+  // Christmas materials
+  MATERIAL_WOOD,
+  MATERIAL_PINECONE,
+  MATERIAL_BRANCH,
+  
+  // Christmas decorations
+  DECORATION_WREATH,
+  DECORATION_GARLAND,
+  DECORATION_CANDLE,
+  
+  // Christmas event icons
+  ICON_TREE_SHOP,
+  ICON_TREE_WORKSHOP,
+  ICON_TREE_STOREFRONT,
+  
   // Special images
   SPECIAL_ARCHIE,
+  SPECIAL_ARCHIE_PINECONES,
 ];

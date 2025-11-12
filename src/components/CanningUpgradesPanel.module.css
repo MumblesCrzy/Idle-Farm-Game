@@ -1,3 +1,6 @@
+/* Canning Upgrades Panel Styles */
+
+/* Base styles */
 .upgradesContainer {
   display: flex;
   flex-direction: column;
@@ -6,8 +9,6 @@
 
 .button {
   padding: 0.4rem 0.6rem;
-  background: #4a5568;
-  color: white;
   border: none;
   border-radius: 3px;
   cursor: default;
@@ -19,6 +20,59 @@
   transition: all 0.2s;
 }
 
+.imageWrapper {
+  width: 2.5em;
+  height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.image {
+  width: 2.5em;
+  height: 2.5em;
+  object-fit: contain;
+}
+
+.content {
+  flex: 1;
+  text-align: left;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.level {
+  font-weight: normal;
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.description {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.effect {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.cost {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Color overrides for Canning theme */
+
+.button {
+  background: #4a5568;
+  color: white;
+}
+
 .button.canAfford {
   background: #703c01ff;
   border: 2px solid #ffeb3b;
@@ -28,7 +82,6 @@
 
 .button.canAfford:hover {
   background: #8a4c01;
-  transform: translateY(-1px);
   box-shadow: 0 0 8px 2px #ffe066;
 }
 
@@ -52,50 +105,18 @@
   background: #5a6578;
 }
 
-.imageWrapper {
-  width: 2.5em;
-  height: 2.5em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image {
-  width: 2.5em;
-  height: 2.5em;
-  object-fit: contain;
-}
-
-.content {
-  flex: 1;
-  text-align: left;
-}
-
-.name {
-  font-weight: bold;
-  font-size: 14px;
-}
-
 .level {
   color: #ccc;
-  font-weight: normal;
-  margin-left: 4px;
 }
 
 .description {
-  font-size: 11px;
   color: #ccc;
-  margin-top: 2px;
 }
 
 .effect {
-  font-size: 12px;
   color: #fff;
-  margin-top: 4px;
 }
 
 .cost {
-  font-size: 12px;
   color: #ccc;
-  margin-top: 4px;
 }

@@ -1,0 +1,532 @@
+/* Shopfront Tab Styles */
+/*
+ * Christmas Tree Shop Color Palette:
+ * Primary Red: #B80000 - Accents, important actions
+ * Dark Red: #7D0000 - Depth, shadows
+ * Gold: #D0A93D - Highlights, secondary actions
+ * Light Gold: #F8E689 - Hover states, subtle highlights
+ * Dark Green: #175034 - Primary UI, text
+ * Teal: #23705D - Borders, accents
+ * Off White: #ECEDE8 - Backgrounds, light elements
+ * Dark Gray: #3A3638 - Secondary text, disabled states
+ */
+
+.container {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0.75rem;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* =================================================================== */
+/* MAIN TITLE & DEMAND BANNER */
+/* =================================================================== */
+
+.mainTitle {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.3rem;
+  color: #175034;
+  text-align: center;
+}
+
+.demandBanner {
+  background: linear-gradient(135deg, #B80000 0%, #7D0000 100%);
+  border: 3px solid #7D0000;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #ECEDE8;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
+}
+
+.demandLabel {
+  font-size: 1rem;
+}
+
+.demandMultiplier {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #F8E689;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.demandHint {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* PRICE CARDS GRID */
+/* =================================================================== */
+
+.priceCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.6rem;
+}
+
+/* =================================================================== */
+/* GARLAND SALES SECTION */
+/* =================================================================== */
+
+.garlandSection {
+  margin-top: 0.75rem;
+  background: linear-gradient(135deg, #F8E689, #ECEDE8);
+  border: 3px solid #D0A93D;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.garlandTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #175034;
+  text-align: center;
+}
+
+.garlandCard {
+  background: #ECEDE8;
+  border: 2px solid #D0A93D;
+  border-radius: 6px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.garlandInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.garlandStock {
+  color: #175034;
+  font-size: 1rem;
+}
+
+.garlandPrice {
+  color: #D0A93D;
+  font-size: 1.1rem;
+}
+
+.garlandButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* =================================================================== */
+/* PRICE CARDS */
+/* =================================================================== */
+
+.priceCard {
+  background: #ECEDE8;
+  border: 3px solid #175034;
+  border-radius: 8px;
+  padding: 0.6rem;
+  transition: all 0.2s;
+}
+
+.priceCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 80, 52, 0.3);
+}
+
+/* =================================================================== */
+/* CARD HEADER */
+/* =================================================================== */
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #23705D;
+}
+
+.treeEmoji {
+  font-size: 2.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeEmoji .treeImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.cheerIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.titleIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.cardTitle {
+  flex: 1;
+}
+
+.treeName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #175034;
+  margin-bottom: 0.25rem;
+}
+
+.treeQuantity {
+  font-size: 0.85rem;
+  color: #3A3638;
+}
+
+/* =================================================================== */
+/* PRICE INFO */
+/* =================================================================== */
+
+.priceInfo {
+  margin-bottom: 1rem;
+}
+
+.priceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.priceRow.finalPrice {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #23705D;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.priceLabel {
+  color: #3A3638;
+}
+
+.priceValue {
+  color: #175034;
+  font-weight: 600;
+}
+
+.multiplierValue {
+  color: #175034;
+  font-weight: 600;
+}
+
+.demandValue {
+  color: #B80000;
+  font-weight: 600;
+}
+
+/* =================================================================== */
+/* SELL CONTROLS */
+/* =================================================================== */
+
+.sellControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sellSlider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #23705D;
+  outline: none;
+  cursor: pointer;
+}
+
+.sellSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #D0A93D;
+  cursor: pointer;
+  border: 2px solid #ECEDE8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sellSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #D0A93D;
+  cursor: pointer;
+  border: 2px solid #ECEDE8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sliderLabel {
+  font-size: 0.85rem;
+  color: #3A3638;
+  text-align: center;
+}
+
+.totalValue {
+  color: #175034;
+  font-weight: 600;
+}
+
+.sellButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sellButton,
+.sellAllButton {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sellButton {
+  background: #175034;
+  color: #ECEDE8;
+}
+
+.sellButton:hover:not(:disabled) {
+  background: #23705D;
+  transform: translateY(-1px);
+}
+
+.sellButton:disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sellAllButton {
+  background: #B80000;
+  color: #ECEDE8;
+}
+
+.sellAllButton:hover {
+  background: #7D0000;
+  transform: translateY(-1px);
+}
+
+/* =================================================================== */
+/* EMPTY STATE */
+/* =================================================================== */
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: #ECEDE8;
+  border: 2px dashed #23705D;
+  border-radius: 8px;
+  color: #3A3638;
+}
+
+.emptyState p:first-child {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.emptyStateIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* =================================================================== */
+/* PASSIVE INCOME DISPLAY */
+/* =================================================================== */
+
+.passiveIncome {
+  background: linear-gradient(135deg, #D0A93D 0%, #B80000 100%);
+  border: 3px solid #7D0000;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  color: #ECEDE8;
+  box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
+}
+
+.passiveTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.passiveValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.passiveHint {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* DAILY BONUS */
+/* =================================================================== */
+
+.dailyBonus {
+  background: #ECEDE8;
+  border: 3px solid #B80000;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.bonusTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #B80000;
+  text-align: center;
+}
+
+.bonusDescription {
+  font-size: 0.85rem;
+  color: #3A3638;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.claimButton {
+  width: 100%;
+  padding: 0.5rem;
+  background: #B80000;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.claimButton:hover {
+  background: #7D0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
+}
+
+.bonusClaimed {
+  padding: 0.6rem;
+  background: #F8E689;
+  border-radius: 6px;
+  text-align: center;
+  color: #175034;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* =================================================================== */
+/* CUSTOMER FEED */
+/* =================================================================== */
+
+.customerFeed {
+  background: #ECEDE8;
+  border: 3px solid #175034;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.feedTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #175034;
+  text-align: center;
+}
+
+.feedMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.feedMessage {
+  padding: 0.5rem 0.75rem;
+  background: #F8E689;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #175034;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* CHEER DISPLAY */
+/* =================================================================== */
+
+.cheerDisplay {
+  background: linear-gradient(135deg, #175034 0%, #23705D 100%);
+  border: 3px solid #175034;
+  border-radius: 8px;
+  padding: 0.6rem;
+  text-align: center;
+  color: #ECEDE8;
+  box-shadow: 0 2px 8px rgba(23, 80, 52, 0.3);
+}
+
+.cheerLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  opacity: 0.9;
+}
+
+.cheerValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}

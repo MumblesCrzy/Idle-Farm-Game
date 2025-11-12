@@ -160,8 +160,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 ## Roadmap
 
 ### 🎯 Next Priority Features
-- **Weather & Event Log**: Track historical weather patterns and special events
-- **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush
+- **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush, Christmas Tree Shop
 
 ### 🔮 Future Features
 - **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.

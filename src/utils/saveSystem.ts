@@ -254,6 +254,9 @@ export interface ExtendedGameState {
     unreadCount?: number;
     lastReadId?: string;
   };
+  
+  // Christmas event state
+  christmasEventState?: any; // ChristmasEventState type from christmasEvent.ts
 }
 
 /** Current version number for canning save data format */

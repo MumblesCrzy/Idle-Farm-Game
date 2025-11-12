@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import type { Veggie } from '../types/game';
-import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE } from '../config/assetPaths';
+import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import styles from './StatsDisplay.module.css';
 
 interface StatsDisplayProps {
@@ -19,6 +19,8 @@ interface StatsDisplayProps {
   farmCost: number;
   farmTier: number;
   handleBuyLargerFarm: () => void;
+  holidayCheer?: number; // Optional: only shown during Christmas event
+  isChristmasEventActive?: boolean;
 }
 
 const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
@@ -36,7 +38,9 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
   experience,
   farmCost,
   farmTier,
-  handleBuyLargerFarm
+  handleBuyLargerFarm,
+  holidayCheer,
+  isChristmasEventActive
 }) => {
   return (
     <>
@@ -87,6 +91,12 @@ const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
           <img src={ICON_KNOWLEDGE} alt="" className={styles.statIcon} aria-hidden="true" />
           Knowledge: {formatNumber(knowledge, 2)}
         </span>
+        {isChristmasEventActive && holidayCheer !== undefined && (
+            <span className={styles.statItem}>
+              <img src={ICON_HOLIDAY_CHEER} alt="" className={styles.statIcon} aria-hidden="true" />
+              Holiday Cheer: {holidayCheer ?? 0}
+            </span>
+        )}
         <span className={styles.statItemWithButton}>
           <button
             onClick={() => setShowAdvancedStash(true)}

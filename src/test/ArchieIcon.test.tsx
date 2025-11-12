@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom/vitest'
 import ArchieIcon from '../components/ArchieIcon'
 import { ArchieProvider } from '../context/ArchieContext'
 
@@ -217,5 +218,19 @@ describe('ArchieIcon', () => {
     // since the actual logic is in the component
     expect(Date.now() - fiveMinutesAgo).toBeGreaterThanOrEqual(5 * 60 * 1000)
     expect(Date.now() - sixMinutesAgo).toBeGreaterThan(5 * 60 * 1000)
+  })
+
+  it('should use reindeer image when Christmas event is active', () => {
+    renderArchieIcon({ isChristmasEventActive: true })
+    
+    const img = screen.getByAltText('Archie')
+    expect(img).toHaveAttribute('src', './Archie Reindeer.png')
+  })
+
+  it('should use default image when Christmas event is inactive', () => {
+    renderArchieIcon({ isChristmasEventActive: false })
+    
+    const img = screen.getByAltText('Archie')
+    expect(img).toHaveAttribute('src', './Archie.png')
   })
 })

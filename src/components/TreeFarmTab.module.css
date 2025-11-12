@@ -1,0 +1,685 @@
+/* Tree Farm Tab Styles */
+/* Color Palette:
+   Primary Red: #B80000
+   Dark Red: #7D0000
+   Gold: #D0A93D
+   Light Gold: #F8E689
+   Dark Green: #175034
+   Teal: #23705D
+   Off White: #ECEDE8
+   Dark Gray: #3A3638
+*/
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* =================================================================== */
+/* LEFT COLUMN - Materials, Tree Plots, Selection, and Grid */
+/* =================================================================== */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+/* =================================================================== */
+/* RIGHT COLUMN - Upgrades */
+/* =================================================================== */
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+/* =================================================================== */
+/* COMBINED HEADER ROW */
+/* =================================================================== */
+
+.headerRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  background: #175034;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+/* =================================================================== */
+/* MATERIALS COMPACT (NO HEADER) */
+/* =================================================================== */
+
+.materialsCompact {
+  display: flex;
+  align-items: center;
+}
+
+.materialsList {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #ECEDE8;
+  border: 1px solid #23705D;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.materialIcon {
+  font-size: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.materialIcon .materialImage {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.materialLabel {
+  font-weight: 500;
+  color: #3A3638;
+  font-size: 0.9rem;
+}
+
+.materialValue {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #175034;
+}
+
+/* =================================================================== */
+/* PLOTS HEADER COMPACT */
+/* =================================================================== */
+
+.plotsHeaderCompact {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.plotsTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #175034;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.plotsTitle .titleIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* =================================================================== */
+/* TREE SELECTION COMPACT (NO HEADER) */
+/* =================================================================== */
+
+.treeSelectionCompact {
+  display: flex;
+  align-items: center;
+}
+
+.treeSelectorGrid {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.treeSelector {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border: 2px solid #175034;
+  border-radius: 6px;
+  background: #ECEDE8;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.treeSelector:hover:not(:disabled) {
+  background: #F8E689;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(23, 80, 52, 0.3);
+}
+
+.treeSelector.selected {
+  background: #175034;
+  color: #ECEDE8;
+  font-weight: bold;
+}
+
+.treeSelector.locked {
+  opacity: 0.6;
+  cursor: pointer;
+  border-color: #D0A93D;
+  background: #F8E689;
+}
+
+.treeSelector.locked:hover:not(:disabled) {
+  background: #F8E689;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(208, 169, 61, 0.3);
+}
+
+.treeSelector.cantAfford {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #3A3638;
+  background: #ECEDE8;
+}
+
+.treeSelector.cantAfford:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.treeSelectorIcon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeSelectorIcon .treeImage {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.cheerIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.treeSelectorName {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.treeSelectorCost {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* =================================================================== */
+/* UPGRADES PANEL - Base Styles */
+/* =================================================================== */
+
+.upgradesPanel {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.upgradesTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 1rem;
+  color: #175034;
+}
+
+.upgradesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upgradeCard {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 6px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+}
+
+.upgradeCard.owned {
+  background: #F8E689;
+  border-color: #D0A93D;
+}
+
+.upgradeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.upgradeName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #175034;
+}
+
+.ownedBadge {
+  font-size: 1.2rem;
+  color: #D0A93D;
+}
+
+.upgradeDescription {
+  font-size: 0.8rem;
+  color: #3A3638;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.upgradeEffect {
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: #175034;
+}
+
+.upgradeButton {
+  width: 100%;
+  padding: 0.5rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.upgradeButton:hover:not(:disabled) {
+  background: #23705D;
+  transform: translateY(-1px);
+}
+
+.upgradeButton.cantAfford,
+.upgradeButton:disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =================================================================== */
+/* PLOTS HEADER */
+/* =================================================================== */
+
+.plotsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #175034 0%, #23705D 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plotsTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #ECEDE8;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.harvestAllButton {
+  padding: 0.6rem 1rem;
+  background: #B80000;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.harvestAllButton:hover {
+  background: #7D0000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
+}
+
+.harvestAllIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.plotsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+/* =================================================================== */
+/* TREE PLOT */
+/* =================================================================== */
+
+.treePlot {
+  background: #ECEDE8;
+  border: 3px solid #23705D;
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+}
+
+.treePlot.empty {
+  border-color: #3A3638;
+  background: #ECEDE8;
+}
+
+.treePlot.ready {
+  border-color: #D0A93D;
+  background: #F8E689;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.treePlot.perfect {
+  border-color: #D0A93D;
+  background: linear-gradient(135deg, #F8E689 0%, #ECEDE8 100%);
+  box-shadow: 0 0 15px rgba(208, 169, 61, 0.3);
+}
+
+.treePlot.luxury {
+  border-color: #B80000;
+  background: linear-gradient(135deg, #F8E689 0%, #ECEDE8 100%);
+  box-shadow: 0 0 20px rgba(184, 0, 0, 0.4);
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(184, 0, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(184, 0, 0, 0.6), 0 0 40px rgba(208, 169, 61, 0.3);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(208, 169, 61, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(208, 169, 61, 0.4);
+  }
+}
+
+.plotHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid #23705D;
+}
+
+.plotNumber {
+  font-weight: 600;
+  color: #3A3638;
+  font-size: 0.8rem;
+}
+
+.qualityBadge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  background: #D0A93D;
+  color: #3A3638;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.plotContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Empty Plot */
+.emptyPlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.emptyPlotIcon {
+  font-size: 2rem;
+  opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyPlotIcon .treeImage {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.plantButton {
+  padding: 0.5rem 1rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plantButton:hover:not(:disabled) {
+  background: #23705D;
+  transform: translateY(-2px);
+}
+
+.plantButton:disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+}
+
+/* Growing Tree */
+.treeDisplay {
+  text-align: center;
+}
+
+.treeIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.treeIcon .treeImage {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.treeName {
+  font-weight: 600;
+  color: #175034;
+  font-size: 0.9rem;
+}
+
+.growthInfo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.growthLabel {
+  font-size: 0.8rem;
+  color: #3A3638;
+  text-align: center;
+}
+
+.growthTime {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #3A3638;
+}
+
+/* Harvest Button */
+.harvestButton {
+  padding: 0.5rem 1rem;
+  background: #B80000;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.harvestButton:hover {
+  background: #7D0000;
+  transform: scale(1.05);
+}
+
+.harvestIcon {
+  width: 16px;
+  height: 16px;
+}
+
+/* =================================================================== */
+/* MATERIALS DISPLAY (SIDEBAR VERTICAL) */
+/* =================================================================== */
+
+.materialsDisplay {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.materialsTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #175034;
+}
+
+.materialsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #ECEDE8;
+  border: 1px solid #23705D;
+  border-radius: 4px;
+}
+
+.materialIcon {
+  font-size: 1.2rem;
+}
+
+.materialLabel {
+  flex: 1;
+  font-weight: 500;
+  color: #3A3638;
+  font-size: 0.9rem;
+}
+
+.materialValue {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #175034;
+}
+
+/* Info Box */
+.infoBox {
+  background: #F8E689;
+  border: 2px solid #D0A93D;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.infoBox h4 {
+  margin: 0 0 0.75rem 0;
+  color: #175034;
+  font-size: 1rem;
+}
+
+.infoBox ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.infoBox li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #3A3638;
+  line-height: 1.4;
+}
+
+.infoBox li:last-child {
+  margin-bottom: 0;
+}
+
+/* =================================================================== */
+/* RESPONSIVE */
+/* =================================================================== */
+
+@media (max-width: 1400px) {
+  .plotsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .container {
+    flex-direction: column;
+  }
+  
+  .leftPanel,
+  .rightPanel {
+    width: 100%;
+  }
+}

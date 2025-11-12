@@ -1,0 +1,540 @@
+/* Workshop Tab Styles */
+/*
+ * Christmas Tree Shop Color Palette:
+ * Primary Red: #B80000 - Accents, important actions
+ * Dark Red: #7D0000 - Depth, shadows
+ * Gold: #D0A93D - Highlights, secondary actions
+ * Light Gold: #F8E689 - Hover states, subtle highlights
+ * Dark Green: #175034 - Primary UI, text
+ * Teal: #23705D - Borders, accents
+ * Off White: #ECEDE8 - Backgrounds, light elements
+ * Dark Gray: #3A3638 - Secondary text, disabled states
+ */
+
+.container {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 0.6rem;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* =================================================================== */
+/* MAIN TITLE */
+/* =================================================================== */
+
+.mainTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 1.2rem;
+  color: #175034;
+  text-align: center;
+}
+
+.sectionTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 1rem;
+  color: #175034;
+}
+
+/* =================================================================== */
+/* CRAFTING SECTION */
+/* =================================================================== */
+
+.craftingSection {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.recipesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+/* =================================================================== */
+/* RECIPE CARD - COMPACT */
+/* =================================================================== */
+
+.recipeCard {
+  background: #ECEDE8;
+  border: 2px solid #175034;
+  border-radius: 6px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recipeCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(23, 80, 52, 0.2);
+}
+
+.recipeCard.cantCraft {
+  border-color: #3A3638;
+  opacity: 0.7;
+}
+
+.recipeHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.recipeName {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #175034;
+  font-weight: 600;
+}
+
+.recipeInputs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.materialItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  background: #F8E689;
+  border: 1px solid #D0A93D;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.materialIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.decorationIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.materialItem.insufficient {
+  background: #ECEDE8;
+  border-color: #B80000;
+  color: #7D0000;
+}
+
+.arrow {
+  color: #175034;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.outputItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  background: #F8E689;
+  border: 1px solid #D0A93D;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #175034;
+  white-space: nowrap;
+}
+
+.craftButton {
+  padding: 0.5rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.craftButton:hover:not(.disabled) {
+  background: #23705D;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(23, 80, 52, 0.3);
+}
+
+.craftButton.disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =================================================================== */
+/* TREE DECORATION SECTION */
+/* =================================================================== */
+
+.decorationSection {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.decorationControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.warningMessage {
+  background: #F8E689;
+  border: 2px solid #D0A93D;
+  border-radius: 6px;
+  padding: 0.5rem;
+  color: #3A3638;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.treeSelector label,
+.decorationOptions label {
+  display: block;
+  font-weight: 600;
+  color: #175034;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.treeButtons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.treeButton {
+  flex: 1;
+  padding: 0.5rem;
+  background: #ECEDE8;
+  border: 2px solid #175034;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.treeButtonIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.cheerIcon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+.treeButton:hover {
+  background: #F8E689;
+  transform: translateY(-1px);
+}
+
+.treeButton.selected {
+  background: #175034;
+  color: #ECEDE8;
+}
+
+.decorationCheckboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.decorationOption {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  flex: 1 1 auto;
+  min-width: fit-content;
+}
+
+.decorationOption:hover:not(.unavailable) {
+  background: #F8E689;
+  border-color: #D0A93D;
+}
+
+.decorationOption.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.decorationOption input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.decorationOption.unavailable input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.decorateButton {
+  width: 100%;
+  padding: 0.5rem;
+  background: #B80000;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.decorateButton:hover:not(.disabled) {
+  background: #7D0000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
+}
+
+.decorateButton.disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =================================================================== */
+/* ELVES' BENCH */
+/* =================================================================== */
+
+.elvesBench {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.lockedMessage {
+  text-align: center;
+  padding: 2rem;
+  color: #3A3638;
+}
+
+.lockIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.benchControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.benchTreeSelector label,
+.benchDecorations label {
+  display: block;
+  font-weight: 600;
+  color: #175034;
+  margin-bottom: 0.5rem;
+}
+
+.benchSelect {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #175034;
+  border-radius: 6px;
+  background: #ECEDE8;
+  cursor: pointer;
+}
+
+.benchCheckboxes {
+  display: flex;
+  gap: 1rem;
+}
+
+.benchOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.benchOption:hover {
+  background: #F8E689;
+  border-color: #D0A93D;
+}
+
+.benchOption input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.queueButton {
+  padding: 1rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.queueButton:hover:not(.disabled) {
+  background: #23705D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 80, 52, 0.3);
+}
+
+.queueButton.disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =================================================================== */
+/* UPGRADES PANEL - Base Styles */
+/* =================================================================== */
+
+.upgradesPanel {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.upgradesTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  color: #175034;
+}
+
+.upgradesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.upgradeCard {
+  background: #ECEDE8;
+  border: 2px solid #23705D;
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s;
+}
+
+.upgradeCard.owned {
+  background: #F8E689;
+  border-color: #D0A93D;
+}
+
+.upgradeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.upgradeName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #175034;
+}
+
+.ownedBadge {
+  font-size: 1.2rem;
+  color: #D0A93D;
+}
+
+.upgradeDescription {
+  font-size: 0.85rem;
+  color: #3A3638;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.upgradeEffect {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #175034;
+}
+
+.upgradeButton {
+  width: 100%;
+  padding: 0.5rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.upgradeButton:hover:not(:disabled) {
+  background: #23705D;
+  transform: translateY(-1px);
+}
+
+.upgradeButton.cantAfford,
+.upgradeButton:disabled {
+  background: #3A3638;
+  color: #ECEDE8;
+  cursor: not-allowed;
+  transform: none;
+}
+
