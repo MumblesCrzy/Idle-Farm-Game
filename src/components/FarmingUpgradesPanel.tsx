@@ -1,18 +1,74 @@
 import React, { memo } from 'react';
+import UpgradeButton from './UpgradeButton';
 import type { EventUpgrade } from '../types/christmasEvent';
-import { ICON_HOLIDAY_CHEER, TREE_DECORATED } from '../config/assetPaths';
-import styles from './TreeFarmTab.module.css';
+import styles from './FarmingUpgradesPanel.module.css';
 
 interface FarmingUpgradesPanelProps {
   upgrades: EventUpgrade[];
   holidayCheer: number;
   purchaseUpgrade: (upgradeId: string) => boolean;
+  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
+
+// Custom Holiday Cheer upgrade button that matches UpgradeButton style
+interface HolidayCheerUpgradeButtonProps {
+  title: string;
+  imageSrc: string;
+  buttonText: string;
+  cost: number;
+  holidayCheer: number;
+  onClick: () => void;
+  isOwned?: boolean;
+  isMaxLevel?: boolean;
+  level?: number;
+  effect: string;
+  formatNumber: (num: number, decimalPlaces?: number) => string;
+}
+
+const HolidayCheerUpgradeButton: React.FC<HolidayCheerUpgradeButtonProps> = ({
+  title,
+  imageSrc,
+  buttonText,
+  cost,
+  holidayCheer,
+  onClick,
+  isOwned = false,
+  isMaxLevel = false,
+  level,
+  effect,
+  formatNumber
+}) => {
+  const canAfford = holidayCheer >= cost;
+  
+  // Use UpgradeButton but adapt it for Holiday Cheer
+  // We'll pass knowledge as holidayCheer and use 'knowledge' currency type with custom label
+  return (
+    <UpgradeButton
+      title={title}
+      imageSrc={imageSrc}
+      imageAlt={buttonText}
+      buttonText={buttonText}
+      money={0}
+      knowledge={holidayCheer}
+      cost={cost}
+      currencyType="knowledge"
+      currencyLabel="Cheer"
+      onClick={onClick}
+      disabled={!canAfford || isMaxLevel || isOwned}
+      isOwned={isOwned}
+      isMaxLevel={isMaxLevel}
+      level={level}
+      effect={effect}
+      formatNumber={formatNumber}
+    />
+  );
+};
 
 const FarmingUpgradesPanel: React.FC<FarmingUpgradesPanelProps> = memo(({ 
   upgrades, 
   holidayCheer, 
-  purchaseUpgrade 
+  purchaseUpgrade,
+  formatNumber
 }) => {
   // Filter out tree unlock upgrades since they're handled by tree selection buttons
   const farmingUpgrades = upgrades.filter(u => 
@@ -21,43 +77,50 @@ const FarmingUpgradesPanel: React.FC<FarmingUpgradesPanelProps> = memo(({
   );
   
   return (
-    <div className={styles.upgradesPanel}>
-      <h3 className={styles.upgradesTitle}>🌲 Farming Upgrades</h3>
-      <div className={styles.upgradesList}>
+    <>
+      <h2 className={styles.title}>Farming Upgrades</h2>
+      
+      <div className={styles.upgradesContainer}>
         {farmingUpgrades.map(upgrade => {
-          const canAfford = holidayCheer >= upgrade.cost;
+          const isRepeatable = upgrade.repeatable ?? false;
+          const currentLevel = upgrade.level ?? 0;
+          const maxLevel = upgrade.maxLevel ?? Infinity;
+          const isMaxLevel = isRepeatable && currentLevel >= maxLevel;
+          
+          // Calculate cost for next level if repeatable
+          const costScaling = upgrade.costScaling ?? 1.5;
+          const displayCost = isRepeatable 
+            ? Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel))
+            : upgrade.cost;
+          
+          // Create effect text
+          let effectText = upgrade.effect || upgrade.description;
           
           return (
-            <div 
-              key={upgrade.id} 
-              className={`${styles.upgradeCard} ${upgrade.owned ? styles.owned : ''}`}
-            >
-              <div className={styles.upgradeHeader}>
-                <span className={styles.upgradeName}>{upgrade.name}</span>
-                {upgrade.owned && <span className={styles.ownedBadge}>✓</span>}
-              </div>
-              <div className={styles.upgradeDescription}>{upgrade.description}</div>
-              {upgrade.effect && (
-                <div className={styles.upgradeEffect}>Effect: {upgrade.effect}</div>
-              )}
-              {!upgrade.owned && (
-                <button
-                  className={`${styles.upgradeButton} ${!canAfford ? styles.cantAfford : ''}`}
-                  onClick={() => purchaseUpgrade(upgrade.id)}
-                  disabled={!canAfford}
-                  title={!canAfford ? `Need ${upgrade.cost - holidayCheer} more Holiday Cheer` : 'Purchase upgrade'}
-                >
-                  {upgrade.cost} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> Holiday Cheer
-                </button>
-              )}
+            <div key={upgrade.id}>
+              <HolidayCheerUpgradeButton
+                title={upgrade.description}
+                imageSrc={upgrade.icon}
+                buttonText={upgrade.name}
+                cost={displayCost}
+                holidayCheer={holidayCheer}
+                onClick={() => purchaseUpgrade(upgrade.id)}
+                isOwned={upgrade.owned && !isRepeatable}
+                isMaxLevel={isMaxLevel}
+                level={isRepeatable ? currentLevel : undefined}
+                effect={effectText}
+                formatNumber={formatNumber}
+              />
             </div>
           );
         })}
       </div>
-    </div>
+    </>
   );
 });
 
 FarmingUpgradesPanel.displayName = 'FarmingUpgradesPanel';
 
 export default FarmingUpgradesPanel;
+
+

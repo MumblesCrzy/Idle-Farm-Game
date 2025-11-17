@@ -369,7 +369,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
             <ProgressBar
               value={veggies[activeVeggie].harvesterTimer}
               max={Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))}
-              color="#627beeff"
+              color="#5D76B1"
               height={22}
             />
             <span className={styles.progressBarLabel}>

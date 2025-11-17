@@ -23,6 +23,7 @@ interface LoadedGameState {
   highestUnlockedVeggie?: number;
   globalAutoPurchaseTimer?: number;
   totalHarvests?: number;
+  permanentBonuses?: string[];
 }
 
 interface UseGameStateParams {
@@ -98,6 +99,9 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
   const [almanacLevel, setAlmanacLevel] = useState(loadedState?.almanacLevel ?? 0);
   const [almanacCost, setAlmanacCost] = useState(loadedState?.almanacCost ?? 10);
 
+  // Permanent bonuses from achievements
+  const [permanentBonuses, setPermanentBonuses] = useState<string[]>(loadedState?.permanentBonuses ?? []);
+
   // Derived values
   const totalPlotsUsed = useMemo(
     () => veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0),
@@ -163,6 +167,10 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
     setAlmanacLevel,
     almanacCost,
     setAlmanacCost,
+
+    // Permanent bonuses
+    permanentBonuses,
+    setPermanentBonuses,
 
     // Derived values
     totalPlotsUsed,

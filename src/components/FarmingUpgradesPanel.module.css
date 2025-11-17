@@ -1,0 +1,16 @@
+/* Farming Upgrades Panel Styles - Christmas Tree Shop Theme */
+
+/* Base styles */
+.upgradesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Color overrides for Christmas Tree Shop theme */
+
+.title {
+  text-align: center;
+  color: #175034; /* Dark green for Christmas */
+  margin-bottom: 1rem;
+}

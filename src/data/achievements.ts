@@ -6,7 +6,10 @@ import {
   ICON_MONEY, 
   ICON_GROWING, 
   ICON_KNOWLEDGE, 
-  ICON_CANNING 
+  ICON_CANNING,
+  ICON_HOLIDAY_CHEER,
+  TREE_DECORATED,
+  ICON_MILESTONE
 } from '../config/assetPaths';
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -252,6 +255,96 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       knowledge: 100,
       money: 5000,
       message: 'You\'ve built an empire! +100 knowledge and $5,000'
+    },
+    hidden: true
+  },
+  
+  // Christmas Tree Shop Achievements
+  {
+    id: 'first_tree_sold',
+    name: 'First Tree Sold',
+    description: 'Sell your first Christmas tree',
+    icon: TREE_DECORATED,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 1
+    },
+    reward: {
+      message: 'Holiday Cheer unlocked! The spirit of Christmas is in the air.'
+    }
+  },
+  {
+    id: 'winter_sweater',
+    name: 'Archie\'s Winter Sweater',
+    description: 'Sell 50 Christmas trees',
+    icon: ICON_MILESTONE,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 50
+    },
+    reward: {
+      message: 'Archie looks cozy in his new winter sweater!'
+    }
+  },
+  {
+    id: 'reindeer_hat',
+    name: 'Archie\'s Reindeer Hat',
+    description: 'Sell 250 Christmas trees',
+    icon: ICON_MILESTONE,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 250
+    },
+    reward: {
+      message: 'Archie is ready to help Santa!'
+    }
+  },
+  {
+    id: 'frost_fertilizer',
+    name: 'Frost Fertilizer',
+    description: 'Sell 1,000 Christmas trees',
+    icon: ICON_HOLIDAY_CHEER,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 1000
+    },
+    reward: {
+      knowledge: 50,
+      message: 'Permanent +5% winter crop yield unlocked! +50 knowledge'
+    }
+  },
+  {
+    id: 'canners_cocoa',
+    name: 'Canner\'s Cocoa Recipe',
+    description: 'Sell 2,500 Christmas trees',
+    icon: ICON_CANNING,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 2500
+    },
+    reward: {
+      knowledge: 100,
+      message: 'New canning recipe unlocked: Hot Cocoa! +100 knowledge'
+    }
+  },
+  {
+    id: 'snowfall_cosmetic',
+    name: 'Eternal Snowfall',
+    description: 'Sell 5,000 Christmas trees',
+    icon: ICON_MILESTONE,
+    category: 'special',
+    requirement: {
+      type: 'christmas_trees_sold',
+      value: 5000
+    },
+    reward: {
+      knowledge: 200,
+      message: 'Snowfall permanently added to farm background! +200 knowledge'
     },
     hidden: true
   }

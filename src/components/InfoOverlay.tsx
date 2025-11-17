@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP } from '../config/assetPaths';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './InfoOverlay.module.css';
 
@@ -29,7 +29,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     { id: 'upgrades', label: 'Farm Upgrades' },
     { id: 'autopurchase', label: 'Auto-Purchasers' },
     { id: 'canning', label: 'Canning System' },
-    { id: 'christmas', label: '🎄 Tree Shop' }
+    { id: 'christmas', label: 'Tree Shop' }
   ];
 
   const categoryTitles: Record<InfoCategory, string> = {
@@ -39,7 +39,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     upgrades: 'Farm Upgrades',
     autopurchase: 'Auto-Purchasers',
     canning: 'Canning System',
-    christmas: '🎄 Christmas Tree Shop'
+    christmas: 'Christmas Tree Shop'
   };
 
   return (
@@ -563,12 +563,12 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
 
             {selectedInfoCategory === 'christmas' && (
               <div>
-                <h4 className={styles.sectionTitle}>
-                  🎄 Christmas Tree Shop Event
+                <h4 className={styles.sectionTitle}><img src={TREE_DECORATED} alt="" className={styles.sectionIcon} />
+                   Christmas Tree Shop Event
                 </h4>
                 <p>The Christmas Tree Shop is a seasonal event available from <strong>November 1st - December 25th</strong>. Grow Christmas trees, craft decorations, and sell decorated trees to earn Holiday Cheer!</p>
                 
-                <h5>🌲 Tree Farming:</h5>
+                <h5><img src={TREE_PINE} alt="Tree" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Tree Farming:</h5>
                 <ul>
                   <li><strong>Growth Time:</strong> Trees take 5-7 in-game years to grow (varies by type)</li>
                   <li><strong>Tree Types:</strong> Pine (7 years), Spruce (6 years), Fir (5 years)</li>
@@ -578,19 +578,42 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <li><strong>Plot Expansion:</strong> Start with 6 plots, upgrade to unlock up to 12 plots</li>
                 </ul>
 
-                <h5>🎨 Workshop (Coming Soon):</h5>
+                <h5><img src={ICON_TREE_WORKSHOP} alt="Workshop" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Workshop:</h5>
                 <ul>
                   <li><strong>Craft Decorations:</strong> Use materials to craft ornaments, garland, and candles</li>
                   <li><strong>Decorate Trees:</strong> Add decorations to trees before selling for bonus value</li>
-                  <li><strong>Automation Queue:</strong> Unlock Elves' Bench to automate decoration crafting</li>
+                  <li><strong>Elves' Bench:</strong> Once unlocked, automates crafting and decoration</li>
                 </ul>
 
-                <h5>🏪 Shopfront (Coming Soon):</h5>
+                <h5><img src={ICON_ELVES} alt="Elves" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Elves' Bench Automation:</h5>
                 <ul>
+                  <li><strong>Daily Crafting:</strong> Elves automatically craft 1 decoration per in-game day</li>
+                  <li><strong>Crafting Priority:</strong>
+                    <ul>
+                      <li>Priority 1: Garland (3 Branches + 2 Pinecones → 1 Garland)</li>
+                      <li>Priority 2: Candles (2 Wood → 1 Candle)</li>
+                      <li>Priority 3: Ornaments (1 Wood → 2 Ornaments, requires Ornament Bench)</li>
+                      <li>Priority 4: Traditional Ornaments (5 Pinecones → 3 Ornaments, requires upgrade)</li>
+                    </ul>
+                  </li>
+                  <li><strong>Harvest Auto-Decoration:</strong> Trees are automatically decorated on harvest with the most valuable combination available</li>
+                  <li><strong>Decoration Priority:</strong>
+                    <ul>
+                      <li>Priority 1: Luxury (Ornament + Candle)</li>
+                      <li>Priority 2: Candled (Candle only)</li>
+                      <li>Priority 3: Ornamented (Ornament only)</li>
+                      <li>Default: Plain tree</li>
+                    </ul>
+                  </li>
+                </ul>
+
+                <h5><img src={ICON_TREE_STOREFRONT} alt="Shopfront" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Shopfront:</h5>                <ul>
                   <li><strong>Sell Trees:</strong> Sell decorated trees for Holiday Cheer</li>
-                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +10% garland, +15% candles)</li>
+                  <li><strong>Sell Decorations:</strong> Sell excess ornaments (1 cheer), candles (2 cheer), or garland (4 cheer)</li>
+                  <li><strong>Price Bonuses:</strong> Decorations add value (+10% ornaments, +20% candles, +200% luxury)</li>
                   <li><strong>Demand Multiplier:</strong> Prices increase as Christmas approaches</li>
-                  <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day</li>
+                  <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day (requires Wreath Sign upgrade)</li>
+                  <li><strong>Passive Income:</strong> Golden Bell Counter provides idle Holiday Cheer generation</li>
                 </ul>
 
                 <h5>⬆️ Stage 1 Upgrades (Evergreen Farming):</h5>

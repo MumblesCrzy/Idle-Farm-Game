@@ -10,12 +10,22 @@ interface ArchieIconProps {
   experience: number;
   totalPlotsUsed: number;
   isChristmasEventActive?: boolean;
+  christmasTreesSold?: number;
+  earnCheer?: (amount: number) => void;
 }
 
 const ARCHIE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, totalPlotsUsed, isChristmasEventActive = false }) => {
-  const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak } = useArchie();
+const ArchieIcon: React.FC<ArchieIconProps> = ({ 
+  setMoney, 
+  money, 
+  experience, 
+  totalPlotsUsed, 
+  isChristmasEventActive = false,
+  christmasTreesSold = 0,
+  earnCheer
+}) => {
+  const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward } = useArchie();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   
@@ -33,7 +43,23 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, to
       // Reset the reward
       setArchieReward(0);
     }
-  }, [archieReward, setMoney, setArchieReward]);
+  }, [archieReward, setMoney, setArchieReward, archieClickStreak]);
+  
+  // When archieCheerReward changes (during Christmas event), add Holiday Cheer
+  useEffect(() => {
+    if (archieCheerReward > 0 && earnCheer) {
+      // Add the reward to Holiday Cheer
+      earnCheer(archieCheerReward);
+      
+      // Show toast notification with streak info
+      const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
+      setToastMessage(`Found Archie! +${archieCheerReward} Holiday Cheer${streakMessage} 🎄`);
+      setShowToast(true);
+      
+      // Reset the reward
+      setArchieCheerReward(0);
+    }
+  }, [archieCheerReward, earnCheer, setArchieCheerReward, archieClickStreak]);
   
   // Check if cooldown has passed
   const currentTime = Date.now();
@@ -51,7 +77,13 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({ setMoney, money, experience, to
           minInterval={30000} // 30 seconds minimum before appearing
           maxInterval={120000} // 2 minutes maximum before appearing
           duration={180000} // Stays visible for 3 minutes
-          reward={() => handleArchieClick({ money, experience, totalPlotsUsed })}
+          reward={() => handleArchieClick({ 
+            money, 
+            experience, 
+            totalPlotsUsed, 
+            isChristmasEventActive,
+            christmasTreesSold 
+          })}
           onAppear={handleArchieAppear}
         />
       )}

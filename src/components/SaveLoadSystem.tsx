@@ -23,6 +23,8 @@ interface SaveLoadSystemProps {
   irrigationOwned: boolean;
   currentWeather: string;
   canningState: CanningState;
+  christmasEventState?: any; // ChristmasEventState
+  permanentBonuses?: string[];
   
   // Function to reset the game
   resetGame: () => void;
@@ -53,6 +55,8 @@ const SaveLoadSystem: React.FC<SaveLoadSystemProps> = ({
   irrigationOwned,
   currentWeather,
   canningState,
+  christmasEventState,
+  permanentBonuses,
   resetGame,
   children
 }) => {
@@ -77,6 +81,8 @@ const SaveLoadSystem: React.FC<SaveLoadSystemProps> = ({
     irrigationOwned,
     currentWeather,
     canningState,
+    christmasEventState,
+    permanentBonuses,
     // Optionally add a version for future compatibility
     saveVersion: 2
   });

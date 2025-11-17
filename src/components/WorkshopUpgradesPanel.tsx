@@ -1,59 +1,79 @@
 import React, { memo } from 'react';
+import UpgradeButton from './UpgradeButton';
 import type { EventUpgrade } from '../types/christmasEvent';
-import { ICON_HOLIDAY_CHEER, TREE_DECORATED } from '../config/assetPaths';
-import styles from './WorkshopTab.module.css';
+import styles from './WorkshopUpgradesPanel.module.css';
 
 interface WorkshopUpgradesPanelProps {
   upgrades: EventUpgrade[];
   holidayCheer: number;
   purchaseUpgrade: (upgradeId: string) => boolean;
+  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 const WorkshopUpgradesPanel: React.FC<WorkshopUpgradesPanelProps> = memo(({ 
   upgrades, 
   holidayCheer, 
-  purchaseUpgrade 
+  purchaseUpgrade,
+  formatNumber
 }) => {
   const workshopUpgrades = upgrades.filter(u => u.category === 'workshop');
   
+  // Check if Elves' Bench is owned (required for Cheerful Crafting to show)
+  const hasElvesBench = upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
+  
   return (
-    <div className={styles.upgradesPanel}>
-      <h3 className={styles.upgradesTitle}>🧵 Workshop Upgrades</h3>
-      <div className={styles.upgradesList}>
+    <>
+      <h2 className={styles.title}>Workshop Upgrades</h2>
+      
+      <div className={styles.upgradesContainer}>
         {workshopUpgrades.map(upgrade => {
-          const canAfford = holidayCheer >= upgrade.cost;
+          // Hide Cheerful Crafting until Elves' Bench is purchased
+          if (upgrade.id === 'cheerful_crafting' && !hasElvesBench) {
+            return null;
+          }
+          
+          const isRepeatable = upgrade.repeatable ?? false;
+          const currentLevel = upgrade.level ?? 0;
+          const maxLevel = upgrade.maxLevel ?? Infinity;
+          const isMaxLevel = isRepeatable && currentLevel >= maxLevel;
+          
+          // Calculate cost for next level if repeatable
+          const costScaling = upgrade.costScaling ?? 1.5;
+          const displayCost = isRepeatable 
+            ? Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel))
+            : upgrade.cost;
+          
+          const effectText = upgrade.effect || upgrade.description;
           
           return (
-            <div 
-              key={upgrade.id} 
-              className={`${styles.upgradeCard} ${upgrade.owned ? styles.owned : ''}`}
-            >
-              <div className={styles.upgradeHeader}>
-                <span className={styles.upgradeName}>{upgrade.name}</span>
-                {upgrade.owned && <span className={styles.ownedBadge}>✓</span>}
-              </div>
-              <div className={styles.upgradeDescription}>{upgrade.description}</div>
-              {upgrade.effect && (
-                <div className={styles.upgradeEffect}>Effect: {upgrade.effect}</div>
-              )}
-              {!upgrade.owned && (
-                <button
-                  className={`${styles.upgradeButton} ${!canAfford ? styles.cantAfford : ''}`}
-                  onClick={() => purchaseUpgrade(upgrade.id)}
-                  disabled={!canAfford}
-                  title={!canAfford ? `Need ${upgrade.cost - holidayCheer} more Holiday Cheer` : 'Purchase upgrade'}
-                >
-                  {upgrade.cost} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> Holiday Cheer
-                </button>
-              )}
+            <div key={upgrade.id}>
+              <UpgradeButton
+                title={upgrade.description}
+                imageSrc={upgrade.icon}
+                imageAlt={upgrade.name}
+                buttonText={upgrade.name}
+                money={0}
+                knowledge={holidayCheer}
+                cost={displayCost}
+                currencyType="knowledge"
+                currencyLabel="Cheer"
+                onClick={() => purchaseUpgrade(upgrade.id)}
+                disabled={holidayCheer < displayCost || (upgrade.owned && !isRepeatable) || isMaxLevel}
+                isOwned={upgrade.owned && !isRepeatable}
+                isMaxLevel={isMaxLevel}
+                level={isRepeatable ? currentLevel : undefined}
+                effect={effectText}
+                formatNumber={formatNumber}
+              />
             </div>
           );
         })}
       </div>
-    </div>
+    </>
   );
 });
 
 WorkshopUpgradesPanel.displayName = 'WorkshopUpgradesPanel';
 
 export default WorkshopUpgradesPanel;
+

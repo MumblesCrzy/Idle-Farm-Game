@@ -72,6 +72,20 @@ export const DECORATION_CANDLE = './Candle.png';
 export const ICON_TREE_SHOP = './Tree Shop.png';
 export const ICON_TREE_WORKSHOP = './Tree Workshop.png';
 export const ICON_TREE_STOREFRONT = './Tree Storefront.png';
+export const ICON_FERTILIZED_SOIL = './Fertilized Soil.png';
+export const ICON_GREENHOUSE_EXTENSION = './Greenhouse Extension.png';
+export const ICON_EVERGREEN_ESSENCE = './Evergreen Essence.png';
+export const ICON_ELVES = './Elves.png';
+export const ICON_ORNAMENT_WORKBENCH = './Ornament Workbench.png';
+export const ICON_ORNAMENT = './Ornament.png';
+export const ICON_TRADITIONAL_ORNAMENT = './Traditional Ornament.png';
+export const ICON_ELVES_BENCH = './Elves Bench.png';
+export const ICON_ELVES_INDICATOR = './Elves Indicator.png';
+export const ICON_STAR_FORGE = './Star Forge.png';
+export const ICON_HOLIDAY_BELL = './Bell.png';
+export const ICON_HOLIDAY_REGISTER = './Register.png';
+export const ICON_FIREPLACE = './Fireplace.png';
+export const ICON_AXE = './Axe.png';
 
 // Growing Tab Upgrade Images
 export const UPGRADE_FERTILIZER = './Fertilizer.png';
@@ -208,6 +222,7 @@ export const ALL_IMAGES = [
   ICON_TREE_SHOP,
   ICON_TREE_WORKSHOP,
   ICON_TREE_STOREFRONT,
+  ICON_ELVES_INDICATOR,
   
   // Special images
   SPECIAL_ARCHIE,

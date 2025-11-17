@@ -11,7 +11,7 @@
 import React, { memo } from 'react';
 import type { CraftingRecipe, CraftingMaterials, TreeType, DecorationType, EventUpgrade, TreeInventory } from '../types/christmasEvent';
 import { CRAFTING_RECIPES } from '../data/christmasEventData';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_WREATH, DECORATION_GARLAND, DECORATION_CANDLE } from '../config/assetPaths';
+import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR } from '../config/assetPaths';
 import BaseTab from './BaseTab';
 import WorkshopUpgradesPanel from './WorkshopUpgradesPanel';
 import styles from './WorkshopTab.module.css';
@@ -43,6 +43,11 @@ interface WorkshopTabProps {
   upgrades: EventUpgrade[];
   holidayCheer: number;
   purchaseUpgrade: (upgradeId: string) => boolean;
+  currentElvesAction?: {
+    type: 'craft' | 'decorate';
+    recipeId?: string;
+    decorationType?: string;
+  };
 }
 
 /**
@@ -53,9 +58,10 @@ interface RecipeCardProps {
   materials: CraftingMaterials;
   onCraft: (recipeId: string) => void;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  isActive?: boolean; // Whether this recipe is currently being worked on by elves
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, formatNumber }) => {
+const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, formatNumber, isActive }) => {
   // Check if player has enough materials
   const canCraft = Object.entries(recipe.inputs).every(([material, amount]) => {
     return materials[material as keyof CraftingMaterials] >= amount;
@@ -67,6 +73,14 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft
   
   return (
     <div className={`${styles.recipeCard} ${!canCraft ? styles.cantCraft : ''}`}>
+      {isActive && (
+        <img 
+          src={ICON_ELVES_INDICATOR} 
+          alt="Elves working" 
+          className={styles.elvesIndicator}
+          title="Elves are currently working on this"
+        />
+      )}
       <div className={styles.recipeHeader}>
         <h4 className={styles.recipeName}>{recipe.name}</h4>
       </div>
@@ -138,8 +152,18 @@ const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({
   };
   
   // Check if player has the required tree and materials
-  const plainTreeKey = `${selectedTree}_plain`;
-  const hasTree = (treeInventory[plainTreeKey] || 0) > 0;
+  // Now need to check across all qualities: treeType_quality_plain
+  const getPlainTreeCount = (treeType: TreeType): number => {
+    let count = 0;
+    Object.keys(treeInventory).forEach(key => {
+      if (key.startsWith(`${treeType}_`) && key.endsWith('_plain')) {
+        count += treeInventory[key] || 0;
+      }
+    });
+    return count;
+  };
+  
+  const hasTree = getPlainTreeCount(selectedTree) > 0;
   
   const canDecorate = hasTree && selectedDecorations.size > 0 && 
     Array.from(selectedDecorations).every(dec => {
@@ -152,7 +176,15 @@ const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({
     if (canDecorate) {
       const decorations = Array.from(selectedDecorations);
       if (onDecorate(selectedTree, decorations)) {
-        setSelectedDecorations(new Set());
+        // Only clear selections that don't have materials remaining
+        const newSet = new Set(selectedDecorations);
+        if (selectedDecorations.has('ornament') && materials.ornaments <= 1) {
+          newSet.delete('ornament');
+        }
+        if (selectedDecorations.has('candle') && materials.candles <= 1) {
+          newSet.delete('candle');
+        }
+        setSelectedDecorations(newSet);
       }
     }
   };
@@ -164,8 +196,7 @@ const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({
           <label>Decorate Tree - Select Tree Type:</label>
           <div className={styles.treeButtons}>
             {(['pine', 'spruce', 'fir'] as TreeType[]).map(type => {
-              const treeKey = `${type}_plain`;
-              const treeCount = treeInventory[treeKey] || 0;
+              const treeCount = getPlainTreeCount(type);
               return (
                 <button
                   key={type}
@@ -180,12 +211,6 @@ const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({
           </div>
         </div>
         
-        {!hasTree && (
-          <div className={styles.warningMessage}>
-            ⚠️ No {selectedTree} trees available! Harvest trees from the Tree Farm first.
-          </div>
-        )}
-        
         <div className={styles.decorationOptions}>
           <label>Add Decorations:</label>
           <div className={styles.decorationCheckboxes}>
@@ -197,7 +222,7 @@ const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({
                 disabled={materials.ornaments <= 0}
               />
               <span>
-                <img src={DECORATION_WREATH} alt="Ornaments" className={styles.decorationIcon} />
+                <img src={ICON_ORNAMENT} alt="Ornaments" className={styles.decorationIcon} />
                 Ornaments ({materials.ornaments})
               </span>
             </label>
@@ -239,33 +264,13 @@ interface ElvesBenchProps {
   onAddToQueue: (treeType: TreeType, decorations: DecorationType[]) => void;
 }
 
-const ElvesBench: React.FC<ElvesBenchProps> = memo(({ enabled, onAddToQueue }) => {
-  const [queueTreeType, setQueueTreeType] = React.useState<TreeType>('pine');
-  const [queueDecorations, setQueueDecorations] = React.useState<Set<DecorationType>>(new Set());
-  
-  const toggleQueueDecoration = (decoration: DecorationType) => {
-    const newSet = new Set(queueDecorations);
-    if (newSet.has(decoration)) {
-      newSet.delete(decoration);
-    } else {
-      newSet.add(decoration);
-    }
-    setQueueDecorations(newSet);
-  };
-  
-  const handleAddToQueue = () => {
-    if (queueDecorations.size > 0) {
-      onAddToQueue(queueTreeType, Array.from(queueDecorations));
-      setQueueDecorations(new Set());
-    }
-  };
-  
+const ElvesBench: React.FC<ElvesBenchProps> = memo(({ enabled }) => {
   if (!enabled) {
     return (
       <div className={styles.elvesBench}>
         <h3 className={styles.sectionTitle}>🧝 Elves' Bench</h3>
         <div className={styles.lockedMessage}>
-          <p>Purchase the Elves' Bench upgrade to automate tree decoration!</p>
+          <p>Purchase the Elves' Bench upgrade to automate crafting and decoration!</p>
         </div>
       </div>
     );
@@ -273,58 +278,15 @@ const ElvesBench: React.FC<ElvesBenchProps> = memo(({ enabled, onAddToQueue }) =
   
   return (
     <div className={styles.elvesBench}>
-      <h3 className={styles.sectionTitle}>🧝 Elves' Bench (Automation)</h3>
-      
-      <div className={styles.benchControls}>
-        <div className={styles.benchTreeSelector}>
-          <label>Queue Tree Type:</label>
-          <select 
-            value={queueTreeType} 
-            onChange={(e) => setQueueTreeType(e.target.value as TreeType)}
-            className={styles.benchSelect}
-          >
-            <option value="pine">Pine</option>
-            <option value="spruce">Spruce</option>
-            <option value="fir">Fir</option>
-          </select>
-        </div>
-        
-        <div className={styles.benchDecorations}>
-          <label>Auto-apply:</label>
-          <div className={styles.benchCheckboxes}>
-            <label className={styles.benchOption}>
-              <input
-                type="checkbox"
-                checked={queueDecorations.has('ornament')}
-                onChange={() => toggleQueueDecoration('ornament')}
-              />
-              <span>
-                <img src={DECORATION_WREATH} alt="Ornaments" className={styles.decorationIcon} />
-                Ornaments
-              </span>
-            </label>
-            
-            <label className={styles.benchOption}>
-              <input
-                type="checkbox"
-                checked={queueDecorations.has('candle')}
-                onChange={() => toggleQueueDecoration('candle')}
-              />
-              <span>
-                <img src={DECORATION_CANDLE} alt="Candles" className={styles.decorationIcon} />
-                Candles
-              </span>
-            </label>
-          </div>
-        </div>
-        
-        <button
-          className={`${styles.queueButton} ${queueDecorations.size === 0 ? styles.disabled : ''}`}
-          onClick={handleAddToQueue}
-          disabled={queueDecorations.size === 0}
-        >
-          Add to Queue
-        </button>
+      <h3 
+        className={styles.sectionTitle}
+        title="Elves automatically craft 1 decoration per in-game day (priority: Garland > Candles > Ornaments). Trees are auto-decorated on harvest with the best decorations available."
+      >
+        🧝 Elves' Bench (Active) ℹ️
+      </h3>
+      <div className={styles.benchStatus}>
+        <span className={styles.automationActive}>✓ Auto-Crafting Enabled</span>
+        <span className={styles.automationActive}>✓ Auto-Decorating Enabled</span>
       </div>
     </div>
   );
@@ -340,9 +302,9 @@ function getMaterialIcon(material: string): React.ReactNode {
     wood: <img src={MATERIAL_WOOD} alt="Wood" className={styles.materialIcon} />,
     pinecones: <img src={MATERIAL_PINECONE} alt="Pinecones" className={styles.materialIcon} />,
     branches: <img src={MATERIAL_BRANCH} alt="Branches" className={styles.materialIcon} />,
-    ornaments: <img src={DECORATION_WREATH} alt="Ornaments" className={styles.materialIcon} />,
+    ornaments: <img src={ICON_ORNAMENT} alt="Ornaments" className={styles.materialIcon} />,
     garlands: <img src={DECORATION_GARLAND} alt="Garlands" className={styles.materialIcon} />,
-    naturalOrnaments: '🟤',
+    naturalOrnaments: <img src={ICON_TRADITIONAL_ORNAMENT} alt= "Traditional Ornament" className={styles.materialIcon} />,
     candles: <img src={DECORATION_CANDLE} alt="Candles" className={styles.materialIcon} />,
   };
   return iconMap[material] || '❓';
@@ -362,9 +324,10 @@ const WorkshopTab: React.FC<WorkshopTabProps> = ({
   upgrades,
   holidayCheer,
   purchaseUpgrade,
+  currentElvesAction,
 }) => {
   const mainContent = (
-    <div className={styles.container}>
+    <div className={styles.container}>      
       {/* Left Column: Crafting, Decoration, and Automation */}
       <div className={styles.leftColumn}>
         {/* Crafting Recipes Section */}
@@ -374,15 +337,19 @@ const WorkshopTab: React.FC<WorkshopTabProps> = ({
               // Show recipe if no upgrade required, or if the required upgrade is owned
               if (!recipe.requiredUpgrade) return true;
               return upgrades.find(u => u.id === recipe.requiredUpgrade)?.owned ?? false;
-            }).map(recipe => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                materials={materials}
-                onCraft={craftItem}
-                formatNumber={formatNumber}
-              />
-            ))}
+            }).map(recipe => {
+              const isActive = currentElvesAction?.type === 'craft' && currentElvesAction.recipeId === recipe.id;
+              return (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  materials={materials}
+                  onCraft={craftItem}
+                  formatNumber={formatNumber}
+                  isActive={isActive}
+                />
+              );
+            })}
           </div>
         </div>
         
@@ -407,6 +374,7 @@ const WorkshopTab: React.FC<WorkshopTabProps> = ({
           upgrades={upgrades}
           holidayCheer={holidayCheer}
           purchaseUpgrade={purchaseUpgrade}
+          formatNumber={formatNumber}
         />
       </div>
     </div>

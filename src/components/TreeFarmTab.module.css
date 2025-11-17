@@ -12,11 +12,12 @@
 
 .container {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 290px;
   gap: 0.6rem;
   padding: 0.5rem;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
+  color: #3A3638;
 }
 
 /* =================================================================== */
@@ -37,6 +38,10 @@
 .rightColumn {
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #F8E689, #175034);
+  border: 3px solid #23705D;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 /* =================================================================== */
@@ -50,6 +55,7 @@
   align-items: center;
   background: #175034;
   border: 2px solid #23705D;
+  color: #ECEDE8;
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
 }
@@ -152,7 +158,7 @@
   font-size: 0.9rem;
   border: 2px solid #175034;
   border-radius: 6px;
-  background: #ECEDE8;
+  background: #3A3638;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -162,13 +168,14 @@
 
 .treeSelector:hover:not(:disabled) {
   background: #F8E689;
+  color: #3A3638;
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(23, 80, 52, 0.3);
 }
 
 .treeSelector.selected {
-  background: #175034;
-  color: #ECEDE8;
+  background: #F8E689;
+  color: #3A3638;
   font-weight: bold;
 }
 
@@ -365,6 +372,26 @@
   box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
 }
 
+.plantAllButton {
+  padding: 0.6rem 1rem;
+  background: #175034;
+  color: #ECEDE8;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.plantAllButton:hover {
+  background: #23705D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 80, 52, 0.3);
+}
+
 .harvestAllIcon {
   width: 20px;
   height: 20px;
@@ -372,7 +399,7 @@
 
 .plotsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 0.5rem;
 }
 
@@ -385,10 +412,11 @@
   border: 3px solid #23705D;
   border-radius: 8px;
   padding: 0.5rem;
-  min-height: 140px;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   transition: all 0.2s;
+  position: relative;
 }
 
 .treePlot.empty {
@@ -414,6 +442,47 @@
   box-shadow: 0 0 20px rgba(184, 0, 0, 0.4);
   animation: sparkle 3s ease-in-out infinite;
 }
+
+.progressContainer {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.progressSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.progressBarWrapper {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-bottom: 0.25rem;
+}
+
+.progressLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: #3A3638;
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 0 2px #ECEDE8, 0 0 2px #ECEDE8, 0 0 2px #ECEDE8;
+}
+
+.progressText {
+  font-size: 0.75rem;
+  color: #3A3638;
+  text-align: center;
+  display: block;
+}
+
 
 @keyframes sparkle {
   0%, 100% {
@@ -455,6 +524,19 @@
   color: #3A3638;
   border-radius: 4px;
   font-weight: 600;
+}
+
+.qualityBadgeTop {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  background: #D0A93D;
+  color: #3A3638;
+  border-radius: 4px;
+  font-weight: 600;
+  z-index: 2;
 }
 
 .plotContent {

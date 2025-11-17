@@ -9,7 +9,7 @@
   gap: 6px;
   align-items: center;
   transition: all 0.2s;
-  width: 16em;
+  width: 100%;
   min-height: 45px;
   white-space: nowrap;
 }

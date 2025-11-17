@@ -141,6 +141,27 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
                         {achievement.description}
                       </p>
                       
+                      {/* Progress bar and current/goal for locked achievements */}
+                      {!achievement.unlocked && achievement.progress && (
+                        <div style={{ marginBottom: '8px' }}>
+                          <div className={styles.progressBarContainer}>
+                            <div 
+                              className={styles.progressBar}
+                              style={{ 
+                                width: `${Math.min(100, (achievement.progress.current / achievement.progress.goal) * 100)}%` 
+                              }}
+                              role="progressbar"
+                              aria-valuenow={achievement.progress.current}
+                              aria-valuemin={0}
+                              aria-valuemax={achievement.progress.goal}
+                            />
+                          </div>
+                          <p className={`${styles.achievementProgress} ${styles.inProgress}`}>
+                            Progress: {achievement.progress.current.toLocaleString()} / {achievement.progress.goal.toLocaleString()} ({Math.floor((achievement.progress.current / achievement.progress.goal) * 100)}%)
+                          </p>
+                        </div>
+                      )}
+                      
                       {achievement.reward && (
                         <div className={styles.achievementRewards}>
                           <span className={styles.achievementRewardLabel}>Reward:</span>{' '}

@@ -16,8 +16,9 @@
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 350px;
+  grid-template-columns: 1fr 290px;
   gap: 0.6rem;
+  color: #3A3638;
 }
 
 .leftColumn {
@@ -30,6 +31,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  background: linear-gradient(135deg, #F8E689, #23705D);
+  border: 3px solid #D0A93D;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 /* =================================================================== */
@@ -79,6 +84,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative; /* For positioning the indicator */
 }
 
 .recipeCard:hover {
@@ -250,6 +256,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  color: #3A3638;
 }
 
 .treeButtonIcon {
@@ -269,6 +276,7 @@
 
 .treeButton:hover {
   background: #F8E689;
+  color: #3A3638;
   transform: translateY(-1px);
 }
 
@@ -367,6 +375,21 @@
   margin-bottom: 1rem;
 }
 
+.benchStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(23, 80, 52, 0.05);
+  border-radius: 8px;
+}
+
+.automationActive {
+  color: #175034;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
 .benchControls {
   display: flex;
   flex-direction: column;
@@ -455,12 +478,6 @@
   padding: 1rem;
 }
 
-.upgradesTitle {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
-  color: #175034;
-}
-
 .upgradesList {
   display: flex;
   flex-direction: column;
@@ -536,5 +553,26 @@
   color: #ECEDE8;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Elves Indicator - Rotating icon on active recipes */
+.elvesIndicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  animation: elvesRotate 3s linear infinite;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes elvesRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 

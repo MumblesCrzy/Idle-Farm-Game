@@ -1,4 +1,4 @@
-/* Base upgrade panel structure - consistent with other Christmas event panels */
+/* Shopfront Upgrades Panel Styles - Christmas Tree Shop Theme */
 /*
  * Christmas Tree Shop Color Palette:
  * Primary Red: #B80000 - Accents, important actions
@@ -11,224 +11,56 @@
  * Dark Gray: #3A3638 - Secondary text, disabled states
  */
 
-.upgradesPanel {
-  padding: 1rem;
-  background-color: #ECEDE8;
-  border: 2px solid #175034;
-  border-radius: 8px;
-  color: #3A3638;
+/* Base styles matching GlobalUpgradesPanel */
+.upgradesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Color overrides for Christmas Tree Shop theme */
+
+.title {
+  text-align: center;
+  color: #175034; /* Dark green for Christmas */
   margin-bottom: 1rem;
 }
 
-.title {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin: 0 0 0.75rem 0;
-  color: #175034;
-  text-align: center;
-}
-
-/* Grid layout for upgrade cards */
-.upgradesGrid {
+.progressSection {
+  margin-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Card-based upgrade layout */
-.upgradeCard {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: #ECEDE8;
-  border: 2px solid #175034;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.upgradeCard:hover:not(.purchased):not(.locked) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(23, 80, 52, 0.3);
-  border-color: #23705D;
-}
-
-.upgradeCard.purchased {
-  background-color: #F8E689;
-  border-color: #D0A93D;
-  opacity: 0.8;
-}
-
-.upgradeCard.locked {
-  background-color: #ECEDE8;
-  border-color: #3A3638;
-  opacity: 0.5;
-}
-
-/* Icon styling */
-.upgradeIcon {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-  width: 3rem;
-  height: 3rem;
-  display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(208, 169, 61, 0.2), transparent);
-  border-radius: 50%;
 }
 
-.iconImage {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
+.progressContainer {
+  width: 100%;
+  margin-bottom: 0.25rem;
 }
 
-/* Info section */
-.upgradeInfo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.upgradeName {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #175034;
-}
-
-.upgradeDescription {
-  font-size: 0.85rem;
-  color: #3A3638;
-  line-height: 1.4;
-}
-
-/* Footer with cost and button */
-.upgradeFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-  flex-wrap: wrap;
-}
-
-.upgradeCost {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.cheerIcon {
-  font-size: 1rem;
-  filter: drop-shadow(0 0 4px rgba(208, 169, 61, 0.6));
-}
-
-.canAfford {
-  color: #175034;
-}
-
-.cannotAfford {
-  color: #3A3638;
-}
-
-.free {
-  color: #D0A93D;
-  font-style: italic;
-}
-
-/* Purchase button */
-.purchaseButton {
-  padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #175034, #23705D);
+.progressText {
   color: #ECEDE8;
-  border: 2px solid #175034;
-  border-radius: 4px;
   font-weight: bold;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  white-space: nowrap;
-}
-
-.purchaseButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #23705D, #175034);
-  border-color: #23705D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(23, 80, 52, 0.4);
-}
-
-.purchaseButton:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-.purchaseButton:disabled {
-  background: linear-gradient(135deg, #3A3638, #3A3638);
-  border-color: #3A3638;
-  color: #ECEDE8;
-  cursor: not-allowed;
-}
-
-/* Owned badge for purchased upgrades */
-.ownedBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.75rem;
-  background: linear-gradient(135deg, #D0A93D, #F8E689);
-  color: #175034;
-  border: 2px solid #D0A93D;
-  border-radius: 4px;
   font-size: 0.85rem;
-  font-weight: bold;
-  align-self: flex-start;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .upgradesPanel {
-    padding: 0.75rem;
-  }
+.progressBarWrapper {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-top: 0.1rem;
+}
 
-  .title {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .upgradeCard {
-    gap: 0.5rem;
-    padding: 0.5rem;
-  }
-
-  .upgradeIcon {
-    font-size: 2rem;
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .upgradeName {
-    font-size: 0.9rem;
-  }
-
-  .upgradeDescription {
-    font-size: 0.8rem;
-  }
-
-  .upgradeFooter {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .purchaseButton {
-    width: 100%;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-  }
+.progressLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #3A3638;
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
 }

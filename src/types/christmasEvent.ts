@@ -152,6 +152,7 @@ export interface EventUpgrade {
   name: string;
   description: string;
   category: EventUpgradeCategory;
+  icon: string;
   cost: number; // Holiday Cheer cost
   owned: boolean;
   effect?: string; // Human-readable effect description
@@ -162,6 +163,12 @@ export interface EventUpgrade {
   procChance?: number;      // e.g., 10% for Evergreen Essence
   passiveIncome?: number;   // Cheer/second for Golden Bell Counter
   multiplier?: number;      // e.g., 3x for Star Forge
+  
+  // Repeatable upgrade properties
+  repeatable?: boolean;     // Can be purchased multiple times
+  level?: number;           // Current level (for repeatable upgrades)
+  maxLevel?: number;        // Maximum level (for repeatable upgrades)
+  costScaling?: number;     // Cost multiplier per level (e.g., 1.5x)
 }
 
 // ============================================================================
@@ -242,9 +249,18 @@ export interface ChristmasEventState {
   upgrades: EventUpgrade[];
   milestones: EventMilestone[];
   
-  // Cosmetics (permanent unlocks)
+  // Cosmetics & Permanent Rewards (permanent unlocks)
   unlockedCosmetics: string[];
   activeCosmetics: string[];
+  permanentBonuses: string[]; // e.g., ['frost_fertilizer', 'elves_bench_unlock']
+  unlockedRecipes: string[];  // e.g., ['canners_cocoa']
+  
+  // Elves' Bench tracking
+  currentElvesAction?: {
+    type: 'craft' | 'decorate';
+    recipeId?: string; // For crafting (e.g., 'garland', 'candles', 'ornaments_wood', 'ornaments_pinecone')
+    decorationType?: string; // For decorating (e.g., 'luxury', 'candled', 'ornamented')
+  };
 }
 
 // ============================================================================

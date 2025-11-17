@@ -175,6 +175,10 @@ export interface GameState {
   highestUnlockedVeggie: number;
   setHighestUnlockedVeggie: React.Dispatch<React.SetStateAction<number>>;
   
+  // Permanent Bonuses (from achievements)
+  permanentBonuses: string[];
+  setPermanentBonuses: React.Dispatch<React.SetStateAction<string[]>>;
+  
   // Game Management
   resetGame: () => void;
   
@@ -196,6 +200,9 @@ export interface GameState {
     removeFromQueue: (queueItemId: string) => void;
     sellTrees: (variant: any, quantity: number) => void;
     sellAllTrees: () => void;
+    sellGarland: (quantity: number) => void;
+    sellCandle: (quantity: number) => void;
+    sellOrnament: (quantity: number) => void;
     claimDailyBonus: () => boolean;
     totalTreesSold: number;
     purchaseUpgrade: (upgradeId: string) => boolean;

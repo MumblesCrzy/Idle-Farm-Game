@@ -7,7 +7,7 @@ export interface Achievement {
   
   // Unlock requirements
   requirement: {
-    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'custom';
+    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'custom';
     value?: number;
     customCheck?: (gameState: any) => boolean;
   };
@@ -23,6 +23,10 @@ export interface Achievement {
   unlocked: boolean;
   unlockedAt?: number; // Timestamp
   hidden?: boolean; // Hide until unlocked
+  progress?: {
+    current: number;
+    goal: number;
+  };
 }
 
 export interface AchievementState {

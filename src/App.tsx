@@ -36,6 +36,7 @@ let justReset = false;
 
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
+import DevTools from './components/DevTools';
 import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
@@ -48,6 +49,7 @@ import { useGameLoop } from './hooks/useGameLoop';
 import { useEventLog } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
+import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProgress';
 import type { Veggie, GameState } from './types/game';
 import {
   RAIN_CHANCES,
@@ -65,7 +67,7 @@ import {
   veggieSeasonBonuses,
   GAME_STORAGE_KEY
 } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -222,6 +224,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setAlmanacLevel,
     almanacCost,
     setAlmanacCost,
+    permanentBonuses,
+    setPermanentBonuses,
     totalPlotsUsed,
     heirloomMoneyCost,
     heirloomKnowledgeCost
@@ -515,6 +519,227 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Season system hook
   const { season } = useSeasonSystem(day);
   
+  // Store current game state in a ref so offline progress can access latest values
+  const gameStateRef = useRef({
+    veggies,
+    day,
+    totalDaysElapsed,
+    season,
+    currentWeather,
+    greenhouseOwned,
+    irrigationOwned,
+    almanacLevel,
+    farmTier,
+    knowledge,
+    christmasEvent
+  });
+  
+  // Update ref when state changes
+  useEffect(() => {
+    gameStateRef.current = {
+      veggies,
+      day,
+      totalDaysElapsed,
+      season,
+      currentWeather,
+      greenhouseOwned,
+      irrigationOwned,
+      almanacLevel,
+      farmTier,
+      knowledge,
+      christmasEvent
+    };
+  }, [veggies, day, totalDaysElapsed, season, currentWeather, greenhouseOwned, irrigationOwned, almanacLevel, farmTier, knowledge, christmasEvent]);
+  
+  // Offline Progress System - tracks when player leaves/returns to the tab
+  useEffect(() => {
+    const LAST_ACTIVE_KEY = 'farmIdleLastActive';
+    let hasProcessedOffline = false;
+    
+    // When tab becomes visible, check for offline time and simulate progress
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Tab became visible
+        const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
+        
+        if (lastActiveTime && !hasProcessedOffline) {
+          const now = Date.now();
+          const timeElapsed = now - parseInt(lastActiveTime, 10);
+          
+          // Only process if player was gone for more than 1 second
+          if (timeElapsed > 1000) {
+            // Get current state from ref
+            const state = gameStateRef.current;
+            
+            // Calculate offline progress
+            const offlineResult = calculateOfflineProgress(timeElapsed, {
+              veggies: state.veggies,
+              day: state.day,
+              totalDaysElapsed: state.totalDaysElapsed,
+              dayLength: 1000, // 1 second per day
+              season: state.season,
+              currentWeather: state.currentWeather,
+              greenhouseOwned: state.greenhouseOwned,
+              irrigationOwned: state.irrigationOwned,
+              almanacLevel: state.almanacLevel,
+              farmTier: state.farmTier,
+              knowledge: state.knowledge,
+              canningProcesses: [],
+              canningUpgrades: {},
+              autoCanning: { enabled: false }
+            });
+            
+            // Apply the offline progress to game state
+            if (offlineResult.timeElapsed >= 1000) {
+              setVeggies(offlineResult.veggies);
+              setExperience((prev: number) => prev + offlineResult.experienceGain);
+              setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
+              setDay(offlineResult.day);
+              setTotalDaysElapsed(offlineResult.totalDaysElapsed);
+              
+              // Get current Christmas event state from ref
+              const currentChristmasEvent = gameStateRef.current.christmasEvent;
+              
+              // Process Christmas tree growth if event is active
+              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+                for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
+                  currentChristmasEvent.processTreeGrowth();
+                }
+              }
+              
+              // Process Christmas passive income (Golden Bell)
+              if (currentChristmasEvent.isEventActive && currentChristmasEvent.passiveCheerPerSecond > 0) {
+                currentChristmasEvent.updatePassiveIncome(offlineResult.timeElapsed);
+              }
+              
+              // Process Elves' Bench automation
+              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+                const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+                if (elvesBenchOwned) {
+                  for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
+                    currentChristmasEvent.processDailyElvesCrafting();
+                  }
+                }
+              }
+              
+              // Show a welcome back message
+              const timeAwayStr = formatOfflineTime(offlineResult.timeElapsed);
+              console.log(`Welcome back! You were away for ${timeAwayStr}`);
+              
+              // Log offline progress details
+              if (offlineResult.experienceGain > 0 || offlineResult.knowledgeGain > 0) {
+                console.log(`Offline progress: +${offlineResult.experienceGain.toFixed(1)} XP, +${offlineResult.knowledgeGain.toFixed(1)} Knowledge`);
+              }
+              
+              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+                console.log(`Christmas trees grew ${offlineResult.christmasTreeGrowthTicks} times`);
+              }
+              
+              hasProcessedOffline = true;
+            }
+          }
+        }
+        
+        // Update last active time
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      } else {
+        // Tab became hidden - save the current time
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      }
+    };
+    
+    // Check on initial mount (in case user is returning after closing tab)
+    const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
+    if (lastActiveTime) {
+      const now = Date.now();
+      const timeElapsed = now - parseInt(lastActiveTime, 10);
+      
+      if (timeElapsed > 1000) {
+        // Get current state from ref
+        const state = gameStateRef.current;
+        
+        const offlineResult = calculateOfflineProgress(timeElapsed, {
+          veggies: state.veggies,
+          day: state.day,
+          totalDaysElapsed: state.totalDaysElapsed,
+          dayLength: 1000,
+          season: state.season,
+          currentWeather: state.currentWeather,
+          greenhouseOwned: state.greenhouseOwned,
+          irrigationOwned: state.irrigationOwned,
+          almanacLevel: state.almanacLevel,
+          farmTier: state.farmTier,
+          knowledge: state.knowledge,
+          canningProcesses: [],
+          canningUpgrades: {},
+          autoCanning: { enabled: false }
+        });
+        
+        if (offlineResult.timeElapsed >= 1000) {
+          setVeggies(offlineResult.veggies);
+          setExperience((prev: number) => prev + offlineResult.experienceGain);
+          setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
+          setDay(offlineResult.day);
+          setTotalDaysElapsed(offlineResult.totalDaysElapsed);
+          
+          // Get current Christmas event state from ref
+          const currentChristmasEvent = state.christmasEvent;
+          
+          // Process Christmas tree growth if event is active
+          if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+            for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
+              currentChristmasEvent.processTreeGrowth();
+            }
+          }
+          
+          // Process Christmas passive income (Golden Bell)
+          if (currentChristmasEvent.isEventActive && currentChristmasEvent.passiveCheerPerSecond > 0) {
+            currentChristmasEvent.updatePassiveIncome(offlineResult.timeElapsed);
+          }
+          
+          // Process Elves' Bench automation
+          if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+            const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+            if (elvesBenchOwned) {
+              for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
+                currentChristmasEvent.processDailyElvesCrafting();
+              }
+            }
+          }
+          
+          const timeAwayStr = formatOfflineTime(offlineResult.timeElapsed);
+          console.log(`Welcome back! You were away for ${timeAwayStr}`);
+          
+          if (offlineResult.experienceGain > 0 || offlineResult.knowledgeGain > 0) {
+            console.log(`Offline progress: +${offlineResult.experienceGain.toFixed(1)} XP, +${offlineResult.knowledgeGain.toFixed(1)} Knowledge`);
+          }
+          
+          if (christmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
+            console.log(`Christmas trees grew ${offlineResult.christmasTreeGrowthTicks} times`);
+          }
+        }
+      }
+    }
+    
+    // Set current time
+    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+    
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also update time periodically while tab is active (every 10 seconds)
+    const updateInterval = setInterval(() => {
+      if (!document.hidden) {
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      }
+    }, 10000);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(updateInterval);
+    };
+  }, []); // Run only once on mount
+  
   // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
   useEffect(() => {
     if (loaded && loaded.highestUnlockedVeggie === undefined && loaded.veggies) {
@@ -633,7 +858,12 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const v = veggies[index];
     if (v.growth < 100) return; // Early exit if not ready to harvest
     
-    const harvestAmount = 1 + (v.additionalPlotLevel || 0);
+    let harvestAmount = 1 + (v.additionalPlotLevel || 0);
+    
+    // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
+    if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
+      harvestAmount = Math.ceil(harvestAmount * 1.05);
+    }
     
     // Since we already checked growth >= 100, we know we'll harvest
     const almanacMultiplier = 1 + (almanacLevel * 0.10);
@@ -855,13 +1085,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Process Christmas tree growth each day
     if (christmasEventRef.current?.isEventActive) {
       christmasEventRef.current.processTreeGrowth();
+      christmasEventRef.current.processDailyElvesCrafting();
+      christmasEventRef.current.updatePassiveIncome(1000); // 1000ms = 1 second
     }
   }, 1000, []); // Empty deps - refs prevent loop restart
 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses }}>
       {children}
     </GameContext.Provider>
   );
@@ -930,7 +1162,7 @@ function App() {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
   }, []);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, knowledge, setKnowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses } = useGame();
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -948,6 +1180,7 @@ function App() {
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
   // Memoized to prevent recalculation on every render
   const canningUnlocked = useMemo(() => experience >= 5000, [experience]);
+
 
   // Initialize achievement system
   const [initialAchievementState] = useState(() => {
@@ -974,6 +1207,16 @@ function App() {
       if (knowledgeReward > 0) setKnowledge(prev => prev + knowledgeReward);
     },
     (achievement) => {
+      // Grant permanent bonus if this achievement provides one
+      if (achievement.id === 'frost_fertilizer') {
+        setPermanentBonuses(prev => {
+          if (!prev.includes('frost_fertilizer')) {
+            return [...prev, 'frost_fertilizer'];
+          }
+          return prev;
+        });
+      }
+      
       // Call the global callback if it's set
       if (globalAchievementUnlockCallback) {
         globalAchievementUnlockCallback(achievement);
@@ -1229,6 +1472,7 @@ function App() {
   useEffect(() => {
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
+    const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
     
     checkAchievements({
       money,
@@ -1237,9 +1481,10 @@ function App() {
       veggiesUnlocked,
       canningItemsTotal,
       farmTier,
-      totalHarvests
+      totalHarvests,
+      christmasTreesSold
     });
-  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, checkAchievements]);
+  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, christmasEvent?.totalTreesSold, checkAchievements]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed
@@ -1645,6 +1890,8 @@ function App() {
       irrigationOwned={irrigationOwned}
       currentWeather={currentWeather}
       canningState={canningState}
+      christmasEventState={christmasEvent?.eventState}
+      permanentBonuses={permanentBonuses}
       resetGame={resetGame}
     >
       {({ handleExportSave, handleImportSave, handleResetGame }) => (
@@ -1655,6 +1902,8 @@ function App() {
       experience={experience} 
       totalPlotsUsed={totalPlotsUsed}
       isChristmasEventActive={christmasEvent?.isEventActive ?? false}
+      christmasTreesSold={christmasEvent?.totalTreesSold ?? 0}
+      earnCheer={christmasEvent?.earnCheer}
     />
     <div className={styles.container}>
       <div className={styles.mainContent}>
@@ -1666,7 +1915,7 @@ function App() {
             setShowEventLog={setShowEventLog}
             totalAchievements={achievements.length}
             unlockedAchievements={totalUnlocked}
-            unreadEventCount={eventLog.unreadCount}
+            unreadEventCount={Math.min(eventLog.unreadCount, 100)}
           />
         </header>
 
@@ -1933,6 +2182,60 @@ function App() {
               <img src={ICON_TREE_STOREFRONT} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
               Shopfront
             </button>
+            
+            {/* Daily Customer Bonus - Only show if Wreath Sign upgrade is owned */}
+            {christmasEvent.eventState.upgrades.find((u: any) => u.id === 'wreath_sign')?.owned && (
+              <div
+                style={{
+                  marginLeft: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.5rem 1rem',
+                  background: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0] 
+                    ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
+                    : '#ECEDE8',
+                  borderRadius: '8px',
+                  border: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
+                    ? '2px solid #FF8C00'
+                    : '2px solid #D1D5DB',
+                }}
+              >
+                <img 
+                  src={DECORATION_WREATH} 
+                  alt="Daily Bonus" 
+                  style={{ width: '24px', height: '24px', objectFit: 'contain' }} 
+                />
+                <span style={{ 
+                  fontWeight: 'bold', 
+                  fontSize: '0.95rem',
+                  color: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
+                    ? '#3A3638'
+                    : '#9CA3AF'
+                }}>
+                  {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
+                    ? 'Daily Bonus!'
+                    : 'Claimed Today'}
+                </span>
+                {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0] && (
+                  <button
+                    onClick={christmasEvent.claimDailyBonus}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#175034',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    Claim
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tree Farm Sub-Tab */}
@@ -1964,6 +2267,7 @@ function App() {
               upgrades={christmasEvent.eventState.upgrades}
               holidayCheer={christmasEvent.holidayCheer}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
+              currentElvesAction={christmasEvent.currentElvesAction}
             />
           )}
 
@@ -1973,13 +2277,12 @@ function App() {
               treeInventory={christmasEvent.eventState.treeInventory}
               materials={christmasEvent.materials}
               sellTrees={christmasEvent.sellTrees}
-              sellGarland={(christmasEvent as any).sellGarland || (() => {})}
-              sellCandle={(christmasEvent as any).sellCandle || (() => {})}
+              sellGarland={christmasEvent.sellGarland}
+              sellCandle={christmasEvent.sellCandle}
+              sellOrnament={christmasEvent.sellOrnament}
               demandMultiplier={christmasEvent.eventState.marketDemand.demandMultiplier}
               holidayCheer={christmasEvent.holidayCheer}
               upgrades={christmasEvent.eventState.upgrades}
-              dailyBonusAvailable={christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]}
-              claimDailyBonus={christmasEvent.claimDailyBonus}
               passiveCheerPerSecond={christmasEvent.eventState.passiveCheerPerSecond}
               formatNumber={formatNumber}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
@@ -2045,6 +2348,30 @@ function App() {
       onClearAll={eventLog.clearEvents}
       getFilteredEvents={eventLog.getFilteredEvents}
       getCategoryCounts={eventLog.getCategoryCounts}
+    />
+
+    {/* DevTools - Only visible in development mode */}
+    <DevTools
+      onAddMoney={(amount) => setMoney(prev => prev + amount)}
+      onAddExperience={(amount) => setExperience(prev => prev + amount)}
+      onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
+      onSkipDays={(days) => setDay(prev => prev + days)}
+      onResetGame={handleResetGame}
+      onAddHolidayCheer={christmasEvent?.earnCheer}
+      onHarvestAllTrees={christmasEvent?.harvestAllTrees}
+      onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
+      onAddTreeMaterials={() => {
+        if (christmasEvent?.eventState) {
+          // Add 100 of each material type
+          const materials = christmasEvent.eventState.materials;
+          materials.pinecones += 100;
+          materials.berries += 100;
+          materials.ribbons += 100;
+          materials.woodPlanks += 100;
+          materials.metalWire += 100;
+          materials.glassBeads += 100;
+        }
+      }}
     />
     </>
       )}

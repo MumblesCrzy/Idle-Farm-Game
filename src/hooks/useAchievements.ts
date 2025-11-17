@@ -10,6 +10,7 @@ interface GameStateForAchievements {
   canningItemsTotal: number;
   farmTier: number;
   totalHarvests?: number;
+  christmasTreesSold?: number;
 }
 
 interface UseAchievementsReturn {
@@ -29,7 +30,34 @@ export function useAchievements(
   // Initialize achievements from saved state or defaults
   const [achievementState, setAchievementState] = useState<AchievementState>(() => {
     if (initialState) {
-      return initialState;
+      // Merge saved achievements with new ones from INITIAL_ACHIEVEMENTS
+      const savedAchievementMap = new Map(
+        initialState.achievements.map(ach => [ach.id, ach])
+      );
+      
+      // Add any new achievements that don't exist in the saved state
+      const mergedAchievements = INITIAL_ACHIEVEMENTS.map(templateAch => {
+        const savedAch = savedAchievementMap.get(templateAch.id);
+        if (savedAch) {
+          // Keep the saved achievement data (unlocked status, etc.)
+          return savedAch;
+        } else {
+          // Add new achievement as locked
+          return {
+            ...templateAch,
+            unlocked: false
+          };
+        }
+      });
+      
+      // Recalculate total unlocked count
+      const totalUnlocked = mergedAchievements.filter(ach => ach.unlocked).length;
+      
+      return {
+        achievements: mergedAchievements,
+        totalUnlocked,
+        lastUnlockedId: initialState.lastUnlockedId
+      };
     }
     
     // Create new achievement state with all achievements locked
@@ -60,11 +88,57 @@ export function useAchievements(
         return gameState.canningItemsTotal >= (requirement.value || 0);
       case 'farm_tier':
         return gameState.farmTier >= (requirement.value || 0);
+      case 'christmas_trees_sold':
+        return (gameState.christmasTreesSold || 0) >= (requirement.value || 0);
       case 'custom':
         return requirement.customCheck ? requirement.customCheck(gameState) : false;
       default:
         return false;
     }
+  }, []);
+
+  // Get current progress for an achievement
+  const getProgress = useCallback((achievement: Achievement, gameState: GameStateForAchievements): { current: number; goal: number } | undefined => {
+    const { requirement } = achievement;
+    
+    // Only track progress for numeric requirements
+    if (!requirement.value) return undefined;
+    
+    let current = 0;
+    
+    switch (requirement.type) {
+      case 'money':
+        current = gameState.money;
+        break;
+      case 'experience':
+        current = gameState.experience;
+        break;
+      case 'knowledge':
+        current = gameState.knowledge;
+        break;
+      case 'veggies_unlocked':
+        current = gameState.veggiesUnlocked;
+        break;
+      case 'canning_items':
+        current = gameState.canningItemsTotal;
+        break;
+      case 'farm_tier':
+        current = gameState.farmTier;
+        break;
+      case 'christmas_trees_sold':
+        current = gameState.christmasTreesSold || 0;
+        break;
+      case 'total_harvests':
+        current = gameState.totalHarvests || 0;
+        break;
+      default:
+        return undefined;
+    }
+    
+    return {
+      current: Math.min(current, requirement.value),
+      goal: requirement.value
+    };
   }, []);
 
   // Check all achievements and unlock any that are newly achieved
@@ -75,15 +149,31 @@ export function useAchievements(
       const updated = { ...prev };
       let hasChanges = false;
 
-      // Check each locked achievement
+      // Check each achievement and update progress
       for (let i = 0; i < updated.achievements.length; i++) {
         const achievement = updated.achievements[i];
         
+        // Update progress for all achievements (even unlocked ones)
+        const progress = getProgress(achievement, gameState);
+        if (progress && (
+          !achievement.progress || 
+          achievement.progress.current !== progress.current ||
+          achievement.progress.goal !== progress.goal
+        )) {
+          updated.achievements = [...updated.achievements];
+          updated.achievements[i] = {
+            ...achievement,
+            progress
+          };
+          hasChanges = true;
+        }
+        
+        // Check if locked achievement should be unlocked
         if (!achievement.unlocked && checkRequirement(achievement, gameState)) {
           // Unlock the achievement
           updated.achievements = [...updated.achievements];
           updated.achievements[i] = {
-            ...achievement,
+            ...updated.achievements[i],
             unlocked: true,
             unlockedAt: Date.now()
           };
@@ -115,7 +205,7 @@ export function useAchievements(
     });
 
     return newlyUnlocked;
-  }, [checkRequirement, onReward, onAchievementUnlock]);
+  }, [checkRequirement, getProgress, onReward, onAchievementUnlock]);
 
   // Clear the last unlocked achievement (after showing notification)
   const clearLastUnlocked = useCallback(() => {

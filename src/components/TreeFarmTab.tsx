@@ -12,7 +12,7 @@ import FarmingUpgradesPanel from './FarmingUpgradesPanel';
 import type { TreePlot, TreeType, CraftingMaterials, TreeInventory } from '../types/christmasEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 import { TREE_DEFINITIONS } from '../data/christmasEventData';
-import { ICON_HARVEST, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH } from '../config/assetPaths';
+import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH } from '../config/assetPaths';
 import styles from './TreeFarmTab.module.css';
 
 /**
@@ -126,16 +126,16 @@ TreeSelector.displayName = 'TreeSelector';
  */
 interface TreePlotDisplayProps {
   plot: TreePlot;
-  plotIndex: number;
   selectedTreeType: TreeType | null;
+  upgrades: EventUpgrade[];
   onPlant: () => void;
   onHarvest: () => void;
 }
 
 const TreePlotDisplay: React.FC<TreePlotDisplayProps> = memo(({
   plot,
-  plotIndex,
   selectedTreeType,
+  upgrades,
   onPlant,
   onHarvest
 }) => {
@@ -145,19 +145,25 @@ const TreePlotDisplay: React.FC<TreePlotDisplayProps> = memo(({
   const isPerfect = plot.quality === 'perfect';
   const isLuxury = plot.quality === 'luxury';
   
+  // Calculate speed bonus from upgrades
+  const fertilizedSoil = upgrades.find(u => u.id === 'fertilized_soil');
+  const fertilizedSoilLevel = fertilizedSoil?.level ?? 0;
+  const speedBonus = 1.0 + (fertilizedSoilLevel * 0.15); // +15% per level
+  
   const definition = plot.treeType ? TREE_DEFINITIONS[plot.treeType] : null;
   const growthPercent = plot.growthTime > 0 ? (plot.growth / plot.growthTime) * 100 : 0;
   
+  // Calculate actual days remaining based on speed bonus
+  const growthRemaining = plot.growthTime - plot.growth;
+  const actualDaysRemaining = Math.ceil(growthRemaining / speedBonus);
+  
   return (
     <div className={`${styles.treePlot} ${isEmpty ? styles.empty : ''} ${canHarvest ? styles.ready : ''} ${isPerfect ? styles.perfect : ''} ${isLuxury ? styles.luxury : ''}`}>
-      <div className={styles.plotHeader}>
-        <span className={styles.plotNumber}>Plot {plotIndex + 1}</span>
-        {plot.quality !== 'normal' && (
-          <span className={styles.qualityBadge}>
-            {plot.quality === 'perfect' ? '⭐ Perfect' : '✨ Luxury'}
-          </span>
-        )}
-      </div>
+      {plot.quality !== 'normal' && !isEmpty && (
+        <div className={styles.qualityBadgeTop}>
+          {plot.quality === 'perfect' ? '⭐ Perfect' : '✨ Luxury'}
+        </div>
+      )}
       
       <div className={styles.plotContent}>
         {isEmpty ? (
@@ -188,24 +194,26 @@ const TreePlotDisplay: React.FC<TreePlotDisplayProps> = memo(({
             </div>
             
             {!canHarvest ? (
-              <div className={styles.growthInfo}>
-                <div className={styles.growthLabel}>Growing: {Math.floor(growthPercent)}%</div>
-                <ProgressBar 
-                  value={growthPercent}
-                  max={100}
-                  color="#4caf50"
-                />
-                <div className={styles.growthTime}>
-                  {Math.ceil(plot.growthTime - plot.growth)} days remaining
+            <div className={styles.progressSection}>
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBarWrapper}>
+                  <ProgressBar value={growthPercent} max={100} height={12} color="#23705D" />
+                  <span className={styles.progressLabel}>
+                    {Math.floor(growthPercent)}%
+                  </span>
                 </div>
+                <span className={styles.progressText}>
+                  {actualDaysRemaining} days remaining
+                </span>
               </div>
+            </div>
             ) : (
               <button
                 className={styles.harvestButton}
                 onClick={onHarvest}
                 title={`Harvest ${definition?.displayName}`}
               >
-                <img src={ICON_HARVEST} alt="" className={styles.harvestIcon} />
+                <img src={ICON_AXE} alt="" className={styles.harvestIcon} />
                 Harvest Ready!
               </button>
             )}
@@ -228,10 +236,21 @@ interface MaterialsDisplayProps {
 }
 
 const MaterialsDisplay: React.FC<MaterialsDisplayProps> = memo(({ materials, treeInventory, formatNumber }) => {
-  // Count plain trees
-  const pineCount = treeInventory['pine_plain'] || 0;
-  const spruceCount = treeInventory['spruce_plain'] || 0;
-  const firCount = treeInventory['fir_plain'] || 0;
+  // Count plain trees across all qualities (normal, perfect, luxury)
+  // New format: pine_normal_plain, pine_perfect_plain, pine_luxury_plain
+  const getPlainTreeCount = (treeType: string): number => {
+    let count = 0;
+    Object.keys(treeInventory).forEach(key => {
+      if (key.startsWith(`${treeType}_`) && key.endsWith('_plain')) {
+        count += treeInventory[key] || 0;
+      }
+    });
+    return count;
+  };
+  
+  const pineCount = getPlainTreeCount('pine');
+  const spruceCount = getPlainTreeCount('spruce');
+  const firCount = getPlainTreeCount('fir');
   
   return (
     <div className={styles.materialsDisplay}>
@@ -293,16 +312,51 @@ const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
   purchaseUpgrade,
   formatNumber,
 }) => {
-  const [selectedTreeType, setSelectedTreeType] = React.useState<TreeType | null>('pine');
-  
   // Check which trees are unlocked
   const pineUnlocked = upgrades.find(u => u.id === 'unlock_pine')?.owned ?? true;
   const spruceUnlocked = upgrades.find(u => u.id === 'unlock_spruce')?.owned ?? false;
   const firUnlocked = upgrades.find(u => u.id === 'unlock_fir')?.owned ?? false;
   
-  // Count ready trees
+  // Check if special actions are unlocked
+  const harvestAllUnlocked = upgrades.find(u => u.id === 'harvest_all_upgrade')?.owned ?? false;
+  const plantAllUnlocked = upgrades.find(u => u.id === 'plant_all_upgrade')?.owned ?? false;
+  
+  // Determine the highest tier unlocked tree
+  const getHighestUnlockedTree = (): TreeType => {
+    if (firUnlocked) return 'fir';
+    if (spruceUnlocked) return 'spruce';
+    return 'pine';
+  };
+  
+  const [selectedTreeType, setSelectedTreeType] = React.useState<TreeType | null>(getHighestUnlockedTree());
+  
+  // Update selected tree when a higher tier is unlocked
+  React.useEffect(() => {
+    const highestUnlocked = getHighestUnlockedTree();
+    // Only update if the newly unlocked tree is higher tier than current selection
+    if (selectedTreeType === 'pine' && (spruceUnlocked || firUnlocked)) {
+      setSelectedTreeType(highestUnlocked);
+    } else if (selectedTreeType === 'spruce' && firUnlocked) {
+      setSelectedTreeType('fir');
+    }
+  }, [spruceUnlocked, firUnlocked]);
+  
+  // Count ready trees and empty plots
   const readyTreesCount = treePlots.filter(p => p.harvestReady).length;
   const hasReadyTrees = readyTreesCount > 0;
+  const emptyPlotsCount = treePlots.filter(p => p.treeType === null).length;
+  const hasEmptyPlots = emptyPlotsCount > 0 && selectedTreeType !== null;
+  
+  // Plant All function
+  const handlePlantAll = () => {
+    if (!selectedTreeType) return;
+    
+    treePlots.forEach((plot, index) => {
+      if (plot.treeType === null) {
+        plantTree(index, selectedTreeType);
+      }
+    });
+  };
   
   const mainContent = (
     <div className={styles.container}>
@@ -316,14 +370,24 @@ const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
               <h2 className={styles.plotsTitle}>
                 <img src={TREE_PINE} alt="" className={styles.titleIcon} /> Tree Plots
               </h2>
-              {hasReadyTrees && (
+              {harvestAllUnlocked && hasReadyTrees && (
                 <button
                   className={styles.harvestAllButton}
                   onClick={harvestAllTrees}
                   title={`Harvest ${readyTreesCount} ready tree${readyTreesCount > 1 ? 's' : ''}`}
                 >
-                  <img src={ICON_HARVEST} alt="" className={styles.harvestAllIcon} />
+                  <img src={ICON_AXE} alt="" className={styles.harvestAllIcon} />
                   Harvest All ({readyTreesCount})
+                </button>
+              )}
+              {plantAllUnlocked && hasEmptyPlots && (
+                <button
+                  className={styles.plantAllButton}
+                  onClick={handlePlantAll}
+                  title={`Plant ${selectedTreeType ? TREE_DEFINITIONS[selectedTreeType].displayName : 'trees'} in all ${emptyPlotsCount} empty plot${emptyPlotsCount > 1 ? 's' : ''}`}
+                >
+                  <img src={TREE_SAPLING} alt="" className={styles.harvestAllIcon} />
+                  Plant All ({emptyPlotsCount})
                 </button>
               )}
             </div>
@@ -412,8 +476,8 @@ const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
               <TreePlotDisplay
                 key={plot.id}
                 plot={plot}
-                plotIndex={index}
                 selectedTreeType={selectedTreeType}
+                upgrades={upgrades}
                 onPlant={() => selectedTreeType && plantTree(index, selectedTreeType)}
                 onHarvest={() => harvestTree(index)}
               />
@@ -427,6 +491,7 @@ const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
             upgrades={upgrades}
             holidayCheer={holidayCheer}
             purchaseUpgrade={purchaseUpgrade}
+            formatNumber={formatNumber}
           />
         </div>
       </div>

@@ -11,6 +11,11 @@ interface DevToolsProps {
   onUnlockAllRecipes?: () => void;
   onMaxUpgrades?: () => void;
   onResetGame?: () => void;
+  // Christmas Event
+  onAddHolidayCheer?: (amount: number) => void;
+  onHarvestAllTrees?: () => void;
+  onAddTreeMaterials?: () => void;
+  onProcessTreeGrowth?: () => void;
 }
 
 const DevTools: React.FC<DevToolsProps> = ({
@@ -21,13 +26,33 @@ const DevTools: React.FC<DevToolsProps> = ({
   onUnlockAllVeggies,
   onUnlockAllRecipes,
   onMaxUpgrades,
-  onResetGame
+  onResetGame,
+  onAddHolidayCheer,
+  onHarvestAllTrees,
+  onAddTreeMaterials,
+  onProcessTreeGrowth
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [customMoney, setCustomMoney] = useState('1000');
   const [customExp, setCustomExp] = useState('100');
   const [customKnowledge, setCustomKnowledge] = useState('100');
   const [customDays, setCustomDays] = useState('7');
+
+  // Helper to skip days and process tree growth
+  const handleSkipDays = (days: number) => {
+    onSkipDays(days);
+    
+    // Process tree growth for each day (86400 seconds per day)
+    if (onProcessTreeGrowth) {
+      const ticksPerDay = 86400; // 1 tick per second
+      const totalTicks = days * ticksPerDay;
+      
+      // Process all ticks
+      for (let i = 0; i < totalTicks; i++) {
+        onProcessTreeGrowth();
+      }
+    }
+  };
 
   // Only show in development mode
   if (import.meta.env.PROD) {
@@ -143,13 +168,13 @@ const DevTools: React.FC<DevToolsProps> = ({
           <div className={styles.section}>
             <h4 className={styles.sectionTitle}>Time Control</h4>
             <div className={styles.timeControl}>
-              <button onClick={() => onSkipDays(1)} className={styles.button}>
+              <button onClick={() => handleSkipDays(1)} className={styles.button}>
                 +1 Day
               </button>
-              <button onClick={() => onSkipDays(7)} className={styles.button}>
+              <button onClick={() => handleSkipDays(7)} className={styles.button}>
                 +1 Week
               </button>
-              <button onClick={() => onSkipDays(30)} className={styles.button}>
+              <button onClick={() => handleSkipDays(30)} className={styles.button}>
                 +1 Month
               </button>
               <label className={styles.inputLabel}>
@@ -162,7 +187,7 @@ const DevTools: React.FC<DevToolsProps> = ({
                   min="1"
                 />
                 <button 
-                  onClick={() => onSkipDays(parseInt(customDays) || 0)}
+                  onClick={() => handleSkipDays(parseInt(customDays) || 0)}
                   className={styles.smallButton}
                 >
                   Skip
@@ -202,6 +227,47 @@ const DevTools: React.FC<DevToolsProps> = ({
               )}
             </div>
           </div>
+
+          {/* Christmas Event Section */}
+          {(onAddHolidayCheer || onHarvestAllTrees || onAddTreeMaterials) && (
+            <div className={styles.section}>
+              <h4 className={styles.sectionTitle}>🎄 Christmas Tree Shop</h4>
+              <div className={styles.actionButtons}>
+                {onAddHolidayCheer && (
+                  <>
+                    <button 
+                      onClick={() => onAddHolidayCheer(100)}
+                      className={styles.actionButton}
+                    >
+                      +100 Holiday Cheer
+                    </button>
+                    <button 
+                      onClick={() => onAddHolidayCheer(1000)}
+                      className={styles.actionButton}
+                    >
+                      +1K Holiday Cheer
+                    </button>
+                  </>
+                )}
+                {onHarvestAllTrees && (
+                  <button 
+                    onClick={onHarvestAllTrees}
+                    className={styles.actionButton}
+                  >
+                    🌲 Harvest All Trees
+                  </button>
+                )}
+                {onAddTreeMaterials && (
+                  <button 
+                    onClick={onAddTreeMaterials}
+                    className={styles.actionButton}
+                  >
+                    📦 Add Materials (x100 each)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Danger Zone */}
           {onResetGame && (

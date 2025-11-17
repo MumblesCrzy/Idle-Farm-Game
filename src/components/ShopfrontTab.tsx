@@ -12,7 +12,7 @@
 
 import React, { memo, useState } from 'react';
 import type { TreeInventory, EventUpgrade, CraftingMaterials } from '../types/christmasEvent';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_WREATH } from '../config/assetPaths';
+import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import BaseTab from './BaseTab';
 import ShopfrontUpgradesPanel from './ShopfrontUpgradesPanel';
 import styles from './ShopfrontTab.module.css';
@@ -33,11 +33,10 @@ interface ShopfrontTabProps {
   sellTrees: (treeKey: string, quantity: number) => void;
   sellGarland: (quantity: number) => void;
   sellCandle: (quantity: number) => void;
+  sellOrnament: (quantity: number) => void;
   demandMultiplier: number;
   holidayCheer: number;
   upgrades: EventUpgrade[];
-  dailyBonusAvailable: boolean;
-  claimDailyBonus: () => void;
   passiveCheerPerSecond: number;
   formatNumber: (num: number, decimalPlaces?: number) => string;
   purchaseUpgrade: (upgradeId: string) => void;
@@ -118,27 +117,14 @@ const PriceCard: React.FC<PriceCardProps> = memo(({ variant, quantity, demandMul
         </span>
         <div className={styles.cardTitle}>
           <div className={styles.treeName}>{variant.name}</div>
-          <div className={styles.treeQuantity}>In Stock: {quantity}</div>
         </div>
-      </div>
-      
-      <div className={styles.priceInfo}>
-        <div className={styles.priceRow}>
-          <span className={styles.priceLabel}>Base Price:</span>
-          <span className={styles.priceValue}>{variant.basePrice} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} /></span>
-        </div>
-        <div className={styles.priceRow}>
-          <span className={styles.priceLabel}>Decoration:</span>
-          <span className={styles.multiplierValue}>×{variant.multiplier.toFixed(1)}</span>
-        </div>
-        <div className={styles.priceRow}>
-          <span className={styles.priceLabel}>Demand:</span>
-          <span className={styles.demandValue}>×{demandMultiplier.toFixed(2)}</span>
-        </div>
-        <div className={`${styles.priceRow} ${styles.finalPrice}`}>
-          <span className={styles.priceLabel}>Final Price:</span>
-          <span className={styles.priceValue}>{finalPrice} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} /></span>
-        </div>
+        <span className={styles.priceLabel}>Price:</span>
+        <span 
+          className={styles.priceValue}
+          title={variant.multiplier > 1.0 ? `Base: ${variant.basePrice} | Decoration Bonus: ×${variant.multiplier}` : undefined}
+        >
+          {finalPrice} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />
+        </span>
       </div>
       
       <div className={styles.sellControls}>
@@ -153,7 +139,7 @@ const PriceCard: React.FC<PriceCardProps> = memo(({ variant, quantity, demandMul
         <div className={styles.sliderLabel}>
           Sell: {sellQuantity} / {quantity}
           {sellQuantity > 0 && (
-            <span className={styles.totalValue}> ({formatNumber(totalValue, 0)} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} />)</span>
+            <span className={styles.totalValue}> ({formatNumber(totalValue, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)</span>
           )}
         </div>
         <div className={styles.sellButtons}>
@@ -187,28 +173,14 @@ const ShopfrontTab: React.FC<ShopfrontTabProps> = ({
   sellTrees,
   sellGarland,
   sellCandle,
+  sellOrnament,
   demandMultiplier,
   holidayCheer,
   upgrades,
-  dailyBonusAvailable,
-  claimDailyBonus,
   passiveCheerPerSecond,
   formatNumber,
   purchaseUpgrade,
 }) => {
-  const hasWreathSign = upgrades.find(u => u.id === 'wreath_sign')?.owned ?? false;
-  const hasGoldenBell = upgrades.find(u => u.id === 'golden_bell_counter')?.owned ?? false;
-  
-  // Convert upgrades array to object for panel
-  const upgradesObj = {
-    shopfrontUnlocked: upgrades.find(u => u.id === 'christmas_tree_shopfront')?.owned ?? false,
-    garlandBorders: upgrades.find(u => u.id === 'garland_borders')?.owned ?? false,
-    wreathSign: hasWreathSign,
-    goldenBellCounter: hasGoldenBell,
-    magicalRegister: upgrades.find(u => u.id === 'magical_register')?.owned ?? false,
-    fireplaceDisplay: upgrades.find(u => u.id === 'fireplace_display')?.owned ?? false,
-  };
-  
   const mainContent = (
     <div className={styles.container}>
       {/* Left Column: Price Cards */}
@@ -226,28 +198,71 @@ const ShopfrontTab: React.FC<ShopfrontTabProps> = ({
         
         <div className={styles.priceCardsGrid}>
           {TREE_VARIANTS.map(variant => {
-            const quantity = treeInventory[variant.key] || 0;
+            // Aggregate quantity across all qualities (normal, perfect, luxury)
+            // Old format: pine_plain, New format: pine_normal_plain, pine_perfect_plain, pine_luxury_plain
+            const [treeType, decorationLevel] = variant.key.split('_');
+            let quantity = 0;
+            const matchingKeys: string[] = [];
+            
+            // Sum up all qualities for this tree type and decoration level
+            Object.keys(treeInventory).forEach(invKey => {
+              // Check if this inventory key matches the tree type and decoration level
+              // Format: treeType_quality_decorationLevel
+              const parts = invKey.split('_');
+              if (parts.length >= 3) {
+                const invTreeType = parts[0];
+                const invDecoLevel = parts.slice(2).join('_'); // Handle multi-word decoration levels
+                if (invTreeType === treeType && invDecoLevel === decorationLevel) {
+                  quantity += treeInventory[invKey] || 0;
+                  matchingKeys.push(invKey);
+                }
+              }
+            });
+            
+            // Handler to sell trees - need to sell from actual inventory keys
+            const handleSell = (qty: number) => {
+              let remaining = qty;
+              // Sell from normal quality first, then perfect, then luxury
+              const sortedKeys = matchingKeys.sort((a, b) => {
+                const qualityOrder: Record<string, number> = { normal: 0, perfect: 1, luxury: 2 };
+                const qualityA = a.split('_')[1];
+                const qualityB = b.split('_')[1];
+                return (qualityOrder[qualityA] || 999) - (qualityOrder[qualityB] || 999);
+              });
+              
+              for (const key of sortedKeys) {
+                if (remaining <= 0) break;
+                const available = treeInventory[key] || 0;
+                const toSell = Math.min(available, remaining);
+                if (toSell > 0) {
+                  sellTrees(key, toSell);
+                  remaining -= toSell;
+                }
+              }
+            };
+            
             return (
               <PriceCard
                 key={variant.key}
                 variant={variant}
                 quantity={quantity}
                 demandMultiplier={demandMultiplier}
-                onSell={(qty) => sellTrees(variant.key, qty)}
+                onSell={handleSell}
                 formatNumber={formatNumber}
               />
             );
           })}
         </div>
         
-        {/* Garland Sales Section */}
-        {materials.garlands > 0 && (
+        {/* Decoration Sales Row */}
+        <div className={styles.decorationsRow}>
+          {/* Garland Sales Section */}
           <div className={styles.garlandSection}>
-            <h3 className={styles.garlandTitle}><img src={TREE_DECORATED} alt="Decorated Tree" className={styles.titleIcon} /> Festive Garland</h3>
+            <h3 className={styles.garlandTitle}><img src={DECORATION_GARLAND} alt="Garland" className={styles.titleIcon} /> Festive Garland</h3>
             <div className={styles.garlandCard}>
               <div className={styles.garlandInfo}>
                 <span className={styles.garlandStock}>In Stock: {materials.garlands}</span>
-                <span className={styles.garlandPrice}>2 <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
+                <span className={styles.garlandPrice}>4 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
               </div>
               <div className={styles.garlandButtons}>
                 <button
@@ -262,95 +277,78 @@ const ShopfrontTab: React.FC<ShopfrontTabProps> = ({
                   onClick={() => sellGarland(materials.garlands)}
                   disabled={materials.garlands < 1}
                 >
-                  Sell All ({formatNumber(materials.garlands * 2, 0)} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} />)
+                  Sell All ({formatNumber(materials.garlands * 4, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
                 </button>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Candle Sales Section */}
-        {materials.candles > 0 && (
+          {/* Candle Sales Section */}
           <div className={styles.garlandSection}>
-            <h3 className={styles.garlandTitle}><img src={DECORATION_CANDLE} alt="Candle" className={styles.titleIcon} /> Festive Candles</h3>
-            <div className={styles.garlandCard}>
-              <div className={styles.garlandInfo}>
-                <span className={styles.garlandStock}>In Stock: {materials.candles}</span>
-                <span className={styles.garlandPrice}>1 <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
-              </div>
-              <div className={styles.garlandButtons}>
-                <button
-                  className={styles.sellButton}
-                  onClick={() => sellCandle(1)}
-                  disabled={materials.candles < 1}
-                >
-                  Sell 1
-                </button>
-                <button
-                  className={styles.sellAllButton}
-                  onClick={() => sellCandle(materials.candles)}
-                  disabled={materials.candles < 1}
-                >
-                  Sell All ({formatNumber(materials.candles * 1, 0)} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} />)
-                </button>
-              </div>
+          <h3 className={styles.garlandTitle}><img src={DECORATION_CANDLE} alt="Candle" className={styles.titleIcon} /> Festive Candles</h3>
+          <div className={styles.garlandCard}>
+            <div className={styles.garlandInfo}>
+              <span className={styles.garlandStock}>In Stock: {materials.candles}</span>
+              <span className={styles.garlandPrice}>2 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
+            </div>
+            <div className={styles.garlandButtons}>
+              <button
+                className={styles.sellButton}
+                onClick={() => sellCandle(1)}
+                disabled={materials.candles < 1}
+              >
+                Sell 1
+              </button>
+              <button
+                className={styles.sellAllButton}
+                onClick={() => sellCandle(materials.candles)}
+                disabled={materials.candles < 1}
+              >
+                Sell All ({formatNumber(materials.candles * 2, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
+              </button>
             </div>
           </div>
-        )}
-        
-        {Object.keys(treeInventory).length === 0 && materials.garlands === 0 && materials.candles === 0 && (
-          <div className={styles.emptyState}>
-            <p>
-              <img src={TREE_PINE} alt="Tree" className={styles.emptyStateIcon} /> No trees in inventory
-            </p>
-            <p>Grow and decorate trees in the Workshop to start selling.</p>
+        </div>
+
+        {/* Ornament Sales Section */}
+        <div className={styles.garlandSection}>
+          <h3 className={styles.garlandTitle}><img src={TREE_DECORATED} alt="Ornament" className={styles.titleIcon} /> Festive Ornaments</h3>
+          <div className={styles.garlandCard}>
+            <div className={styles.garlandInfo}>
+              <span className={styles.garlandStock}>In Stock: {materials.ornaments}</span>
+              <span className={styles.garlandPrice}>1 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
+            </div>
+            <div className={styles.garlandButtons}>
+              <button
+                className={styles.sellButton}
+                onClick={() => sellOrnament(1)}
+                disabled={materials.ornaments < 1}
+              >
+                Sell 1
+              </button>
+              <button
+                className={styles.sellAllButton}
+                onClick={() => sellOrnament(materials.ornaments)}
+                disabled={materials.ornaments < 1}
+              >
+                Sell All ({formatNumber(materials.ornaments * 1, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+        </div>
       </div>
       
       {/* Right Column: Customer Feed & Bonuses */}
       <div className={styles.rightColumn}>
         {/* Shopfront Upgrades */}
         <ShopfrontUpgradesPanel
-          upgrades={upgradesObj}
+          upgrades={upgrades}
           holidayCheer={holidayCheer}
           purchaseUpgrade={purchaseUpgrade}
+          passiveCheerPerSecond={passiveCheerPerSecond}
+          formatNumber={formatNumber}
         />
-        
-        {/* Passive Income Display */}
-        {hasGoldenBell && passiveCheerPerSecond > 0 && (
-          <div className={styles.passiveIncome}>
-            <h3 className={styles.passiveTitle}>🔔 Golden Bell Counter</h3>
-            <div className={styles.passiveValue}>
-              +{formatNumber(passiveCheerPerSecond, 2)} <img src={TREE_DECORATED} alt="Holiday Cheer" className={styles.cheerIcon} />/sec
-            </div>
-            <div className={styles.passiveHint}>Passive Holiday Cheer generation</div>
-          </div>
-        )}
-        
-        {/* Daily Bonus */}
-        {hasWreathSign && (
-          <div className={styles.dailyBonus}>
-            <h3 className={styles.bonusTitle}><img src={DECORATION_WREATH} alt="Daily Customer Bonus" style={{ width: '24px', height: '24px', verticalAlign: 'middle', marginRight: '8px' }} /> Daily Customer Bonus</h3>
-            {dailyBonusAvailable ? (
-              <>
-                <div className={styles.bonusDescription}>
-                  A generous customer left a special tip!
-                </div>
-                <button
-                  className={styles.claimButton}
-                  onClick={claimDailyBonus}
-                >
-                  Claim Bonus
-                </button>
-              </>
-            ) : (
-              <div className={styles.bonusClaimed}>
-                ✓ Already claimed today. Come back tomorrow!
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

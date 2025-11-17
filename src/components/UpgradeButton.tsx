@@ -10,6 +10,7 @@ export interface UpgradeButtonProps {
   knowledge: number;
   cost: number;
   currencyType: 'money' | 'knowledge';
+  currencyLabel?: string; // Optional custom label (e.g., "Cheer" instead of "Kn")
   onClick: () => void;
   disabled?: boolean;
   isOwned?: boolean;
@@ -28,7 +29,8 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
   money, 
   knowledge, 
   cost, 
-  currencyType, 
+  currencyType,
+  currencyLabel,
   onClick, 
   disabled = false, 
   isOwned = false, 
@@ -40,6 +42,14 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
   formatNumber
 }) => {
   const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
+  
+  // Determine the currency display label
+  const getCurrencyLabel = () => {
+    if (currencyLabel) return currencyLabel;
+    return currencyType === 'money' ? '$' : 'Kn';
+  };
+  
+  const costLabel = getCurrencyLabel();
   
   const getButtonClass = () => {
     if (isOwned) return styles.button;
@@ -76,7 +86,9 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
             <div className={styles.effect}>
               {knowledgeCost ? 
                 `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn` : 
-                (currencyType === 'money' ? `$${formatNumber(cost, 1)}` : `${formatNumber(cost, 1)} Kn`)
+                (currencyType === 'money' 
+                  ? `$${formatNumber(cost, 1)}` 
+                  : `${formatNumber(cost, 1)} ${costLabel}`)
               }
             </div>
           )}
@@ -112,7 +124,7 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
         ? `Costs $${formatNumber(cost, 1)} and ${formatNumber(knowledgeCost, 1)} knowledge`
         : currencyType === 'money' 
           ? `Costs $${formatNumber(cost, 1)}`
-          : `Costs ${formatNumber(cost, 1)} knowledge`;
+          : `Costs ${formatNumber(cost, 1)} ${currencyLabel || 'knowledge'}`;
       label += `. ${costText}`;
       if (!canAfford) {
         label += '. Cannot afford';

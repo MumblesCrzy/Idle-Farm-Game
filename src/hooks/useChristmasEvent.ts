@@ -59,6 +59,7 @@ export interface UseChristmasEventReturn {
   sellAllTrees: () => void;
   sellGarland: (quantity: number) => void;
   sellCandle: (quantity: number) => void;
+  sellOrnament: (quantity: number) => void;
   claimDailyBonus: () => boolean;
   totalTreesSold: number;
   demandMultiplier: number;
@@ -75,7 +76,11 @@ export interface UseChristmasEventReturn {
   // Utility
   updatePassiveIncome: (deltaTime: number) => void;
   processTreeGrowth: () => void;
+  processDailyElvesCrafting: () => void;
   checkEventActive: () => boolean;
+  
+  // Automation feedback
+  currentElvesAction?: ChristmasEventState['currentElvesAction'];
 }
 
 /**
@@ -132,6 +137,8 @@ function createInitialEventState(_farmTier: number): ChristmasEventState {
     milestones: EVENT_MILESTONES.map(m => ({ ...m })),
     unlockedCosmetics: [],
     activeCosmetics: [],
+    permanentBonuses: [],
+    unlockedRecipes: [],
   };
 }
 
@@ -155,6 +162,40 @@ function isWithinEventPeriod(): boolean {
 }
 
 /**
+ * Calculate market demand multiplier based on proximity to Christmas
+ * Increases from BASE_DEMAND_MULTIPLIER (1.0) to MAX_DEMAND_MULTIPLIER (2.0)
+ * as it gets closer to December 25
+ */
+function calculateDemandMultiplier(): number {
+  const now = new Date();
+  
+  // Event runs Nov 1 - Dec 25
+  const eventStart = new Date(now.getFullYear(), 10, 1); // Nov 1 (month 10)
+  const eventEnd = new Date(now.getFullYear(), 11, 25);   // Dec 25 (month 11)
+  
+  // If not in event period, return base multiplier
+  if (now < eventStart || now > eventEnd) {
+    return EVENT_CONSTANTS.BASE_DEMAND_MULTIPLIER;
+  }
+  
+  // Calculate days elapsed and total days in event
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysElapsed = Math.floor((now.getTime() - eventStart.getTime()) / msPerDay);
+  const totalEventDays = Math.floor((eventEnd.getTime() - eventStart.getTime()) / msPerDay);
+  
+  // Linear progression from 1.0 to 2.0
+  const progress = daysElapsed / totalEventDays;
+  const multiplier = EVENT_CONSTANTS.BASE_DEMAND_MULTIPLIER + 
+    (progress * (EVENT_CONSTANTS.MAX_DEMAND_MULTIPLIER - EVENT_CONSTANTS.BASE_DEMAND_MULTIPLIER));
+  
+  // Clamp between min and max
+  return Math.min(
+    EVENT_CONSTANTS.MAX_DEMAND_MULTIPLIER,
+    Math.max(EVENT_CONSTANTS.BASE_DEMAND_MULTIPLIER, multiplier)
+  );
+}
+
+/**
  * Main Christmas Event Hook
  */
 export function useChristmasEvent({
@@ -164,7 +205,74 @@ export function useChristmasEvent({
   // Initialize event state
   const [eventState, setEventState] = useState<ChristmasEventState>(() => {
     const baseState = createInitialEventState(farmTier);
-    return initialState ? { ...baseState, ...initialState } : baseState;
+    
+    if (!initialState) {
+      // Set initial demand multiplier based on current date
+      baseState.marketDemand.demandMultiplier = calculateDemandMultiplier();
+      return baseState;
+    }
+    
+    // Merge saved state with base state
+    const mergedState = { ...baseState, ...initialState };
+    
+    // Update demand multiplier to current date (in case game was loaded from an old save)
+    mergedState.marketDemand.demandMultiplier = calculateDemandMultiplier();
+    mergedState.marketDemand.lastUpdate = new Date();
+    
+    // Migrate old tree inventory keys to new format with quality
+    // Old format: pine_plain, New format: pine_normal_plain
+    if (mergedState.treeInventory) {
+      const migratedInventory: Record<string, number> = {};
+      Object.keys(mergedState.treeInventory).forEach(key => {
+        const quantity = mergedState.treeInventory[key];
+        // Check if key is in old format (doesn't have quality)
+        const parts = key.split('_');
+        if (parts.length === 2) {
+          // Old format: treeType_decorationLevel -> convert to treeType_normal_decorationLevel
+          const [treeType, decorationLevel] = parts;
+          const newKey = `${treeType}_normal_${decorationLevel}`;
+          migratedInventory[newKey] = (migratedInventory[newKey] || 0) + quantity;
+        } else {
+          // Already in new format or unrecognized, keep as is
+          migratedInventory[key] = quantity;
+        }
+      });
+      mergedState.treeInventory = migratedInventory;
+    }
+    
+    // Migrate upgrades: merge saved state (owned, level) with current definitions (icon, name, etc.)
+    // This ensures old saves get new fields like 'icon' while preserving purchase state
+    const savedUpgradeMap = new Map(mergedState.upgrades.map(u => [u.id, u]));
+    
+    mergedState.upgrades = ALL_EVENT_UPGRADES.map(baseUpgrade => {
+      const savedUpgrade = savedUpgradeMap.get(baseUpgrade.id);
+      if (savedUpgrade) {
+        // Merge: take base upgrade definition and override with saved state
+        return {
+          ...baseUpgrade,  // Fresh data from code (icon, name, description, etc.)
+          ...savedUpgrade, // Saved state (owned, level, etc.)
+          // Ensure critical fields from base are preserved
+          icon: baseUpgrade.icon,
+          name: baseUpgrade.name,
+          description: baseUpgrade.description,
+          category: baseUpgrade.category,
+          cost: baseUpgrade.cost,
+          effect: baseUpgrade.effect,
+          maxLevel: baseUpgrade.maxLevel, // Update max level from base
+          costScaling: baseUpgrade.costScaling, // Update cost scaling from base
+        };
+      }
+      // New upgrade not in saved state
+      return { ...baseUpgrade };
+    });
+    
+    // Migrate passive income: if player owns golden bell but passiveCheerPerSecond is 0, set it
+    const goldenBell = mergedState.upgrades.find(u => u.id === 'golden_bell_counter');
+    if (goldenBell?.owned && mergedState.passiveCheerPerSecond === 0 && goldenBell.passiveIncome) {
+      mergedState.passiveCheerPerSecond = goldenBell.passiveIncome;
+    }
+    
+    return mergedState;
   });
   
   // Check if event is currently active based on date
@@ -178,6 +286,35 @@ export function useChristmasEvent({
   useEffect(() => {
     setEventState(prev => ({ ...prev, isActive: isEventActive }));
   }, [isEventActive]);
+  
+  // Update market demand multiplier based on proximity to Christmas
+  useEffect(() => {
+    const updateDemand = () => {
+      const newMultiplier = calculateDemandMultiplier();
+      setEventState(prev => {
+        // Only update if multiplier has changed to avoid unnecessary re-renders
+        if (prev.marketDemand.demandMultiplier !== newMultiplier) {
+          return {
+            ...prev,
+            marketDemand: {
+              ...prev.marketDemand,
+              demandMultiplier: newMultiplier,
+              lastUpdate: new Date(),
+            },
+          };
+        }
+        return prev;
+      });
+    };
+    
+    // Update immediately on mount
+    updateDemand();
+    
+    // Update every hour (3600000ms) to catch date changes
+    const interval = setInterval(updateDemand, 3600000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
   // ============================================================================
   // CURRENCY MANAGEMENT
@@ -250,7 +387,7 @@ export function useChristmasEvent({
       
       const treeDefinition = TREE_DEFINITIONS[plot.treeType];
       const qualityMultiplier = QUALITY_MULTIPLIERS[plot.quality];
-      const newMaterials = { ...prev.materials };
+      let newMaterials = { ...prev.materials };
       
       // Apply quality multiplier to yields (Perfect trees give 2x, Luxury 3x)
       const woodYield = Math.floor(treeDefinition.baseYield.wood * qualityMultiplier);
@@ -266,10 +403,40 @@ export function useChristmasEvent({
       const newHolidayCheer = prev.holidayCheer + cheerEarned;
       const newTotalCheerEarned = prev.totalCheerEarned + cheerEarned;
       
-      // Add plain tree to inventory
-      const plainTreeKey = `${plot.treeType}_plain`;
+      // Check if Elves' Bench is enabled for auto-crafting and auto-decorating
+      const elvesBenchOwned = prev.upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
+      
+      // Include quality in the tree key: treeType_quality_decorationLevel
+      let finalTreeKey = `${plot.treeType}_${plot.quality}_plain`;
       const newInventory = { ...prev.treeInventory };
-      newInventory[plainTreeKey] = (newInventory[plainTreeKey] || 0) + 1;
+      
+      // Elves' Bench Automation: Auto-decorate ONE tree when harvesting
+      if (elvesBenchOwned) {
+        // Auto-decorate the harvested tree with the most valuable decorations possible
+        // Priority: Luxury (ornament + candle) > Candled > Ornamented > Plain
+        
+        const hasOrnament = (newMaterials.ornaments || 0) > 0;
+        const hasCandle = (newMaterials.candles || 0) > 0;
+        
+        if (hasOrnament && hasCandle) {
+          // Make Luxury tree (both decorations)
+          newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
+          newMaterials.candles = (newMaterials.candles || 0) - 1;
+          finalTreeKey = `${plot.treeType}_${plot.quality}_luxury`;
+        } else if (hasCandle) {
+          // Make Candled tree (candles are more valuable)
+          newMaterials.candles = (newMaterials.candles || 0) - 1;
+          finalTreeKey = `${plot.treeType}_${plot.quality}_candled`;
+        } else if (hasOrnament) {
+          // Make Ornamented tree
+          newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
+          finalTreeKey = `${plot.treeType}_${plot.quality}_ornamented`;
+        }
+        // else: leave as plain tree
+      }
+      
+      // Add tree to inventory
+      newInventory[finalTreeKey] = (newInventory[finalTreeKey] || 0) + 1;
       
       // Reset plot
       const newPlots = [...prev.treePlots];
@@ -354,13 +521,25 @@ export function useChristmasEvent({
   // ============================================================================
   
   const decorateTree = useCallback((treeType: TreeType, decorations: DecorationType[]): boolean => {
-    // Check if player has a plain tree of this type
-    const plainTreeKey = `${treeType}_plain`;
-    const hasPlainTree = (eventState.treeInventory[plainTreeKey] || 0) > 0;
+    // Check if player has a plain tree of this type (any quality)
+    // New format: treeType_quality_plain (e.g., pine_normal_plain, pine_perfect_plain)
+    const plainTreeKeys = Object.keys(eventState.treeInventory).filter(key => 
+      key.startsWith(`${treeType}_`) && key.endsWith('_plain')
+    );
     
-    if (!hasPlainTree) {
+    if (plainTreeKeys.length === 0) {
       return false;
     }
+    
+    // Use the first available plain tree (prioritize normal, then perfect, then luxury)
+    const sortedKeys = plainTreeKeys.sort((a, b) => {
+      const qualityOrder = { normal: 0, perfect: 1, luxury: 2 };
+      const qualityA = a.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+      const qualityB = b.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+      return qualityOrder[qualityA] - qualityOrder[qualityB];
+    });
+    const plainTreeKey = sortedKeys[0];
+    const quality = plainTreeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
     
     // Check if player has the materials for the decorations
     const hasOrnaments = !decorations.includes('ornament') || eventState.materials.ornaments > 0;
@@ -390,9 +569,9 @@ export function useChristmasEvent({
         }
       });
       
-      // Add decorated tree to inventory using serialized key
+      // Add decorated tree to inventory using serialized key with quality preserved
       const variant = getTreeVariantString(decorations);
-      const inventoryKey = `${treeType}_${variant}`;
+      const inventoryKey = `${treeType}_${quality}_${variant}`;
       newInventory[inventoryKey] = (newInventory[inventoryKey] || 0) + 1;
       
       return {
@@ -469,7 +648,13 @@ export function useChristmasEvent({
       if (treeKey.startsWith('spruce')) basePrice = 15;
       else if (treeKey.startsWith('fir')) basePrice = 20;
       
-      // Decoration multipliers
+      // Extract quality from tree key (format: treeType_quality_decorationLevel)
+      // Examples: pine_perfect_luxury, spruce_normal_plain
+      const keyParts = treeKey.split('_');
+      const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
+      const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
+      
+      // Decoration multipliers (check the decoration level part of the key)
       let decorationMultiplier = 1.0;
       if (treeKey.includes('ornamented')) decorationMultiplier = 1.05;
       else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
@@ -490,7 +675,7 @@ export function useChristmasEvent({
         upgradeMultiplier += 0.50;
       }
       
-      const finalPrice = Math.floor(basePrice * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
+      const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
       const totalCheer = finalPrice * quantity;
       
       // Update inventory and currency
@@ -524,6 +709,11 @@ export function useChristmasEvent({
         if (treeKey.startsWith('spruce')) basePrice = 15;
         else if (treeKey.startsWith('fir')) basePrice = 20;
         
+        // Extract quality from tree key (format: treeType_quality_decorationLevel)
+        const keyParts = treeKey.split('_');
+        const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
+        const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
+        
         let decorationMultiplier = 1.0;
         if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
         else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
@@ -541,7 +731,7 @@ export function useChristmasEvent({
           upgradeMultiplier += 0.50;
         }
         
-        const finalPrice = Math.floor(basePrice * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
+        const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
         totalCheer += finalPrice * quantity;
         totalSold += quantity;
       });
@@ -567,8 +757,8 @@ export function useChristmasEvent({
         return prev;
       }
       
-      // Garland sells for 2 Cheer each
-      const pricePerGarland = 2;
+      // Garland sells for 4 Cheer each
+      const pricePerGarland = 4;
       const totalCheer = pricePerGarland * quantity;
       
       return {
@@ -594,8 +784,8 @@ export function useChristmasEvent({
         return prev;
       }
       
-      // Candles sell for 1 Cheer each
-      const pricePerCandle = 1;
+      // Candles sell for 2 Cheer each
+      const pricePerCandle = 2;
       const totalCheer = pricePerCandle * quantity;
       
       return {
@@ -603,6 +793,33 @@ export function useChristmasEvent({
         materials: {
           ...prev.materials,
           candles: currentQuantity - quantity,
+        },
+        holidayCheer: prev.holidayCheer + totalCheer,
+      };
+    });
+  }, []);
+
+  /**
+   * Sell ornaments from materials
+   */
+  const sellOrnament = useCallback((quantity: number) => {
+    setEventState(prev => {
+      const currentQuantity = prev.materials.ornaments || 0;
+      
+      if (currentQuantity < quantity) {
+        console.warn('Not enough ornaments to sell');
+        return prev;
+      }
+      
+      // Ornaments sell for 1 Cheer each
+      const pricePerOrnament = 1;
+      const totalCheer = pricePerOrnament * quantity;
+      
+      return {
+        ...prev,
+        materials: {
+          ...prev.materials,
+          ornaments: currentQuantity - quantity,
         },
         holidayCheer: prev.holidayCheer + totalCheer,
       };
@@ -636,7 +853,74 @@ export function useChristmasEvent({
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
     const upgrade = eventState.upgrades.find(u => u.id === upgradeId);
     
-    if (!upgrade || upgrade.owned) {
+    if (!upgrade) {
+      return false;
+    }
+    
+    // Check if upgrade is repeatable and at max level
+    if (upgrade.repeatable) {
+      const currentLevel = upgrade.level ?? 0;
+      const maxLevel = upgrade.maxLevel ?? Infinity;
+      
+      if (currentLevel >= maxLevel) {
+        return false; // Already at max level
+      }
+      
+      // Calculate cost for next level
+      const costScaling = upgrade.costScaling ?? 1.5;
+      const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
+      
+      if (!spendCheer(nextLevelCost)) {
+        return false;
+      }
+      
+      setEventState(prev => {
+        const newUpgrades = prev.upgrades.map(u => {
+          if (u.id === upgradeId) {
+            return {
+              ...u,
+              level: currentLevel + 1,
+              owned: true,
+            };
+          }
+          return u;
+        });
+        
+        // Special handling for greenhouse_extension: add a tree plot
+        if (upgradeId === 'greenhouse_extension') {
+          const newPlots = [...prev.treePlots, {
+            id: `plot_${prev.treePlots.length}`,
+            treeType: null,
+            growth: 0,
+            growthTime: 0,
+            quality: 'normal' as const,
+            decorations: {
+              ornaments: false,
+              garland: false,
+              candles: false,
+            },
+            harvestReady: false,
+          }];
+          
+          return {
+            ...prev,
+            upgrades: newUpgrades,
+            treePlots: newPlots,
+            maxPlots: prev.maxPlots + 1,
+          };
+        }
+        
+        return {
+          ...prev,
+          upgrades: newUpgrades,
+        };
+      });
+      
+      return true;
+    }
+    
+    // Non-repeatable upgrade logic
+    if (upgrade.owned) {
       return false;
     }
     
@@ -644,12 +928,26 @@ export function useChristmasEvent({
       return false;
     }
     
-    setEventState(prev => ({
-      ...prev,
-      upgrades: prev.upgrades.map(u =>
+    setEventState(prev => {
+      const newUpgrades = prev.upgrades.map(u =>
         u.id === upgradeId ? { ...u, owned: true } : u
-      ),
-    }));
+      );
+      
+      // Calculate new passive income if Golden Bell Counter was purchased
+      let newPassiveCheerPerSecond = prev.passiveCheerPerSecond;
+      if (upgradeId === 'golden_bell_counter') {
+        const goldenBell = newUpgrades.find(u => u.id === 'golden_bell_counter');
+        if (goldenBell && goldenBell.passiveIncome) {
+          newPassiveCheerPerSecond = goldenBell.passiveIncome;
+        }
+      }
+      
+      return {
+        ...prev,
+        upgrades: newUpgrades,
+        passiveCheerPerSecond: newPassiveCheerPerSecond,
+      };
+    });
     
     return true;
   }, [eventState.upgrades, spendCheer]);
@@ -722,8 +1020,9 @@ export function useChristmasEvent({
   const processTreeGrowth = useCallback(() => {
     setEventState(prev => {
       // Check if any upgrades affect growth speed
-      const fertilizedSoilOwned = prev.upgrades.find(u => u.id === 'fertilized_soil')?.owned ?? false;
-      const speedBonus = fertilizedSoilOwned ? 1.25 : 1.0; // +25% if owned
+      const fertilizedSoil = prev.upgrades.find(u => u.id === 'fertilized_soil');
+      const fertilizedSoilLevel = fertilizedSoil?.level ?? 0;
+      const speedBonus = 1.0 + (fertilizedSoilLevel * 0.15); // +15% per level
       
       const evergreenEssenceOwned = prev.upgrades.find(u => u.id === 'evergreen_essence')?.owned ?? false;
       const perfectChance = evergreenEssenceOwned ? 0.10 : 0.0;
@@ -762,6 +1061,145 @@ export function useChristmasEvent({
     });
   }, []);
   
+  // ============================================================================
+  // DAILY ELVES' BENCH CRAFTING
+  // ============================================================================
+  
+  const processDailyElvesCrafting = useCallback(() => {
+    setEventState(prev => {
+      // Check if Elves' Bench is owned
+      const elvesBenchOwned = prev.upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
+      
+      if (!elvesBenchOwned) {
+        return {
+          ...prev,
+          currentElvesAction: undefined,
+        }; // No automation if upgrade not owned
+      }
+      
+      // Get Cheerful Crafting level (how many items to craft per second)
+      const cheerfulCraftingUpgrade = prev.upgrades.find(u => u.id === 'cheerful_crafting');
+      const itemsPerSecond = cheerfulCraftingUpgrade?.owned ? (cheerfulCraftingUpgrade.level || 1) : 1;
+      
+      const newMaterials = { ...prev.materials };
+      const newInventory = { ...prev.treeInventory };
+      let currentAction: ChristmasEventState['currentElvesAction'] = undefined;
+      
+      // Process multiple items based on Cheerful Crafting level
+      for (let i = 0; i < itemsPerSecond; i++) {
+        let actionTaken = false;
+        
+        // First Priority: Craft decorations from materials
+        // Priority 1: Craft garland (3 branches + 2 pinecones → 1 garland)
+        if (!actionTaken && newMaterials.branches >= 3 && newMaterials.pinecones >= 2) {
+          newMaterials.branches -= 3;
+          newMaterials.pinecones -= 2;
+          newMaterials.garlands = (newMaterials.garlands || 0) + 1;
+          actionTaken = true;
+          currentAction = { type: 'craft', recipeId: 'craft_garland' };
+        }
+        
+        // Priority 2: Craft candles (2 wood → 1 candle)
+        if (!actionTaken && newMaterials.wood >= 2) {
+          newMaterials.wood -= 2;
+          newMaterials.candles = (newMaterials.candles || 0) + 1;
+          actionTaken = true;
+          currentAction = { type: 'craft', recipeId: 'craft_candles' };
+        }
+        
+        // Priority 3: Craft ornaments from wood (1 wood → 2 ornaments) - Requires upgrade
+        const hasOrnamentBench = prev.upgrades.find(u => u.id === 'ornament_crafting_bench')?.owned ?? false;
+        if (!actionTaken && hasOrnamentBench && newMaterials.wood >= 1) {
+          newMaterials.wood -= 1;
+          newMaterials.ornaments = (newMaterials.ornaments || 0) + 2;
+          actionTaken = true;
+          currentAction = { type: 'craft', recipeId: 'craft_ornaments' };
+        }
+        
+        // Priority 4: Craft traditional ornaments (5 pinecones → 3 ornaments) - Requires upgrade
+        const hasTraditionalOrnaments = prev.upgrades.find(u => u.id === 'traditional_ornaments')?.owned ?? false;
+        if (!actionTaken && hasTraditionalOrnaments && newMaterials.pinecones >= 5) {
+          newMaterials.pinecones -= 5;
+          newMaterials.ornaments = (newMaterials.ornaments || 0) + 3;
+          actionTaken = true;
+          currentAction = { type: 'craft', recipeId: 'craft_traditional_ornaments' };
+        }
+        
+        // If materials were crafted, continue to next iteration
+        if (actionTaken) {
+          continue;
+        }
+        
+        // Second Priority: Only decorate trees if we can't craft any more decorations
+        // Find the first plain tree in inventory (any quality, any tree type)
+        const plainTreeKeys = Object.keys(newInventory).filter(key => 
+          key.endsWith('_plain') && (newInventory[key] || 0) > 0
+        );
+        
+        if (plainTreeKeys.length > 0) {
+          const plainTreeKey = plainTreeKeys[0];
+          const hasOrnament = (newMaterials.ornaments || 0) > 0;
+          const hasCandle = (newMaterials.candles || 0) > 0;
+          
+          if (hasOrnament || hasCandle) {
+            // Extract tree type and quality from the key (e.g., "pine_normal_plain" -> "pine", "normal")
+            const parts = plainTreeKey.split('_');
+            const treeType = parts[0]; // pine, spruce, or fir
+            const quality = parts[1]; // normal, perfect, or luxury
+            
+            let newTreeKey = plainTreeKey;
+            let decorationType: string | undefined;
+            
+            // Decorate with priority: Luxury > Candled > Ornamented
+            if (hasOrnament && hasCandle) {
+              newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
+              newMaterials.candles = (newMaterials.candles || 0) - 1;
+              newTreeKey = `${treeType}_${quality}_luxury`;
+              decorationType = 'luxury';
+              actionTaken = true;
+            } else if (hasCandle) {
+              newMaterials.candles = (newMaterials.candles || 0) - 1;
+              newTreeKey = `${treeType}_${quality}_candled`;
+              decorationType = 'candled';
+              actionTaken = true;
+            } else if (hasOrnament) {
+              newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
+              newTreeKey = `${treeType}_${quality}_ornamented`;
+              decorationType = 'ornamented';
+              actionTaken = true;
+            }
+            
+            if (actionTaken) {
+              currentAction = { type: 'decorate', decorationType };
+              // Remove one plain tree
+              newInventory[plainTreeKey] = (newInventory[plainTreeKey] || 0) - 1;
+              if (newInventory[plainTreeKey] === 0) {
+                delete newInventory[plainTreeKey];
+              }
+              
+              // Add one decorated tree
+              newInventory[newTreeKey] = (newInventory[newTreeKey] || 0) + 1;
+              continue; // Continue to next iteration
+            }
+          }
+        }
+        
+        // If no action could be taken, stop processing
+        if (!actionTaken) {
+          break;
+        }
+      }
+      
+      // Return updated state with materials, inventory, and current action
+      return {
+        ...prev,
+        materials: newMaterials,
+        treeInventory: newInventory,
+        currentElvesAction: currentAction,
+      };
+    });
+  }, []);
+  
   return {
     eventState,
     isEventActive,
@@ -781,6 +1219,7 @@ export function useChristmasEvent({
     sellAllTrees,
     sellGarland,
     sellCandle,
+    sellOrnament,
     claimDailyBonus,
     totalTreesSold: eventState.totalTreesSold,
     demandMultiplier: eventState.marketDemand.demandMultiplier,
@@ -791,6 +1230,8 @@ export function useChristmasEvent({
     toggleCosmetic,
     updatePassiveIncome,
     processTreeGrowth,
+    processDailyElvesCrafting,
     checkEventActive,
+    currentElvesAction: eventState.currentElvesAction,
   };
 }

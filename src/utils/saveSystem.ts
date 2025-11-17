@@ -230,6 +230,7 @@ export interface ExtendedGameState {
   currentWeather: string;
   highestUnlockedVeggie: number;
   globalAutoPurchaseTimer?: number;
+  permanentBonuses?: string[];
   
   // Canning state - supporting both old and new formats
   canningState?: CanningState; // Old format - for backward compatibility
