@@ -28,6 +28,8 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward } = useArchie();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [pendingMoneyReward, setPendingMoneyReward] = useState(0);
+  const [pendingCheerReward, setPendingCheerReward] = useState(0);
   
   // When archieReward changes (i.e., Archie is clicked), add the reward to money
   useEffect(() => {
@@ -35,15 +37,13 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({
       // Add the reward to player's money
       setMoney(prevMoney => prevMoney + archieReward);
       
-      // Show toast notification with streak info
-      const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
-      setToastMessage(`Found Archie! +$${archieReward}${streakMessage}`);
-      setShowToast(true);
+      // Store pending reward
+      setPendingMoneyReward(archieReward);
       
       // Reset the reward
       setArchieReward(0);
     }
-  }, [archieReward, setMoney, setArchieReward, archieClickStreak]);
+  }, [archieReward, setMoney, setArchieReward]);
   
   // When archieCheerReward changes (during Christmas event), add Holiday Cheer
   useEffect(() => {
@@ -51,15 +51,37 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({
       // Add the reward to Holiday Cheer
       earnCheer(archieCheerReward);
       
-      // Show toast notification with streak info
-      const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
-      setToastMessage(`Found Archie! +${archieCheerReward} Holiday Cheer${streakMessage} 🎄`);
-      setShowToast(true);
+      // Store pending reward
+      setPendingCheerReward(archieCheerReward);
       
       // Reset the reward
       setArchieCheerReward(0);
     }
-  }, [archieCheerReward, earnCheer, setArchieCheerReward, archieClickStreak]);
+  }, [archieCheerReward, earnCheer, setArchieCheerReward]);
+  
+  // Show toast when rewards are received
+  useEffect(() => {
+    if (pendingMoneyReward > 0 || pendingCheerReward > 0) {
+      const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
+      
+      // During Christmas event, show both rewards
+      if (isChristmasEventActive && pendingCheerReward > 0 && pendingMoneyReward > 0) {
+        setToastMessage(`Found Archie! +$${pendingMoneyReward} & +${pendingCheerReward} Holiday Cheer${streakMessage}`);
+      } else if (pendingCheerReward > 0) {
+        // Just Cheer (shouldn't happen anymore, but keep as fallback)
+        setToastMessage(`Found Archie! +${pendingCheerReward} Holiday Cheer${streakMessage}`);
+      } else {
+        // Just money
+        setToastMessage(`Found Archie! +$${pendingMoneyReward}${streakMessage}`);
+      }
+      
+      setShowToast(true);
+      
+      // Clear pending rewards
+      setPendingMoneyReward(0);
+      setPendingCheerReward(0);
+    }
+  }, [pendingMoneyReward, pendingCheerReward, archieClickStreak, isChristmasEventActive]);
   
   // Check if cooldown has passed
   const currentTime = Date.now();

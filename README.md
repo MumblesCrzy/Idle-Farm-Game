@@ -7,24 +7,30 @@ Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest
 
 The game features two complete gameplay systems (Growing & Canning), persistent progress, a prestige/knowledge system, farm expansion, dynamic weather events, comprehensive in-game documentation, advanced automation systems, and extensive accessibility features.
 
-## ✨ Latest Updates (v0.6.0)
-### ⚡ Chrome 142+ Compatibility - CRITICAL FIX!
-- **Game Freezing Fixed**: Resolved critical issue where game would freeze in Chrome 142+ with Memory Saver
-- **requestAnimationFrame System**: All game timers now use browser-optimized animation frames
-- **Universal Compatibility**: Game runs smoothly across all modern browsers without workarounds
-- **Reliable Timing**: Consistent, accurate game loops regardless of browser settings
+## ✨ Latest Updates (v0.8.0)
+### 🎄 Christmas Tree Shop Event - NEW SEASONAL CONTENT!
+- **Complete Parallel Gameplay**: Farm, craft, and sell Christmas trees for event-exclusive rewards
+- **Three Unique Tabs**: Tree Farm (growing), Workshop (crafting/decorating), Shopfront (sales/upgrades)
+- **Limited Time Event**: Available November 1 - December 25 annually
+- **Holiday Cheer Currency**: Separate event economy with persistent progression
+- **Permanent Rewards**: Unlock lasting bonuses like Frost Fertilizer (+5% winter crop yield)
+- **Automation Systems**: Elves' Bench crafts and decorates trees automatically
+- **Offline Progression**: Trees grow and automation runs while you're away
+- **Achievement System**: Six milestones with cosmetic and gameplay rewards
 
-### 🎨 UI Polish & Quality of Life
-- **Auto-Collection**: Canning processes automatically disappear when complete (no manual collection needed)
-- **Smooth Transitions**: Progress bars smoothly transition colors instead of flashing
-- **Centered Layout**: Game properly centered on screen for better visual presentation
-- **Professional Feel**: Cleaner, more polished user experience throughout
+### Previous Major Update (v0.6.0)
+- **Chrome 142+ Fix**: Resolved game freezing with Memory Saver enabled
+- **requestAnimationFrame System**: Browser-optimized timing for all game loops
+- **UI Polish**: Auto-collection for canning, smooth transitions, centered layout
+- **Professional Feel**: Cleaner, more polished user experience
 
-### Previous Major Update (v0.5.0)
-- **Canning System**: Complete new gameplay feature with recipes, processing, and automation
-- **Unified Tab System**: Professional UI across Growing and Canning tabs
-- **Improved Farm Tiers**: Retain vegetable unlocks when purchasing larger farms
-- **Streamlined Saves**: Optimized save system with backward compatibility
+### Earlier Updates
+- **v0.7.0**: Game event logging added
+- **v0.6.0**: Chrome 142+ Fix, and game optimazation
+- **v0.5.0**: Canning System, Unified Tab Interface, Improved Farm Tiers
+- **v0.4.0**: Advanced Stash Display, Vegetable Sell Controls, Enhanced Archie
+- **v0.3.0**: Four Auto-Purchaser systems
+- **v0.2.0**: Archie bonus system, comprehensive help documentation
 
 ## Gameplay Overview
 
@@ -43,11 +49,21 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - **Enhanced Rewards:** Earn money, experience, AND knowledge from completed recipes
 - **Resource Management:** Balance between selling fresh vegetables vs. processing them
 
-### 🏆 Progression Systems
+### �🏆 Progression Systems
 - **Experience Unlocking:** Gain experience from harvesting to unlock 10 unique vegetables in sequence
 - **Farm Expansion:** Purchase larger farms to increase max plots (retains vegetable unlocks!)
 - **Prestige/Knowledge:** Earn knowledge points from harvesting and canning to buy permanent upgrades
 - **Farm Tiers:** Higher tiers provide permanent knowledge multipliers and increase starting experience
+
+### � Christmas Tree Shop Event (Nov 1 - Dec 25)
+- **Tree Farming:** Grow three types of evergreens (Pine, Spruce, Fir) with quality tiers
+- **Crafting System:** Create ornaments, candles, and garlands from harvested materials
+- **Tree Decoration:** Apply crafted items to trees to increase their sale value
+- **Holiday Cheer:** Event-exclusive currency earned from selling decorated trees
+- **Automation:** Elves' Bench automatically crafts decorations and decorates trees
+- **Event Upgrades:** Unlock growth speed, plot expansion, crafting automation, and passive income
+- **Achievements:** Six milestones with permanent rewards (Frost Fertilizer, cosmetics, recipes)
+- **Offline Progress:** Trees grow and automation runs even when you're not playing
 
 ### Upgrade Details
 
@@ -105,6 +121,22 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - Auto-Canning system with intelligent recipe selection
 - Earn money, experience, AND knowledge from completed recipes
 
+### 🎄 Christmas Tree Shop Event (Seasonal: Nov 1 - Dec 25)
+- **Three Activity Tabs**: Tree Farm, Workshop, Shopfront - each with unique mechanics
+- **Tree Growing**: Plant and harvest Pine, Spruce, and Fir trees with quality variations
+- **Material System**: Collect Wood, Pinecones, and Branches from harvested trees
+- **Crafting**: Create Ornaments, Candles, and Garlands from materials
+- **Decoration**: Apply crafted items to trees to multiply their sale value
+- **Holiday Cheer**: Event currency earned by selling decorated trees
+- **Event Upgrades**: 
+  - **Tree Farm**: Fertilized Soil (growth speed), Greenhouse Extension (more plots), Evergreen Essence (quality chance), Efficient Harvester, Bulk Planter
+  - **Workshop**: Ornament Crafting Bench, Elves' Bench (automation), Cheerful Crafting (automation speed), Star Forge (luxury tree value)
+  - **Shopfront**: Garland Borders (income boost), Wreath Sign (daily bonuses), Golden Bell (passive income), Magical Register (bonus tips), Fireplace Display (luxury bonus)
+- **Automation**: Elves' Bench crafts and decorates trees at 1-20 items/second
+- **Achievements**: Six milestones with permanent cross-event rewards
+- **Offline Progress**: Full support for tree growth, crafting, and passive income while away
+- **Toast Notifications**: Visual feedback for Magical Register bonuses and achievements
+
 ### 🔧 Upgrade & Automation Systems
 - **Per-Veggie Upgrades**: Fertilizer, Auto Harvester, Harvester Speed, Additional Plot, Better Seeds, Plot Limits
 - **Canning Upgrades**: Quick Hands, Family Recipe, Heirloom Touch, Batch Canning, Canner
@@ -123,8 +155,9 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 ### 💾 Save & Progression
 - **Auto-Save System:** Persistent progress saved to localStorage automatically
 - **Export/Import:** Timestamped save files for backup and sharing
-- **Backward Compatibility:** Seamless migration when new features are added
+- **Backward Compatibility:** Seamless migration when new features are added (including Christmas event data)
 - **Year & Day Tracking:** Long-term progression display showing "Year: X | Day: Y"
+- **Event Persistence:** Christmas event progress saves separately and persists across farm expansions
 - **Safe Reset:** Confirmation dialogs prevent accidental progress loss
 
 ### 🏆 Progression & Prestige
@@ -133,6 +166,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - Knowledge/prestige system with permanent upgrade purchases
 - Merchant and Auto Sell for passive income generation
 - Farm tier multipliers for long-term knowledge gains
+- Seasonal event achievements with permanent gameplay bonuses
 
 ### 📚 Player Experience & Accessibility
 - **Complete In-Game Documentation**: Comprehensive help system covering all mechanics
@@ -159,25 +193,26 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 
 ## Roadmap
 
-### 🎯 Next Priority Features
-- **Seasonal Events**: Spring Farmer's Market, Summer Watermelon Festival, Fall Pumpkin Rush, Christmas Tree Shop
+### 🎯 Current Features (v0.8.0)
+- ✅ **Christmas Tree Shop Event**: Complete seasonal event system with farming, crafting, and sales
+- ✅ **Achievement System**: Event milestones with permanent rewards
+- ✅ **Offline Progression**: Full support across all game systems
+- ✅ **Toast Notifications**: Visual feedback for bonuses and events
 
-### 🔮 Future Features
-- **Bees**: This will be a per veggie upgrade to increase yield without having to buy additional plots.
-- **Orchard**: Slower growers, but larger payouts.
+### 🔮 Future Seasonal Events
+- **Spring Farmer's Market**: Community garden and seed trading
+- **Summer Watermelon Festival**: Competitive growing challenges
+- **Fall Pumpkin Rush**: Harvest competition with decorating
+
+### 🌟 Planned Features
+- **Bees**: Per-veggie upgrade to increase yield without additional plots
+- **Orchard**: Slower growers with larger payouts (apples, pears, cherries)
 - **Guilds**: 
-  - Growers - They help things grow through strange rituals that shun technology
-  - Engineers - They help make machines smarter, but lose the feel for the earth
-  - Preservers - Everything will taste better, but watch for the glutton
+  - Growers - Help things grow through rituals that shun technology
+  - Engineers - Smarter machines, but lose feel for the earth
+  - Preservers - Better taste, but watch for the glutton
   - Merchants - Profits over people
-- **Advanced Automation**: More sophisticated auto-management systems
-- **Achievement System**: Unlock rewards for hitting milestones and completing challenges
-
-## Getting Started
-
-1. **Install dependencies**: `npm install`
-2. **Start the development server**: `npm run dev`
-3. **Build for production**: `npm run build`
+- **More Achievements**: Unlock rewards for hitting milestones across all systems
 
 ### 🎮 New Player Guide
 
@@ -190,9 +225,10 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 7. **Sell Strategy**: Use 💰/🚫 toggles to stockpile valuable vegetables for canning while auto-selling cheaper ones
 8. **Upgrade Timing**: Major upgrades like Greenhouse scale with farm size - plan purchases carefully
 9. **Canning Strategy**: Once unlocked, balance selling raw vegetables vs. processing them for higher profits
-10. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money and builds streaks!
-11. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
-12. **Save Management**: Use the Settings panel to export saves regularly as backups
+10. **Christmas Event**: Available Nov 1-Dec 25! Complete separate farming system with permanent reward unlocks
+11. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money and builds streaks!
+12. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
+13. **Save Management**: Use the Settings panel to export saves regularly as backups
 
 ### 🔧 For Developers
 
@@ -208,35 +244,6 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
   - `npm run test` - Run test suite in watch mode
   - `npm run coverage` - Generate test coverage report
   - `npm run lint` - Run ESLint checks
-
-## 📋 Recent Changes (v0.6.0)
-
-### Critical Fixes
-- **Chrome 142+ Compatibility**: Fixed game freezing with Memory Saver/Energy Saver enabled
-- **requestAnimationFrame System**: All 5 game timers converted to browser-optimized animation frames
-- **Reliable Timing**: Veggie growth, auto-harvest, day counter, canning progress, and auto-canning all run consistently
-- **No Workarounds Needed**: Game works perfectly in all browsers without settings changes
-
-### UI Improvements
-- **Auto-Collection**: Canning processes automatically disappear when complete
-- **Smooth Transitions**: Progress bars transition colors smoothly (no flashing)
-- **Centered Layout**: Game properly centered on screen for better presentation
-- **InfoOverlay Fix**: Restored proper side-by-side layout for help documentation
-
-### Technical Improvements
-- **Custom useGameLoop Hook**: Reusable game loop with delta time calculation
-- **Ref-Based State Access**: Prevents loop restarts when state updates
-- **Cleaner Architecture**: Simplified canning collection logic and removed manual collection
-- **Performance**: More efficient game loops with consistent timing
-
-### Previous Updates
-- **v0.5.0**: Complete Canning System, Unified Tab Interface, Improved Farm Tiers
-- **v0.4.0**: Advanced Stash Display, Vegetable Sell Controls, Enhanced Archie with sound
-- **v0.3.0**: Four Auto-Purchaser systems (Assistant, Cultivator, Surveyor, Mechanic)
-- **v0.2.0**: Archie bonus system, comprehensive help documentation, experience rebalancing
-- **v0.1.0**: Initial release with growing, seasons, weather, prestige system
-
-For detailed release notes, see the `docs/` folder.
 
 ---
 

@@ -86,6 +86,7 @@ export const ICON_HOLIDAY_BELL = './Bell.png';
 export const ICON_HOLIDAY_REGISTER = './Register.png';
 export const ICON_FIREPLACE = './Fireplace.png';
 export const ICON_AXE = './Axe.png';
+export const ICON_CHEERFUL_CRAFTING = './Cheerful Crafting.png';
 
 // Growing Tab Upgrade Images
 export const UPGRADE_FERTILIZER = './Fertilizer.png';

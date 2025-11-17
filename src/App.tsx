@@ -12,6 +12,7 @@ import ShopfrontTab from './components/ShopfrontTab';
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
+import Toast from './components/Toast';
 
 // Module-level harvest callback for event logging
 let globalHarvestCallback: ((veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) | null = null;
@@ -1085,8 +1086,17 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Process Christmas tree growth each day
     if (christmasEventRef.current?.isEventActive) {
       christmasEventRef.current.processTreeGrowth();
-      christmasEventRef.current.processDailyElvesCrafting();
       christmasEventRef.current.updatePassiveIncome(1000); // 1000ms = 1 second
+    }
+  }, 1000, []); // Empty deps - refs prevent loop restart
+
+  // Elves' Bench automation loop - runs every second
+  useGameLoop(() => {
+    if (christmasEventRef.current?.isEventActive) {
+      const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+      if (elvesBenchOwned) {
+        christmasEventRef.current.processDailyElvesCrafting();
+      }
     }
   }, 1000, []); // Empty deps - refs prevent loop restart
 
@@ -1125,6 +1135,12 @@ function App() {
 
   // Event log overlay state
   const [showEventLog, setShowEventLog] = useState(false);
+
+  // Toast state for magical register bonus
+  const [magicalRegisterToast, setMagicalRegisterToast] = useState({
+    visible: false,
+    message: '',
+  });
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'christmas'>('growing');
@@ -1851,6 +1867,24 @@ function App() {
   );
   const daysToGrow = growthMultiplier > 0 ? Math.ceil(100 / growthMultiplier) : 0;
 
+  // Track last seen timestamp to only show new bonuses
+  const lastBonusTimestamp = useRef(0);
+
+  // Watch for Magical Register bonuses and show toast only on actual sales
+  useEffect(() => {
+    const event = christmasEvent as unknown as UseChristmasEventReturn;
+    const bonus = event?.lastMagicalRegisterBonus;
+    
+    // Only show toast if timestamp is new (different from last seen)
+    if (bonus && bonus.amount > 0 && bonus.timestamp > lastBonusTimestamp.current) {
+      setMagicalRegisterToast({
+        visible: true,
+        message: `✨ Holiday Tip! +${bonus.amount} Cheer`,
+      });
+      lastBonusTimestamp.current = bonus.timestamp;
+    }
+  }, [christmasEvent]);
+
   // Preload all images to prevent loading delays when switching tabs
   useEffect(() => {
     // Preload using both methods for maximum browser compatibility
@@ -2267,6 +2301,7 @@ function App() {
               upgrades={christmasEvent.eventState.upgrades}
               holidayCheer={christmasEvent.holidayCheer}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
+              currentElvesAction={(christmasEvent as unknown as UseChristmasEventReturn).currentElvesAction}
             />
           )}
 
@@ -2371,6 +2406,15 @@ function App() {
           materials.glassBeads += 100;
         }
       }}
+    />
+
+    {/* Magical Register Bonus Toast */}
+    <Toast
+      message={magicalRegisterToast.message}
+      type="success"
+      visible={magicalRegisterToast.visible}
+      duration={3000}
+      onClose={() => setMagicalRegisterToast({ visible: false, message: '' })}
     />
     </>
       )}

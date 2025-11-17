@@ -81,6 +81,9 @@ export interface UseChristmasEventReturn {
   
   // Automation feedback
   currentElvesAction?: ChristmasEventState['currentElvesAction'];
+  
+  // Magical Register bonus tracking (object with timestamp to trigger new toasts)
+  lastMagicalRegisterBonus: { amount: number; timestamp: number };
 }
 
 /**
@@ -202,6 +205,10 @@ export function useChristmasEvent({
   initialState,
   farmTier,
 }: UseChristmasEventParams): UseChristmasEventReturn {
+  // Track last magical register bonus for toast display
+  // Using object with timestamp ensures each bonus triggers a new toast
+  const [lastMagicalRegisterBonus, setLastMagicalRegisterBonus] = useState({ amount: 0, timestamp: 0 });
+  
   // Initialize event state
   const [eventState, setEventState] = useState<ChristmasEventState>(() => {
     const baseState = createInitialEventState(farmTier);
@@ -678,6 +685,24 @@ export function useChristmasEvent({
       const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
       const totalCheer = finalPrice * quantity;
       
+      // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus on ONE tree)
+      const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
+      let bonusCheer = 0;
+      if (magicalRegister?.owned) {
+        // Roll once for each tree sold
+        for (let i = 0; i < quantity; i++) {
+          if (Math.random() < 0.10) {
+            const bonusPercent = 0.20 + Math.random() * 0.30; // 20-50% bonus on one tree
+            bonusCheer += Math.floor(finalPrice * bonusPercent);
+          }
+        }
+        
+        if (bonusCheer > 0) {
+          // Update state to trigger toast with timestamp
+          setLastMagicalRegisterBonus({ amount: bonusCheer, timestamp: Date.now() });
+        }
+      }
+      
       // Update inventory and currency
       const newInventory = { ...prev.treeInventory };
       newInventory[treeKey] = currentQuantity - quantity;
@@ -688,7 +713,7 @@ export function useChristmasEvent({
       return {
         ...prev,
         treeInventory: newInventory,
-        holidayCheer: prev.holidayCheer + totalCheer,
+        holidayCheer: prev.holidayCheer + totalCheer + bonusCheer,
         totalTreesSold: prev.totalTreesSold + quantity,
       };
     });
@@ -736,10 +761,61 @@ export function useChristmasEvent({
         totalSold += quantity;
       });
       
+      // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus)
+      const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
+      let bonusCheer = 0;
+      if (magicalRegister?.owned && totalSold > 0) {
+        // Need to roll for each individual tree across all types
+        Object.keys(prev.treeInventory).forEach(treeKey => {
+          const quantity = prev.treeInventory[treeKey];
+          
+          // Calculate the price for this tree type (same logic as above)
+          let basePrice = 10;
+          if (treeKey.startsWith('spruce')) basePrice = 15;
+          else if (treeKey.startsWith('fir')) basePrice = 20;
+          
+          const keyParts = treeKey.split('_');
+          const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
+          const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
+          
+          let decorationMultiplier = 1.0;
+          if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
+          else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
+          else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
+          else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
+          
+          const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
+          const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
+          const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
+          
+          let upgradeMultiplier = 1.0;
+          if (garlandStation?.owned) upgradeMultiplier += 0.10;
+          if (garlandBorders?.owned) upgradeMultiplier += 0.10;
+          if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
+            upgradeMultiplier += 0.50;
+          }
+          
+          const singleTreePrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
+          
+          // Roll once for each tree of this type
+          for (let i = 0; i < quantity; i++) {
+            if (Math.random() < 0.10) {
+              const bonusPercent = 0.20 + Math.random() * 0.30; // 20-50% bonus
+              bonusCheer += Math.floor(singleTreePrice * bonusPercent);
+            }
+          }
+        });
+        
+        if (bonusCheer > 0) {
+          // Update state to trigger toast with timestamp
+          setLastMagicalRegisterBonus({ amount: bonusCheer, timestamp: Date.now() });
+        }
+      }
+      
       return {
         ...prev,
         treeInventory: {},
-        holidayCheer: prev.holidayCheer + totalCheer,
+        holidayCheer: prev.holidayCheer + totalCheer + bonusCheer,
         totalTreesSold: prev.totalTreesSold + totalSold,
       };
     });
@@ -1096,7 +1172,10 @@ export function useChristmasEvent({
           newMaterials.pinecones -= 2;
           newMaterials.garlands = (newMaterials.garlands || 0) + 1;
           actionTaken = true;
-          currentAction = { type: 'craft', recipeId: 'craft_garland' };
+          // Only set currentAction for the FIRST item processed
+          if (!currentAction) {
+            currentAction = { type: 'craft', recipeId: 'craft_garland' };
+          }
         }
         
         // Priority 2: Craft candles (2 wood → 1 candle)
@@ -1104,7 +1183,10 @@ export function useChristmasEvent({
           newMaterials.wood -= 2;
           newMaterials.candles = (newMaterials.candles || 0) + 1;
           actionTaken = true;
-          currentAction = { type: 'craft', recipeId: 'craft_candles' };
+          // Only set currentAction for the FIRST item processed
+          if (!currentAction) {
+            currentAction = { type: 'craft', recipeId: 'craft_candles' };
+          }
         }
         
         // Priority 3: Craft ornaments from wood (1 wood → 2 ornaments) - Requires upgrade
@@ -1113,7 +1195,10 @@ export function useChristmasEvent({
           newMaterials.wood -= 1;
           newMaterials.ornaments = (newMaterials.ornaments || 0) + 2;
           actionTaken = true;
-          currentAction = { type: 'craft', recipeId: 'craft_ornaments' };
+          // Only set currentAction for the FIRST item processed
+          if (!currentAction) {
+            currentAction = { type: 'craft', recipeId: 'craft_ornaments' };
+          }
         }
         
         // Priority 4: Craft traditional ornaments (5 pinecones → 3 ornaments) - Requires upgrade
@@ -1122,7 +1207,10 @@ export function useChristmasEvent({
           newMaterials.pinecones -= 5;
           newMaterials.ornaments = (newMaterials.ornaments || 0) + 3;
           actionTaken = true;
-          currentAction = { type: 'craft', recipeId: 'craft_traditional_ornaments' };
+          // Only set currentAction for the FIRST item processed
+          if (!currentAction) {
+            currentAction = { type: 'craft', recipeId: 'craft_traditional_ornaments' };
+          }
         }
         
         // If materials were crafted, continue to next iteration
@@ -1170,7 +1258,10 @@ export function useChristmasEvent({
             }
             
             if (actionTaken) {
-              currentAction = { type: 'decorate', decorationType };
+              // Only set currentAction for the FIRST item processed
+              if (!currentAction) {
+                currentAction = { type: 'decorate', decorationType };
+              }
               // Remove one plain tree
               newInventory[plainTreeKey] = (newInventory[plainTreeKey] || 0) - 1;
               if (newInventory[plainTreeKey] === 0) {
@@ -1233,5 +1324,6 @@ export function useChristmasEvent({
     processDailyElvesCrafting,
     checkEventActive,
     currentElvesAction: eventState.currentElvesAction,
+    lastMagicalRegisterBonus,
   };
 }
