@@ -220,11 +220,11 @@ describe('ArchieIcon', () => {
     expect(Date.now() - sixMinutesAgo).toBeGreaterThan(5 * 60 * 1000)
   })
 
-  it('should use reindeer image when Christmas event is active', () => {
+  it('should use pinecones image when Christmas event is active', () => {
     renderArchieIcon({ isChristmasEventActive: true })
     
     const img = screen.getByAltText('Archie')
-    expect(img).toHaveAttribute('src', './Archie Reindeer.png')
+    expect(img).toHaveAttribute('src', './Archie Pinecones.png')
   })
 
   it('should use default image when Christmas event is inactive', () => {

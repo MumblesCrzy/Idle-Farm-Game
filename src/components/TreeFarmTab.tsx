@@ -12,7 +12,7 @@ import FarmingUpgradesPanel from './FarmingUpgradesPanel';
 import type { TreePlot, TreeType, CraftingMaterials, TreeInventory } from '../types/christmasEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 import { TREE_DEFINITIONS } from '../data/christmasEventData';
-import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH } from '../config/assetPaths';
+import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH } from '../config/assetPaths';
 import styles from './TreeFarmTab.module.css';
 
 /**
@@ -232,10 +232,9 @@ TreePlotDisplay.displayName = 'TreePlotDisplay';
 interface MaterialsDisplayProps {
   materials: CraftingMaterials;
   treeInventory: TreeInventory;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const MaterialsDisplay: React.FC<MaterialsDisplayProps> = memo(({ materials, treeInventory, formatNumber }) => {
+const MaterialsDisplay: React.FC<MaterialsDisplayProps> = memo(({ materials, treeInventory }) => {
   // Count plain trees across all qualities (normal, perfect, luxury)
   // New format: pine_normal_plain, pine_perfect_plain, pine_luxury_plain
   const getPlainTreeCount = (treeType: string): number => {

@@ -2267,7 +2267,6 @@ function App() {
               upgrades={christmasEvent.eventState.upgrades}
               holidayCheer={christmasEvent.holidayCheer}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
-              currentElvesAction={christmasEvent.currentElvesAction}
             />
           )}
 

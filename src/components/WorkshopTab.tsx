@@ -51,17 +51,16 @@ interface WorkshopTabProps {
 }
 
 /**
- * Individual recipe card for crafting items
+ * Individual recipe card
  */
 interface RecipeCardProps {
   recipe: CraftingRecipe;
   materials: CraftingMaterials;
   onCraft: (recipeId: string) => void;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
   isActive?: boolean; // Whether this recipe is currently being worked on by elves
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, formatNumber, isActive }) => {
+const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, isActive }) => {
   // Check if player has enough materials
   const canCraft = Object.entries(recipe.inputs).every(([material, amount]) => {
     return materials[material as keyof CraftingMaterials] >= amount;
@@ -129,14 +128,12 @@ interface TreeDecorationSectionProps {
   materials: CraftingMaterials;
   treeInventory: TreeInventory;
   onDecorate: (treeType: TreeType, decorations: DecorationType[]) => boolean;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({ 
   materials,
   treeInventory,
-  onDecorate,
-  formatNumber 
+  onDecorate
 }) => {
   const [selectedTree, setSelectedTree] = React.useState<TreeType>('pine');
   const [selectedDecorations, setSelectedDecorations] = React.useState<Set<DecorationType>>(new Set());
@@ -345,7 +342,6 @@ const WorkshopTab: React.FC<WorkshopTabProps> = ({
                   recipe={recipe}
                   materials={materials}
                   onCraft={craftItem}
-                  formatNumber={formatNumber}
                   isActive={isActive}
                 />
               );
@@ -358,7 +354,6 @@ const WorkshopTab: React.FC<WorkshopTabProps> = ({
           materials={materials}
           treeInventory={treeInventory}
           onDecorate={decorateTree}
-          formatNumber={formatNumber}
         />
         
         {/* Elves' Bench Automation */}

@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import UpgradeButton from './UpgradeButton';
-import ProgressBar from './ProgressBar';
 import type { EventUpgrade } from '../types/christmasEvent';
 import styles from './ShopfrontUpgradesPanel.module.css';
 
@@ -16,14 +15,10 @@ const ShopfrontUpgradesPanel: React.FC<ShopfrontUpgradesPanelProps> = memo(({
   upgrades,
   holidayCheer,
   purchaseUpgrade,
-  passiveCheerPerSecond,
   formatNumber
 }) => {
   // Filter to only shopfront upgrades
   const shopfrontUpgrades = upgrades.filter(u => u.category === 'shopfront');
-  
-  // Check if golden bell is owned for passive income display
-  const hasGoldenBell = upgrades.find(u => u.id === 'golden_bell_counter')?.owned ?? false;
   
   // Helper to check if upgrade is locked behind another upgrade
   const isLocked = (upgrade: EventUpgrade): boolean => {
