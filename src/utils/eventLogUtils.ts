@@ -24,12 +24,11 @@ export function generateEventId(): string {
  * Create an event timestamp from game time
  */
 export function createEventTimestamp(
-  farmTier: number,
   day: number,
   totalDaysElapsed: number
 ): EventTimestamp {
   return {
-    year: farmTier,
+    year: Math.floor(totalDaysElapsed / 365) + 1,
     day: day,
     totalDays: totalDaysElapsed
   };
@@ -55,7 +54,6 @@ export function formatEventTimestampCompact(timestamp: EventTimestamp): string {
 export function createEventLogEntry(
   category: EventCategory,
   message: string,
-  farmTier: number,
   day: number,
   totalDaysElapsed: number,
   options?: {
@@ -67,7 +65,7 @@ export function createEventLogEntry(
 ): EventLogEntry {
   return {
     id: generateEventId(),
-    timestamp: createEventTimestamp(farmTier, day, totalDaysElapsed),
+    timestamp: createEventTimestamp(day, totalDaysElapsed),
     category,
     priority: options?.priority || 'normal',
     message,

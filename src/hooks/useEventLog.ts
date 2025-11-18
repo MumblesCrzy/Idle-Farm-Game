@@ -98,7 +98,6 @@ export function useEventLog({
     const newEvent = createEventLogEntry(
       category,
       message,
-      farmTier,
       day,
       totalDaysElapsed,
       options

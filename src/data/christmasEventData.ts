@@ -44,7 +44,7 @@ export const TREE_DEFINITIONS = {
       branches: 5,
     },
     baseValue: 15,
-    unlockCost: 100,
+    unlockCost: 500,
   },
   fir: {
     name: 'Fir',
@@ -56,7 +56,7 @@ export const TREE_DEFINITIONS = {
       branches: 6,
     },
     baseValue: 25,
-    unlockCost: 250,
+    unlockCost: 1250,
   },
 } as const;
 

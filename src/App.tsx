@@ -563,6 +563,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         // Tab became visible
         const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
         
+        // Reset the flag so we can process offline progress again
+        hasProcessedOffline = false;
+        
         if (lastActiveTime && !hasProcessedOffline) {
           const now = Date.now();
           const timeElapsed = now - parseInt(lastActiveTime, 10);
