@@ -23,6 +23,13 @@ export const ICON_SCROLL = './Scroll.png';
 export const ICON_DETAIL = './Detail.png';
 export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event currency
 
+// Bee System Icons
+export const ICON_BEE = './Bee.png';
+export const ICON_HONEY = './Honey.png';
+export const ICON_GOLDEN_HONEY = './Golden Honey.png';
+export const ICON_BEE_BOX = './Bee Box.png';
+export const ICON_BEE_HIVE = './Bee Hive.png';
+
 // Season Images
 export const SEASON_SPRING = './Spring.png';
 export const SEASON_SUMMER = './Summer.png';
@@ -118,8 +125,24 @@ export const CANNING_CANNER = './Canner.png';
 // Special Images
 export const SPECIAL_ARCHIE = './Archie.png';
 export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones.png';
+export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer.png';
+export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater.png';
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
+
+// Bee System Upgrade Icons
+export const BEE_BUSY_BEES = './Busy Bees.png';
+export const BEE_ROYAL_JELLY = './Royal Jellly.png'; // Note: Typo in filename
+export const BEE_QUEENS_BLESSING = "./Queen's Blessing.png";
+export const BEE_HEXCOMB_ENGINEERING = './Hexcomb Engineering.png';
+export const BEE_MEADOW_MAGIC = './Meadow Magic.png';
+export const BEE_WINTER_HARDINESS = './Winter Hardiness.png';
+export const BEE_GOLDEN_TOUCH = './Golden Touch.png';
+export const BEE_HIVE_EXPANSION = './Hive Expansion.png';
+export const BEE_NECTAR_EFFICIENCY = './Nectar Efficiency.png';
+export const BEE_FLOWER_POWER = './Flower Power.png';
+export const BEE_SWIFT_GATHERERS = './Swift Gatherers.png';
+export const BEE_BEEKEEPER = './Beekeeper.png';
 
 // Helper function to get vegetable image by name
 export function getVeggieImage(veggieName: string): string {
@@ -225,7 +248,24 @@ export const ALL_IMAGES = [
   ICON_TREE_STOREFRONT,
   ICON_ELVES_INDICATOR,
   
+  // Bee system icons
+  ICON_BEE,
+  ICON_HONEY,
+  ICON_GOLDEN_HONEY,
+  ICON_BEE_BOX,
+  ICON_BEE_HIVE,
+  
   // Special images
   SPECIAL_ARCHIE,
   SPECIAL_ARCHIE_PINECONES,
+  SPECIAL_ARCHIE_REINDEER,
+  SPECIAL_ARCHIE_SWEATER,
+  
+  // Bee upgrade images
+  BEE_BUSY_BEES,
+  BEE_ROYAL_JELLY,
+  BEE_QUEENS_BLESSING,
+  BEE_HEXCOMB_ENGINEERING,
+  BEE_MEADOW_MAGIC,
+  BEE_BEEKEEPER,
 ];

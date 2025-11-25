@@ -108,7 +108,12 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   setKnowledge: (value: number | ((prev: number) => number)) => void,
   initialCanningState?: CanningState,
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty' = 'profit',
-  farmTier?: number
+  farmTier?: number,
+  regularHoney?: number,
+  goldenHoney?: number,
+  totalHoneyCollected?: number,
+  setRegularHoney?: (value: number | ((prev: number) => number)) => void,
+  setGoldenHoney?: (value: number | ((prev: number) => number)) => void
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -131,15 +136,33 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         
         // First recipe unlocks with growing experience, others with canning experience
         const isFirstRecipe = config.id === 'canned_radish';
-        const unlocked = isFirstRecipe 
-          ? experience >= config.experienceRequired // Use growing experience for first recipe
-          : prev.canningExperience >= config.experienceRequired; // Use canning experience from prev state
+        
+        // Check if this is a honey recipe
+        const isHoneyRecipe = !!config.honeyRequirement;
+        
+        // For honey recipes, also check honey collected requirement
+        let unlocked: boolean;
+        if (isHoneyRecipe) {
+          const honeyUnlocked = (totalHoneyCollected || 0) >= (config.honeyCollectedRequired || 0);
+          unlocked = honeyUnlocked && (
+            isFirstRecipe 
+              ? experience >= config.experienceRequired
+              : prev.canningExperience >= config.experienceRequired
+          );
+        } else {
+          unlocked = isFirstRecipe 
+            ? experience >= config.experienceRequired
+            : prev.canningExperience >= config.experienceRequired;
+        }
         
         return {
           id: config.id,
           name: config.name,
           description: config.description,
           ingredients,
+          honeyRequirement: config.honeyRequirement,
+          tier: config.tier,
+          honeyCollectedRequired: config.honeyCollectedRequired,
           processingTime: config.baseProcessingTime,
           baseProcessingTime: config.baseProcessingTime,
           salePrice: config.baseSalePrice,
@@ -160,7 +183,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: unlockedRecipeIds
       };
     });
-  }, [veggies, experience]); // Removed canningState.canningExperience to avoid circular dependency
+  }, [veggies, experience, totalHoneyCollected]); // Added totalHoneyCollected for honey recipe unlocks
   
   // Update recipe unlocks based on experience
   useEffect(() => {
@@ -168,9 +191,23 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       const updatedRecipes = prev.recipes.map(recipe => {
         // First recipe unlocks with growing experience, others with canning experience
         const isFirstRecipe = recipe.id === 'canned_radish';
-        const unlocked = isFirstRecipe 
-          ? experience >= recipe.experienceRequired // Use growing experience for first recipe
-          : prev.canningExperience >= recipe.experienceRequired; // Use canning experience for others
+        
+        // Check if this is a honey recipe
+        const isHoneyRecipe = !!recipe.honeyRequirement;
+        
+        let unlocked: boolean;
+        if (isHoneyRecipe) {
+          const honeyUnlocked = (totalHoneyCollected || 0) >= (recipe.honeyCollectedRequired || 0);
+          unlocked = honeyUnlocked && (
+            isFirstRecipe 
+              ? experience >= recipe.experienceRequired
+              : prev.canningExperience >= recipe.experienceRequired
+          );
+        } else {
+          unlocked = isFirstRecipe 
+            ? experience >= recipe.experienceRequired
+            : prev.canningExperience >= recipe.experienceRequired;
+        }
         
         return {
           ...recipe,
@@ -188,7 +225,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: newUnlockedRecipes
       };
     });
-  }, [experience, canningState.canningExperience]); // Watch both experience types
+  }, [experience, canningState.canningExperience, totalHoneyCollected]); // Watch honey collected too
 
   // Reset canning state when farm tier changes (farm upgrade)
   const farmTierRef = useRef(farmTier);
@@ -234,11 +271,21 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   
   // Check if player has enough ingredients for a recipe
   const canMakeRecipe = useCallback((recipe: Recipe): boolean => {
-    return recipe.ingredients.every(ingredient => {
+    // Check vegetable ingredients
+    const hasVeggies = recipe.ingredients.every(ingredient => {
       const veggie = veggies[ingredient.veggieIndex];
       return veggie && veggie.stash >= ingredient.quantity;
     });
-  }, [veggies]);
+    
+    // Check honey requirements if any
+    if (recipe.honeyRequirement) {
+      const hasRegularHoney = (regularHoney || 0) >= recipe.honeyRequirement.regular;
+      const hasGoldenHoney = (goldenHoney || 0) >= recipe.honeyRequirement.golden;
+      return hasVeggies && hasRegularHoney && hasGoldenHoney;
+    }
+    
+    return hasVeggies;
+  }, [veggies, regularHoney, goldenHoney]);
   
   // Start a canning process
   const startCanning = useCallback((recipeId: string, automated: boolean = false): boolean => {
@@ -264,6 +311,16 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         return veggie;
       });
     });
+    
+    // Consume honey if required
+    if (recipe.honeyRequirement) {
+      if (recipe.honeyRequirement.regular > 0 && setRegularHoney) {
+        setRegularHoney(prev => prev - recipe.honeyRequirement!.regular);
+      }
+      if (recipe.honeyRequirement.golden > 0 && setGoldenHoney) {
+        setGoldenHoney(prev => prev - recipe.honeyRequirement!.golden);
+      }
+    }
     
     // Calculate actual processing time with speed upgrades
     const speedUpgrade = canningState.upgrades.find(u => u.id === 'canning_speed');
@@ -293,7 +350,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }
     
     return true;
-  }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies]);
+  }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies, setRegularHoney, setGoldenHoney]);
   
   // Complete a canning process
   const completeCanning = useCallback((processIndex: number): void => {

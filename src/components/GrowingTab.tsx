@@ -7,7 +7,8 @@ import type { Veggie, AutoPurchaseConfig } from '../types/game';
 import { 
   getVeggieImage, 
   getAutoPurchaserImage, 
-  ICON_EXPERIENCE, 
+  ICON_EXPERIENCE,
+  ICON_BEE,
   UPGRADE_FERTILIZER, 
   UPGRADE_BETTER_SEEDS, 
   UPGRADE_ADDITIONAL_PLOT, 
@@ -40,6 +41,7 @@ interface GrowingTabProps {
   heirloomKnowledgeCost: number;
   highestUnlockedVeggie: number;
   farmTier: number;
+  beeYieldBonus: number;
   MERCHANT_DAYS: number;
   MERCHANT_COST: number;
   MERCHANT_KN_COST: number;
@@ -223,6 +225,8 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
     heirloomMoneyCost,
     heirloomKnowledgeCost,
     highestUnlockedVeggie,
+    farmTier,
+    beeYieldBonus,
     MERCHANT_DAYS,
     MERCHANT_COST,
     MERCHANT_KN_COST,
@@ -255,7 +259,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
   // Main growing content
   const mainContent = (
     <>
-      {/* Growing Experience Display */}
+      {/* Experience Display */}
       <div className={styles.experienceDisplay}>
         <img src={ICON_EXPERIENCE} alt="" aria-hidden="true" className={styles.experienceIcon} />
         <span className={styles.experienceText}>
@@ -323,6 +327,20 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
               </span>
             )}
             <span className={styles.salePrice}>${formatNumber(veggies[activeVeggie].salePrice, 2)}</span>
+            {beeYieldBonus > 0 && (
+              <span style={{
+                fontSize: '0.75rem',
+                padding: '0.15rem 0.35rem',
+                backgroundColor: '#fffbf0',
+                border: '1px solid #FFD700',
+                borderRadius: '3px',
+                color: '#B8860B',
+                marginLeft: '0.25rem',
+                fontWeight: 'bold'
+              }}>
+                <img src={ICON_BEE} alt="Bee" style={{ width: '14px', height: '14px', marginRight: '2px', verticalAlign: 'middle' }} />+{formatNumber(beeYieldBonus * 100, 1)}%
+              </span>
+            )}
             <span className={styles.daysToGrow}>
               (~{daysToGrow} days to grow)
             </span>
@@ -555,7 +573,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
           disabled={veggies.every((v) => !v.sellEnabled || v.stash === 0)}
           aria-label="Sell all veggies (only those marked for selling)"
         >
-          {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${formatNumber(veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * v.salePrice : sum, 0), 2)})
+          {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${formatNumber(veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * v.salePrice : sum, 1), 2)})
         </button>
       </div>
     </>

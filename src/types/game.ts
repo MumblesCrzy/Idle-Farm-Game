@@ -179,6 +179,10 @@ export interface GameState {
   permanentBonuses: string[];
   setPermanentBonuses: React.Dispatch<React.SetStateAction<string[]>>;
   
+  // Bee System Integration
+  beeYieldBonus: number;
+  setBeeYieldBonus: React.Dispatch<React.SetStateAction<number>>;
+  
   // Game Management
   resetGame: () => void;
   
@@ -212,6 +216,26 @@ export interface GameState {
     processTreeGrowth: () => void;
     checkEventActive: () => boolean;
   };
+  
+  // Bee System (v0.9.0)
+  beeSystem?: {
+    unlocked: boolean;
+    regularHoney: number;
+    goldenHoney: number;
+    totalHoneyCollected: number;
+    boxes: any[];
+    upgrades: any[];
+    beekeeperAssistant: any;
+    addBeeBox: () => boolean;
+    harvestHoney: (boxId: string) => any;
+    harvestAllHoney: () => any[];
+    purchaseUpgrade: (upgradeId: string) => boolean;
+    unlockBeekeeperAssistant: () => boolean;
+    upgradeBeekeeperAssistant: () => boolean;
+    toggleBeekeeperAssistant: (active: boolean) => void;
+    calculateYieldBonus: () => number;
+    getBeeStats: () => any;
+  };
 }
 
 // ============================================================================
@@ -223,9 +247,9 @@ export interface BaseTabProps {
   active: boolean;
 }
 
-export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas';
+export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'bees';
 
-export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
+export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
 // ============================================================================
@@ -243,7 +267,9 @@ export type EventCategory =
   | 'merchant'      // Merchant sales and manual sells
   | 'canning'       // Canning activities (start, complete, upgrades)
   | 'upgrade'       // Major upgrade purchases (greenhouse, irrigation, etc.)
-  | 'milestone';    // Major achievements (farm tier, experience milestones)
+  | 'milestone'     // Major achievements (farm tier, experience milestones)
+  | 'bees'          // Bee system activities (honey harvest, upgrades, box purchases)
+  | 'christmas';    // Christmas Tree Shop event activities (harvest, sell, craft, upgrades)
 
 /**
  * Priority levels for event log entries
@@ -291,6 +317,15 @@ export interface EventMetadata {
   
   // Merchant specific
   veggiesSold?: Array<{ name: string; quantity: number; earnings: number }>;
+  
+  // Christmas event specific
+  treeType?: string;
+  quality?: string;
+  quantity?: number;
+  cheerEarned?: number;
+  itemName?: string;
+  upgradeName?: string;
+  milestoneName?: string;
 }
 
 /**

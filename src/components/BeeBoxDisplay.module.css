@@ -1,0 +1,296 @@
+/* ============================================================================
+   BEE BOX DISPLAY STYLES
+   Individual bee box card with production timer and harvest controls
+   ============================================================================ */
+
+.container {
+  background: linear-gradient(135deg, #fff 0%, #fffbf0 100%);
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Ready state - highlight when harvest is available */
+.container.ready {
+  border-color: #f39c12;
+  background: linear-gradient(135deg, #fff9e6 0%, #ffe6b3 100%);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.5);
+  }
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.iconWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.icon {
+  font-size: 1.5rem;
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
+.readyIndicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #4caf50;
+  color: white;
+  font-size: 0.7rem;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0.1rem;
+}
+
+.subtitle {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+/* ============================================================================
+   PROGRESS SECTION
+   ============================================================================ */
+
+.progressSection {
+  margin-bottom: 0.5rem;
+}
+
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.readyText {
+  color: #f39c12;
+  font-weight: bold;
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.timerText {
+  color: #666;
+  font-weight: 500;
+}
+
+.progressPercent {
+  color: #888;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   STATS ROW
+   ============================================================================ */
+
+.stats {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem;
+  background: rgba(243, 156, 18, 0.05);
+  border-radius: 4px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.statValue {
+  font-size: 0.75rem;
+  color: #333;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   HARVEST BUTTON
+   ============================================================================ */
+
+.harvestButton {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.harvestButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+}
+
+.harvestButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.harvestButton:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Ready state button */
+.container.ready .harvestButton:not(:disabled) {
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  box-shadow: 0 2px 6px rgba(243, 156, 18, 0.4);
+  animation: buttonPulse 2s ease-in-out infinite;
+}
+
+.container.ready .harvestButton:not(:disabled):hover {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.5);
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 2px 6px rgba(243, 156, 18, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.6);
+  }
+}
+
+.buttonIcon {
+  font-size: 1rem;
+}
+
+/* ============================================================================
+   INACTIVE OVERLAY
+   ============================================================================ */
+
+.inactiveOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.inactiveLabel {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #999;
+  padding: 0.35rem 0.75rem;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .icon {
+    font-size: 2rem;
+  }
+
+  .title {
+    font-size: 1rem;
+  }
+
+  .stats {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    flex: 1;
+    min-width: 60px;
+  }
+
+  .harvestButton {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.95rem;
+  }
+}

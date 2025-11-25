@@ -6,11 +6,19 @@ export type CanningIngredient = {
   quantity: number; // How many of this veggie needed
 };
 
+export type HoneyRequirement = {
+  regular: number; // Regular honey required
+  golden: number; // Golden honey required
+};
+
 export type Recipe = {
   id: string; // Unique identifier for the recipe
   name: string; // Display name of the canned product
   description: string; // Description of what this recipe makes
   ingredients: CanningIngredient[]; // What veggies are needed
+  honeyRequirement?: HoneyRequirement; // Optional honey requirements (for honey recipes)
+  tier?: 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5'; // Honey recipe tier
+  honeyCollectedRequired?: number; // Total honey collected milestone to unlock
   processingTime: number; // Time in seconds to complete canning
   baseProcessingTime: number; // Original processing time (for upgrade calculations)
   salePrice: number; // How much the canned product sells for
@@ -93,6 +101,12 @@ export type RecipeConfig = {
     veggieName: string;
     quantity: number;
   }>;
+  honeyRequirement?: {
+    regular: number;
+    golden: number;
+  };
+  tier?: 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
+  honeyCollectedRequired?: number;
   baseProcessingTime: number; // In seconds
   baseSalePrice: number;
   experienceRequired: number;

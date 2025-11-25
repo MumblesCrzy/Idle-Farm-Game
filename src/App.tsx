@@ -6,6 +6,7 @@ import SettingsOverlay from './components/SettingsOverlay';
 import EventLogOverlay from './components/EventLogOverlay';
 import GrowingTab from './components/GrowingTab';
 import CanningTab from './components/CanningTab';
+import BeesTab from './components/BeesTab';
 import TreeFarmTab from './components/TreeFarmTab';
 import WorkshopTab from './components/WorkshopTab';
 import ShopfrontTab from './components/ShopfrontTab';
@@ -32,21 +33,37 @@ let globalResetAchievements: (() => void) | null = null;
 // Module-level event log clear function
 let globalClearEventLog: (() => void) | null = null;
 
+// Module-level Christmas event callbacks for event logging
+let globalChristmasEventCallbacks = {
+  onTreeSold: null as ((treeType: string, quantity: number, cheerEarned: number) => void) | null,
+  onTreeHarvested: null as ((treeType: string, quality: string) => void) | null,
+  onItemCrafted: null as ((itemName: string, quantity: number) => void) | null,
+  onUpgradePurchased: null as ((upgradeName: string, cost: number) => void) | null,
+  onMilestoneClaimed: null as ((milestoneName: string) => void) | null,
+};
+
+// Module-level bee context reference for dev tools
+let globalBeeContext: any = null;
+
 // Module-level flag to prevent auto-save after game reset
 let justReset = false;
+
+// Module-level flag to prevent achievement checks during reset
+let blockAchievementChecks = false;
 
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
 import DevTools from './components/DevTools';
 import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
+import { BeeProvider, useBees } from './context/BeeContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
-import { useGameLoop } from './hooks/useGameLoop';
+import { useGameLoop, useRobustInterval } from './hooks/useGameLoop';
 import { useEventLog } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
@@ -232,6 +249,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     heirloomKnowledgeCost
   } = gameState;
 
+  // Bee yield bonus tracking (from bee boxes and Meadow Magic upgrades)
+  const [beeYieldBonus, setBeeYieldBonus] = useState(0); // Decimal format (e.g., 0.05 = 5%)
+
   // Initialize Christmas Tree Shop event
   const [initialChristmasState] = useState(() => {
     try {
@@ -246,6 +266,21 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const christmasEvent: UseChristmasEventReturn = useChristmasEvent({
     initialState: initialChristmasState,
     farmTier,
+    onTreeSold: (treeType, quantity, cheerEarned) => {
+      globalChristmasEventCallbacks.onTreeSold?.(treeType, quantity, cheerEarned);
+    },
+    onTreeHarvested: (treeType, quality) => {
+      globalChristmasEventCallbacks.onTreeHarvested?.(treeType, quality);
+    },
+    onItemCrafted: (itemName, quantity) => {
+      globalChristmasEventCallbacks.onItemCrafted?.(itemName, quantity);
+    },
+    onUpgradePurchased: (upgradeName, cost) => {
+      globalChristmasEventCallbacks.onUpgradePurchased?.(upgradeName, cost);
+    },
+    onMilestoneClaimed: (milestoneName) => {
+      globalChristmasEventCallbacks.onMilestoneClaimed?.(milestoneName);
+    },
   });
 
   // Irrigation upgrade handler
@@ -377,12 +412,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
   // Reset game handler
   const resetGame = () => {
-  // Prevent auto-save from running for 5 seconds after reset
-  justReset = true;
-  setTimeout(() => {
-    justReset = false;
-  }, 5000);
+  // Block achievement checks during reset to prevent re-unlocking
+  blockAchievementChecks = true;
   
+  // Remove all data from localStorage first
   localStorage.removeItem(GAME_STORAGE_KEY);
   
   // Create fresh veggies with reset auto-purchasers
@@ -415,36 +448,39 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   setCurrentWeather('Clear');
   setFarmCost(FARM_BASE_COST);
   setHighestUnlockedVeggie(0); // Reset highest unlocked veggie for complete reset
-  // Reset achievements to locked state
+  
+  // Reset achievements FIRST, before resetting bee system
+  // This prevents achievements from being re-unlocked when bee state changes
   if (globalResetAchievements) {
     globalResetAchievements();
   }
+  
+  // Reset bee system (this will trigger beeState update and achievement check)
+  if (globalBeeContext?.resetBeeSystem) {
+    globalBeeContext.resetBeeSystem();
+  }
+  
   // Clear event log
   if (globalClearEventLog) {
     globalClearEventLog();
   }
-  // Save reset state to localStorage
-  saveGameState({
-    farmTier: 1,
-    day: 1,
-    maxPlots: 4,
-    money: 0,
-    experience: 0,
-    knowledge: 0,
-    activeVeggie: 0,
-    totalHarvests: 0,
-    veggies: resetVeggies,
-    almanacLevel: 0,
-    almanacCost: 10,
-    irrigationOwned: false,
-    autoSellOwned: false,
-    greenhouseOwned: false,
-    heirloomOwned: false,
-    farmCost: FARM_BASE_COST,
-    currentWeather: 'Clear',
-    highestUnlockedVeggie: 0 // Reset to 0 for complete game reset
-  });
+  // Reset Christmas event
+  if (christmasEvent?.resetEvent) {
+    christmasEvent.resetEvent();
+  }
+  
+  // Wait for state updates to propagate, then save
+  // This ensures achievements and bee state are properly reset in the save
+  setTimeout(() => {
+    // Re-enable achievement checks and auto-save after state updates propagate
+    blockAchievementChecks = false;
+    justReset = false;
+  }, 100);
+  
+  // Prevent auto-save from running until state updates propagate
+  justReset = true;
   };
+
   
   // Auto Harvester Speed upgrade purchase
   const handleBuyHarvesterSpeed = (index: number) => {
@@ -869,6 +905,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       harvestAmount = Math.ceil(harvestAmount * 1.05);
     }
     
+    // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
+    if (beeYieldBonus > 0) {
+      harvestAmount = Math.ceil(harvestAmount * (1 + beeYieldBonus));
+    }
+    
     // Since we already checked growth >= 100, we know we'll harvest
     const almanacMultiplier = 1 + (almanacLevel * 0.10);
     const knowledgeGain = isAutoHarvest ? 0.5 : 1;
@@ -1056,7 +1097,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     onPurchaseCallback: globalAutoPurchaseCallback || undefined
   });
 
-  // Day counter timer with auto-sell and auto-purchase logic - using requestAnimationFrame for Chrome compatibility
+  // Day counter timer with auto-sell and auto-purchase logic - using robust interval for better background tab support
   const autoSellOwnedRef = useRef(autoSellOwned);
   const handleSellRef = useRef(handleSell);
   const christmasEventRef = useRef(christmasEvent);
@@ -1067,7 +1108,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     christmasEventRef.current = christmasEvent;
   }, [autoSellOwned, handleSell, christmasEvent]);
   
-  useGameLoop(() => {
+  useRobustInterval(() => {
     setTotalDaysElapsed((total: number) => total + 1);
     setDay((d: number) => {
       const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
@@ -1094,7 +1135,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, 1000, []); // Empty deps - refs prevent loop restart
 
   // Elves' Bench automation loop - runs every second
-  useGameLoop(() => {
+  // Use useRobustInterval for better background tab performance
+  useRobustInterval(() => {
     if (christmasEventRef.current?.isEventActive) {
       const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
       if (elvesBenchOwned) {
@@ -1106,7 +1148,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses }}>
+  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus }}>
       {children}
     </GameContext.Provider>
   );
@@ -1118,8 +1160,36 @@ function useGame() {
   return context;
 }
 
+/**
+ * Wrapper component for BeesTab that uses the useBees hook
+ */
+interface BeesTabWrapperProps {
+  farmTier: number;
+  formatNumber: (num: number, decimalPlaces?: number) => string;
+}
+
+const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, formatNumber }) => {
+  const beeContext = useBees();
+  
+  // Store bee context globally for dev tools access
+  useEffect(() => {
+    globalBeeContext = beeContext;
+    return () => {
+      globalBeeContext = null;
+    };
+  }, [beeContext]);
+  
+  return (
+    <BeesTab
+      beeContext={beeContext}
+      farmTier={farmTier}
+      formatNumber={formatNumber}
+    />
+  );
+};
+
 function App() {
-  const { soundEnabled, setSoundEnabled } = useArchie();
+  const { soundEnabled, setSoundEnabled, archieAppearance, setArchieAppearance } = useArchie();
   
   // ArchieIcon component adds a clickable character that
   // appears randomly on the screen and gives the player money when clicked
@@ -1146,8 +1216,44 @@ function App() {
   });
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'christmas'>('growing');
+  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas'>('growing');
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
+  
+  // Load initial bee state
+  const [initialBeeState] = useState(() => {
+    try {
+      const loaded = loadGameStateWithCanning();
+      return loaded?.beeState || undefined;
+    } catch (error) {
+      console.error('Error loading bee state:', error);
+      return undefined;
+    }
+  });
+  
+  // Track current bee state for auto-save
+  const [beeState, setBeeState] = useState<any>(null);
+  
+  // Extract honey values from bee state for canning system
+  const regularHoney = beeState?.regularHoney || 0;
+  const goldenHoney = beeState?.goldenHoney || 0;
+  const totalHoneyCollected = beeState?.totalHoneyCollected || 0;
+  
+  // Setters for honey that update bee state
+  const setRegularHoney = useCallback((value: number | ((prev: number) => number)) => {
+    setBeeState((prev: any) => {
+      if (!prev) return prev;
+      const newValue = typeof value === 'function' ? value(prev.regularHoney || 0) : value;
+      return { ...prev, regularHoney: newValue };
+    });
+  }, []);
+  
+  const setGoldenHoney = useCallback((value: number | ((prev: number) => number)) => {
+    setBeeState((prev: any) => {
+      if (!prev) return prev;
+      const newValue = typeof value === 'function' ? value(prev.goldenHoney || 0) : value;
+      return { ...prev, goldenHoney: newValue };
+    });
+  }, []);
   
   // Load initial canning state fresh each time
   const [initialCanningState] = useState(() => {
@@ -1162,7 +1268,7 @@ function App() {
 
   // Load and manage UI preferences
   const [uiPreferences, setUiPreferences] = useState<{
-    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
+    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
     canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
   }>(() => {
     const loaded = loadGameStateWithCanning();
@@ -1173,7 +1279,7 @@ function App() {
   });
 
   // Handlers for updating UI preferences
-  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet') => {
+  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5') => {
     setUiPreferences(prev => ({ ...prev, canningRecipeFilter: filter }));
   }, []);
 
@@ -1181,7 +1287,7 @@ function App() {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
   }, []);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus } = useGame();
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1194,7 +1300,24 @@ function App() {
     purchaseUpgrade,
     canMakeRecipe,
     toggleAutoCanning
-  } = useCanningSystem(experience, veggies, setVeggies, heirloomOwned, money, setMoney, knowledge, setKnowledge, initialCanningState, uiPreferences.canningRecipeSort, farmTier);
+  } = useCanningSystem(
+    experience, 
+    veggies, 
+    setVeggies, 
+    heirloomOwned, 
+    money, 
+    setMoney, 
+    knowledge, 
+    setKnowledge, 
+    initialCanningState, 
+    uiPreferences.canningRecipeSort, 
+    farmTier,
+    regularHoney,
+    goldenHoney,
+    totalHoneyCollected,
+    setRegularHoney,
+    setGoldenHoney
+  );
 
   // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
   // Memoized to prevent recalculation on every render
@@ -1421,6 +1544,62 @@ function App() {
     };
   }, [eventLog]);
 
+  // Set up Christmas event logging callbacks
+  useEffect(() => {
+    globalChristmasEventCallbacks.onTreeSold = (treeType: string, quantity: number, cheerEarned: number) => {
+      eventLog.addEvent('christmas', `Sold ${quantity}x ${treeType} tree${quantity > 1 ? 's' : ''}`, {
+        priority: 'normal',
+        details: `Earned ${cheerEarned} Holiday Cheer`,
+        icon: '🎄',
+        metadata: { treeType, quantity, cheerEarned }
+      });
+    };
+    
+    globalChristmasEventCallbacks.onTreeHarvested = (treeType: string, quality: string) => {
+      eventLog.addEvent('christmas', `Harvested ${quality} ${treeType} tree`, {
+        priority: 'minor',
+        details: `Quality: ${quality}`,
+        icon: '🌲',
+        metadata: { treeType, quality }
+      });
+    };
+    
+    globalChristmasEventCallbacks.onItemCrafted = (itemName: string, quantity: number) => {
+      eventLog.addEvent('christmas', `Crafted ${quantity}x ${itemName}`, {
+        priority: 'minor',
+        details: `Created ${quantity} ${itemName}`,
+        icon: '🎨',
+        metadata: { itemName, quantity }
+      });
+    };
+    
+    globalChristmasEventCallbacks.onUpgradePurchased = (upgradeName: string, cost: number) => {
+      eventLog.addEvent('christmas', `Purchased upgrade: ${upgradeName}`, {
+        priority: 'normal',
+        details: `Cost: ${cost} Holiday Cheer`,
+        icon: '⭐',
+        metadata: { upgradeName, cost }
+      });
+    };
+    
+    globalChristmasEventCallbacks.onMilestoneClaimed = (milestoneName: string) => {
+      eventLog.addEvent('milestone', `Christmas milestone claimed: ${milestoneName}`, {
+        priority: 'important',
+        details: milestoneName,
+        icon: '🎁',
+        metadata: { milestoneName }
+      });
+    };
+    
+    return () => {
+      globalChristmasEventCallbacks.onTreeSold = null;
+      globalChristmasEventCallbacks.onTreeHarvested = null;
+      globalChristmasEventCallbacks.onItemCrafted = null;
+      globalChristmasEventCallbacks.onUpgradePurchased = null;
+      globalChristmasEventCallbacks.onMilestoneClaimed = null;
+    };
+  }, [eventLog]);
+
   // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
     // If experience is significantly high, we likely just imported data
@@ -1479,16 +1658,22 @@ function App() {
           lastUnlockedId
         },
         eventLogState: eventLog.getState(),
-        christmasEventState: christmasEvent?.eventState
+        christmasEventState: christmasEvent?.eventState,
+        beeState: beeState || undefined
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState]);
 
   // Check achievements periodically
   useEffect(() => {
+    // Skip achievement checks during game reset
+    if (blockAchievementChecks) {
+      return;
+    }
+    
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
@@ -1501,9 +1686,11 @@ function App() {
       canningItemsTotal,
       farmTier,
       totalHarvests,
-      christmasTreesSold
+      christmasTreesSold,
+      beeState,
+      canningState
     });
-  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, christmasEvent?.totalTreesSold, checkAchievements]);
+  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, christmasEvent?.totalTreesSold, beeState, checkAchievements]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed
@@ -1932,6 +2119,12 @@ function App() {
       resetGame={resetGame}
     >
       {({ handleExportSave, handleImportSave, handleResetGame }) => (
+    <BeeProvider 
+      farmTier={farmTier}
+      onYieldBonusChange={setBeeYieldBonus}
+      initialState={initialBeeState}
+      onStateChange={setBeeState}
+    >
     <>
     <ArchieIcon 
       setMoney={setMoney} 
@@ -2034,6 +2227,38 @@ function App() {
               )} */}
             </button>
             <button
+              onClick={() => farmTier >= 3 ? setActiveTab('bees') : null}
+              disabled={farmTier < 3}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: farmTier >= 3
+                  ? (activeTab === 'bees' ? '#f39c12' : '#333')
+                  : '#666',
+                color: farmTier >= 3 ? '#fff' : '#bbb',
+                border: 'none',
+                borderRadius: '8px 8px 0 0',
+                cursor: farmTier >= 3 ? 'pointer' : 'not-allowed',
+                fontWeight: activeTab === 'bees' ? 'bold' : 'normal',
+                fontSize: '1rem',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexDirection: 'column'
+              }}
+              title={farmTier >= 3 ? 'Bee System' : `Bees unlock at Farm Tier 3`}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '20px', opacity: farmTier >= 3 ? 1 : 0.5 }}>🐝</span>
+                Bees
+              </div>
+              {farmTier < 3 && (
+                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                  Req: Tier 3
+                </div>
+              )}
+            </button>
+            <button
               onClick={() => christmasEvent?.isEventActive ? setActiveTab('christmas') : null}
               disabled={!christmasEvent?.isEventActive}
               style={{
@@ -2096,6 +2321,7 @@ function App() {
                 heirloomKnowledgeCost={heirloomKnowledgeCost}
                 highestUnlockedVeggie={highestUnlockedVeggie}
                 farmTier={farmTier}
+                beeYieldBonus={beeYieldBonus}
                 MERCHANT_DAYS={MERCHANT_DAYS}
                 MERCHANT_COST={MERCHANT_COST}
                 MERCHANT_KN_COST={MERCHANT_KN_COST}
@@ -2148,6 +2374,13 @@ function App() {
             onRecipeFilterChange={setCanningRecipeFilter}
             onRecipeSortChange={setCanningRecipeSort}
           />
+        </PerformanceWrapper>
+      )}
+
+      {/* Bees Tab Content */}
+      {activeTab === 'bees' && (
+        <PerformanceWrapper id="BeesTab">
+          <BeesTabWrapper farmTier={farmTier} formatNumber={formatNumber} />
         </PerformanceWrapper>
       )}
 
@@ -2345,6 +2578,9 @@ function App() {
       onClose={() => setShowSettingsOverlay(false)}
       soundEnabled={soundEnabled}
       setSoundEnabled={setSoundEnabled}
+      archieAppearance={archieAppearance}
+      setArchieAppearance={setArchieAppearance}
+      unlockedAchievements={achievements.filter(a => a.unlocked).map(a => a.id)}
       handleExportSave={handleExportSave}
       handleImportSave={handleImportSave}
       handleResetGame={handleResetGame}
@@ -2409,6 +2645,31 @@ function App() {
           materials.glassBeads += 100;
         }
       }}
+      onAddHoney={(amount) => {
+        if (globalBeeContext?.devAddHoney) {
+          globalBeeContext.devAddHoney(amount);
+        }
+      }}
+      onAddGoldenHoney={(amount) => {
+        if (globalBeeContext?.devAddGoldenHoney) {
+          globalBeeContext.devAddGoldenHoney(amount);
+        }
+      }}
+      onHarvestAllHoney={() => {
+        if (globalBeeContext?.harvestAllHoney) {
+          globalBeeContext.harvestAllHoney();
+        }
+      }}
+      onCompleteAllBoxes={() => {
+        if (globalBeeContext?.devCompleteAllBoxes) {
+          globalBeeContext.devCompleteAllBoxes();
+        }
+      }}
+      onAddBeeBox={() => {
+        if (globalBeeContext?.addBeeBox) {
+          globalBeeContext.addBeeBox();
+        }
+      }}
     />
 
     {/* Magical Register Bonus Toast */}
@@ -2420,6 +2681,7 @@ function App() {
       onClose={() => setMagicalRegisterToast({ visible: false, message: '' })}
     />
     </>
+    </BeeProvider>
       )}
     </SaveLoadSystem>
   );

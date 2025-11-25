@@ -93,7 +93,9 @@ const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
     { id: 'merchant', label: 'Sales' },
     { id: 'canning', label: 'Canning' },
     { id: 'upgrade', label: 'Upgrades' },
-    { id: 'milestone', label: 'Milestones' }
+    { id: 'milestone', label: 'Milestones' },
+    { id: 'bees', label: 'Bees' },
+    { id: 'christmas', label: 'Tree Shop' }
   ];
 
   return (

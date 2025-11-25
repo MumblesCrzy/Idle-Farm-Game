@@ -241,7 +241,7 @@ export interface ExtendedGameState {
   
   // UI preferences
   uiPreferences?: {
-    canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
+    canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
     canningRecipeSort?: 'name' | 'profit' | 'time' | 'difficulty';
   };
   
@@ -258,6 +258,22 @@ export interface ExtendedGameState {
   
   // Christmas event state
   christmasEventState?: any; // ChristmasEventState type from christmasEvent.ts
+  
+  // Bee system state
+  beeState?: {
+    unlocked: boolean;
+    firstTimeSetup: boolean;
+    boxes: any[]; // BeeBox[]
+    regularHoney: number;
+    goldenHoney: number;
+    totalHoneyCollected: number;
+    totalGoldenHoneyCollected: number;
+    lastUpdateTime: number;
+    upgrades: any[]; // BeeUpgrade[]
+    beekeeperAssistant: any; // BeekeeperAssistant
+    totalBoxesPurchased: number;
+    honeySpent: number;
+  };
 }
 
 /** Current version number for canning save data format */
@@ -279,7 +295,10 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
     const loaded = JSON.parse(raw) as ExtendedGameState;
     
     // Migrate canning data if needed
-    return migrateCanningSaveData(loaded);
+    const migratedState = migrateCanningSaveData(loaded);
+    
+    // Migrate bee data if needed
+    return migrateBeeStateSaveData(migratedState);
   } catch {
     return null;
   }
@@ -516,6 +535,46 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
 }
 
 /**
+ * Migrates old save data to include bee system state.
+ * Creates default bee state if none exists for backward compatibility.
+ * @param loaded - The loaded game state to migrate
+ * @returns Updated game state with bee state
+ */
+function migrateBeeStateSaveData(loaded: ExtendedGameState): ExtendedGameState {
+  // If bee state doesn't exist, create a default empty state
+  if (!loaded.beeState) {
+    console.log('🐝 Migrating save data: Adding bee system state');
+    loaded.beeState = {
+      unlocked: false,
+      firstTimeSetup: false,
+      boxes: [],
+      regularHoney: 0,
+      goldenHoney: 0,
+      totalHoneyCollected: 0,
+      totalGoldenHoneyCollected: 0,
+      lastUpdateTime: Date.now(),
+      upgrades: [], // Will be initialized by BeeContext
+      beekeeperAssistant: {
+        unlocked: false,
+        active: false,
+        autoCollectEnabled: false,
+        productionSpeedBonus: 0,
+        downtimeReduction: 0,
+        level: 0,
+        upgradeCost: 100,
+        baseUpgradeCost: 100,
+        costScaling: 1.5,
+        maxLevel: 10
+      },
+      totalBoxesPurchased: 0,
+      honeySpent: 0
+    };
+  }
+  
+  return loaded;
+}
+
+/**
  * Extends veggie data to include canning-specific upgrade fields.
  * Adds canningYieldLevel, canningYieldCost, canningQualityLevel, and canningQualityCost.
  * @param veggies - Array of vegetable data to extend
@@ -574,6 +633,14 @@ export function validateCanningImport(data: any): data is ExtendedGameState {
       if (!Array.isArray(data.canningState.recipes)) return false;
       if (!Array.isArray(data.canningState.upgrades)) return false;
       if (!Array.isArray(data.canningState.activeProcesses)) return false;
+    }
+    
+    // Validate bee state if present (optional, will be migrated if missing)
+    if (data.beeState) {
+      if (typeof data.beeState.unlocked !== 'boolean') return false;
+      if (!Array.isArray(data.beeState.boxes)) return false;
+      if (typeof data.beeState.regularHoney !== 'number') return false;
+      if (typeof data.beeState.goldenHoney !== 'number') return false;
     }
     
     return true;

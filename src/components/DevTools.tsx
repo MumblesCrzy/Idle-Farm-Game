@@ -16,6 +16,12 @@ interface DevToolsProps {
   onHarvestAllTrees?: () => void;
   onAddTreeMaterials?: () => void;
   onProcessTreeGrowth?: () => void;
+  // Bees
+  onAddHoney?: (amount: number) => void;
+  onAddGoldenHoney?: (amount: number) => void;
+  onHarvestAllHoney?: () => void;
+  onCompleteAllBoxes?: () => void;
+  onAddBeeBox?: () => void;
 }
 
 const DevTools: React.FC<DevToolsProps> = ({
@@ -30,7 +36,12 @@ const DevTools: React.FC<DevToolsProps> = ({
   onAddHolidayCheer,
   onHarvestAllTrees,
   onAddTreeMaterials,
-  onProcessTreeGrowth
+  onProcessTreeGrowth,
+  onAddHoney,
+  onAddGoldenHoney,
+  onHarvestAllHoney,
+  onCompleteAllBoxes,
+  onAddBeeBox
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [customMoney, setCustomMoney] = useState('1000');
@@ -263,6 +274,71 @@ const DevTools: React.FC<DevToolsProps> = ({
                     className={styles.actionButton}
                   >
                     📦 Add Materials (x100 each)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bees Section */}
+          {(onAddHoney || onAddGoldenHoney || onHarvestAllHoney || onCompleteAllBoxes || onAddBeeBox) && (
+            <div className={styles.section}>
+              <h4 className={styles.sectionTitle}>🐝 Bee System</h4>
+              <div className={styles.actionButtons}>
+                {onAddHoney && (
+                  <>
+                    <button 
+                      onClick={() => onAddHoney(100)}
+                      className={styles.actionButton}
+                    >
+                      +100 🍯 Honey
+                    </button>
+                    <button 
+                      onClick={() => onAddHoney(1000)}
+                      className={styles.actionButton}
+                    >
+                      +1K 🍯 Honey
+                    </button>
+                  </>
+                )}
+                {onAddGoldenHoney && (
+                  <>
+                    <button 
+                      onClick={() => onAddGoldenHoney(10)}
+                      className={styles.actionButton}
+                    >
+                      +10 ✨ Golden Honey
+                    </button>
+                    <button 
+                      onClick={() => onAddGoldenHoney(100)}
+                      className={styles.actionButton}
+                    >
+                      +100 ✨ Golden Honey
+                    </button>
+                  </>
+                )}
+                {onCompleteAllBoxes && (
+                  <button 
+                    onClick={onCompleteAllBoxes}
+                    className={styles.actionButton}
+                  >
+                    ⚡ Complete All Boxes
+                  </button>
+                )}
+                {onHarvestAllHoney && (
+                  <button 
+                    onClick={onHarvestAllHoney}
+                    className={styles.actionButton}
+                  >
+                    🍯 Harvest All Honey
+                  </button>
+                )}
+                {onAddBeeBox && (
+                  <button 
+                    onClick={onAddBeeBox}
+                    className={styles.actionButton}
+                  >
+                    ➕ Add Bee Box
                   </button>
                 )}
               </div>

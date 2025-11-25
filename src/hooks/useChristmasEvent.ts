@@ -5,7 +5,7 @@
  * Handles Holiday Cheer currency, tree farming, decoration crafting, and sales.
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type {
   ChristmasEventState,
   TreePlot,
@@ -25,6 +25,11 @@ import {
 interface UseChristmasEventParams {
   initialState?: Partial<ChristmasEventState>;
   farmTier: number; // For persisting across prestige
+  onTreeSold?: (treeType: string, quantity: number, cheerEarned: number) => void;
+  onTreeHarvested?: (treeType: string, quality: string) => void;
+  onItemCrafted?: (itemName: string, quantity: number) => void;
+  onUpgradePurchased?: (upgradeName: string, cost: number) => void;
+  onMilestoneClaimed?: (milestoneName: string) => void;
 }
 
 export interface UseChristmasEventReturn {
@@ -78,6 +83,7 @@ export interface UseChristmasEventReturn {
   processTreeGrowth: () => void;
   processDailyElvesCrafting: () => void;
   checkEventActive: () => boolean;
+  resetEvent: () => void;
   
   // Automation feedback
   currentElvesAction?: ChristmasEventState['currentElvesAction'];
@@ -204,10 +210,35 @@ function calculateDemandMultiplier(): number {
 export function useChristmasEvent({
   initialState,
   farmTier,
+  onTreeSold,
+  onTreeHarvested,
+  onItemCrafted,
+  onUpgradePurchased,
+  onMilestoneClaimed,
 }: UseChristmasEventParams): UseChristmasEventReturn {
   // Track last magical register bonus for toast display
   // Using object with timestamp ensures each bonus triggers a new toast
   const [lastMagicalRegisterBonus, setLastMagicalRegisterBonus] = useState({ amount: 0, timestamp: 0 });
+  
+  // Use refs for callbacks so they can be updated without recreating the hook functions
+  const callbacksRef = useRef({
+    onTreeSold,
+    onTreeHarvested,
+    onItemCrafted,
+    onUpgradePurchased,
+    onMilestoneClaimed,
+  });
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    callbacksRef.current = {
+      onTreeSold,
+      onTreeHarvested,
+      onItemCrafted,
+      onUpgradePurchased,
+      onMilestoneClaimed,
+    };
+  }, [onTreeSold, onTreeHarvested, onItemCrafted, onUpgradePurchased, onMilestoneClaimed]);
   
   // Initialize event state
   const [eventState, setEventState] = useState<ChristmasEventState>(() => {
@@ -461,6 +492,13 @@ export function useChristmasEvent({
         harvestReady: false,
       };
       
+      // Log the harvest event
+      if (callbacksRef.current.onTreeHarvested) {
+        const treeTypeName = plot.treeType.charAt(0).toUpperCase() + plot.treeType.slice(1);
+        const qualityName = plot.quality.charAt(0).toUpperCase() + plot.quality.slice(1);
+        callbacksRef.current.onTreeHarvested(treeTypeName, qualityName);
+      }
+      
       return {
         ...prev,
         treePlots: newPlots,
@@ -519,6 +557,11 @@ export function useChristmasEvent({
         materials: newMaterials,
       };
     });
+    
+    // Log the crafting event
+    if (callbacksRef.current.onItemCrafted) {
+      callbacksRef.current.onItemCrafted(recipe.name, quantity);
+    }
     
     return true;
   }, [eventState.materials]);
@@ -674,7 +717,6 @@ export function useChristmasEvent({
       
       let upgradeMultiplier = 1.0;
       if (garlandStation?.owned) upgradeMultiplier += 0.10; // +10% tree value
-      if (garlandBorders?.owned) upgradeMultiplier += 0.10; // +10% Cheer gain
       
       // Star Forge already included in luxury multiplier (3x)
       // Fireplace Display: +50% for luxury trees
@@ -683,7 +725,12 @@ export function useChristmasEvent({
       }
       
       const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
-      const totalCheer = finalPrice * quantity;
+      
+      // Garland Borders: +10% Holiday Cheer from sales (applied after price calculation)
+      let cheerMultiplier = 1.0;
+      if (garlandBorders?.owned) cheerMultiplier += 0.10;
+      
+      const totalCheer = Math.floor(finalPrice * quantity * cheerMultiplier);
       
       // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus on ONE tree)
       const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
@@ -697,7 +744,11 @@ export function useChristmasEvent({
           }
         }
         
+        // Apply Garland Borders bonus to Magical Register bonus
         if (bonusCheer > 0) {
+          if (garlandBorders?.owned) {
+            bonusCheer = Math.floor(bonusCheer * cheerMultiplier);
+          }
           // Update state to trigger toast with timestamp
           setLastMagicalRegisterBonus({ amount: bonusCheer, timestamp: Date.now() });
         }
@@ -708,6 +759,13 @@ export function useChristmasEvent({
       newInventory[treeKey] = currentQuantity - quantity;
       if (newInventory[treeKey] === 0) {
         delete newInventory[treeKey];
+      }
+      
+      // Log the sale event
+      if (callbacksRef.current.onTreeSold) {
+        // Parse tree name from key (e.g., "pine_perfect_luxury" -> "Pine")
+        const treeTypeName = keyParts[0].charAt(0).toUpperCase() + keyParts[0].slice(1);
+        callbacksRef.current.onTreeSold(treeTypeName, quantity, totalCheer + bonusCheer);
       }
       
       return {
@@ -746,20 +804,26 @@ export function useChristmasEvent({
         else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
         
         const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
-        const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
         const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
         
         let upgradeMultiplier = 1.0;
         if (garlandStation?.owned) upgradeMultiplier += 0.10;
-        if (garlandBorders?.owned) upgradeMultiplier += 0.10;
         if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
           upgradeMultiplier += 0.50;
         }
         
         const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
+        
+        // Garland Borders is applied later as a global multiplier to total cheer
         totalCheer += finalPrice * quantity;
         totalSold += quantity;
       });
+      
+      // Apply Garland Borders bonus to total cheer from sales
+      const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
+      if (garlandBorders?.owned) {
+        totalCheer = Math.floor(totalCheer * 1.10); // +10% Holiday Cheer from sales
+      }
       
       // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus)
       const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
@@ -785,12 +849,10 @@ export function useChristmasEvent({
           else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
           
           const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
-          const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
           const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
           
           let upgradeMultiplier = 1.0;
           if (garlandStation?.owned) upgradeMultiplier += 0.10;
-          if (garlandBorders?.owned) upgradeMultiplier += 0.10;
           if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
             upgradeMultiplier += 0.50;
           }
@@ -805,6 +867,11 @@ export function useChristmasEvent({
             }
           }
         });
+        
+        // Apply Garland Borders bonus to Magical Register bonus as well
+        if (bonusCheer > 0 && garlandBorders?.owned) {
+          bonusCheer = Math.floor(bonusCheer * 1.10);
+        }
         
         if (bonusCheer > 0) {
           // Update state to trigger toast with timestamp
@@ -992,6 +1059,11 @@ export function useChristmasEvent({
         };
       });
       
+      // Log the upgrade purchase event
+      if (callbacksRef.current.onUpgradePurchased) {
+        callbacksRef.current.onUpgradePurchased(upgrade.name, nextLevelCost);
+      }
+      
       return true;
     }
     
@@ -1025,6 +1097,11 @@ export function useChristmasEvent({
       };
     });
     
+    // Log the upgrade purchase event
+    if (callbacksRef.current.onUpgradePurchased) {
+      callbacksRef.current.onUpgradePurchased(upgrade.name, upgrade.cost);
+    }
+    
     return true;
   }, [eventState.upgrades, spendCheer]);
   
@@ -1056,6 +1133,11 @@ export function useChristmasEvent({
         ...prev,
         unlockedCosmetics: [...prev.unlockedCosmetics, milestone.reward.cosmeticId!],
       }));
+    }
+    
+    // Log the milestone claim event
+    if (callbacksRef.current.onMilestoneClaimed) {
+      callbacksRef.current.onMilestoneClaimed(milestone.name);
     }
     
     return true;
@@ -1291,6 +1373,14 @@ export function useChristmasEvent({
     });
   }, []);
   
+  /**
+   * Reset the Christmas event to initial state
+   */
+  const resetEvent = useCallback(() => {
+    setEventState(createInitialEventState(farmTier));
+    setLastMagicalRegisterBonus({ amount: 0, timestamp: 0 });
+  }, [farmTier]);
+  
   return {
     eventState,
     isEventActive,
@@ -1323,6 +1413,7 @@ export function useChristmasEvent({
     processTreeGrowth,
     processDailyElvesCrafting,
     checkEventActive,
+    resetEvent,
     currentElvesAction: eventState.currentElvesAction,
     lastMagicalRegisterBonus,
   };

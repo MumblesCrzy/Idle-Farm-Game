@@ -3,6 +3,7 @@ import RecipeCard from './RecipeCard';
 import CanningProcessDisplay from './CanningProcessDisplay';
 import RecipeDetailsModal from './RecipeDetailsModal';
 import type { Recipe, CanningState } from '../types/canning';
+import type { RecipeFilter, RecipeSort } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
 import { ICON_CANNING } from '../config/assetPaths';
 import styles from './CanningPanel.module.css';
@@ -18,9 +19,6 @@ interface CanningPanelProps {
   onRecipeFilterChange?: (filter: RecipeFilter) => void;
   onRecipeSortChange?: (sort: RecipeSort) => void;
 }
-
-type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
-type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
 const CanningPanel: React.FC<CanningPanelProps> = memo(({
   canningState,
@@ -96,13 +94,23 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
         filtered = filtered.filter(recipe => canMakeRecipe(recipe));
         break;
       case 'simple':
-        filtered = filtered.filter(recipe => recipe.ingredients.length === 1);
+        filtered = filtered.filter(recipe => recipe.ingredients.length === 1 && !recipe.honeyRequirement);
         break;
       case 'complex':
-        filtered = filtered.filter(recipe => recipe.ingredients.length >= 2 && recipe.ingredients.length <= 3);
+        filtered = filtered.filter(recipe => recipe.ingredients.length >= 2 && recipe.ingredients.length <= 3 && !recipe.honeyRequirement);
         break;
       case 'gourmet':
-        filtered = filtered.filter(recipe => recipe.ingredients.length > 3);
+        filtered = filtered.filter(recipe => (recipe.ingredients.length > 3 || recipe.honeyRequirement));
+        break;
+      case 'honey':
+        filtered = filtered.filter(recipe => !!recipe.honeyRequirement);
+        break;
+      case 'tier1':
+      case 'tier2':
+      case 'tier3':
+      case 'tier4':
+      case 'tier5':
+        filtered = filtered.filter(recipe => recipe.tier === recipeFilter);
         break;
     }
 
@@ -213,6 +221,12 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
             <option value="simple">Simple</option>
             <option value="complex">Complex</option>
             <option value="gourmet">Gourmet</option>
+            <option value="honey">Honey Recipes</option>
+            <option value="tier1">Tier 1</option>
+            <option value="tier2">Tier 2</option>
+            <option value="tier3">Tier 3</option>
+            <option value="tier4">Tier 4</option>
+            <option value="tier5">Tier 5</option>
           </select>
           
           <select

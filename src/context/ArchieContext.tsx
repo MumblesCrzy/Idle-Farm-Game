@@ -13,6 +13,8 @@ interface ArchieContextType {
   setArchieClickStreak: React.Dispatch<React.SetStateAction<number>>;
   soundEnabled: boolean;
   setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  archieAppearance: 'default' | 'reindeer' | 'sweater' | 'pinecones';
+  setArchieAppearance: React.Dispatch<React.SetStateAction<'default' | 'reindeer' | 'sweater' | 'pinecones'>>;
   handleArchieClick: (gameState?: { 
     money: number; 
     experience: number; 
@@ -34,6 +36,7 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastClickTime, setLastClickTime] = useState(0);
   const [archieClickStreak, setArchieClickStreak] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [archieAppearance, setArchieAppearance] = useState<'default' | 'reindeer' | 'sweater' | 'pinecones'>('default');
 
   // Shared function to play Archie sound
   const playArchieSound = () => {
@@ -180,6 +183,12 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (savedSoundSetting !== null) {
         setSoundEnabled(savedSoundSetting === 'true');
       }
+      
+      // Load appearance setting
+      const savedAppearance = localStorage.getItem('archieAppearance');
+      if (savedAppearance && ['default', 'reindeer', 'sweater', 'pinecones'].includes(savedAppearance)) {
+        setArchieAppearance(savedAppearance as 'default' | 'reindeer' | 'sweater' | 'pinecones');
+      }
     } catch (error) {
       console.error('Failed to load Archie settings:', error);
     }
@@ -193,6 +202,15 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.error('Failed to save Sound Effects setting:', error);
     }
   }, [soundEnabled]);
+  
+  // Save appearance setting when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('archieAppearance', archieAppearance);
+    } catch (error) {
+      console.error('Failed to save Archie appearance setting:', error);
+    }
+  }, [archieAppearance]);
 
   return (
     <ArchieContext.Provider value={{ 
@@ -208,6 +226,8 @@ export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setArchieClickStreak,
       soundEnabled,
       setSoundEnabled,
+      archieAppearance,
+      setArchieAppearance,
       handleArchieClick,
       handleArchieAppear
     }}>

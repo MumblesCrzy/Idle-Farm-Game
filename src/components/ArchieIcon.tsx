@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
-import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES } from '../config/assetPaths';
+import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_REINDEER, SPECIAL_ARCHIE_SWEATER } from '../config/assetPaths';
 
 interface ArchieIconProps {
   setMoney: (value: React.SetStateAction<number>) => void;
@@ -25,7 +25,7 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({
   christmasTreesSold = 0,
   earnCheer
 }) => {
-  const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward } = useArchie();
+  const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward, archieAppearance } = useArchie();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [pendingMoneyReward, setPendingMoneyReward] = useState(0);
@@ -88,8 +88,17 @@ const ArchieIcon: React.FC<ArchieIconProps> = ({
   const timeSinceLastClick = currentTime - lastClickTime;
   const canAppear = timeSinceLastClick >= ARCHIE_COOLDOWN;
 
-  // Use pinecones image during Christmas event, otherwise use default Archie
-  const archieImage = isChristmasEventActive ? SPECIAL_ARCHIE_PINECONES : SPECIAL_ARCHIE;
+  // Determine Archie image based on appearance setting
+  let archieImage = SPECIAL_ARCHIE; // default
+  
+  if (archieAppearance === 'pinecones') {
+    archieImage = SPECIAL_ARCHIE_PINECONES;
+  } else if (archieAppearance === 'reindeer') {
+    archieImage = SPECIAL_ARCHIE_REINDEER;
+  } else if (archieAppearance === 'sweater') {
+    archieImage = SPECIAL_ARCHIE_SWEATER;
+  }
+  // If appearance is 'default', archieImage is already set to SPECIAL_ARCHIE
   
   return (
     <>

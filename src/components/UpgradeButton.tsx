@@ -9,7 +9,7 @@ export interface UpgradeButtonProps {
   money: number;
   knowledge: number;
   cost: number;
-  currencyType: 'money' | 'knowledge';
+  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney';
   currencyLabel?: string; // Optional custom label (e.g., "Cheer" instead of "Kn")
   onClick: () => void;
   disabled?: boolean;
@@ -19,6 +19,8 @@ export interface UpgradeButtonProps {
   flex?: boolean;
   effect?: string;
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
+  regularHoney?: number; // Honey currency for bee upgrades
+  goldenHoney?: number; // Golden honey currency for bee upgrades
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
@@ -39,14 +41,41 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
   flex = false,
   effect,
   knowledgeCost,
+  regularHoney = 0,
+  goldenHoney = 0,
   formatNumber
 }) => {
-  const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
+  // Determine if user can afford based on currency type
+  const canAfford = (() => {
+    switch (currencyType) {
+      case 'money':
+        return money >= cost;
+      case 'knowledge':
+        return knowledge >= cost;
+      case 'regularHoney':
+        return regularHoney >= cost;
+      case 'goldenHoney':
+        return goldenHoney >= cost;
+      default:
+        return false;
+    }
+  })();
   
   // Determine the currency display label
   const getCurrencyLabel = () => {
     if (currencyLabel) return currencyLabel;
-    return currencyType === 'money' ? '$' : 'Kn';
+    switch (currencyType) {
+      case 'money':
+        return '$';
+      case 'knowledge':
+        return 'Kn';
+      case 'regularHoney':
+        return '🍯';
+      case 'goldenHoney':
+        return '✨';
+      default:
+        return '';
+    }
   };
   
   const costLabel = getCurrencyLabel();
@@ -88,7 +117,11 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
                 `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn` : 
                 (currencyType === 'money' 
                   ? `$${formatNumber(cost, 1)}` 
-                  : `${formatNumber(cost, 1)} ${costLabel}`)
+                  : currencyType === 'regularHoney'
+                    ? `${formatNumber(cost, 1)} ${costLabel}`
+                    : currencyType === 'goldenHoney'
+                      ? `${formatNumber(cost, 1)} ${costLabel}`
+                      : `${formatNumber(cost, 1)} ${costLabel}`)
               }
             </div>
           )}
@@ -124,7 +157,11 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
         ? `Costs $${formatNumber(cost, 1)} and ${formatNumber(knowledgeCost, 1)} knowledge`
         : currencyType === 'money' 
           ? `Costs $${formatNumber(cost, 1)}`
-          : `Costs ${formatNumber(cost, 1)} ${currencyLabel || 'knowledge'}`;
+          : currencyType === 'regularHoney'
+            ? `Costs ${formatNumber(cost, 1)} honey`
+            : currencyType === 'goldenHoney'
+              ? `Costs ${formatNumber(cost, 1)} golden honey`
+              : `Costs ${formatNumber(cost, 1)} ${currencyLabel || 'knowledge'}`;
       label += `. ${costText}`;
       if (!canAfford) {
         label += '. Cannot afford';

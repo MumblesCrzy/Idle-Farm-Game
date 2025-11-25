@@ -7,6 +7,9 @@ interface SettingsOverlayProps {
   onClose: () => void;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
+  archieAppearance: 'default' | 'reindeer' | 'sweater' | 'pinecones';
+  setArchieAppearance: (appearance: 'default' | 'reindeer' | 'sweater' | 'pinecones') => void;
+  unlockedAchievements: string[]; // Array of unlocked achievement IDs
   handleExportSave: () => void;
   handleImportSave: () => void;
   handleResetGame: () => void;
@@ -17,6 +20,9 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
   onClose,
   soundEnabled,
   setSoundEnabled,
+  archieAppearance,
+  setArchieAppearance,
+  unlockedAchievements,
   handleExportSave,
   handleImportSave,
   handleResetGame
@@ -96,6 +102,51 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
               >
                 {soundEnabled ? '🔊 ON' : '🔇 OFF'}
               </button>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className={styles.sectionTitle}>Archie Appearance</h4>
+            <div className={styles.appearanceSettings}>
+              <label className={styles.soundLabel}>Choose Archie's look:</label>
+              <div className={styles.appearanceButtons}>
+                <button
+                  onClick={() => setArchieAppearance('default')}
+                  className={`${styles.appearanceButton} ${archieAppearance === 'default' ? styles.appearanceButtonActive : ''}`}
+                  aria-label="Default Archie appearance"
+                  aria-pressed={archieAppearance === 'default'}
+                >
+                  🐕 Default
+                </button>
+                <button
+                  onClick={() => setArchieAppearance('pinecones')}
+                  className={`${styles.appearanceButton} ${archieAppearance === 'pinecones' ? styles.appearanceButtonActive : ''}`}
+                  aria-label="Archie with pinecones"
+                  aria-pressed={archieAppearance === 'pinecones'}
+                >
+                  🌲 Pinecones
+                </button>
+                <button
+                  onClick={() => setArchieAppearance('sweater')}
+                  className={`${styles.appearanceButton} ${archieAppearance === 'sweater' ? styles.appearanceButtonActive : ''} ${!unlockedAchievements.includes('winter_sweater') ? styles.appearanceButtonLocked : ''}`}
+                  aria-label={unlockedAchievements.includes('winter_sweater') ? "Archie's winter sweater" : "Locked: Unlock 'Archie's Winter Sweater' achievement"}
+                  aria-pressed={archieAppearance === 'sweater'}
+                  disabled={!unlockedAchievements.includes('winter_sweater')}
+                  title={!unlockedAchievements.includes('winter_sweater') ? "Unlock 'Archie's Winter Sweater' achievement to use this appearance" : ''}
+                >
+                  🧥 Sweater {!unlockedAchievements.includes('winter_sweater') && '🔒'}
+                </button>
+                <button
+                  onClick={() => setArchieAppearance('reindeer')}
+                  className={`${styles.appearanceButton} ${archieAppearance === 'reindeer' ? styles.appearanceButtonActive : ''} ${!unlockedAchievements.includes('reindeer_hat') ? styles.appearanceButtonLocked : ''}`}
+                  aria-label={unlockedAchievements.includes('reindeer_hat') ? "Archie's reindeer hat" : "Locked: Unlock 'Archie's Reindeer Hat' achievement"}
+                  aria-pressed={archieAppearance === 'reindeer'}
+                  disabled={!unlockedAchievements.includes('reindeer_hat')}
+                  title={!unlockedAchievements.includes('reindeer_hat') ? "Unlock 'Archie's Reindeer Hat' achievement to use this appearance" : ''}
+                >
+                  🦌 Reindeer {!unlockedAchievements.includes('reindeer_hat') && '🔒'}
+                </button>
+              </div>
             </div>
           </div>
           

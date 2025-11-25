@@ -164,6 +164,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  opacity: 1;
 }
 
 .treeSelector:hover:not(:disabled) {
@@ -177,6 +178,7 @@
   background: #F8E689;
   color: #3A3638;
   font-weight: bold;
+  opacity: 1;
 }
 
 .treeSelector.locked {

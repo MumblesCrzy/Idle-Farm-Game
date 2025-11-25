@@ -15,9 +15,9 @@ interface CanningTabProps {
   canMakeRecipe: (recipe: any) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
   toggleAutoCanning: () => void;
-  recipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet';
+  recipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty';
-  onRecipeFilterChange: (filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet') => void;
+  onRecipeFilterChange: (filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5') => void;
   onRecipeSortChange: (sort: 'name' | 'profit' | 'time' | 'difficulty') => void;
 }
 

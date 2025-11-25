@@ -11,6 +11,8 @@ interface GameStateForAchievements {
   farmTier: number;
   totalHarvests?: number;
   christmasTreesSold?: number;
+  beeState?: any; // Bee system state for bee-related achievements
+  canningState?: any; // Canning state for recipe-specific achievements
 }
 
 interface UseAchievementsReturn {

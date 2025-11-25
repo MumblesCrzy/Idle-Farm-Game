@@ -1,0 +1,301 @@
+/* ============================================================================
+   BEES TAB STYLES
+   Honey/amber themed styling for the bee management interface
+   Color Palette:
+   - Deep Lemon (#F7C91F) - Primary accent
+   - Dark Liver (#52514E) - Secondary/borders
+   - Metallic Bronze (#AA7942) - Highlights
+   - Saffron (#F7B434) - Hover states
+   - Tenné/Tawny (#D36300) - Emphasis
+   - Dark Charcoal (#2F2F2F) - Text/backgrounds
+   ============================================================================ */
+
+/* Container */
+.container {
+  flex: 1;
+  min-height: 600px;
+}
+
+/* Header Section */
+.header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #F7C91F;
+}
+
+.title {
+  font-size: 1.8rem;
+  color: #F7C91F;
+  margin: 0 0 0.5rem 0;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(247, 201, 31, 0.3);
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #52514E;
+  margin: 0;
+}
+
+/* ============================================================================
+   UNLOCK MESSAGE STYLES
+   ============================================================================ */
+
+.unlockMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 600px;
+  padding: 2rem;
+}
+
+.unlockCard {
+  background: linear-gradient(135deg, #fff9e6 0%, #F7B434 20%, #F7C91F 100%);
+  border: 3px solid #AA7942;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 600px;
+  box-shadow: 0 8px 24px rgba(170, 121, 66, 0.4);
+  text-align: center;
+}
+
+.unlockTitle {
+  font-size: 2rem;
+  color: #D36300;
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+}
+
+.unlockDescription {
+  font-size: 1.2rem;
+  color: #2F2F2F;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.unlockDetails {
+  font-size: 1.1rem;
+  color: #52514E;
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+.unlockDetails strong {
+  color: #D36300;
+}
+
+.unlockFeatures {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  border: 1px solid #AA7942;
+}
+
+.unlockFeatures h3 {
+  color: #D36300;
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.unlockFeatures li {
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  color: #2F2F2F;
+  line-height: 1.6;
+}
+
+.unlockHint {
+  font-size: 1rem;
+  color: #52514E;
+  margin-top: 1.5rem;
+  font-style: italic;
+}
+
+/* ============================================================================
+   STATS OVERVIEW
+   ============================================================================ */
+
+.statsOverview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.statCard {
+  background: linear-gradient(135deg, #fff 0%, #F7B434 100%);
+  border: 2px solid #AA7942;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(170, 121, 66, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(170, 121, 66, 0.4);
+}
+
+.statIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.statIconImage {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+}
+
+.statContent {
+  flex: 1;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  color: #52514E;
+  margin-bottom: 0.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+.statValue {
+  font-size: 1rem;
+  color: #D36300;
+  font-weight: bold;
+  margin-bottom: 0.1rem;
+}
+
+.statSubtext {
+  font-size: 0.7rem;
+  color: #52514E;
+}
+
+/* ============================================================================
+   BEE BOXES GRID
+   ============================================================================ */
+
+.beeBoxesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* ============================================================================
+   HARVEST ALL SECTION
+   ============================================================================ */
+
+.harvestAllSection {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.harvestAllButton {
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #F7C91F 0%, #D36300 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(211, 99, 0, 0.4);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.harvestAllButton:hover {
+  background: linear-gradient(135deg, #F7B434 0%, #AA7942 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(211, 99, 0, 0.5);
+}
+
+.harvestAllButton:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(211, 99, 0, 0.4);
+}
+
+.harvestAllIcon {
+  font-size: 1.5rem;
+}
+
+/* ============================================================================
+   PLACEHOLDER CONTENT
+   ============================================================================ */
+
+.placeholder {
+  background: rgba(247, 201, 31, 0.15);
+  border: 2px dashed #AA7942;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.placeholderText {
+  font-size: 1.2rem;
+  color: #D36300;
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+
+.placeholderSubtext {
+  font-size: 1rem;
+  color: #52514E;
+  margin: 0;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1200px) {
+  .statsOverview {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .unlockCard {
+    padding: 1.5rem;
+  }
+
+  .unlockTitle {
+    font-size: 1.5rem;
+  }
+
+  .statsOverview {
+    grid-template-columns: 1fr;
+  }
+
+  .statCard {
+    padding: 0.75rem;
+  }
+
+  .statIcon {
+    font-size: 2rem;
+  }
+
+  .statValue {
+    font-size: 1.3rem;
+  }
+
+  .beeBoxesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .harvestAllButton {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}

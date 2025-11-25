@@ -56,6 +56,7 @@ export function useGameLoop(
 /**
  * Alternative: Hybrid approach that uses setInterval with Page Visibility API
  * to prevent Chrome throttling. Falls back to keeping tab "active".
+ * This is more reliable for background tabs than requestAnimationFrame.
  */
 export function useRobustInterval(
   callback: () => void,
@@ -64,7 +65,7 @@ export function useRobustInterval(
 ): void {
   const intervalRef = useRef<number | undefined>(undefined);
   const callbackRef = useRef(callback);
-  const isVisible = useRef(true);
+  const lastTickRef = useRef<number>(Date.now());
 
   // Keep callback ref updated
   useEffect(() => {
@@ -74,11 +75,19 @@ export function useRobustInterval(
   useEffect(() => {
     // Track visibility
     const handleVisibilityChange = () => {
-      isVisible.current = !document.hidden;
-      
-      // If tab becomes visible again, force a tick immediately
-      if (isVisible.current) {
-        callbackRef.current();
+      if (!document.hidden) {
+        // If tab becomes visible again, check how much time passed and catch up
+        const now = Date.now();
+        const timePassed = now - lastTickRef.current;
+        const missedTicks = Math.floor(timePassed / intervalMs);
+        
+        // Execute missed ticks (up to a reasonable limit to avoid hanging)
+        const catchUpLimit = Math.min(missedTicks, 60); // Max 60 ticks catch-up
+        for (let i = 0; i < catchUpLimit; i++) {
+          callbackRef.current();
+        }
+        
+        lastTickRef.current = now;
       }
     };
 
@@ -87,10 +96,12 @@ export function useRobustInterval(
     // Start the interval
     intervalRef.current = window.setInterval(() => {
       callbackRef.current();
+      lastTickRef.current = Date.now();
     }, intervalMs);
 
     // Force immediate tick
     callbackRef.current();
+    lastTickRef.current = Date.now();
 
     // Cleanup
     return () => {

@@ -9,7 +9,11 @@ import {
   ICON_CANNING,
   ICON_HOLIDAY_CHEER,
   TREE_DECORATED,
-  ICON_MILESTONE
+  ICON_MILESTONE,
+  ICON_BEE,
+  ICON_HONEY,
+  ICON_GOLDEN_HONEY,
+  ICON_BEE_BOX
 } from '../config/assetPaths';
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -347,5 +351,146 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       message: 'Snowfall permanently added to farm background! +200 knowledge'
     },
     hidden: true
+  },
+
+  // Bee System Achievements
+  {
+    id: 'first_honey_harvest',
+    name: 'First Harvest',
+    description: 'Collect your first honey from a bee box',
+    icon: ICON_HONEY,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.totalHoneyCollected || 0) >= 1
+    },
+    reward: {
+      knowledge: 5,
+      message: 'Sweet success! Your bees are producing. +5 knowledge'
+    }
+  },
+  {
+    id: 'golden_touch',
+    name: 'Golden Touch',
+    description: 'Collect your first Golden Honey',
+    icon: ICON_GOLDEN_HONEY,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.totalGoldenHoneyCollected || 0) >= 1
+    },
+    reward: {
+      knowledge: 15,
+      message: 'A rare and precious gift from your bees! +15 knowledge'
+    }
+  },
+  {
+    id: 'buzzing_business',
+    name: 'Buzzing Business',
+    description: 'Own 10 bee boxes',
+    icon: ICON_BEE_BOX,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 10
+    },
+    reward: {
+      knowledge: 20,
+      message: 'Your apiary is thriving! +20 knowledge'
+    }
+  },
+  {
+    id: 'apiary_master',
+    name: 'Apiary Master',
+    description: 'Own 25 bee boxes',
+    icon: ICON_BEE_BOX,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 25
+    },
+    reward: {
+      knowledge: 50,
+      money: 1000,
+      message: 'A masterful bee operation! +50 knowledge and $1,000'
+    }
+  },
+  {
+    id: 'sweet_empire',
+    name: 'Sweet Empire',
+    description: 'Own 50 bee boxes (maximum)',
+    icon: ICON_BEE_BOX,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 50
+    },
+    reward: {
+      knowledge: 100,
+      money: 5000,
+      message: 'Your bee empire is unmatched! +100 knowledge and $5,000'
+    }
+  },
+  {
+    id: 'honey_hoarder',
+    name: 'Honey Hoarder',
+    description: 'Collect 100 honey total (lifetime)',
+    icon: ICON_HONEY,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.beeState?.totalHoneyCollected || 0) >= 100
+    },
+    reward: {
+      knowledge: 30,
+      message: 'A sweet stockpile! +30 knowledge'
+    }
+  },
+  {
+    id: 'beekeepers_pride',
+    name: 'Beekeeper\'s Pride',
+    description: 'Craft the ultimate honey recipe (Beekeeper\'s Pride)',
+    icon: ICON_CANNING,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => {
+        // Check if the player has crafted at least one Beekeeper's Pride recipe
+        const recipe = gameState.canningState?.recipes?.find((r: any) => r.name === "Beekeeper's Pride");
+        return recipe ? (recipe.timesCrafted || 0) >= 1 : false;
+      }
+    },
+    reward: {
+      knowledge: 75,
+      money: 2000,
+      message: 'The pinnacle of honey-infused craftsmanship! +75 knowledge and $2,000'
+    }
+  },
+  {
+    id: 'queens_court',
+    name: 'Queen\'s Court',
+    description: 'Unlock all bee upgrades',
+    icon: ICON_BEE,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => {
+        const upgrades = gameState.beeState?.upgrades || [];
+        if (upgrades.length === 0) return false;
+        
+        // Check if all upgrades are unlocked (purchased at least once)
+        // There are 5 unique upgrades: Busy Bees, Royal Jelly, Hexcomb Engineering, Meadow Magic, Queen's Blessing
+        const uniqueUpgrades = ['busy_bees', 'royal_jelly', 'hexcomb_engineering', 'meadow_magic', 'queens_blessing'];
+        return uniqueUpgrades.every(upgradeId => {
+          const upgrade = upgrades.find((u: any) => u.id === upgradeId);
+          return upgrade && upgrade.purchased;
+        });
+      }
+    },
+    reward: {
+      knowledge: 100,
+      money: 3000,
+      message: 'You\'ve mastered every aspect of beekeeping! +100 knowledge and $3,000'
+    }
   }
 ];

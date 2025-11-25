@@ -39,7 +39,7 @@
 
 .button.disabled {
   background: #3a6318ff;
-  opacity: 0.5;
+  opacity: 0.75;
   cursor: not-allowed;
 }
 

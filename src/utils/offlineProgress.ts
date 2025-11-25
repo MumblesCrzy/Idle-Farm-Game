@@ -75,12 +75,18 @@ export function calculateOfflineProgress(
   let autoCanningCycles = 0;
 
   // Process in chunks to avoid performance issues with very long offline periods
-  // Max 1 hour of offline time (anything beyond that is capped)
-  const MAX_OFFLINE_MS = 60 * 60 * 1000; // 1 hour
+  // Max 8 hours of offline time (can be increased to 24 hours for prestige system later)
+  const MAX_OFFLINE_HOURS = 8; // Change to 24 for prestige system
+  const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000;
   const cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
   
-  // Simulate in 100ms ticks (same as game loop)
-  const TICK_MS = 100;
+  // Use larger tick sizes for longer offline periods to improve performance
+  // For periods > 1 hour, use 1 second ticks instead of 100ms ticks
+  const FAST_TICK_MS = 100;
+  const SLOW_TICK_MS = 1000;
+  const ONE_HOUR_MS = 60 * 60 * 1000;
+  
+  const TICK_MS = cappedTime > ONE_HOUR_MS ? SLOW_TICK_MS : FAST_TICK_MS;
   const ticks = Math.floor(cappedTime / TICK_MS);
 
   // Track elapsed time for day counter

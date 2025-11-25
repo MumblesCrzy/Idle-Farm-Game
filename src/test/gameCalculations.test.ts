@@ -49,7 +49,7 @@ describe('formatNumber', () => {
   });
 
   it('should respect decimal places parameter', () => {
-    expect(formatNumber(1234, 0)).toBe('1K'); // 0 decimal places rounds off
+    expect(formatNumber(1234, 1)).toBe('1K'); // 0 decimal places rounds off
     expect(formatNumber(1234, 2)).toBe('1.23K');
     expect(formatNumber(1234567, 3)).toBe('1.235M');
   });

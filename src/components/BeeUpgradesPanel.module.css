@@ -1,0 +1,365 @@
+/* ============================================================================
+   BEE UPGRADES PANEL STYLES
+   Sidebar panel displaying bee system upgrades
+   ============================================================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+/* ============================================================================
+   BEEKEEPER ASSISTANT SECTION
+   Now displayed inline with automation upgrades
+   ============================================================================ */
+
+/* Assistant toggle button (similar to Canner pattern) */
+.assistantToggleBtn {
+  display: flex;
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.assistantToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.assistantToggleBtn.toggleActive {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.assistantToggleBtn.toggleActive:hover {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.assistantToggleBtn.toggleInactive {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.assistantToggleLayout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.assistantToggleIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.assistantToggleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.assistantToggleHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.assistantToggleName {
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.assistantToggleLevel {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.assistantToggleDesc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+}
+
+/* Legacy assistant section styles (kept for backwards compatibility, but not used) */
+.assistantSection {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem;
+  backdrop-filter: blur(4px);
+}
+
+.assistantTitle {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: white;
+  margin: 0 0 0.75rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.assistantIcon {
+  font-size: 1.2rem;
+}
+
+/* Unlock Section */
+.assistantUnlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assistantRequirements {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.assistantRequirement {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  color: #333;
+  font-weight: 500;
+}
+
+.requirementMet {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.requirementUnmet {
+  color: #999;
+  font-weight: bold;
+}
+
+/* Unlocked Section */
+.assistantUnlocked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assistantStats {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.assistantStat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+}
+
+.assistantStatLabel {
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.assistantStatValue {
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: bold;
+}
+
+/* Toggle */
+.assistantToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.assistantToggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.assistantToggleSlider {
+  width: 40px;
+  height: 20px;
+  background: #ccc;
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.assistantToggleSlider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.assistantToggleInput:checked + .assistantToggleSlider {
+  background: #4caf50;
+}
+
+.assistantToggleInput:checked + .assistantToggleSlider::before {
+  transform: translateX(20px);
+}
+
+.assistantToggleText {
+  font-size: 0.85rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Button */
+.assistantButton {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  color: #333;
+  border: 2px solid #ddd;
+}
+
+.assistantButton.canAfford {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  color: white;
+  border-color: #4caf50;
+}
+
+.assistantButton.canAfford:hover {
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.assistantButton.cantAfford {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.assistantButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.assistantMaxLevel {
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+/* ============================================================================
+   CATEGORIES
+   ============================================================================ */
+
+.categoriesContainer {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-right: 0.25rem;
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.categoryTitle {
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.categoryIcon {
+  font-size: 1.2rem;
+}
+
+.categoryGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+.categoriesContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.categoriesContainer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.categoriesContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
+}
+
+.categoriesContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .assistantSection {
+    padding: 0.6rem;
+  }
+
+  .assistantTitle {
+    font-size: 0.9rem;
+  }
+}

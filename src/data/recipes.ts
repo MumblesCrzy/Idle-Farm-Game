@@ -217,6 +217,282 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     baseSalePrice: 110, // Raw: 24+27+14 = $65, Canned: $110 (69% profit)
     experienceRequired: 60000, // Requires canning experience
     category: 'gourmet'
+  },
+  
+  // ===== HONEY RECIPES =====
+  // Special recipes that require honey from the bee system
+  // Organized by tier from simple to ultimate recipes
+  
+  // TIER 1: SIMPLE HONEY ADD-ONS
+  {
+    id: 'honey_radish_medley',
+    name: 'Honey Radish Medley',
+    description: 'Tender radishes preserved in honey brine.',
+    ingredients: [{ veggieName: 'Radish', quantity: 6 }],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier1',
+    baseProcessingTime: 50,
+    baseSalePrice: 35,
+    honeyCollectedRequired: 3,
+    experienceRequired: 8000,
+    category: 'simple'
+  },
+  {
+    id: 'sweet_pickled_cucumbers',
+    name: 'Sweet Pickled Cucumbers',
+    description: 'Crispy pickles with a delightful honey sweetness.',
+    ingredients: [{ veggieName: 'Cucumbers', quantity: 5 }],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier1',
+    baseProcessingTime: 60,
+    baseSalePrice: 65,
+    honeyCollectedRequired: 5,
+    experienceRequired: 10000,
+    category: 'simple'
+  },
+  {
+    id: 'honey_glazed_carrots',
+    name: 'Honey-Glazed Carrots',
+    description: 'Sweet glazed carrots with rich honey coating.',
+    ingredients: [{ veggieName: 'Carrots', quantity: 4 }],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier1',
+    baseProcessingTime: 55,
+    baseSalePrice: 55,
+    honeyCollectedRequired: 5,
+    experienceRequired: 10000,
+    category: 'simple'
+  },
+  
+  // TIER 2: HONEY MIX RECIPES
+  {
+    id: 'honey_garden_mix',
+    name: 'Honey Garden Mix',
+    description: 'Classic garden blend elevated with honey sweetness.',
+    ingredients: [
+      { veggieName: 'Radish', quantity: 2 },
+      { veggieName: 'Lettuce', quantity: 2 },
+      { veggieName: 'Green Beans', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier2',
+    baseProcessingTime: 75,
+    baseSalePrice: 48,
+    honeyCollectedRequired: 15,
+    experienceRequired: 15000,
+    category: 'complex'
+  },
+  {
+    id: 'spiced_honey_zucchini',
+    name: 'Spiced Honey Zucchini',
+    description: 'Zucchini and peppers in sweet honey marinade.',
+    ingredients: [
+      { veggieName: 'Zucchini', quantity: 3 },
+      { veggieName: 'Peppers', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier2',
+    baseProcessingTime: 80,
+    baseSalePrice: 70,
+    honeyCollectedRequired: 15,
+    experienceRequired: 18000,
+    category: 'complex'
+  },
+  {
+    id: 'sweet_summer_blend',
+    name: 'Sweet Summer Blend',
+    description: 'Summer vegetables kissed with golden honey.',
+    ingredients: [
+      { veggieName: 'Cucumbers', quantity: 2 },
+      { veggieName: 'Tomatoes', quantity: 2 },
+      { veggieName: 'Green Beans', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 1, golden: 0 },
+    tier: 'tier2',
+    baseProcessingTime: 85,
+    baseSalePrice: 75,
+    honeyCollectedRequired: 20,
+    experienceRequired: 20000,
+    category: 'complex'
+  },
+  
+  // TIER 3: SAVORY HONEY PRESERVES
+  {
+    id: 'amber_harvest_preserve',
+    name: 'Amber Harvest Preserve',
+    description: 'Rich root vegetables preserved in amber honey glaze.',
+    ingredients: [
+      { veggieName: 'Onions', quantity: 3 },
+      { veggieName: 'Carrots', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 2, golden: 0 },
+    tier: 'tier3',
+    baseProcessingTime: 100,
+    baseSalePrice: 120,
+    honeyCollectedRequired: 30,
+    experienceRequired: 28000,
+    category: 'complex'
+  },
+  {
+    id: 'honey_pepper_relish',
+    name: 'Honey Pepper Relish',
+    description: 'Spicy peppers and tomatoes balanced with sweet honey.',
+    ingredients: [
+      { veggieName: 'Peppers', quantity: 4 },
+      { veggieName: 'Tomatoes', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 2, golden: 0 },
+    tier: 'tier3',
+    baseProcessingTime: 95,
+    baseSalePrice: 130,
+    honeyCollectedRequired: 30,
+    experienceRequired: 28000,
+    category: 'complex'
+  },
+  {
+    id: 'golden_root_medley',
+    name: 'Golden Root Medley',
+    description: 'Earthy roots enhanced with golden honey essence.',
+    ingredients: [
+      { veggieName: 'Carrots', quantity: 2 },
+      { veggieName: 'Radish', quantity: 3 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 2, golden: 0 },
+    tier: 'tier3',
+    baseProcessingTime: 105,
+    baseSalePrice: 125,
+    honeyCollectedRequired: 35,
+    experienceRequired: 30000,
+    category: 'gourmet'
+  },
+  
+  // TIER 4: SHOWCASE HONEY RECIPES
+  {
+    id: 'golden_veggie_medley',
+    name: 'Golden Veggie Medley',
+    description: 'A stunning display of premium vegetables glazed in honey.',
+    ingredients: [
+      { veggieName: 'Broccoli', quantity: 2 },
+      { veggieName: 'Peppers', quantity: 2 },
+      { veggieName: 'Tomatoes', quantity: 2 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 3, golden: 0 },
+    tier: 'tier4',
+    baseProcessingTime: 130,
+    baseSalePrice: 185,
+    honeyCollectedRequired: 50,
+    experienceRequired: 40000,
+    category: 'gourmet'
+  },
+  {
+    id: 'royal_root_reserve',
+    name: 'Royal Root Reserve',
+    description: 'A royal combination of root vegetables in honey preserve.',
+    ingredients: [
+      { veggieName: 'Radish', quantity: 3 },
+      { veggieName: 'Carrots', quantity: 3 },
+      { veggieName: 'Onions', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 3, golden: 0 },
+    tier: 'tier4',
+    baseProcessingTime: 125,
+    baseSalePrice: 175,
+    honeyCollectedRequired: 50,
+    experienceRequired: 40000,
+    category: 'gourmet'
+  },
+  {
+    id: 'honey_harvest_supreme',
+    name: 'Honey Harvest Supreme',
+    description: 'Six varieties of vegetables in perfect honey harmony.',
+    ingredients: [
+      { veggieName: 'Lettuce', quantity: 2 },
+      { veggieName: 'Green Beans', quantity: 2 },
+      { veggieName: 'Cucumbers', quantity: 2 },
+      { veggieName: 'Tomatoes', quantity: 2 },
+      { veggieName: 'Broccoli', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 3, golden: 0 },
+    tier: 'tier4',
+    baseProcessingTime: 140,
+    baseSalePrice: 195,
+    honeyCollectedRequired: 60,
+    experienceRequired: 45000,
+    category: 'gourmet'
+  },
+  {
+    id: 'golden_honey_elixir',
+    name: 'Golden Honey Elixir',
+    description: 'A precious preserve made with rare Golden Honey.',
+    ingredients: [
+      { veggieName: 'Carrots', quantity: 3 },
+      { veggieName: 'Tomatoes', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 0, golden: 1 },
+    tier: 'tier4',
+    baseProcessingTime: 90,
+    baseSalePrice: 200,
+    honeyCollectedRequired: 40,
+    experienceRequired: 35000,
+    category: 'gourmet'
+  },
+  
+  // TIER 5: ULTIMATE HONEY RECIPES
+  {
+    id: 'beekeepers_pride',
+    name: "Beekeeper's Pride",
+    description: 'The ultimate honey recipe: all vegetables bathed in double honey glaze.',
+    ingredients: [
+      { veggieName: 'Radish', quantity: 2 },
+      { veggieName: 'Lettuce', quantity: 2 },
+      { veggieName: 'Green Beans', quantity: 2 },
+      { veggieName: 'Zucchini', quantity: 2 },
+      { veggieName: 'Cucumbers', quantity: 2 },
+      { veggieName: 'Tomatoes', quantity: 2 },
+      { veggieName: 'Peppers', quantity: 2 },
+      { veggieName: 'Carrots', quantity: 2 },
+      { veggieName: 'Broccoli', quantity: 2 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    honeyRequirement: { regular: 5, golden: 0 },
+    tier: 'tier5',
+    baseProcessingTime: 240,
+    baseSalePrice: 500,
+    honeyCollectedRequired: 100,
+    experienceRequired: 80000,
+    category: 'gourmet'
+  },
+  {
+    id: 'canners_cocoa_honey',
+    name: "Canner's Cocoa (Honey Edition)",
+    description: 'Rich cocoa infused with sweet honey - a masterful creation that grants bonus experience.',
+    ingredients: [],
+    honeyRequirement: { regular: 3, golden: 1 },
+    tier: 'tier5',
+    baseProcessingTime: 120,
+    baseSalePrice: 250,
+    honeyCollectedRequired: 75,
+    experienceRequired: 60000,
+    category: 'gourmet'
+  },
+  {
+    id: 'golden_garden_treasure',
+    name: 'Golden Garden Treasure',
+    description: 'The finest vegetables preserved in pure Golden Honey.',
+    ingredients: [
+      { veggieName: 'Broccoli', quantity: 3 },
+      { veggieName: 'Peppers', quantity: 3 },
+      { veggieName: 'Carrots', quantity: 3 }
+    ],
+    honeyRequirement: { regular: 0, golden: 2 },
+    tier: 'tier5',
+    baseProcessingTime: 150,
+    baseSalePrice: 350,
+    honeyCollectedRequired: 80,
+    experienceRequired: 70000,
+    category: 'gourmet'
   }
 ];
 
