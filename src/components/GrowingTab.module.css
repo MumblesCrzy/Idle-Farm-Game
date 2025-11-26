@@ -6,7 +6,7 @@
   margin-bottom: 1rem;
   padding: 0.5rem;
   background-color: #f0f8ff;
-  border: 1px solid #4CAF50;
+  border: 1px solid #66B032;
   border-radius: 8px;
 }
 
@@ -18,7 +18,7 @@
 
 .experienceText {
   font-weight: bold;
-  color: #2e7d32;
+  color: #056608;
 }
 
 /* Veggie Selector */
@@ -100,14 +100,14 @@
 
 .salePrice {
   font-weight: bold;
-  color: #2e7d32;
+  color: #008001;
   font-size: 1.1rem;
 }
 
 .daysToGrow {
   font-size: 1rem;
   font-weight: normal;
-  color: #888;
+  color: #81613C;
 }
 
 /* Action Buttons */
@@ -115,11 +115,19 @@
   margin-left: auto;
   font-size: 1rem;
   padding: 4px 14px;
-  background: #2e7d32;
+  background: #056608;
   color: #fff;
   border: none;
   border-radius: 5px;
   min-width: 90px;
+}
+
+.harvestButton:not(:disabled) {
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+.harvestButton:not(:disabled):hover {
+  animation: none;
 }
 
 .harvestButton:disabled {
@@ -130,7 +138,7 @@
   margin-left: 0.5rem;
   font-size: 1rem;
   padding: 4px 14px;
-  background: #4CAF50;
+  background: #66B032;
   color: white;
   border: none;
   border-radius: 5px;
@@ -143,7 +151,7 @@
   margin-left: 0.5rem;
   font-size: 1rem;
   padding: 4px 14px;
-  background: #f44336;
+  background: #654321;
   color: white;
   border: none;
   border-radius: 5px;
@@ -228,7 +236,7 @@
 }
 
 .autoPurchaseLabel {
-  color: #2e7d32;
+  color: #008001;
   font-weight: bold;
   font-size: 0.85rem;
   align-items: center;
@@ -256,4 +264,45 @@
   font-size: 0.75rem;
   pointer-events: none;
   user-select: none;
+}
+
+/* Sell All Button */
+.sellAllButton {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #66B032 0%, #008001 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(5, 102, 8, 0.3);
+  transition: all 0.2s ease;
+  animation: pulseGreen 2s ease-in-out infinite;
+}
+
+@keyframes pulseGreen {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(5, 102, 8, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(102, 176, 50, 0.7), 0 0 20px rgba(102, 176, 50, 0.4);
+  }
+}
+
+.sellAllButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #56a028 0%, #056608 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 102, 8, 0.5);
+  animation: none;
+}
+
+.sellAllButton:disabled {
+  background: #81613C;
+  color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  animation: none;
+  opacity: 0.6;
 }

@@ -64,6 +64,7 @@ type AdvancedStashDisplayProps = {
   irrigationOwned: boolean;
   day: number;
   onToggleSell: (index: number) => void;
+  beeYieldBonus?: number; // Decimal format (e.g., 0.05 = 5%)
 };
 
 const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
@@ -72,6 +73,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
   veggies,
   greenhouseOwned,
   onToggleSell,
+  beeYieldBonus = 0,
   // irrigationOwned, // Will be used in later calculation todos
   // day // Will be used in later calculation todos
 }) => {
@@ -159,8 +161,13 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
                 // Calculate yearly production with correct math (accounts for winter penalty)
                 const totalYearlyProduction = calculateYearlyProduction(veggie, greenhouseOwned);
                 
+                // Apply bee yield bonus (same as actual harvest logic)
+                const totalYearlyProductionWithBees = beeYieldBonus > 0 
+                  ? Math.ceil(totalYearlyProduction * (1 + beeYieldBonus))
+                  : totalYearlyProduction;
+                
                 // Calculate annual revenue (yearly production × current sale price)
-                const annualRevenue = totalYearlyProduction * veggie.salePrice;
+                const annualRevenue = totalYearlyProductionWithBees * veggie.salePrice;
                 
                 // Calculate time per cycle for display (1 second IRL = 1 day in game)
                 const daysPerCycle = 100 / baseGrowthRate;
@@ -219,11 +226,19 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
                       )}
                     </td>
                     <td className="yearly-growth">
-                      {formatNumber(totalYearlyProduction, 2)}
+                      {formatNumber(totalYearlyProductionWithBees, 2)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
                         {(1 + (veggie.additionalPlotLevel || 0))} per cycle
                       </small>
+                      {beeYieldBonus > 0 && (
+                        <>
+                          <br />
+                          <small style={{ color: '#ffa500', fontSize: '0.75em' }}>
+                            🐝 +{(beeYieldBonus * 100).toFixed(1)}% bee bonus
+                          </small>
+                        </>
+                      )}
                     </td>
                     <td className="annual-revenue">${formatNumber(annualRevenue, 1)}</td>
                   </tr>

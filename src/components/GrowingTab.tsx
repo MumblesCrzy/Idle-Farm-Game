@@ -569,6 +569,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
         
         {/* Sell All Button */}
         <button
+          className={styles.sellAllButton}
           onClick={handleSell}
           disabled={veggies.every((v) => !v.sellEnabled || v.stash === 0)}
           aria-label="Sell all veggies (only those marked for selling)"

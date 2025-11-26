@@ -506,11 +506,11 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
                   <img src={ICON_CANNING} alt="" aria-hidden="true" className={styles.sectionIcon} />
                   Canning System
                 </h4>
-                <p>The Canning System unlocks at 5,000 experience and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
+                <p>The Canning System unlocks at Farm Tier 3 and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
                 
                 <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> How Canning Works:</h5>
                 <ul>
-                  <li><strong>Unlock Requirement:</strong> Reach 5,000 experience to access canning</li>
+                  <li><strong>Unlock Requirement:</strong> Reach Farm Tier 3 to access canning</li>
                   <li><strong>Recipe Requirements:</strong> Each recipe needs specific vegetables in specific quantities</li>
                   <li><strong>Processing Time:</strong> Recipes take time to complete (varies by complexity)</li>
                   <li><strong>Multiple Processes:</strong> Run several recipes simultaneously (upgrade to increase slots)</li>

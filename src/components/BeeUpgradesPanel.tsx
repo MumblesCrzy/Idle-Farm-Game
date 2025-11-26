@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import type { BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 import UpgradeButton from './UpgradeButton';
+import { isUpgradeUnlocked } from '../data/beeUpgrades';
 import { 
   ICON_BEE, 
   ICON_HONEY, 
@@ -15,7 +16,8 @@ import {
   BEE_NECTAR_EFFICIENCY,
   BEE_FLOWER_POWER,
   BEE_SWIFT_GATHERERS,
-  BEE_BEEKEEPER
+  BEE_BEEKEEPER,
+  BEE_BEEKEEPER_UPGRADE
 } from '../config/assetPaths';
 import styles from './BeeUpgradesPanel.module.css';
 
@@ -33,6 +35,7 @@ interface BeeUpgradesPanelProps {
   onUpgradeAssistant: () => boolean;
   onToggleAssistant: (active: boolean) => void;
   showAssistant?: boolean; // Optional: control whether to show assistant section
+  allUpgrades?: BeeUpgrade[]; // All upgrades for checking requirements across categories
 }
 
 const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
@@ -47,8 +50,12 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
   onUnlockAssistant,
   onUpgradeAssistant,
   onToggleAssistant,
-  showAssistant = true
+  showAssistant = true,
+  allUpgrades
 }) => {
+  // Use allUpgrades if provided, otherwise fall back to upgrades
+  const upgradesForRequirementCheck = allUpgrades || upgrades;
+  
   // Group upgrades by category
   const groupedUpgrades = {
     production: upgrades.filter(u => u.category === 'production'),
@@ -57,7 +64,7 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
     automation: upgrades.filter(u => u.category === 'automation'),
   };
 
-  const canUnlock = currentBoxes >= unlockBoxesRequired && regularHoney >= 50;
+  const canUnlock = currentBoxes >= unlockBoxesRequired && regularHoney >= 750;
   const canUpgrade = assistant.unlocked && regularHoney >= assistant.upgradeCost && assistant.level < assistant.maxLevel;
   const isMaxLevel = assistant.level >= assistant.maxLevel;
 
@@ -129,17 +136,21 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
                 key="assistant-toggle"
                 className={`${styles.assistantToggleBtn} ${assistant.active ? styles.toggleActive : styles.toggleInactive}`}
                 onClick={() => onToggleAssistant(!assistant.active)}
-                title={`Beekeeper Assistant • Level ${assistant.level}/${assistant.maxLevel} • +${productionBonusPercent}% production${!isMaxLevel ? ` • Upgrade: ${formatNumber(assistant.upgradeCost, 0)} 🍯 → +${nextLevelBonus}%` : ''}`}
+                title={`Beekeeper Assistant • Level ${assistant.level}/${assistant.maxLevel} • +${productionBonusPercent}% production${!isMaxLevel ? ` • Upgrade: ${formatNumber(assistant.upgradeCost, 0)} Honey → +${nextLevelBonus}%` : ''}`}
               >
                 <div className={styles.assistantToggleLayout}>
-                  <span className={styles.assistantToggleIcon}>🤖</span>
+                  <div className={styles.assistantToggleIcon}>
+                    <img 
+                      src={BEE_BEEKEEPER} 
+                      alt="" 
+                      aria-hidden="true"
+                      className={styles.assistantToggleImage}
+                    />
+                  </div>
                   <div className={styles.assistantToggleInfo}>
                     <div className={styles.assistantToggleHeader}>
                       <span className={styles.assistantToggleName}>
-                        Beekeeper Assistant: {assistant.active ? 'ON' : 'OFF'}
-                      </span>
-                      <span className={styles.assistantToggleLevel}>
-                        (Level {assistant.level}/{assistant.maxLevel})
+                        Beekeeper: {assistant.active ? 'ON' : 'OFF'}
                       </span>
                     </div>
                     <div className={styles.assistantToggleDesc}>
@@ -152,7 +163,7 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
               // Show assistant as locked upgrade button
               <UpgradeButton
                 key="assistant-unlock"
-                title={`Unlock Beekeeper • Requires ${unlockBoxesRequired} boxes and 50 🍯 regular honey • Automatically collects honey from bee boxes`}
+                title={`Unlock Beekeeper • Requires ${unlockBoxesRequired} hives and 750 regular honey • Automatically collects honey from bee boxes`}
                 imageSrc={BEE_BEEKEEPER}
                 imageAlt="Beekeeper"
                 buttonText="Beekeeper"
@@ -160,13 +171,13 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
                 knowledge={0}
                 regularHoney={regularHoney}
                 goldenHoney={goldenHoney}
-                cost={50}
+                cost={750}
                 currencyType="regularHoney"
                 onClick={onUnlockAssistant}
                 disabled={!canUnlock}
                 isOwned={false}
                 isMaxLevel={false}
-                effect={`Current: ${currentBoxes}/${unlockBoxesRequired} boxes, ${formatNumber(regularHoney, 1)}/50 🍯`}
+                effect={`${currentBoxes}/${unlockBoxesRequired} hives`}
                 formatNumber={formatNumber}
               />
             )
@@ -177,7 +188,7 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
             <UpgradeButton
               key="assistant-upgrade"
               title={`Upgrade Beekeeper to Level ${assistant.level + 1} • Increases production bonus to +${nextLevelBonus}%`}
-              imageSrc={BEE_BEEKEEPER}
+              imageSrc={BEE_BEEKEEPER_UPGRADE}
               imageAlt="Upgrade Beekeeper"
               buttonText={`Upgrade Beekeeper`}
               money={0}
@@ -200,7 +211,17 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
           {categoryUpgrades.map(upgrade => {
             const isMaxed = upgrade.repeatable && upgrade.maxLevel !== undefined && upgrade.level >= upgrade.maxLevel;
             const isPurchased = upgrade.purchased && !upgrade.repeatable;
-            const isLocked = !upgrade.unlocked;
+            
+            // Check if upgrade is unlocked based on requirements
+            // Use all upgrades for checking cross-category requirements
+            const purchasedUpgradeIds = upgradesForRequirementCheck.filter(u => u.purchased).map(u => u.id);
+            const isLocked = !isUpgradeUnlocked(upgrade, currentBoxes, purchasedUpgradeIds);
+            
+            // Generate requirement text for locked upgrades
+            let requirementText: string | undefined;
+            if (isLocked && upgrade.requiredBoxes && currentBoxes < upgrade.requiredBoxes) {
+              requirementText = `Requires ${upgrade.requiredBoxes} bee hives`;
+            }
             
             return (
               <UpgradeButton
@@ -221,6 +242,7 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
                 isMaxLevel={isMaxed}
                 level={upgrade.repeatable ? upgrade.level : undefined}
                 effect={getMechanicsDescription(upgrade)}
+                requirement={requirementText}
                 formatNumber={formatNumber}
               />
             );

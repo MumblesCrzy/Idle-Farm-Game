@@ -17,6 +17,7 @@ import type {
   HoneyProduction,
   BeeState
 } from '../types/bees';
+import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
 import { useGameLoop } from '../hooks/useGameLoop';
 
@@ -26,8 +27,8 @@ const BEE_CONSTANTS_IMPL = {
   STARTING_BEE_BOXES: 2,
   MAX_BEE_BOXES: 50,
   BASE_YIELD_BONUS_PER_BOX: 0.005,
-  MAX_YIELD_BONUS: 0.25,
-  UNLOCK_FARM_TIER: 3,
+  MAX_YIELD_BONUS: 1.0,
+  UNLOCK_FARM_TIER: 4,
   BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4,
 } as const;
 
@@ -40,6 +41,15 @@ interface BeeProviderProps {
   onYieldBonusChange?: (bonus: number) => void; // Callback when yield bonus changes
   initialState?: Partial<BeeState>; // Initial state from save file
   onStateChange?: (state: BeeState) => void; // Callback when state changes (for auto-save)
+  addEventLogEntry?: (
+    category: EventCategory,
+    message: string,
+    options?: {
+      priority?: EventPriority;
+      details?: string;
+      icon?: string;
+    }
+  ) => void; // Callback to add event log entries
 }
 
 /**
@@ -86,7 +96,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   farmTier = 1,
   onYieldBonusChange,
   initialState,
-  onStateChange
+  onStateChange,
+  addEventLogEntry
 }) => {
   // Core state - initialize from saved state if available
   const [unlocked, setUnlocked] = useState(initialState?.unlocked ?? false);
@@ -98,19 +109,36 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   const [totalGoldenHoneyCollected, setTotalGoldenHoneyCollected] = useState(initialState?.totalGoldenHoneyCollected ?? 0);
   const [upgrades, setUpgrades] = useState<BeeUpgrade[]>(() => {
     if (initialState?.upgrades && initialState.upgrades.length > 0) {
-      // Migration: Update currency type for specific upgrades that changed to goldenHoney
-      const migratedUpgrades = initialState.upgrades.map(upgrade => {
-        if (upgrade.id === 'winter_hardiness' || upgrade.id === 'nectar_efficiency' || upgrade.id === 'swift_gatherers') {
+      // Merge saved upgrades with default definitions to ensure all properties are present
+      const defaultUpgrades = createInitialBeeUpgrades();
+      const savedUpgrades = initialState.upgrades;
+      const mergedUpgrades = defaultUpgrades.map(defaultUpgrade => {
+        const savedUpgrade = savedUpgrades.find(u => u.id === defaultUpgrade.id);
+        if (savedUpgrade) {
+          // Migration: Update currency type for specific upgrades that changed to goldenHoney
+          let costCurrency = savedUpgrade.costCurrency;
+          let baseCost = savedUpgrade.baseCost;
+          let cost = savedUpgrade.cost;
+          
+          if (savedUpgrade.id === 'winter_hardiness' || savedUpgrade.id === 'nectar_efficiency' || savedUpgrade.id === 'swift_gatherers') {
+            costCurrency = 'goldenHoney' as const;
+            baseCost = savedUpgrade.id === 'winter_hardiness' ? 45 : savedUpgrade.id === 'nectar_efficiency' ? 30 : 75;
+            cost = savedUpgrade.id === 'winter_hardiness' ? 45 : savedUpgrade.id === 'nectar_efficiency' ? 30 : 75;
+          }
+          
           return {
-            ...upgrade,
-            costCurrency: 'goldenHoney' as const,
-            baseCost: upgrade.id === 'winter_hardiness' ? 3 : upgrade.id === 'nectar_efficiency' ? 2 : 5,
-            cost: upgrade.id === 'winter_hardiness' ? 3 : upgrade.id === 'nectar_efficiency' ? 2 : 5,
+            ...defaultUpgrade,
+            purchased: savedUpgrade.purchased ?? false,
+            level: savedUpgrade.level ?? 0,
+            effect: savedUpgrade.effect ?? 0,
+            cost: cost,
+            baseCost: baseCost,
+            costCurrency: costCurrency,
           };
         }
-        return upgrade;
+        return defaultUpgrade;
       });
-      return migratedUpgrades;
+      return mergedUpgrades;
     }
     return createInitialBeeUpgrades();
   });
@@ -189,8 +217,22 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     setTotalBoxesPurchased(prev => prev + 1);
 
     console.log(`🐝 New bee hive added! Total hives: ${boxes.length + 1}`);
+    
+    // Log bee box purchase
+    if (addEventLogEntry) {
+      addEventLogEntry(
+        'bees',
+        `Purchased bee box #${boxes.length + 1}`,
+        {
+          priority: 'normal',
+          details: `Cost: ${cost} honey`,
+          icon: '🐝'
+        }
+      );
+    }
+    
     return true;
-  }, [boxes.length, regularHoney]);
+  }, [boxes.length, regularHoney, addEventLogEntry]);
 
   /**
    * Calculate if Golden Honey should be produced based on upgrades
@@ -301,10 +343,34 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
 
     if (productions.length > 0) {
       console.log(`🐝 Harvested honey from ${productions.length} boxes`);
+      
+      // Log harvest with summary
+      if (addEventLogEntry) {
+        const regularCount = productions.filter(p => p.type === 'regular').length;
+        const goldenCount = productions.filter(p => p.type === 'golden').length;
+        const totalAmount = productions.reduce((sum, p) => sum + p.amount, 0);
+        
+        let message = `Harvested ${totalAmount} honey from ${productions.length} ${productions.length === 1 ? 'box' : 'boxes'}`;
+        let details = '';
+        if (goldenCount > 0) {
+          message += ` (${goldenCount} golden!)`;
+          details = `Regular: ${regularCount}, Golden: ${goldenCount}`;
+        }
+        
+        addEventLogEntry(
+          'bees',
+          message,
+          {
+            priority: goldenCount > 0 ? 'important' : 'normal',
+            details: details || undefined,
+            icon: goldenCount > 0 ? '✨' : '🍯'
+          }
+        );
+      }
     }
 
     return productions;
-  }, [boxes, harvestHoney]);
+  }, [boxes, harvestHoney, addEventLogEntry]);
 
   /**
    * Calculate production time with speed bonuses
@@ -332,6 +398,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    */
   const updateProduction = useCallback((deltaTime: number) => {
     const productionTime = calculateProductionTime();
+    let newlyReadyCount = 0;
 
     setBoxes(prev => {
       const updated = prev.map(box => {
@@ -341,6 +408,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
         
         // Check if production is complete
         if (newTimer >= productionTime && !box.harvestReady) {
+          newlyReadyCount++;
           return {
             ...box,
             productionTimer: productionTime,
@@ -357,6 +425,19 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       return updated;
     });
 
+    // Log when boxes become ready for harvest
+    if (newlyReadyCount > 0 && addEventLogEntry) {
+      const boxWord = newlyReadyCount === 1 ? 'box is' : 'boxes are';
+      addEventLogEntry(
+        'bees',
+        `${newlyReadyCount} bee ${boxWord} ready to harvest!`,
+        {
+          priority: 'normal',
+          icon: '🍯'
+        }
+      );
+    }
+
     // Auto-collect if Beekeeper Assistant is active
     if (beekeeperAssistant.active && beekeeperAssistant.autoCollectEnabled) {
       // Check for ready boxes and harvest them
@@ -367,7 +448,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
         }
       }, 0);
     }
-  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney]);
+  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney, addEventLogEntry]);
 
   /**
    * Check which boxes are ready to harvest
@@ -437,8 +518,23 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     });
 
     console.log(`✅ Purchased upgrade: ${upgrade.name} (Level ${upgrade.level + 1})`);
+    
+    // Log upgrade purchase
+    if (addEventLogEntry) {
+      const levelText = upgrade.repeatable ? ` (Level ${upgrade.level + 1})` : '';
+      addEventLogEntry(
+        'bees',
+        `Purchased: ${upgrade.name}${levelText}`,
+        {
+          priority: 'normal',
+          details: upgrade.description,
+          icon: '⬆️'
+        }
+      );
+    }
+    
     return true;
-  }, [upgrades, regularHoney, goldenHoney]);
+  }, [upgrades, regularHoney, goldenHoney, addEventLogEntry]);
 
   /**
    * Check if player can afford an upgrade
@@ -484,8 +580,22 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     }));
 
     console.log('🧑‍🌾 Beekeeper Assistant unlocked!');
+    
+    // Log assistant unlock
+    if (addEventLogEntry) {
+      addEventLogEntry(
+        'bees',
+        'Beekeeper Assistant unlocked!',
+        {
+          priority: 'important',
+          details: 'Automatically collects honey from bee boxes. +10% production speed.',
+          icon: '🧑‍🌾'
+        }
+      );
+    }
+    
     return true;
-  }, [beekeeperAssistant, boxes.length, regularHoney]);
+  }, [beekeeperAssistant, boxes.length, regularHoney, addEventLogEntry]);
 
   /**
    * Upgrade Beekeeper Assistant
@@ -522,8 +632,22 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     }));
 
     console.log(`🧑‍🌾 Beekeeper Assistant upgraded to level ${newLevel}!`);
+    
+    // Log assistant upgrade
+    if (addEventLogEntry) {
+      addEventLogEntry(
+        'bees',
+        `Beekeeper Assistant upgraded to Level ${newLevel}`,
+        {
+          priority: 'normal',
+          details: `Production bonus: +${(newBonus * 100).toFixed(0)}%`,
+          icon: '🧑‍🌾'
+        }
+      );
+    }
+    
     return true;
-  }, [beekeeperAssistant, regularHoney]);
+  }, [beekeeperAssistant, regularHoney, addEventLogEntry]);
 
   /**
    * Toggle Beekeeper Assistant active state
@@ -554,8 +678,13 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       bonus += boxes.length * additionalBonusPerBox;
     }
 
-    // Cap at max yield bonus
-    return Math.min(bonus, BEE_CONSTANTS_IMPL.MAX_YIELD_BONUS);
+    // Apply Flower Power upgrade (+0.2% per box)
+    const flowerPower = upgrades.find(u => u.id === 'flower_power');
+    if (flowerPower && flowerPower.purchased) {
+      bonus += boxes.length * 0.002; // +0.2% per box
+    }
+
+    return bonus;
   }, [boxes.length, upgrades]);
 
   /**

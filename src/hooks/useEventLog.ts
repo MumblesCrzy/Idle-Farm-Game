@@ -59,6 +59,9 @@ interface UseEventLogReturn {
   
   getCategoryCounts: () => Record<EventCategory, number>;
   
+  // Get unread count for enabled categories only
+  getUnreadCountForCategories: (enabledCategories: EventCategory[]) => number;
+  
   // Export full state for saving
   getState: () => EventLogState;
 }
@@ -192,6 +195,29 @@ export function useEventLog({
   }, [eventLogState.entries]);
 
   /**
+   * Get unread count for only the enabled categories
+   */
+  const getUnreadCountForCategories = useCallback((enabledCategories: EventCategory[]): number => {
+    if (enabledCategories.length === 0) {
+      return 0; // If no categories enabled, no unread count
+    }
+    
+    // Find the last read entry
+    const lastReadIndex = eventLogState.lastReadId
+      ? eventLogState.entries.findIndex(e => e.id === eventLogState.lastReadId)
+      : -1;
+    
+    // Count unread entries that match enabled categories
+    const unreadEntries = lastReadIndex >= 0
+      ? eventLogState.entries.slice(lastReadIndex + 1)
+      : eventLogState.entries;
+    
+    return unreadEntries.filter(entry => 
+      enabledCategories.includes(entry.category)
+    ).length;
+  }, [eventLogState.entries, eventLogState.lastReadId]);
+
+  /**
    * Get current state for persistence
    */
   const getState = useCallback((): EventLogState => {
@@ -207,6 +233,7 @@ export function useEventLog({
     markAllAsRead,
     getFilteredEvents,
     getCategoryCounts,
+    getUnreadCountForCategories,
     getState
   };
 }
@@ -214,8 +241,22 @@ export function useEventLog({
 /**
  * Helper hook for managing event log filter state in UI components
  */
-export function useEventLogFilter() {
-  const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
+export function useEventLogFilter(initialCategories?: EventCategory[]) {
+  // Start with all categories selected by default or use provided initial categories
+  const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>(
+    initialCategories || [
+      'weather',
+      'growth',
+      'harvest',
+      'auto-purchase',
+      'merchant',
+      'canning',
+      'upgrade',
+      'milestone',
+      'bees',
+      'christmas'
+    ]
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   const toggleCategory = useCallback((category: EventCategory) => {

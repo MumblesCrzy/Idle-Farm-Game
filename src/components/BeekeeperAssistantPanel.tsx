@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import type { BeekeeperAssistant } from '../types/bees';
+import { ICON_HONEY } from '../config/assetPaths';
 import styles from './BeekeeperAssistantPanel.module.css';
 
 interface BeekeeperAssistantPanelProps {
@@ -38,7 +39,7 @@ const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
       {/* Header */}
       <div className={styles.header}>
         <span className={styles.icon}>🤖</span>
-        <h3 className={styles.title}>Beekeeper Assistant</h3>
+        <h3 className={styles.title}>Beekeeper</h3>
       </div>
 
       {/* Description */}
@@ -68,7 +69,7 @@ const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
                 {regularHoney >= 50 ? '✓' : '✗'}
               </span>
               <span>
-                🍯 {formatNumber(regularHoney, 1)} / 50 Honey
+                <img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> {formatNumber(regularHoney, 1)} / 50 Honey
               </span>
             </div>
           </div>
@@ -79,7 +80,7 @@ const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
             disabled={!canUnlock}
             title={canUnlock ? 'Unlock Beekeeper Assistant' : 'Requirements not met'}
           >
-            {canUnlock ? 'Unlock Assistant (50 🍯)' : 'Locked'}
+            {canUnlock ? <>Unlock Assistant (50 <img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} />)</> : 'Locked'}
           </button>
         </div>
       )}
@@ -112,7 +113,7 @@ const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
           {/* Features */}
           <div className={styles.features}>
             <div className={styles.feature}>
-              <span className={styles.featureIcon}>🍯</span>
+              <span className={styles.featureIcon}><img src={ICON_HONEY} alt="Honey" style={{ width: '20px', height: '20px' }} /></span>
               <span className={styles.featureText}>Auto-collects honey</span>
             </div>
             <div className={styles.feature}>
@@ -152,7 +153,7 @@ const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
                 <div className={styles.upgradeRow}>
                   <span className={styles.upgradeLabel}>Cost:</span>
                   <span className={styles.upgradeValue}>
-                    🍯 {formatNumber(assistant.upgradeCost, 1)}
+                    <img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> {formatNumber(assistant.upgradeCost, 1)}
                   </span>
                 </div>
               </div>

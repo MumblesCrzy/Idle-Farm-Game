@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import ProgressBar from './ProgressBar';
 import type { BeeBox } from '../types/bees';
-import { ICON_BEE_HIVE } from '../config/assetPaths';
+import { ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
 import styles from './BeeBoxDisplay.module.css';
 
 interface BeeBoxDisplayProps {
@@ -16,8 +16,8 @@ const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
   // Calculate actual production time with speed bonus applied
   const actualProductionTime = box.productionTime / (1 + productionSpeedBonus);
   
-  // Calculate progress percentage based on actual (reduced) production time
-  const progressPercent = (box.productionTimer / actualProductionTime) * 100;
+  // Calculate remaining time in seconds
+  const remainingTime = Math.max(0, actualProductionTime - box.productionTimer);
 
   return (
     <div className={`${styles.container} ${box.harvestReady ? styles.ready : ''}`}>
@@ -40,12 +40,12 @@ const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
       <div className={styles.progressSection}>
         <div className={styles.progressLabel}>
           {box.harvestReady ? (
-            <span className={styles.readyText}>🍯 Honey Ready!</span>
+            <span className={styles.readyText}><img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Honey Ready!</span>
           ) : (
             <span className={styles.timerText}>Days until harvest: </span>
           )}
           <span className={styles.progressPercent}>
-            {Math.floor(progressPercent)}%
+            {box.harvestReady ? '' : `${Math.ceil(remainingTime)}`}
           </span>
         </div>
         <ProgressBar

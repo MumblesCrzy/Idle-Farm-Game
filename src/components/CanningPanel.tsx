@@ -94,23 +94,28 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
         filtered = filtered.filter(recipe => canMakeRecipe(recipe));
         break;
       case 'simple':
-        filtered = filtered.filter(recipe => recipe.ingredients.length === 1 && !recipe.honeyRequirement);
+        // Simple: 1-2 total ingredients (including honey)
+        filtered = filtered.filter(recipe => {
+          const totalIngredients = recipe.ingredients.length;
+          return totalIngredients <= 2;
+        });
         break;
       case 'complex':
-        filtered = filtered.filter(recipe => recipe.ingredients.length >= 2 && recipe.ingredients.length <= 3 && !recipe.honeyRequirement);
+        // Complex: 3-4 total ingredients
+        filtered = filtered.filter(recipe => {
+          const totalIngredients = recipe.ingredients.length;
+          return totalIngredients >= 3 && totalIngredients <= 4;
+        });
         break;
       case 'gourmet':
-        filtered = filtered.filter(recipe => (recipe.ingredients.length > 3 || recipe.honeyRequirement));
+        // Gourmet: 5+ total ingredients
+        filtered = filtered.filter(recipe => {
+          const totalIngredients = recipe.ingredients.length;
+          return totalIngredients >= 5;
+        });
         break;
       case 'honey':
         filtered = filtered.filter(recipe => !!recipe.honeyRequirement);
-        break;
-      case 'tier1':
-      case 'tier2':
-      case 'tier3':
-      case 'tier4':
-      case 'tier5':
-        filtered = filtered.filter(recipe => recipe.tier === recipeFilter);
         break;
     }
 
@@ -181,7 +186,7 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
           You need more experience to unlock canning recipes. Keep growing and harvesting vegetables!
         </p>
         <div className={styles.lockedRequirement}>
-          First recipe unlocks at 5,000 experience
+          Canning unlocks at Farm Tier 3
         </div>
       </div>
     );
@@ -222,11 +227,6 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
             <option value="complex">Complex</option>
             <option value="gourmet">Gourmet</option>
             <option value="honey">Honey Recipes</option>
-            <option value="tier1">Tier 1</option>
-            <option value="tier2">Tier 2</option>
-            <option value="tier3">Tier 3</option>
-            <option value="tier4">Tier 4</option>
-            <option value="tier5">Tier 5</option>
           </select>
           
           <select

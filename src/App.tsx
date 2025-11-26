@@ -14,6 +14,8 @@ import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
 import Toast from './components/Toast';
+import HarvestTutorial from './components/HarvestTutorial';
+import { ICON_BEE } from './config/assetPaths';
 
 // Module-level harvest callback for event logging
 let globalHarvestCallback: ((veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) | null = null;
@@ -68,7 +70,7 @@ import { useEventLog } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProgress';
-import type { Veggie, GameState } from './types/game';
+import type { Veggie, GameState, EventCategory } from './types/game';
 import {
   RAIN_CHANCES,
   DROUGHT_CHANCES,
@@ -361,27 +363,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       });
     }
     
-    // Save to localStorage
-    saveGameState({
-      veggies: resetVeggies,
-      money: moneyKept > 0 ? moneyKept : 0,
-      experience: startingExperience,
-      knowledge: knowledgeKept,
-      activeVeggie: 0,
-      day: 1,
-      greenhouseOwned: false,
-      heirloomOwned: false,
-      autoSellOwned: false,
-      almanacLevel: 0,
-      almanacCost: 10,
-      maxPlots: newMaxPlots,
-      farmTier: newFarmTier,
-      farmCost: Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)),
-      irrigationOwned: irrigationOwned,
-      globalAutoPurchaseTimer: 0, // Reset auto-purchaser timer
-      currentWeather: 'Clear', // Reset weather when resetting
-      highestUnlockedVeggie: highestUnlockedVeggie // Preserve highest unlocked veggie through farm upgrades
-    });
+    // Note: Canning state is preserved - auto-save will handle saving all state including canning
+    // No manual save call needed here, the auto-save system will pick up these changes
   };
   // Removed duplicate loaded declaration and invalid farmTier type usage
   // Farmer's Almanac purchase handler
@@ -835,6 +818,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const experienceRef = useRef(experience);
   const maxPlotsRef = useRef(maxPlots);
   const highestUnlockedVeggieRef = useRef(highestUnlockedVeggie);
+  const beeYieldBonusRef = useRef(beeYieldBonus);
+  const seasonRef = useRef(season);
+  const permanentBonusesRef = useRef(permanentBonuses);
   
   useEffect(() => {
     almanacLevelRef.current = almanacLevel;
@@ -844,7 +830,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     experienceRef.current = experience;
     maxPlotsRef.current = maxPlots;
     highestUnlockedVeggieRef.current = highestUnlockedVeggie;
-  }, [almanacLevel, farmTier, knowledge, day, experience, maxPlots, highestUnlockedVeggie]);
+    beeYieldBonusRef.current = beeYieldBonus;
+    seasonRef.current = season;
+    permanentBonusesRef.current = permanentBonuses;
+  }, [almanacLevel, farmTier, knowledge, day, experience, maxPlots, highestUnlockedVeggie, beeYieldBonus, season, permanentBonuses]);
   
   useGameLoop(() => {
     setVeggies((prev) => {
@@ -854,7 +843,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         knowledgeGain: totalKnowledgeGain,
         needsUpdate,
         harvestedVeggies
-      } = processAutoHarvest(prev, almanacLevelRef.current, farmTierRef.current, knowledgeRef.current);
+      } = processAutoHarvest(
+        prev, 
+        almanacLevelRef.current, 
+        farmTierRef.current, 
+        knowledgeRef.current,
+        beeYieldBonusRef.current,
+        seasonRef.current,
+        permanentBonusesRef.current
+      );
 
       // Log auto-harvests if callback is set
       if (globalHarvestCallback && harvestedVeggies.length > 0) {
@@ -1208,12 +1205,42 @@ function App() {
 
   // Event log overlay state
   const [showEventLog, setShowEventLog] = useState(false);
+  
+  // Event log enabled categories state (all enabled by default)
+  const [enabledEventCategories, setEnabledEventCategories] = useState<EventCategory[]>([
+    'weather',
+    'growth',
+    'harvest',
+    'auto-purchase',
+    'merchant',
+    'canning',
+    'milestone',
+    'bees',
+    'christmas'
+  ]);
 
   // Toast state for magical register bonus
   const [magicalRegisterToast, setMagicalRegisterToast] = useState({
     visible: false,
     message: '',
   });
+
+  // Harvest tutorial state - one-time tutorial for first harvest
+  const [harvestTutorialShown, setHarvestTutorialShown] = useState(() => {
+    try {
+      const loaded = loadGameStateWithCanning();
+      return loaded?.harvestTutorialShown || false;
+    } catch (error) {
+      return false;
+    }
+  });
+  const [showHarvestTutorial, setShowHarvestTutorial] = useState(false);
+
+  // Handler to dismiss harvest tutorial
+  const handleDismissHarvestTutorial = useCallback(() => {
+    setShowHarvestTutorial(false);
+    setHarvestTutorialShown(true);
+  }, []);
 
   // Tab system state
   const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas'>('growing');
@@ -1268,7 +1295,7 @@ function App() {
 
   // Load and manage UI preferences
   const [uiPreferences, setUiPreferences] = useState<{
-    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
+    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
     canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
   }>(() => {
     const loaded = loadGameStateWithCanning();
@@ -1279,7 +1306,7 @@ function App() {
   });
 
   // Handlers for updating UI preferences
-  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5') => {
+  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey') => {
     setUiPreferences(prev => ({ ...prev, canningRecipeFilter: filter }));
   }, []);
 
@@ -1319,9 +1346,9 @@ function App() {
     setGoldenHoney
   );
 
-  // Check if canning is unlocked (first recipe unlocks at 5,000 experience)
+  // Check if canning is unlocked (requires Farm Tier 3)
   // Memoized to prevent recalculation on every render
-  const canningUnlocked = useMemo(() => experience >= 5000, [experience]);
+  const canningUnlocked = useMemo(() => farmTier >= 3, [farmTier]);
 
 
   // Initialize achievement system
@@ -1659,13 +1686,14 @@ function App() {
         },
         eventLogState: eventLog.getState(),
         christmasEventState: christmasEvent?.eventState,
-        beeState: beeState || undefined
+        beeState: beeState || undefined,
+        harvestTutorialShown
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState]);
+  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -1803,12 +1831,17 @@ function App() {
             veggieName: veggie.name
           }
         });
+        
+        // Show harvest tutorial if this is the first time and we're on the growing tab
+        if (!harvestTutorialShown && activeTab === 'growing') {
+          setShowHarvestTutorial(true);
+        }
       }
       
       // Update the tracked growth value
       previousVeggieGrowthRef.current.set(veggie.name, veggie.growth);
     });
-  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog]);
+  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog, harvestTutorialShown, activeTab]);
   
   // Track season changes
   useEffect(() => {
@@ -2124,6 +2157,7 @@ function App() {
       onYieldBonusChange={setBeeYieldBonus}
       initialState={initialBeeState}
       onStateChange={setBeeState}
+      addEventLogEntry={eventLog.addEvent}
     >
     <>
     <ArchieIcon 
@@ -2145,7 +2179,7 @@ function App() {
             setShowEventLog={setShowEventLog}
             totalAchievements={achievements.length}
             unlockedAchievements={totalUnlocked}
-            unreadEventCount={Math.min(eventLog.unreadCount, 100)}
+            unreadEventCount={Math.min(eventLog.getUnreadCountForCategories(enabledEventCategories), 100)}
           />
         </header>
 
@@ -2214,7 +2248,7 @@ function App() {
                 gap: '0.5rem',
                 flexDirection: 'column'
               }}
-              title={canningUnlocked ? 'Canning System' : `Canning unlocks at 5000 Growing experience`}
+              title={canningUnlocked ? 'Canning System' : `Canning unlocks at Farm Tier 3`}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <img src={ICON_CANNING} alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
@@ -2227,17 +2261,17 @@ function App() {
               )} */}
             </button>
             <button
-              onClick={() => farmTier >= 3 ? setActiveTab('bees') : null}
-              disabled={farmTier < 3}
+              onClick={() => farmTier >= 4 ? setActiveTab('bees') : null}
+              disabled={farmTier < 4}
               style={{
                 padding: '0.75rem 1.5rem',
-                background: farmTier >= 3
+                background: farmTier >= 4
                   ? (activeTab === 'bees' ? '#f39c12' : '#333')
                   : '#666',
-                color: farmTier >= 3 ? '#fff' : '#bbb',
+                color: farmTier >= 4 ? '#fff' : '#bbb',
                 border: 'none',
                 borderRadius: '8px 8px 0 0',
-                cursor: farmTier >= 3 ? 'pointer' : 'not-allowed',
+                cursor: farmTier >= 4 ? 'pointer' : 'not-allowed',
                 fontWeight: activeTab === 'bees' ? 'bold' : 'normal',
                 fontSize: '1rem',
                 transition: 'all 0.2s',
@@ -2246,15 +2280,15 @@ function App() {
                 gap: '0.5rem',
                 flexDirection: 'column'
               }}
-              title={farmTier >= 3 ? 'Bee System' : `Bees unlock at Farm Tier 3`}
+              title={farmTier >= 4 ? 'Bee System' : `Bees unlock at Farm Tier 4`}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '20px', opacity: farmTier >= 3 ? 1 : 0.5 }}>🐝</span>
+                <img src={ICON_BEE} alt="Bee" style={{ width: '20px', height: '20px', opacity: farmTier >= 4 ? 1 : 0.5 }} />
                 Bees
               </div>
-              {farmTier < 3 && (
+              {farmTier < 4 && (
                 <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
-                  Req: Tier 3
+                  Req: Tier 4
                 </div>
               )}
             </button>
@@ -2595,6 +2629,7 @@ function App() {
       irrigationOwned={irrigationOwned}
       day={day}
       onToggleSell={handleToggleSell}
+      beeYieldBonus={beeYieldBonus}
     />
 
     {/* Achievements Overlay */}
@@ -2616,11 +2651,19 @@ function App() {
       visible={showEventLog}
       onClose={() => setShowEventLog(false)}
       entries={eventLog.entries}
-      unreadCount={eventLog.unreadCount}
+      unreadCount={eventLog.getUnreadCountForCategories(enabledEventCategories)}
       onMarkAsRead={eventLog.markAllAsRead}
       onClearAll={eventLog.clearEvents}
       getFilteredEvents={eventLog.getFilteredEvents}
       getCategoryCounts={eventLog.getCategoryCounts}
+      enabledCategories={enabledEventCategories}
+      onEnabledCategoriesChange={setEnabledEventCategories}
+    />
+
+    {/* Harvest Tutorial Overlay */}
+    <HarvestTutorial
+      isVisible={showHarvestTutorial}
+      onDismiss={handleDismissHarvestTutorial}
     />
 
     {/* DevTools - Only visible in development mode */}

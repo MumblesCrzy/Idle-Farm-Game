@@ -143,6 +143,9 @@ export const BEE_NECTAR_EFFICIENCY = './Nectar Efficiency.png';
 export const BEE_FLOWER_POWER = './Flower Power.png';
 export const BEE_SWIFT_GATHERERS = './Swift Gatherers.png';
 export const BEE_BEEKEEPER = './Beekeeper.png';
+export const BEE_BEEKEEPER_UPGRADE = './Beekeeper Upgrade.png';
+export const BEE_HONEY_PRODUCTION = './Honey Production.png';
+export const BEE_CROP_YIELD = './Crop Yield.png';
 
 // Helper function to get vegetable image by name
 export function getVeggieImage(veggieName: string): string {
@@ -267,5 +270,14 @@ export const ALL_IMAGES = [
   BEE_QUEENS_BLESSING,
   BEE_HEXCOMB_ENGINEERING,
   BEE_MEADOW_MAGIC,
+  BEE_WINTER_HARDINESS,
+  BEE_GOLDEN_TOUCH,
+  BEE_HIVE_EXPANSION,
+  BEE_NECTAR_EFFICIENCY,
+  BEE_FLOWER_POWER,
+  BEE_SWIFT_GATHERERS,
   BEE_BEEKEEPER,
+  BEE_BEEKEEPER_UPGRADE,
+  BEE_HONEY_PRODUCTION,
+  BEE_CROP_YIELD,
 ];

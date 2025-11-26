@@ -1,0 +1,148 @@
+/* ============================================================================
+   HARVEST TUTORIAL OVERLAY STYLES
+   One-time tutorial that points to the harvest button
+   ============================================================================ */
+
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9998;
+  transition: opacity 0.3s ease;
+}
+
+.backdrop.visible {
+  opacity: 1;
+}
+
+.backdrop.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Tutorial Container */
+.tutorialContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tutorialContainer.visible {
+  opacity: 1;
+}
+
+.tutorialContainer.hidden {
+  opacity: 0;
+  transform: translate(-50%, -45%);
+  pointer-events: none;
+}
+
+/* Tutorial Box */
+.tutorialBox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tutorialMessage {
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  text-align: center;
+  border: 3px solid #66bb6a;
+}
+
+.tutorialTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tutorialText {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.tutorialText strong {
+  color: #ffeb3b;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Dismiss Button */
+.dismissButton {
+  background: white;
+  color: #2e7d32;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dismissButton:hover {
+  background: #f1f8e9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dismissButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Animated Arrow */
+.arrow {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 30px solid #66bb6a;
+  margin-top: -3px;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tutorialMessage {
+    max-width: 90vw;
+    padding: 1.25rem;
+  }
+
+  .tutorialTitle {
+    font-size: 1.2rem;
+  }
+
+  .tutorialText {
+    font-size: 0.9rem;
+  }
+
+  .dismissButton {
+    padding: 0.65rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}

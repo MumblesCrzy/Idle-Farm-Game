@@ -4,7 +4,7 @@ import BeeBoxDisplay from './BeeBoxDisplay';
 import BeeBoxPurchase from './BeeBoxPurchase';
 import BeeUpgradesPanel from './BeeUpgradesPanel';
 import type { BeeContextValue } from '../types/bees';
-import { ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
+import { ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, BEE_BEEKEEPER } from '../config/assetPaths';
 import styles from './BeesTab.module.css';
 
 interface BeesTabProps {
@@ -45,7 +45,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
               <li>📈 Boost crop yields (+0.5% per bee box)</li>
               <li>🥫 Unlock unique honey-based canning recipes</li>
               <li><img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Chance to produce rare Golden Honey</li>
-              <li>🤖 Automate with the Beekeeper Assistant</li>
+              <li><img src={BEE_BEEKEEPER} alt="Beekeeper Assistant" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Automate with the Beekeeper Assistant</li>
             </ul>
           </div>
           <p className={styles.unlockHint}>
@@ -84,7 +84,12 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
 
   // Calculate upgrade bonuses for display
   const busyBeesUpgrade = beeContext.upgrades.find(u => u.id === 'busy_bees');
-  const productionSpeedBonus = busyBeesUpgrade ? busyBeesUpgrade.level * 0.01 : 0;
+  let productionSpeedBonus = busyBeesUpgrade ? busyBeesUpgrade.level * 0.01 : 0;
+  
+  // Add Beekeeper Assistant bonus if active
+  if (beeContext.beekeeperAssistant.active && beeContext.beekeeperAssistant.productionSpeedBonus > 0) {
+    productionSpeedBonus += beeContext.beekeeperAssistant.productionSpeedBonus;
+  }
   
   const royalJellyUpgrade = beeContext.upgrades.find(u => u.id === 'royal_jelly');
   const queensBlessingUpgrade = beeContext.upgrades.find(u => u.id === 'queens_blessing');
@@ -245,7 +250,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
             background: activeUpgradeTab === 'honey' 
               ? 'linear-gradient(135deg, #ffb84d 0%, #f39c12 100%)'
               : 'rgba(255, 255, 255, 0.3)',
-            color: activeUpgradeTab === 'honey' ? 'white' : '#666',
+            color: activeUpgradeTab === 'honey' ? 'white' : '#333',
             fontWeight: 'bold',
             cursor: 'pointer',
             border: activeUpgradeTab === 'honey' ? '2px solid #d68910' : '2px solid transparent',
@@ -258,7 +263,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
             fontSize: '0.95rem'
           }}
         >
-          <span>🍯</span> Honey
+          <img src={ICON_HONEY} alt="Honey" style={{ width: '18px', height: '18px' }} /> Honey
         </button>
         <button
           onClick={() => setActiveUpgradeTab('golden')}
@@ -269,7 +274,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
             background: activeUpgradeTab === 'golden' 
               ? 'linear-gradient(135deg, #ffd700 0%, #ffaa00 100%)'
               : 'rgba(255, 255, 255, 0.3)',
-            color: activeUpgradeTab === 'golden' ? 'white' : '#666',
+            color: activeUpgradeTab === 'golden' ? 'white' : '#333',
             fontWeight: 'bold',
             cursor: 'pointer',
             border: activeUpgradeTab === 'golden' ? '2px solid #e6a800' : '2px solid transparent',
@@ -282,7 +287,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
             fontSize: '0.95rem'
           }}
         >
-          <span>✨</span> Golden
+          <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '18px', height: '18px' }} /> Golden
         </button>
       </div>
 
@@ -304,6 +309,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
         {activeUpgradeTab === 'honey' ? (
           <BeeUpgradesPanel
             upgrades={regularHoneyUpgrades}
+            allUpgrades={beeContext.upgrades}
             regularHoney={beeContext.regularHoney}
             goldenHoney={beeContext.goldenHoney}
             onPurchaseUpgrade={beeContext.purchaseUpgrade}
@@ -319,6 +325,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
         ) : (
           <BeeUpgradesPanel
             upgrades={goldenHoneyUpgrades}
+            allUpgrades={beeContext.upgrades}
             regularHoney={beeContext.regularHoney}
             goldenHoney={beeContext.goldenHoney}
             onPurchaseUpgrade={beeContext.purchaseUpgrade}
@@ -336,8 +343,11 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
     </div>
   );
 
-  // Custom sidebar styling for bee tab - removed since we're using inline styles now
+  // Custom sidebar styling for bee tab
   const sidebarStyle = {
+    width: '250px',
+    minWidth: '250px',
+    maxWidth: '250px',
     padding: '0',
     background: 'transparent',
     border: 'none',

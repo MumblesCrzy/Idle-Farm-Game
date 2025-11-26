@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { ICON_BEE_HIVE } from '../config/assetPaths';
+import { ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
 import styles from './BeeBoxPurchase.module.css';
 
 interface BeeBoxPurchaseProps {
@@ -56,16 +56,7 @@ const BeeBoxPurchase: React.FC<BeeBoxPurchaseProps> = memo(({
       {/* Purchase Content */}
       {!atMaxCapacity ? (
         <>
-          {/* Cost Display */}
-          <div className={styles.costSection}>
-            <div className={styles.costLabel}>Cost:</div>
-            <div className={styles.costAmount}>
-              <span className={styles.costIcon}>🍯</span>
-              {formatNumber(cost, 1)}
-            </div>
-          </div>
-
-          {/* Purchase Button */}
+          {/* Combined Purchase Button with Cost */}
           <button
             className={styles.purchaseButton}
             onClick={handlePurchase}
@@ -78,6 +69,10 @@ const BeeBoxPurchase: React.FC<BeeBoxPurchaseProps> = memo(({
           >
             <span className={styles.buttonIcon}>➕</span>
             <span className={styles.buttonText}>Purchase</span>
+            <span className={styles.buttonCost}>
+              <img src={ICON_HONEY} alt="Honey" className={styles.costIconInButton} />
+              {formatNumber(cost, 1)}
+            </span>
           </button>
         </>
       ) : (

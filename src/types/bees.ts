@@ -19,7 +19,6 @@ export const BEE_CONSTANTS = {
   STARTING_BEE_BOXES: 2,
   MAX_BEE_BOXES: 50,
   BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% crop yield bonus per box
-  MAX_YIELD_BONUS: 0.25, // 25% cap (50 boxes * 0.5%)
   UNLOCK_FARM_TIER: 3, // Tier 3+ required to unlock bees
   BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4, // Unlock assistant after owning 4-6 boxes
 } as const;

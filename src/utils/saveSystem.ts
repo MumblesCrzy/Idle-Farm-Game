@@ -241,7 +241,7 @@ export interface ExtendedGameState {
   
   // UI preferences
   uiPreferences?: {
-    canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
+    canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
     canningRecipeSort?: 'name' | 'profit' | 'time' | 'difficulty';
   };
   
@@ -274,6 +274,9 @@ export interface ExtendedGameState {
     totalBoxesPurchased: number;
     honeySpent: number;
   };
+  
+  // Tutorial state
+  harvestTutorialShown?: boolean;
 }
 
 /** Current version number for canning save data format */

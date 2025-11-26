@@ -249,7 +249,7 @@ export interface BaseTabProps {
 
 export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'bees';
 
-export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'tier1' | 'tier2' | 'tier3' | 'tier4' | 'tier5';
+export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
 // ============================================================================
@@ -266,7 +266,6 @@ export type EventCategory =
   | 'auto-purchase' // Auto-purchaser activities
   | 'merchant'      // Merchant sales and manual sells
   | 'canning'       // Canning activities (start, complete, upgrades)
-  | 'upgrade'       // Major upgrade purchases (greenhouse, irrigation, etc.)
   | 'milestone'     // Major achievements (farm tier, experience milestones)
   | 'bees'          // Bee system activities (honey harvest, upgrades, box purchases)
   | 'christmas';    // Christmas Tree Shop event activities (harvest, sell, craft, upgrades)

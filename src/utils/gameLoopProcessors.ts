@@ -91,7 +91,10 @@ export function processAutoHarvest(
   veggies: Veggie[],
   almanacLevel: number,
   farmTier: number,
-  knowledge: number
+  knowledge: number,
+  beeYieldBonus: number = 0,
+  season: string = '',
+  permanentBonuses: string[] = []
 ): {
   veggies: Veggie[];
   experienceGain: number;
@@ -113,7 +116,18 @@ export function processAutoHarvest(
 
     // If timer is primed and veggie is ready, harvest immediately
     if (v.harvesterTimer >= timerMax && v.growth >= 100) {
-      const harvestAmount = 1 + (v.additionalPlotLevel || 0);
+      let harvestAmount = 1 + (v.additionalPlotLevel || 0);
+      
+      // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
+      if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
+        harvestAmount = Math.ceil(harvestAmount * 1.05);
+      }
+      
+      // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
+      if (beeYieldBonus > 0) {
+        harvestAmount = Math.ceil(harvestAmount * (1 + beeYieldBonus));
+      }
+      
       const almanacMultiplier = 1 + (almanacLevel * 0.10);
       const knowledgeGain = 0.5; // Auto harvest knowledge gain
       

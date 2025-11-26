@@ -5,7 +5,7 @@
  * Semi-transparent to allow interaction with the main game area.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { EventLogEntry, EventCategory } from '../types/game';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useEventLogFilter } from '../hooks/useEventLog';
@@ -31,6 +31,8 @@ interface EventLogOverlayProps {
   onClearAll: () => void;
   getFilteredEvents: (categories?: EventCategory[], searchTerm?: string) => EventLogEntry[];
   getCategoryCounts: () => Record<EventCategory, number>;
+  enabledCategories: EventCategory[];
+  onEnabledCategoriesChange: (categories: EventCategory[]) => void;
 }
 
 const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
@@ -41,7 +43,9 @@ const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
   onMarkAsRead,
   onClearAll,
   getFilteredEvents,
-  getCategoryCounts
+  getCategoryCounts,
+  enabledCategories,
+  onEnabledCategoriesChange
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -52,10 +56,19 @@ const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
     selectedCategories,
     searchTerm,
     setSearchTerm,
-    toggleCategory,
+    toggleCategory: toggleCategoryInternal,
     clearFilters,
     hasActiveFilters
-  } = useEventLogFilter();
+  } = useEventLogFilter(enabledCategories);
+
+  // Sync selected categories with parent when they change
+  useEffect(() => {
+    onEnabledCategoriesChange(selectedCategories);
+  }, [selectedCategories, onEnabledCategoriesChange]);
+
+  const toggleCategory = useCallback((category: EventCategory) => {
+    toggleCategoryInternal(category);
+  }, [toggleCategoryInternal]);
 
   // Get filtered events
   const filteredEntries = getFilteredEvents(

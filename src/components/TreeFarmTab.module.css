@@ -366,12 +366,23 @@
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s;
+  animation: pulseRed 2s ease-in-out infinite;
+}
+
+@keyframes pulseRed {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(184, 0, 0, 0.7), 0 0 20px rgba(184, 0, 0, 0.4);
+  }
 }
 
 .harvestAllButton:hover {
   background: #7D0000;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
+  animation: none;
 }
 
 .plantAllButton {

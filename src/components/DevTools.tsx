@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './DevTools.module.css';
-import { ICON_CANNING } from '../config/assetPaths';
+import { ICON_CANNING, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
 
 interface DevToolsProps {
   onAddMoney: (amount: number) => void;
@@ -283,7 +283,7 @@ const DevTools: React.FC<DevToolsProps> = ({
           {/* Bees Section */}
           {(onAddHoney || onAddGoldenHoney || onHarvestAllHoney || onCompleteAllBoxes || onAddBeeBox) && (
             <div className={styles.section}>
-              <h4 className={styles.sectionTitle}>🐝 Bee System</h4>
+              <h4 className={styles.sectionTitle}><img src={ICON_BEE} alt="Bee" style={{ width: '18px', height: '18px', verticalAlign: 'middle' }} /> Bee System</h4>
               <div className={styles.actionButtons}>
                 {onAddHoney && (
                   <>
@@ -291,13 +291,13 @@ const DevTools: React.FC<DevToolsProps> = ({
                       onClick={() => onAddHoney(100)}
                       className={styles.actionButton}
                     >
-                      +100 🍯 Honey
+                      +100 <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Honey
                     </button>
                     <button 
                       onClick={() => onAddHoney(1000)}
                       className={styles.actionButton}
                     >
-                      +1K 🍯 Honey
+                      +1K <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Honey
                     </button>
                   </>
                 )}
@@ -307,13 +307,13 @@ const DevTools: React.FC<DevToolsProps> = ({
                       onClick={() => onAddGoldenHoney(10)}
                       className={styles.actionButton}
                     >
-                      +10 ✨ Golden Honey
+                      +10 <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Golden Honey
                     </button>
                     <button 
                       onClick={() => onAddGoldenHoney(100)}
                       className={styles.actionButton}
                     >
-                      +100 ✨ Golden Honey
+                      +100 <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Golden Honey
                     </button>
                   </>
                 )}
@@ -330,7 +330,7 @@ const DevTools: React.FC<DevToolsProps> = ({
                     onClick={onHarvestAllHoney}
                     className={styles.actionButton}
                   >
-                    🍯 Harvest All Honey
+                    <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Harvest All Honey
                   </button>
                 )}
                 {onAddBeeBox && (

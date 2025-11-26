@@ -19,7 +19,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 100,
     baseCost: 100,
-    upgradeCostScaling: 2.1,
+    upgradeCostScaling: 2.3,
     maxLevel: 18,
     costCurrency: 'money',
     effect: 1.0, // Multiplier for processing time
@@ -33,7 +33,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 150,
     baseCost: 150,
-    upgradeCostScaling: 1.5,
+    upgradeCostScaling: 1.8,
     costCurrency: 'knowledge',
     effect: 1.0, // Multiplier for sale price
     unlocked: true
@@ -46,7 +46,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 200,
     baseCost: 200,
-    upgradeCostScaling: 1.5,
+    upgradeCostScaling: 1.8,
     costCurrency: 'knowledge',
     effect: 0, // Percentage chance for bonus
     unlocked: true
@@ -59,7 +59,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     level: 0,
     cost: 500,
     baseCost: 500,
-    upgradeCostScaling: 1.7,
+    upgradeCostScaling: 2.0,
     costCurrency: 'money',
     maxLevel: 14,
     effect: 1, // Number of additional simultaneous processes
@@ -71,8 +71,8 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     description: 'Automatically starts canning processes every 10 seconds (gives reduced knowledge)',
     type: 'automation',
     level: 0,
-    cost: 5000,
-    baseCost: 5000,
+    cost: 10000,
+    baseCost: 10000,
     upgradeCostScaling: 1.0,
     costCurrency: 'knowledge',
     maxLevel: 1,
@@ -134,7 +134,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           };
         });
         
-        // First recipe unlocks with growing experience, others with canning experience
+        // First recipe unlocks with farm tier 3+, others with canning experience
         const isFirstRecipe = config.id === 'canned_radish';
         
         // Check if this is a honey recipe
@@ -146,12 +146,12 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           const honeyUnlocked = (totalHoneyCollected || 0) >= (config.honeyCollectedRequired || 0);
           unlocked = honeyUnlocked && (
             isFirstRecipe 
-              ? experience >= config.experienceRequired
+              ? (farmTier || 1) >= 3
               : prev.canningExperience >= config.experienceRequired
           );
         } else {
           unlocked = isFirstRecipe 
-            ? experience >= config.experienceRequired
+            ? (farmTier || 1) >= 3
             : prev.canningExperience >= config.experienceRequired;
         }
         
@@ -183,13 +183,13 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: unlockedRecipeIds
       };
     });
-  }, [veggies, experience, totalHoneyCollected]); // Added totalHoneyCollected for honey recipe unlocks
+  }, [veggies, farmTier, totalHoneyCollected]); // Watch farmTier instead of experience for first recipe unlock
   
-  // Update recipe unlocks based on experience
+  // Update recipe unlocks based on canning experience and farm tier
   useEffect(() => {
     setCanningState(prev => {
       const updatedRecipes = prev.recipes.map(recipe => {
-        // First recipe unlocks with growing experience, others with canning experience
+        // First recipe unlocks with farm tier 3+, others with canning experience
         const isFirstRecipe = recipe.id === 'canned_radish';
         
         // Check if this is a honey recipe
@@ -200,12 +200,12 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           const honeyUnlocked = (totalHoneyCollected || 0) >= (recipe.honeyCollectedRequired || 0);
           unlocked = honeyUnlocked && (
             isFirstRecipe 
-              ? experience >= recipe.experienceRequired
+              ? (farmTier || 1) >= 3
               : prev.canningExperience >= recipe.experienceRequired
           );
         } else {
           unlocked = isFirstRecipe 
-            ? experience >= recipe.experienceRequired
+            ? (farmTier || 1) >= 3
             : prev.canningExperience >= recipe.experienceRequired;
         }
         
@@ -225,17 +225,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: newUnlockedRecipes
       };
     });
-  }, [experience, canningState.canningExperience, totalHoneyCollected]); // Watch honey collected too
+  }, [farmTier, canningState.canningExperience, totalHoneyCollected]); // Watch farmTier and honey collected
 
-  // Reset canning state when farm tier changes (farm upgrade)
-  const farmTierRef = useRef(farmTier);
-  useEffect(() => {
-    if (farmTier !== undefined && farmTierRef.current !== undefined && farmTier > farmTierRef.current) {
-      // Farm tier increased, reset canning state
-      setCanningState(INITIAL_CANNING_STATE);
-    }
-    farmTierRef.current = farmTier;
-  }, [farmTier]);
+  // Note: Canning state is now preserved across farm tier upgrades
+  // The reset logic has been removed to maintain player progress
   
   // Update upgrade effects based on levels
   const updateUpgradeEffects = useCallback((upgrades: CanningUpgrade[]) => {

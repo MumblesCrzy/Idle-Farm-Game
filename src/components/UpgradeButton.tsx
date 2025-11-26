@@ -1,4 +1,5 @@
 import React from 'react';
+import { ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
 import styles from './UpgradeButton.module.css';
 
 export interface UpgradeButtonProps {
@@ -18,6 +19,7 @@ export interface UpgradeButtonProps {
   level?: number;
   flex?: boolean;
   effect?: string;
+  requirement?: string; // Optional requirement text (e.g., "Requires 10 boxes")
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
   regularHoney?: number; // Honey currency for bee upgrades
   goldenHoney?: number; // Golden honey currency for bee upgrades
@@ -40,6 +42,7 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
   level,
   flex = false,
   effect,
+  requirement,
   knowledgeCost,
   regularHoney = 0,
   goldenHoney = 0,
@@ -61,8 +64,8 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
     }
   })();
   
-  // Determine the currency display label
-  const getCurrencyLabel = () => {
+  // Render the currency display (can be text or JSX)
+  const renderCurrencyIcon = () => {
     if (currencyLabel) return currencyLabel;
     switch (currencyType) {
       case 'money':
@@ -70,15 +73,13 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
       case 'knowledge':
         return 'Kn';
       case 'regularHoney':
-        return '🍯';
+        return <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />;
       case 'goldenHoney':
-        return '✨';
+        return <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />;
       default:
         return '';
     }
   };
-  
-  const costLabel = getCurrencyLabel();
   
   const getButtonClass = () => {
     if (isOwned) return styles.button;
@@ -112,18 +113,28 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
             </div>
           )}
           {!isOwned && !isMaxLevel && (
-            <div className={styles.effect}>
-              {knowledgeCost ? 
-                `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn` : 
-                (currencyType === 'money' 
-                  ? `$${formatNumber(cost, 1)}` 
-                  : currencyType === 'regularHoney'
-                    ? `${formatNumber(cost, 1)} ${costLabel}`
-                    : currencyType === 'goldenHoney'
-                      ? `${formatNumber(cost, 1)} ${costLabel}`
-                      : `${formatNumber(cost, 1)} ${costLabel}`)
-              }
-            </div>
+            <>
+              <div className={styles.effect}>
+                {knowledgeCost ? (
+                  `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn`
+                ) : currencyType === 'money' ? (
+                  `$${formatNumber(cost, 1)}`
+                ) : currencyType === 'regularHoney' || currencyType === 'goldenHoney' ? (
+                  <>
+                    {formatNumber(cost, 0)} {renderCurrencyIcon()}
+                  </>
+                ) : (
+                  <>
+                    {formatNumber(cost, 1)} {renderCurrencyIcon()}
+                  </>
+                )}
+              </div>
+              {requirement && (
+                <div className={styles.unlock}>
+                  {requirement}
+                </div>
+              )}
+            </>
           )}
           {isOwned && (
             <div className={styles.cost}>

@@ -11,7 +11,7 @@ import type {
   EventTimestamp,
   EventMetadata 
 } from '../types/game';
-import { ICON_AUTOMATION, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, ICON_UPGRADE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
+import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
 
 /**
  * Generate a unique ID for an event
@@ -86,8 +86,9 @@ export function getCategoryIcon(category: EventCategory): string {
     'auto-purchase': ICON_AUTOMATION,
     merchant: UPGRADE_MERCHANT,
     canning: ICON_CANNING,
-    upgrade: ICON_UPGRADE,
-    milestone: ICON_MILESTONE
+    milestone: ICON_MILESTONE,
+    bees: ICON_BEE,
+    christmas: '🎄' // Using emoji for christmas tree
   };
   return icons[category];
 }
@@ -116,8 +117,9 @@ export function getCategoryColor(category: EventCategory): string {
     'auto-purchase': '#9C27B0', // Purple
     merchant: '#FFEB3B',    // Yellow
     canning: '#FF5722',     // Deep Orange
-    upgrade: '#00BCD4',     // Cyan
-    milestone: '#E91E63'    // Pink
+    milestone: '#E91E63',   // Pink
+    bees: '#FFA500',        // Orange/Amber (bee/honey color)
+    christmas: '#C41E3A'    // Christmas Red
   };
   return colors[category];
 }
@@ -225,8 +227,9 @@ export function countEventsByCategory(
     'auto-purchase': 0,
     merchant: 0,
     canning: 0,
-    upgrade: 0,
-    milestone: 0
+    milestone: 0,
+    bees: 0,
+    christmas: 0
   };
   
   entries.forEach(entry => {

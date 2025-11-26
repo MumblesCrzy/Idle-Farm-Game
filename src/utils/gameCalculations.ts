@@ -9,7 +9,9 @@ import type { Veggie, AutoPurchaseType, CurrencyType, AutoPurchaseConfig } from 
  */
 export function formatNumber(num: number, decimalPlaces: number = 1): string {
   if (num < 1000) {
-    return num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2)).replace(/\.?0+$/, '');
+    const fixed = num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2));
+    // Only remove trailing zeros after a decimal point
+    return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
   }
   
   const units = ['', 'K', 'M', 'B', 'T', 'Q'];
