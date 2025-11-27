@@ -337,7 +337,7 @@ export const SHOPFRONT_UPGRADES: EventUpgrade[] = [
     cost: 1800,
     owned: false,
     effect: 'Passive Holiday Cheer income',
-    passiveIncome: 1, // 1 Cheer per second base
+    passiveIncome: 0.1, // 1 Cheer per 10 seconds
   },
   {
     id: 'magical_register',
@@ -488,7 +488,7 @@ export const EVENT_CONSTANTS = {
   CHRISTMAS_DAY: 25,
   
   // Passive income
-  GOLDEN_BELL_BASE_RATE: 1, // Cheer per second
+  GOLDEN_BELL_BASE_RATE: 0.1, // 1 Cheer per 10 seconds
   
   // Daily bonus
   DAILY_BONUS_BASE: 25, // Base Holiday Cheer
