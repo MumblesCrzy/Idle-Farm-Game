@@ -79,7 +79,7 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
     if (upgrade.effectType === 'productionSpeed') {
       return `${(upgrade.effectValue * 100).toFixed(0)}% faster per level`;
     } else if (upgrade.effectType === 'goldenHoneyChance') {
-      return `${(upgrade.effectValue * 100).toFixed(0)}% chance for Golden Honey`;
+      return `+${(upgrade.effectValue * 100).toFixed(0)}% chance for Golden Honey`;
     } else if (upgrade.effectType === 'goldenHoneyDouble') {
       return '2x Golden Honey chance';
     } else if (upgrade.effectType === 'honeyProduction') {
@@ -88,6 +88,10 @@ const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
       return `+${(upgrade.effectValue * 100).toFixed(1)}% crops/box/level`;
     } else if (upgrade.effectType === 'automationSpeed') {
       return 'Auto-harvest enabled';
+    } else if (upgrade.effectType === 'hiveCapacity') {
+      return `+${upgrade.effectValue} hives`;
+    } else if (upgrade.effectType === 'winterProduction') {
+      return 'Honey production during winter';
     }
     return upgrade.description;
   };

@@ -185,11 +185,7 @@ const createAutoPurchaseHandler = (
 
 const GameContext = createContext<GameState | undefined>(undefined);
 
-function saveGameState(state: any) {
-  try {
-    saveGameStateWithCanning(state);
-  } catch {}
-}
+// Removed unused saveGameState function
 
 const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load game state fresh each time - this ensures imports work correctly
@@ -452,12 +448,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     christmasEvent.resetEvent();
   }
   
-  // Wait for state updates to propagate, then save
-  // This ensures achievements and bee state are properly reset in the save
+  // Wait for state updates to propagate, then re-enable features
+  // The auto-save system will save the reset state once justReset becomes false
   setTimeout(() => {
     // Re-enable achievement checks and auto-save after state updates propagate
     blockAchievementChecks = false;
     justReset = false;
+    
+    // Trigger a state change to ensure auto-save runs with reset values
+    // This dummy state change forces the save effect to run
+    setMoney(prev => prev);
   }, 100);
   
   // Prevent auto-save from running until state updates propagate
@@ -1162,10 +1162,11 @@ function useGame() {
  */
 interface BeesTabWrapperProps {
   farmTier: number;
+  season: string;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, formatNumber }) => {
+const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumber }) => {
   const beeContext = useBees();
   
   // Store bee context globally for dev tools access
@@ -1180,6 +1181,7 @@ const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, formatNumber 
     <BeesTab
       beeContext={beeContext}
       farmTier={farmTier}
+      season={season}
       formatNumber={formatNumber}
     />
   );
@@ -1328,7 +1330,7 @@ function App() {
     canMakeRecipe,
     toggleAutoCanning
   } = useCanningSystem(
-    experience, 
+    // experience parameter removed - unused
     veggies, 
     setVeggies, 
     heirloomOwned, 
@@ -1705,6 +1707,11 @@ function App() {
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
+    
+    // Debug: Log bee box count for achievement checking
+    if (beeState?.boxes?.length) {
+      console.log(`[Achievement Check] Bee boxes: ${beeState.boxes.length}`);
+    }
     
     checkAchievements({
       money,
@@ -2154,6 +2161,7 @@ function App() {
       {({ handleExportSave, handleImportSave, handleResetGame }) => (
     <BeeProvider 
       farmTier={farmTier}
+      season={season}
       onYieldBonusChange={setBeeYieldBonus}
       initialState={initialBeeState}
       onStateChange={setBeeState}
@@ -2399,6 +2407,8 @@ function App() {
             money={money}
             knowledge={knowledge}
             heirloomOwned={heirloomOwned}
+            regularHoney={regularHoney}
+            goldenHoney={goldenHoney}
             startCanning={startCanning}
             canMakeRecipe={canMakeRecipe}
             purchaseUpgrade={purchaseUpgrade}
@@ -2414,7 +2424,7 @@ function App() {
       {/* Bees Tab Content */}
       {activeTab === 'bees' && (
         <PerformanceWrapper id="BeesTab">
-          <BeesTabWrapper farmTier={farmTier} formatNumber={formatNumber} />
+          <BeesTabWrapper farmTier={farmTier} season={season} formatNumber={formatNumber} />
         </PerformanceWrapper>
       )}
 

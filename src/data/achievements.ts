@@ -392,7 +392,13 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     category: 'special',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 10
+      customCheck: (gameState) => {
+        const boxCount = gameState.beeState?.boxes?.length || 0;
+        if (boxCount >= 5) {
+          console.log(`[Buzzing Business] Box count: ${boxCount}, Required: 10`);
+        }
+        return boxCount >= 10;
+      }
     },
     reward: {
       knowledge: 20,
@@ -407,7 +413,13 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     category: 'special',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 25
+      customCheck: (gameState) => {
+        const boxCount = gameState.beeState?.boxes?.length || 0;
+        if (boxCount >= 20) {
+          console.log(`[Apiary Master] Box count: ${boxCount}, Required: 25`);
+        }
+        return boxCount >= 25;
+      }
     },
     reward: {
       knowledge: 50,
@@ -418,12 +430,18 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
   {
     id: 'sweet_empire',
     name: 'Sweet Empire',
-    description: 'Own 50 bee boxes (maximum)',
+    description: 'Own 30 bee boxes (maximum)',
     icon: ICON_BEE_BOX,
     category: 'special',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => (gameState.beeState?.boxes?.length || 0) >= 50
+      customCheck: (gameState) => {
+        const boxCount = gameState.beeState?.boxes?.length || 0;
+        if (boxCount >= 25) {
+          console.log(`[Sweet Empire] Box count: ${boxCount}, Required: 30`);
+        }
+        return boxCount >= 30;
+      }
     },
     reward: {
       knowledge: 100,

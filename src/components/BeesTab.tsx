@@ -10,12 +10,14 @@ import styles from './BeesTab.module.css';
 interface BeesTabProps {
   beeContext: BeeContextValue | null;
   farmTier: number;
+  season: string;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
 const BeesTab: React.FC<BeesTabProps> = memo(({
   beeContext,
   farmTier,
+  season,
   formatNumber
 }) => {
   // Check if bees are unlocked (Tier 3+)
@@ -93,9 +95,9 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
   
   const royalJellyUpgrade = beeContext.upgrades.find(u => u.id === 'royal_jelly');
   const queensBlessingUpgrade = beeContext.upgrades.find(u => u.id === 'queens_blessing');
-  let goldenHoneyChance = 0;
+  let goldenHoneyChance = 0.01; // 1% base chance for all players
   if (royalJellyUpgrade?.purchased) {
-    goldenHoneyChance = 0.05; // 5% base
+    goldenHoneyChance += 0.01; // adds 1% more
   }
   if (queensBlessingUpgrade?.purchased) {
     goldenHoneyChance *= 2; // 2x multiplier
@@ -105,7 +107,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
   const honeyProductionMultiplier = beeContext.calculateHoneyProductionMultiplier();
 
   // Calculate production stats (1 second = 1 day in game)
-  const baseProductionTime = 182; // seconds (6 months = 182 days)
+  const baseProductionTime = 132; // seconds (reduced from 182 to account for 50-day winter pause)
   const actualProductionTime = baseProductionTime / (1 + productionSpeedBonus);
   const honeyPerHarvest = Math.round(15 * honeyProductionMultiplier);
   const daysPerHarvest = Math.ceil(actualProductionTime); // days
@@ -187,6 +189,7 @@ const BeesTab: React.FC<BeesTabProps> = memo(({
             <BeeBoxDisplay
               key={box.id}
               box={box}
+              season={season}
               productionSpeedBonus={productionSpeedBonus}
             />
           ))}

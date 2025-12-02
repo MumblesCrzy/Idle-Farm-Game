@@ -12,6 +12,8 @@ interface CanningPanelProps {
   canningState: CanningState;
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
   heirloomOwned: boolean;
+  regularHoney?: number;
+  goldenHoney?: number;
   onStartCanning: (recipeId: string) => boolean;
   canMakeRecipe: (recipe: Recipe) => boolean;
   recipeFilter?: RecipeFilter;
@@ -24,6 +26,8 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
   canningState,
   veggies,
   heirloomOwned,
+  regularHoney,
+  goldenHoney,
   onStartCanning,
   canMakeRecipe,
   recipeFilter: propRecipeFilter,
@@ -264,6 +268,8 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
                 onStartCanning={handleStartCanning}
                 onShowDetails={handleShowDetails}
                 veggies={veggies}
+                regularHoney={regularHoney}
+                goldenHoney={goldenHoney}
                 efficiencyMultiplier={efficiencyMultiplier}
                 speedMultiplier={speedMultiplier}
                 heirloomOwned={heirloomOwned}
@@ -288,6 +294,8 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
         onClose={handleCloseModal}
         onStartCanning={handleStartCanning}
         veggies={veggies}
+        regularHoney={regularHoney}
+        goldenHoney={goldenHoney}
         canMake={selectedRecipe ? canMakeRecipe(selectedRecipe) : false}
         efficiencyMultiplier={efficiencyMultiplier}
         speedMultiplier={speedMultiplier}

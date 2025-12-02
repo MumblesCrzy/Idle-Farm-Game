@@ -51,14 +51,14 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
   {
     id: 'royal_jelly',
     name: 'Royal Jelly',
-    description: 'Feed your bees royal jelly to unlock a 0.5% chance to produce Golden Honey.',
+    description: 'Feed your bees royal jelly to increase Golden Honey chance by +1% (from 1% base to 2% total).',
     category: 'quality',
     icon: BEE_ROYAL_JELLY,
     cost: 375, // 25 * 15
     baseCost: 375,
     costCurrency: 'regularHoney',
     effectType: 'goldenHoneyChance',
-    effectValue: 0.005, // 0.5% chance
+    effectValue: 0.01, // adds 5% to base
     repeatable: false,
     unlocked: true,
   },
@@ -66,7 +66,7 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
   {
     id: 'queens_blessing',
     name: "Queen's Blessing",
-    description: 'The queen bee blesses your hive! Doubles your Golden Honey chance.',
+    description: 'The queen bee blesses your hive! Doubles your Golden Honey chance (e.g., 2% becomes 4%).',
     category: 'quality',
     icon: BEE_QUEENS_BLESSING,
     cost: 150, // 10 * 15
@@ -115,7 +115,7 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     effectType: 'cropYieldBonus',
     effectValue: 0.005, // +0.5% per box per level
     repeatable: true,
-    maxLevel: 9,
+    maxLevel: 20,
     unlocked: true,
   },
   
@@ -125,14 +125,14 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
   {
     id: 'winter_hardiness',
     name: 'Winter Hardiness',
-    description: 'Your bees produce honey even in winter! No production penalty during winter months.',
+    description: 'Your bees produce honey even in winter! Normally bees stop producing during winter months.',
     category: 'production',
     icon: BEE_WINTER_HARDINESS,
     cost: 45, // 3 * 15
     baseCost: 45,
     costCurrency: 'goldenHoney',
-    effectType: 'productionSpeed',
-    effectValue: 0, // Special effect handled separately
+    effectType: 'winterProduction',
+    effectValue: 0, // Special effect: allows production during winter
     repeatable: false,
     unlocked: false,
     requiredBoxes: 10, // Unlock after having 10 boxes
@@ -158,17 +158,17 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
   {
     id: 'hive_expansion',
     name: 'Hive Expansion',
-    description: 'Expand your apiary! Increases maximum bee boxes to 75.',
+    description: 'Expand your apiary! Increases maximum bee boxes to 30.',
     category: 'automation',
     icon: BEE_HIVE_EXPANSION,
     cost: 1500, // 100 * 15
     baseCost: 1500,
     costCurrency: 'regularHoney',
-    effectType: 'productionSpeed',
-    effectValue: 0, // Special effect - increases max boxes
+    effectType: 'hiveCapacity', // Special: increases max boxes instead of honey production
+    effectValue: 10, // Special upgrade - increases max boxes from 20 to 30
     repeatable: false,
     unlocked: false,
-    requiredBoxes: 50, // Only available when at max boxes
+    requiredBoxes: 20, // Only available when approaching max boxes
   },
   
   {

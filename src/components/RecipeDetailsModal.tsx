@@ -8,6 +8,8 @@ interface RecipeDetailsModalProps {
   onClose: () => void;
   onStartCanning: (recipeId: string) => void;
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
+  regularHoney?: number;
+  goldenHoney?: number;
   heirloomOwned: boolean;
   canMake: boolean;
   efficiencyMultiplier?: number;
@@ -21,6 +23,8 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
   onClose,
   onStartCanning,
   veggies,
+  regularHoney,
+  goldenHoney,
   heirloomOwned,
   canMake,
   efficiencyMultiplier = 1,
@@ -240,6 +244,105 @@ const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
             })}
           </div>
         </div>
+
+        {/* Honey Requirements */}
+        {recipe.honeyRequirement && (recipe.honeyRequirement.regular > 0 || recipe.honeyRequirement.golden > 0) && (
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{
+              fontSize: '16px',
+              color: '#333',
+              marginBottom: '12px',
+              borderBottom: '1px solid #e0e0e0',
+              paddingBottom: '4px'
+            }}>
+              Honey Required:
+            </h3>
+            <div style={{ gap: '8px' }}>
+              {recipe.honeyRequirement.regular > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  backgroundColor: regularHoney !== undefined && regularHoney >= recipe.honeyRequirement.regular ? '#f8fff8' : '#fff8f8',
+                  border: `1px solid ${regularHoney !== undefined && regularHoney >= recipe.honeyRequirement.regular ? '#d4edda' : '#f5c6cb'}`,
+                  borderRadius: '6px',
+                  marginBottom: '6px'
+                }}>
+                  <span style={{
+                    fontWeight: 'bold',
+                    color: '#333'
+                  }}>
+                    🍯 Regular Honey × {formatNumber(recipe.honeyRequirement.regular, 3)}
+                  </span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {regularHoney !== undefined && (
+                      <>
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#666'
+                        }}>
+                          (Have: {formatNumber(regularHoney, 3)})
+                        </span>
+                        <span style={{
+                          fontSize: '18px',
+                          color: regularHoney >= recipe.honeyRequirement.regular ? '#28a745' : '#dc3545'
+                        }}>
+                          {regularHoney >= recipe.honeyRequirement.regular ? '✓' : '✗'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              {recipe.honeyRequirement.golden > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  backgroundColor: goldenHoney !== undefined && goldenHoney >= recipe.honeyRequirement.golden ? '#f8fff8' : '#fff8f8',
+                  border: `1px solid ${goldenHoney !== undefined && goldenHoney >= recipe.honeyRequirement.golden ? '#d4edda' : '#f5c6cb'}`,
+                  borderRadius: '6px',
+                  marginBottom: '6px'
+                }}>
+                  <span style={{
+                    fontWeight: 'bold',
+                    color: '#FFD700'
+                  }}>
+                    Golden Honey × {formatNumber(recipe.honeyRequirement.golden, 3)}
+                  </span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {goldenHoney !== undefined && (
+                      <>
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#666'
+                        }}>
+                          (Have: {formatNumber(goldenHoney, 3)})
+                        </span>
+                        <span style={{
+                          fontSize: '18px',
+                          color: goldenHoney >= recipe.honeyRequirement.golden ? '#28a745' : '#dc3545'
+                        }}>
+                          {goldenHoney >= recipe.honeyRequirement.golden ? '✓' : '✗'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Production Info */}
         <div style={{

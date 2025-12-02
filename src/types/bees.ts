@@ -15,9 +15,9 @@
  * Production timing constants
  */
 export const BEE_CONSTANTS = {
-  BASE_PRODUCTION_TIME: 182, // 6 months in seconds (6 * 30.33 days ≈ 182 seconds)
+  BASE_PRODUCTION_TIME: 132, // Reduced from 182 to account for 50-day winter pause (maintains 2 harvests/year)
   STARTING_BEE_BOXES: 2,
-  MAX_BEE_BOXES: 50,
+  MAX_BEE_BOXES: 30,
   BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% crop yield bonus per box
   UNLOCK_FARM_TIER: 3, // Tier 3+ required to unlock bees
   BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4, // Unlock assistant after owning 4-6 boxes
@@ -142,7 +142,9 @@ export type BeeUpgradeEffectType =
   | 'honeyProduction'    // Increases honey output (e.g., Hexcomb Engineering +5%)
   | 'cropYieldBonus'     // Increases yield bonus per box (e.g., Meadow Magic +0.5%)
   | 'automationSpeed'    // Reduces automation delay (Beekeeper Assistant)
-  | 'goldenHoneyDouble'; // Doubles Golden Honey chance (Queen's Blessing)
+  | 'goldenHoneyDouble'  // Doubles Golden Honey chance (Queen's Blessing)
+  | 'winterProduction'   // Allows production during winter (Winter Hardiness)
+  | 'hiveCapacity';      // Increases maximum number of hives (Hive Expansion)
 
 // ============================================================================
 // BEEKEEPER ASSISTANT

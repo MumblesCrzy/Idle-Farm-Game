@@ -23,9 +23,9 @@ import { useGameLoop } from '../hooks/useGameLoop';
 
 // Import constants
 const BEE_CONSTANTS_IMPL = {
-  BASE_PRODUCTION_TIME: 182,
+  BASE_PRODUCTION_TIME: 132, // Reduced from 182 to account for 50-day winter pause (maintains 2 harvests/year)
   STARTING_BEE_BOXES: 2,
-  MAX_BEE_BOXES: 50,
+  MAX_BEE_BOXES: 30,
   BASE_YIELD_BONUS_PER_BOX: 0.005,
   MAX_YIELD_BONUS: 1.0,
   UNLOCK_FARM_TIER: 4,
@@ -38,6 +38,7 @@ const BeeContext = createContext<BeeContextValue | undefined>(undefined);
 interface BeeProviderProps {
   children: React.ReactNode;
   farmTier?: number; // Current farm tier to check unlock condition
+  season?: string; // Current season (for winter production stoppage)
   onYieldBonusChange?: (bonus: number) => void; // Callback when yield bonus changes
   initialState?: Partial<BeeState>; // Initial state from save file
   onStateChange?: (state: BeeState) => void; // Callback when state changes (for auto-save)
@@ -94,6 +95,7 @@ const createBeekeeperAssistant = (): BeekeeperAssistant => ({
 export const BeeProvider: React.FC<BeeProviderProps> = ({ 
   children, 
   farmTier = 1,
+  season = 'Spring',
   onYieldBonusChange,
   initialState,
   onStateChange,
@@ -238,12 +240,13 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    * Calculate if Golden Honey should be produced based on upgrades
    */
   const calculateGoldenHoneyChance = useCallback((): number => {
-    let chance = 0;
+    // Start with 1% base chance for all players
+    let chance = 0.01;
 
-    // Check for Royal Jelly upgrade (5% base chance)
+    // Check for Royal Jelly upgrade (adds 1% more)
     const royalJelly = upgrades.find(u => u.id === 'royal_jelly' && u.purchased);
     if (royalJelly) {
-      chance += 0.05;
+      chance += 0.01;
     }
 
     // Check for Queen's Blessing (doubles chance)
@@ -396,7 +399,17 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   /**
    * Update production timers based on elapsed time
    */
-  const updateProduction = useCallback((deltaTime: number) => {
+  const updateProduction = useCallback((deltaTime: number, currentSeason?: string) => {
+    // Check if production is halted due to winter (unless Winter Hardiness upgrade is owned)
+    const winterHardinessUpgrade = upgrades.find(u => u.id === 'winter_hardiness');
+    const hasWinterHardiness = winterHardinessUpgrade?.purchased || false;
+    const isWinter = currentSeason === 'Winter';
+    
+    // If it's winter and we don't have Winter Hardiness, don't update production
+    if (isWinter && !hasWinterHardiness) {
+      return;
+    }
+
     const productionTime = calculateProductionTime();
     let newlyReadyCount = 0;
 
@@ -448,7 +461,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
         }
       }, 0);
     }
-  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney, addEventLogEntry]);
+  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney, addEventLogEntry, upgrades]);
 
   /**
    * Check which boxes are ready to harvest
@@ -827,7 +840,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     // Only process offline production if more than 2 seconds have passed
     if (elapsedSeconds > 2) {
       console.log(`Processing ${elapsedSeconds.toFixed(1)}s of offline bee production`);
-      updateProduction(elapsedSeconds);
+      updateProduction(elapsedSeconds, season);
       setLastUpdateTime(now);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -842,11 +855,32 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       const deltaTime = (now - lastUpdateTime) / 1000; // Convert to seconds
       setLastUpdateTime(now);
 
-      updateProduction(deltaTime);
+      updateProduction(deltaTime, season);
     },
     1000, // Update every second
-    [unlocked, boxes.length] // Restart loop when these change
+    [unlocked, boxes.length, season] // Restart loop when these change
   );
+
+  // Update box active status based on season
+  useEffect(() => {
+    const winterHardinessUpgrade = upgrades.find(u => u.id === 'winter_hardiness');
+    const hasWinterHardiness = winterHardinessUpgrade?.purchased || false;
+    const isWinter = season === 'Winter';
+    
+    // Set boxes as inactive during winter unless Winter Hardiness is purchased
+    const shouldBeActive = !isWinter || hasWinterHardiness;
+    
+    setBoxes(prev => {
+      // Check if any box needs to change its active status
+      const needsUpdate = prev.some(box => box.active !== shouldBeActive);
+      if (!needsUpdate) return prev;
+      
+      return prev.map(box => ({
+        ...box,
+        active: shouldBeActive
+      }));
+    });
+  }, [season, upgrades]);
 
   // Notify parent of yield bonus changes
   useEffect(() => {
@@ -878,6 +912,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       honeySpent,
     };
     
+    console.log(`[BeeContext] State changed - Bee boxes: ${boxes.length}`);
     onStateChange(currentState);
   }, [
     unlocked,

@@ -29,6 +29,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     { id: 'upgrades', label: 'Farm Upgrades' },
     { id: 'autopurchase', label: 'Auto-Purchasers' },
     { id: 'canning', label: 'Canning System' },
+    { id: 'bees', label: 'Bee System' },
     { id: 'christmas', label: 'Tree Shop' }
   ];
 
@@ -39,6 +40,7 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
     upgrades: 'Farm Upgrades',
     autopurchase: 'Auto-Purchasers',
     canning: 'Canning System',
+    bees: 'Bee System',
     christmas: 'Christmas Tree Shop'
   };
 

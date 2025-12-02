@@ -116,16 +116,16 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
             <>
               <div className={styles.effect}>
                 {knowledgeCost ? (
-                  `$${formatNumber(cost, 1)} & ${formatNumber(knowledgeCost, 1)} Kn`
+                  `$${formatNumber(cost, 2)} & ${formatNumber(knowledgeCost, 2)} Kn`
                 ) : currencyType === 'money' ? (
-                  `$${formatNumber(cost, 1)}`
+                  `$${formatNumber(cost, 2)}`
                 ) : currencyType === 'regularHoney' || currencyType === 'goldenHoney' ? (
                   <>
-                    {formatNumber(cost, 0)} {renderCurrencyIcon()}
+                    {formatNumber(cost, 2)} {renderCurrencyIcon()}
                   </>
                 ) : (
                   <>
-                    {formatNumber(cost, 1)} {renderCurrencyIcon()}
+                    {formatNumber(cost, 2)} {renderCurrencyIcon()}
                   </>
                 )}
               </div>

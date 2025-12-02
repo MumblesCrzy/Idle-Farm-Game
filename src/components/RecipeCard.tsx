@@ -8,6 +8,8 @@ interface RecipeCardProps {
   onStartCanning: (recipeId: string) => void;
   onShowDetails: (recipe: Recipe) => void;
   veggies: Array<{name: string, stash: number, salePrice: number, betterSeedsLevel: number}>;
+  regularHoney?: number;
+  goldenHoney?: number;
   efficiencyMultiplier?: number; // Family Recipe upgrade multiplier
   speedMultiplier?: number; // Quick Hands upgrade multiplier
   heirloomOwned?: boolean; // Heirloom upgrade multiplier
@@ -20,6 +22,8 @@ const RecipeCard: React.FC<RecipeCardProps> = memo(({
   onStartCanning, 
   onShowDetails,
   veggies,
+  regularHoney: _regularHoney, // Currently unused since all recipes use golden honey
+  goldenHoney: _goldenHoney, // Passed for potential future use
   efficiencyMultiplier = 1,
   speedMultiplier = 1,
   heirloomOwned = false,

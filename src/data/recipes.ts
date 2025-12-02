@@ -227,9 +227,9 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
   {
     id: 'honey_radish_medley',
     name: 'Honey Radish Medley',
-    description: 'Tender radishes preserved in honey brine.',
+    description: 'Tender radishes preserved in golden honey brine.',
     ingredients: [{ veggieName: 'Radish', quantity: 6 }],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier1',
     baseProcessingTime: 50,
     baseSalePrice: 35,
@@ -240,9 +240,9 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
   {
     id: 'sweet_pickled_cucumbers',
     name: 'Sweet Pickled Cucumbers',
-    description: 'Crispy pickles with a delightful honey sweetness.',
+    description: 'Crispy pickles with a delightful golden honey sweetness.',
     ingredients: [{ veggieName: 'Cucumbers', quantity: 5 }],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier1',
     baseProcessingTime: 60,
     baseSalePrice: 65,
@@ -253,9 +253,9 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
   {
     id: 'honey_glazed_carrots',
     name: 'Honey-Glazed Carrots',
-    description: 'Sweet glazed carrots with rich honey coating.',
+    description: 'Sweet glazed carrots with rich golden honey coating.',
     ingredients: [{ veggieName: 'Carrots', quantity: 4 }],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier1',
     baseProcessingTime: 55,
     baseSalePrice: 55,
@@ -274,7 +274,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Lettuce', quantity: 2 },
       { veggieName: 'Green Beans', quantity: 3 }
     ],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier2',
     baseProcessingTime: 75,
     baseSalePrice: 48,
@@ -290,7 +290,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Zucchini', quantity: 3 },
       { veggieName: 'Peppers', quantity: 2 }
     ],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier2',
     baseProcessingTime: 80,
     baseSalePrice: 70,
@@ -307,7 +307,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Green Beans', quantity: 2 }
     ],
-    honeyRequirement: { regular: 1, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.03125 },
     tier: 'tier2',
     baseProcessingTime: 85,
     baseSalePrice: 75,
@@ -325,7 +325,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Onions', quantity: 3 },
       { veggieName: 'Carrots', quantity: 3 }
     ],
-    honeyRequirement: { regular: 2, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.0625 },
     tier: 'tier3',
     baseProcessingTime: 100,
     baseSalePrice: 120,
@@ -341,7 +341,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Peppers', quantity: 4 },
       { veggieName: 'Tomatoes', quantity: 3 }
     ],
-    honeyRequirement: { regular: 2, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.0625 },
     tier: 'tier3',
     baseProcessingTime: 95,
     baseSalePrice: 130,
@@ -358,7 +358,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Radish', quantity: 3 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 2, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.0625 },
     tier: 'tier3',
     baseProcessingTime: 105,
     baseSalePrice: 125,
@@ -378,7 +378,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 3, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.09375 },
     tier: 'tier4',
     baseProcessingTime: 130,
     baseSalePrice: 185,
@@ -395,7 +395,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Carrots', quantity: 3 },
       { veggieName: 'Onions', quantity: 3 }
     ],
-    honeyRequirement: { regular: 3, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.09375 },
     tier: 'tier4',
     baseProcessingTime: 125,
     baseSalePrice: 175,
@@ -414,7 +414,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Broccoli', quantity: 2 }
     ],
-    honeyRequirement: { regular: 3, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.09375 },
     tier: 'tier4',
     baseProcessingTime: 140,
     baseSalePrice: 195,
@@ -430,7 +430,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Carrots', quantity: 3 },
       { veggieName: 'Tomatoes', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 1 },
+    honeyRequirement: { regular: 0, golden: 0.125 },
     tier: 'tier4',
     baseProcessingTime: 90,
     baseSalePrice: 200,
@@ -456,7 +456,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Broccoli', quantity: 2 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 5, golden: 0 },
+    honeyRequirement: { regular: 0, golden: 0.15625 },
     tier: 'tier5',
     baseProcessingTime: 240,
     baseSalePrice: 500,
@@ -469,7 +469,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     name: "Canner's Cocoa (Honey Edition)",
     description: 'Rich cocoa infused with sweet honey - a masterful creation that grants bonus experience.',
     ingredients: [],
-    honeyRequirement: { regular: 3, golden: 1 },
+    honeyRequirement: { regular: 0, golden: 0.125 },
     tier: 'tier5',
     baseProcessingTime: 120,
     baseSalePrice: 250,

@@ -98,7 +98,7 @@ const INITIAL_CANNING_STATE: CanningState = {
 
 // Hook for managing canning system state and logic
 export function useCanningSystem<T extends {name: string, stash: number, salePrice: number, betterSeedsLevel?: number}>(
-  experience: number,
+  // experience: number, // Unused parameter
   veggies: T[],
   setVeggies: React.Dispatch<React.SetStateAction<T[]>>,
   heirloomOwned: boolean,

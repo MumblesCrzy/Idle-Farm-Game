@@ -11,6 +11,8 @@ interface CanningTabProps {
   money: number;
   knowledge: number;
   heirloomOwned: boolean;
+  regularHoney?: number;
+  goldenHoney?: number;
   startCanning: (recipeId: string) => boolean;
   canMakeRecipe: (recipe: any) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
@@ -28,6 +30,8 @@ const CanningTab: React.FC<CanningTabProps> = memo(({
   money,
   knowledge,
   heirloomOwned,
+  regularHoney,
+  goldenHoney,
   startCanning,
   canMakeRecipe,
   purchaseUpgrade,
@@ -45,6 +49,8 @@ const CanningTab: React.FC<CanningTabProps> = memo(({
           canningState={canningState}
           veggies={veggies}
           heirloomOwned={heirloomOwned}
+          regularHoney={regularHoney}
+          goldenHoney={goldenHoney}
           onStartCanning={startCanning}
           canMakeRecipe={canMakeRecipe}
           recipeFilter={recipeFilter}

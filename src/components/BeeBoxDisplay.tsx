@@ -6,11 +6,13 @@ import styles from './BeeBoxDisplay.module.css';
 
 interface BeeBoxDisplayProps {
   box: BeeBox;
+  season: string;
   productionSpeedBonus: number; // Percentage bonus from upgrades (e.g., 0.05 = 5%)
 }
 
 const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
   box,
+  season,
   productionSpeedBonus
 }) => {
   // Calculate actual production time with speed bonus applied
@@ -18,6 +20,10 @@ const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
   
   // Calculate remaining time in seconds
   const remainingTime = Math.max(0, actualProductionTime - box.productionTimer);
+  
+  // Determine if inactive due to winter
+  const isWinter = season === 'Winter';
+  const inactiveReason = !box.active && isWinter ? 'Winter Dormant' : 'Inactive';
 
   return (
     <div className={`${styles.container} ${box.harvestReady ? styles.ready : ''}`}>
@@ -59,7 +65,14 @@ const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
       {/* Status Indicator */}
       {!box.active && (
         <div className={styles.inactiveOverlay}>
-          <span className={styles.inactiveLabel}>Inactive</span>
+          <span className={styles.inactiveLabel}>
+            {inactiveReason}
+            {isWinter && (
+              <span style={{ display: 'block', fontSize: '0.65rem', marginTop: '0.25rem', color: '#6c8bad' }}>
+                Bees hibernate
+              </span>
+            )}
+          </span>
         </div>
       )}
     </div>

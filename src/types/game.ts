@@ -268,7 +268,8 @@ export type EventCategory =
   | 'canning'       // Canning activities (start, complete, upgrades)
   | 'milestone'     // Major achievements (farm tier, experience milestones)
   | 'bees'          // Bee system activities (honey harvest, upgrades, box purchases)
-  | 'christmas';    // Christmas Tree Shop event activities (harvest, sell, craft, upgrades)
+  | 'christmas'     // Christmas Tree Shop event activities (harvest, sell, craft, upgrades)
+  | 'upgrade';      // Farm upgrades (fertilizer, harvester, seeds, etc.)
 
 /**
  * Priority levels for event log entries

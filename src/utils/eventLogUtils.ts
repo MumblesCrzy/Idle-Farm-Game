@@ -88,7 +88,8 @@ export function getCategoryIcon(category: EventCategory): string {
     canning: ICON_CANNING,
     milestone: ICON_MILESTONE,
     bees: ICON_BEE,
-    christmas: '🎄' // Using emoji for christmas tree
+    christmas: '🎄', // Using emoji for christmas tree
+    upgrade: '⬆️' // Using emoji for upgrades
   };
   return icons[category];
 }
@@ -119,7 +120,8 @@ export function getCategoryColor(category: EventCategory): string {
     canning: '#FF5722',     // Deep Orange
     milestone: '#E91E63',   // Pink
     bees: '#FFA500',        // Orange/Amber (bee/honey color)
-    christmas: '#C41E3A'    // Christmas Red
+    christmas: '#C41E3A',   // Christmas Red
+    upgrade: '#00BCD4'      // Cyan (upgrade color)
   };
   return colors[category];
 }
@@ -229,7 +231,8 @@ export function countEventsByCategory(
     canning: 0,
     milestone: 0,
     bees: 0,
-    christmas: 0
+    christmas: 0,
+    upgrade: 0
   };
   
   entries.forEach(entry => {

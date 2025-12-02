@@ -225,7 +225,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
     heirloomMoneyCost,
     heirloomKnowledgeCost,
     highestUnlockedVeggie,
-    farmTier,
+    // farmTier, // Unused
     beeYieldBonus,
     MERCHANT_DAYS,
     MERCHANT_COST,
