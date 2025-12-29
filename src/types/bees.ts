@@ -183,6 +183,7 @@ export interface BeeActions {
   removeBeeBox: (boxId: string) => boolean; // For potential future use
   harvestHoney: (boxId: string) => HoneyProduction | null;
   harvestAllHoney: () => HoneyProduction[];
+  applyOfflineProgress: (progress: OfflineBeeProgress) => void;
   
   // Production
   updateProduction: (deltaTime: number) => void; // Update timers based on elapsed time
@@ -399,4 +400,16 @@ export interface BeeContextValue extends BeeState, BeeActions {
   getBeeBoxPurchaseInfo: () => BeeBoxPurchaseInfo;
   getUpgradeEffect: (upgradeId: string) => UpgradeEffect | null;
   canAffordBeeBox: () => boolean;
+}
+
+export interface OfflineBeeProgress {
+  boxes: BeeBox[];
+  regularHoney: number;
+  goldenHoney: number;
+  totalHoneyCollected: number;
+  totalGoldenHoneyCollected: number;
+  lastUpdateTime: number;
+  honeyGained: number;
+  goldenHoneyGained: number;
+  harvestsProcessed: number;
 }

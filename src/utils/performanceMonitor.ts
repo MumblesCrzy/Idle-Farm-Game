@@ -3,6 +3,8 @@
  * and identifying performance bottlenecks
  */
 
+import { SLOW_RENDER_THRESHOLD_MS, FREQUENT_RENDER_THRESHOLD } from '../config/gameConstants';
+
 interface RenderMetrics {
   id: string;
   phase: 'mount' | 'update' | 'nested-update';
@@ -71,7 +73,7 @@ class PerformanceMonitor {
     this.metrics.get(id)!.push(metric);
 
     // Log slow renders (> 16ms for 60fps)
-    if (actualDuration > 16) {
+    if (actualDuration > SLOW_RENDER_THRESHOLD_MS) {
       console.warn(
         `⚠️ Slow render detected: ${id} took ${actualDuration.toFixed(2)}ms (${phase})`
       );
@@ -136,18 +138,18 @@ class PerformanceMonitor {
     });
 
     // Identify frequently re-rendering components
-    const frequentRenderers = stats.filter(s => s.renderCount > 50);
+    const frequentRenderers = stats.filter(s => s.renderCount > FREQUENT_RENDER_THRESHOLD);
     if (frequentRenderers.length > 0) {
-      console.log('\n⚡ Frequently Re-rendering Components (>50 renders):\n');
+      console.log(`\n⚡ Frequently Re-rendering Components (>${FREQUENT_RENDER_THRESHOLD} renders):\n`);
       frequentRenderers.forEach(stat => {
         console.log(`• ${stat.componentName}: ${stat.renderCount} renders`);
       });
     }
 
     // Identify slow components
-    const slowComponents = stats.filter(s => s.averageTime > 16);
+    const slowComponents = stats.filter(s => s.averageTime > SLOW_RENDER_THRESHOLD_MS);
     if (slowComponents.length > 0) {
-      console.log('\n🐌 Slow Components (avg >16ms for 60fps):\n');
+      console.log(`\n🐌 Slow Components (avg >${SLOW_RENDER_THRESHOLD_MS}ms for 60fps):\n`);
       slowComponents.forEach(stat => {
         console.log(`• ${stat.componentName}: ${stat.averageTime.toFixed(2)}ms average`);
       });

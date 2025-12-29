@@ -32,6 +32,12 @@ export const STORM_CHANCES: Record<string, number> = {
 
 export const HEATWAVE_CHANCE = 0.01; // 1% chance of heatwave any season
 
+// Weather duration thresholds (days before clearing)
+export const RAIN_DURATION_DAYS = 3;
+export const DROUGHT_DURATION_DAYS = 5;
+export const STORM_DURATION_DAYS = 2;
+export const HEATWAVE_DURATION_DAYS = 4;
+
 export const WEATHER_TYPES = ['Clear', 'Rain', 'Drought', 'Storm', 'Heatwave', 'Snow'] as const;
 export type WeatherType = typeof WEATHER_TYPES[number];
 
@@ -199,6 +205,26 @@ export const HEATWAVE_PENALTY = 0.3; // -30% growth in summer
 export const HEATWAVE_SUMMER_VEGGIE_BONUS = 0.2; // +20% for summer veggies in spring/fall
 export const HEATWAVE_WINTER_BONUS = 0.2; // +20% for all veggies in winter
 export const SNOW_PENALTY = 1.0; // -100% growth (complete stop unless greenhouse)
+
+// ============================================================================
+// GROWTH THRESHOLDS
+// ============================================================================
+
+export const GROWTH_COMPLETE_THRESHOLD = 100; // Growth percentage when ready to harvest
+
+// ============================================================================
+// PERFORMANCE MONITORING
+// ============================================================================
+
+export const SLOW_RENDER_THRESHOLD_MS = 16; // 16ms per frame for 60fps
+export const FREQUENT_RENDER_THRESHOLD = 50; // Flag components with >50 renders
+
+// ============================================================================
+// CANNING SYSTEM
+// ============================================================================
+
+export const CANNING_BASE_DURATION_SECONDS = 30; // Base canning time
+export const CANNING_TICK_INTERVAL_MS = 100; // Canning progress tick rate
 
 // ============================================================================
 // KNOWLEDGE SYSTEM

@@ -1,4 +1,5 @@
 import type { Veggie } from '../types/game';
+import { HARVESTER_BASE_TIMER, AUTO_HARVEST_KNOWLEDGE_MULTIPLIER, AUTO_HARVEST_EXPERIENCE_MULTIPLIER, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import type { WeatherType } from '../config/gameConstants';
 import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
@@ -57,7 +58,7 @@ export function processVeggieGrowth(
   const completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> = [];
   
   const newVeggies = veggies.map((v) => {
-    if (!v.unlocked || v.growth >= 100) return v;
+    if (!v.unlocked || v.growth >= GROWTH_COMPLETE_THRESHOLD) return v;
     
     const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned);
     const newGrowth = Math.min(100, v.growth + growthAmount);
@@ -67,7 +68,7 @@ export function processVeggieGrowth(
       const updatedVeggie = { ...v, growth: newGrowth };
       
       // Track when a veggie completes growth (reaches 100%)
-      if (v.growth < 100 && newGrowth >= 100) {
+      if (v.growth < GROWTH_COMPLETE_THRESHOLD && newGrowth >= GROWTH_COMPLETE_THRESHOLD) {
         completedGrowth.push({ veggie: updatedVeggie, growthBonus: growthAmount });
       }
       
@@ -111,11 +112,11 @@ export function processAutoHarvest(
     if (!v.harvesterOwned) return v;
     
     const speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
-    const timerMax = Math.max(1, Math.round(50 / speedMultiplier));
+    const timerMax = Math.max(1, Math.round(HARVESTER_BASE_TIMER / speedMultiplier));
     let newV = v;
 
     // If timer is primed and veggie is ready, harvest immediately
-    if (v.harvesterTimer >= timerMax && v.growth >= 100) {
+    if (v.harvesterTimer >= timerMax && v.growth >= GROWTH_COMPLETE_THRESHOLD) {
       let harvestAmount = 1 + (v.additionalPlotLevel || 0);
       
       // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
@@ -129,10 +130,10 @@ export function processAutoHarvest(
       }
       
       const almanacMultiplier = 1 + (almanacLevel * 0.10);
-      const knowledgeGain = 0.5; // Auto harvest knowledge gain
+      const knowledgeGain = AUTO_HARVEST_KNOWLEDGE_MULTIPLIER; // Auto harvest knowledge gain
       
       // Calculate experience gain for this harvest
-      const experienceGain = (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5);
+      const experienceGain = (harvestAmount * AUTO_HARVEST_EXPERIENCE_MULTIPLIER) + (knowledge * 0.01 * AUTO_HARVEST_EXPERIENCE_MULTIPLIER);
       const totalKnGain = knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
       
       totalExperienceGain += experienceGain;
@@ -157,7 +158,7 @@ export function processAutoHarvest(
       needsUpdate = true;
     } 
     // If timer is primed but veggie is not ready, keep timer at max
-    else if (v.harvesterTimer >= timerMax && v.growth < 100) {
+    else if (v.harvesterTimer >= timerMax && v.growth < GROWTH_COMPLETE_THRESHOLD) {
       if (v.harvesterTimer !== timerMax) {
         needsUpdate = true;
         newV = { ...v, harvesterTimer: timerMax };

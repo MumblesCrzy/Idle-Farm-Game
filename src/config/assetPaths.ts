@@ -132,7 +132,7 @@ export const SPECIAL_COVER_IMAGE = './Cover Image.png';
 
 // Bee System Upgrade Icons
 export const BEE_BUSY_BEES = './Busy Bees.png';
-export const BEE_ROYAL_JELLY = './Royal Jellly.png'; // Note: Typo in filename
+export const BEE_ROYAL_JELLY = './Royal Jelly.png';
 export const BEE_QUEENS_BLESSING = "./Queen's Blessing.png";
 export const BEE_HEXCOMB_ENGINEERING = './Hexcomb Engineering.png';
 export const BEE_MEADOW_MAGIC = './Meadow Magic.png';

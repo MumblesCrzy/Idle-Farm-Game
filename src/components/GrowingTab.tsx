@@ -277,7 +277,7 @@ const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
                 key={v.name}
                 className={`${styles.veggieSelectorButton} ${[ 
                   i === activeVeggie ? 'active' : '',
-                  v.growth >= 100 ? 'ready' : ''
+                  v.growth >= GROWTH_COMPLETE_THRESHOLD ? 'ready' : ''
                 ].filter(Boolean).join(' ')}`}
                 onClick={() => setActiveVeggie(i)}
                 aria-label={`${v.name}. Growth: ${Math.floor(v.growth)}%. Stash: ${v.stash}${i === activeVeggie ? '. Currently selected' : ''}`}

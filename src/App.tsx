@@ -15,6 +15,7 @@ import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
 import Toast from './components/Toast';
 import HarvestTutorial from './components/HarvestTutorial';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ICON_BEE } from './config/assetPaths';
 
 // Module-level harvest callback for event logging
@@ -53,6 +54,30 @@ let justReset = false;
 // Module-level flag to prevent achievement checks during reset
 let blockAchievementChecks = false;
 
+type OverlayErrorProps = { title: string; onClose?: () => void };
+const OverlayError = ({ title, onClose }: OverlayErrorProps) => (
+  <div style={{ padding: '1rem', background: '#2d2d2d', color: '#fff', border: '1px solid #555', borderRadius: '8px', maxWidth: '480px' }}>
+    <h4 style={{ marginTop: 0 }}>{title} unavailable</h4>
+    <p style={{ marginBottom: '0.5rem' }}>Something went wrong loading this section.</p>
+    {onClose && (
+      <button onClick={onClose} style={{ marginTop: '0.25rem' }}>
+        Dismiss
+      </button>
+    )}
+  </div>
+);
+
+type SectionErrorProps = { title: string };
+const SectionError = ({ title }: SectionErrorProps) => (
+  <div style={{ padding: '1rem', background: '#2d2d2d', color: '#fff', border: '1px solid #555', borderRadius: '8px' }}>
+    <h3 style={{ marginTop: 0 }}>{title} encountered an error</h3>
+    <p style={{ marginBottom: '0.5rem' }}>Try reloading the page to continue.</p>
+    <button onClick={() => window.location.reload()} style={{ marginTop: '0.25rem' }}>
+      Reload
+    </button>
+  </div>
+);
+
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
 import DevTools from './components/DevTools';
@@ -70,7 +95,7 @@ import { useEventLog } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProgress';
-import type { Veggie, GameState, EventCategory } from './types/game';
+import type { Veggie, GameState, EventCategory, EventPriority, WeatherType } from './types/game';
 import {
   RAIN_CHANCES,
   DROUGHT_CHANCES,
@@ -85,7 +110,12 @@ import {
   HEIRLOOM_COST_PER_VEGGIE,
   HEIRLOOM_KN_PER_VEGGIE,
   veggieSeasonBonuses,
-  GAME_STORAGE_KEY
+  GAME_STORAGE_KEY,
+  RAIN_DURATION_DAYS,
+  DROUGHT_DURATION_DAYS,
+  STORM_DURATION_DAYS,
+  HEATWAVE_DURATION_DAYS,
+  GROWTH_COMPLETE_THRESHOLD
 } from './config/gameConstants';
 import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
 import styles from './components/App.module.css';
@@ -95,7 +125,8 @@ import {
   calculateExpRequirement,
   calculateInitialCost,
   calculateUpgradeCost,
-  createAutoPurchaserConfigs
+  createAutoPurchaserConfigs,
+  createInitialVeggies
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
@@ -103,18 +134,7 @@ import {
   processVeggieUnlocks
 } from './utils/gameLoopProcessors';
 
-const initialVeggies: Veggie[] = [
-  { name: 'Radish', growth: 0, growthRate: 2.5, stash: 0, unlocked: true, experience: 0, experienceToUnlock: calculateExpRequirement(0), fertilizerLevel: 0, fertilizerCost: calculateInitialCost('fertilizer', 0), harvesterOwned: false, harvesterCost: calculateInitialCost('harvester', 0), harvesterTimer: 0, salePrice: 1, betterSeedsLevel: 0, betterSeedsCost: calculateInitialCost('betterSeeds', 0), harvesterSpeedLevel: 0, harvesterSpeedCost: calculateInitialCost('harvesterSpeed', 0), additionalPlotLevel: 0, additionalPlotCost: calculateInitialCost('additionalPlot', 0), fertilizerMaxLevel: 97, autoPurchasers: createAutoPurchaserConfigs(8, 10, 30*5, 38), sellEnabled: true },
-  { name: 'Lettuce', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(1), fertilizerLevel: 0, fertilizerCost: 20, harvesterOwned: false, harvesterCost: 30, harvesterTimer: 0, salePrice: 2, betterSeedsLevel: 0, betterSeedsCost: 20, harvesterSpeedLevel: 0, harvesterSpeedCost: 100, additionalPlotLevel: 0, additionalPlotCost: 80, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(21, 28, 84*5, 113), sellEnabled: true },
-  { name: 'Green Beans', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(2), fertilizerLevel: 0, fertilizerCost: 30, harvesterOwned: false, harvesterCost: 60, harvesterTimer: 0, salePrice: 3, betterSeedsLevel: 0, betterSeedsCost: 30, harvesterSpeedLevel: 0, harvesterSpeedCost: 200, additionalPlotLevel: 0, additionalPlotCost: 120, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(29, 38, 117*5, 168), sellEnabled: true },
-  { name: 'Zucchini', growth: 0, growthRate: 1.4286, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(3), fertilizerLevel: 0, fertilizerCost: 40, harvesterOwned: false, harvesterCost: 120, harvesterTimer: 0, salePrice: 4, betterSeedsLevel: 0, betterSeedsCost: 40, harvesterSpeedLevel: 0, harvesterSpeedCost: 400, additionalPlotLevel: 0, additionalPlotCost: 160, fertilizerMaxLevel: 98, autoPurchasers: createAutoPurchaserConfigs(41, 54, 164*5, 252), sellEnabled: true },
-  { name: 'Cucumbers', growth: 0, growthRate: 1.25, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(4), fertilizerLevel: 0, fertilizerCost: 50, harvesterOwned: false, harvesterCost: 240, harvesterTimer: 0, salePrice: 5, betterSeedsLevel: 0, betterSeedsCost: 50, harvesterSpeedLevel: 0, harvesterSpeedCost: 800, additionalPlotLevel: 0, additionalPlotCost: 240, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(57, 76, 230*5, 380), sellEnabled: true },
-  { name: 'Tomatoes', growth: 0, growthRate: 1.0526, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(5), fertilizerLevel: 0, fertilizerCost: 60, harvesterOwned: false, harvesterCost: 480, harvesterTimer: 0, salePrice: 6, betterSeedsLevel: 0, betterSeedsCost: 60, harvesterSpeedLevel: 0, harvesterSpeedCost: 1600, additionalPlotLevel: 0, additionalPlotCost: 480, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(80, 106, 323*5, 569), sellEnabled: true },
-  { name: 'Peppers', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(6), fertilizerLevel: 0, fertilizerCost: 70, harvesterOwned: false, harvesterCost: 960, harvesterTimer: 0, salePrice: 7, betterSeedsLevel: 0, betterSeedsCost: 70, harvesterSpeedLevel: 0, harvesterSpeedCost: 3200, additionalPlotLevel: 0, additionalPlotCost: 960, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(113, 150, 452*5, 854), sellEnabled: true },
-  { name: 'Carrots', growth: 0, growthRate: 1.1111, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(7), fertilizerLevel: 0, fertilizerCost: 80, harvesterOwned: false, harvesterCost: 1920, harvesterTimer: 0, salePrice: 8, betterSeedsLevel: 0, betterSeedsCost: 80, harvesterSpeedLevel: 0, harvesterSpeedCost: 6400, additionalPlotLevel: 0, additionalPlotCost: 1920, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(158, 210, 632*5, 1281), sellEnabled: true },
-  { name: 'Broccoli', growth: 0, growthRate: 1, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(8), fertilizerLevel: 0, fertilizerCost: 90, harvesterOwned: false, harvesterCost: 3840, harvesterTimer: 0, salePrice: 9, betterSeedsLevel: 0, betterSeedsCost: 90, harvesterSpeedLevel: 0, harvesterSpeedCost: 12800, additionalPlotLevel: 0, additionalPlotCost: 3840, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(221, 294, 885*5, 1922), sellEnabled: true },
-  { name: 'Onions', growth: 0, growthRate: 0.7692, stash: 0, unlocked: false, experience: 0, experienceToUnlock: calculateExpRequirement(9), fertilizerLevel: 0, fertilizerCost: 100, harvesterOwned: false, harvesterCost: 7680, harvesterTimer: 0, salePrice: 10, betterSeedsLevel: 0, betterSeedsCost: 100, harvesterSpeedLevel: 0, harvesterSpeedCost: 25600, additionalPlotLevel: 0, additionalPlotCost: 7680, fertilizerMaxLevel: 99, autoPurchasers: createAutoPurchaserConfigs(309, 412, 1239*5, 2883), sellEnabled: true },
-];
+const initialVeggies: Veggie[] = createInitialVeggies();
 
 const createAutoPurchaseHandler = (
   autoPurchaseId: string,
@@ -397,16 +417,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Remove all data from localStorage first
   localStorage.removeItem(GAME_STORAGE_KEY);
   
-  // Create fresh veggies with reset auto-purchasers
-  const resetVeggies = initialVeggies.map(v => ({
-    ...v,
-    autoPurchasers: createAutoPurchaserConfigs(
-      v.autoPurchasers[0].cost,
-      v.autoPurchasers[1].cost,
-      v.autoPurchasers[2].cost,
-      v.autoPurchasers[3].cost
-    )
-  }));
+  // Create fresh veggies using the factory function
+  const resetVeggies = createInitialVeggies();
   
   setFarmTier(1);
   setDay(1);
@@ -609,7 +621,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               knowledge: state.knowledge,
               canningProcesses: [],
               canningUpgrades: {},
-              autoCanning: { enabled: false }
+                autoCanning: { enabled: false },
+                beeState: globalBeeContext?.getState?.() || undefined
             });
             
             // Apply the offline progress to game state
@@ -643,6 +656,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                     currentChristmasEvent.processDailyElvesCrafting();
                   }
                 }
+              }
+
+              // Process bee system offline production
+              if (offlineResult.beeProgress && globalBeeContext?.applyOfflineProgress) {
+                globalBeeContext.applyOfflineProgress(offlineResult.beeProgress);
               }
               
               // Show a welcome back message
@@ -695,7 +713,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           knowledge: state.knowledge,
           canningProcesses: [],
           canningUpgrades: {},
-          autoCanning: { enabled: false }
+            autoCanning: { enabled: false },
+            beeState: globalBeeContext?.getState?.() || undefined
         });
         
         if (offlineResult.timeElapsed >= 1000) {
@@ -728,6 +747,11 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 currentChristmasEvent.processDailyElvesCrafting();
               }
             }
+          }
+
+          // Process bee system offline production
+          if (offlineResult.beeProgress && globalBeeContext?.applyOfflineProgress) {
+            globalBeeContext.applyOfflineProgress(offlineResult.beeProgress);
           }
           
           const timeAwayStr = formatOfflineTime(offlineResult.timeElapsed);
@@ -1193,6 +1217,20 @@ function App() {
   // ArchieIcon component adds a clickable character that
   // appears randomly on the screen and gives the player money when clicked
   
+  // Initialize bee state for game
+  const [initialBeeState] = useState(() => {
+    try {
+      const loaded = loadGameStateWithCanning();
+      return loaded?.beeState || undefined;
+    } catch (error) {
+      console.error('Error loading bee state:', error);
+      return undefined;
+    }
+  });
+  
+  // Track current bee state for auto-save
+  const [beeState, setBeeState] = useState<any>(null);
+  
   // Info overlay state
   const [showInfoOverlay, setShowInfoOverlay] = useState(false);
   
@@ -1248,42 +1286,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas'>('growing');
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
   
-  // Load initial bee state
-  const [initialBeeState] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      return loaded?.beeState || undefined;
-    } catch (error) {
-      console.error('Error loading bee state:', error);
-      return undefined;
-    }
-  });
-  
-  // Track current bee state for auto-save
-  const [beeState, setBeeState] = useState<any>(null);
-  
-  // Extract honey values from bee state for canning system
-  const regularHoney = beeState?.regularHoney || 0;
-  const goldenHoney = beeState?.goldenHoney || 0;
-  const totalHoneyCollected = beeState?.totalHoneyCollected || 0;
-  
-  // Setters for honey that update bee state
-  const setRegularHoney = useCallback((value: number | ((prev: number) => number)) => {
-    setBeeState((prev: any) => {
-      if (!prev) return prev;
-      const newValue = typeof value === 'function' ? value(prev.regularHoney || 0) : value;
-      return { ...prev, regularHoney: newValue };
-    });
-  }, []);
-  
-  const setGoldenHoney = useCallback((value: number | ((prev: number) => number)) => {
-    setBeeState((prev: any) => {
-      if (!prev) return prev;
-      const newValue = typeof value === 'function' ? value(prev.goldenHoney || 0) : value;
-      return { ...prev, goldenHoney: newValue };
-    });
-  }, []);
-  
   // Load initial canning state fresh each time
   const [initialCanningState] = useState(() => {
     try {
@@ -1314,6 +1316,28 @@ function App() {
 
   const setCanningRecipeSort = useCallback((sort: 'name' | 'profit' | 'time' | 'difficulty') => {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
+  }, []);
+
+  // Extract honey values from bee state for canning system
+  const regularHoney = beeState?.regularHoney || 0;
+  const goldenHoney = beeState?.goldenHoney || 0;
+  const totalHoneyCollected = beeState?.totalHoneyCollected || 0;
+  
+  // Setters for honey that update bee state
+  const setRegularHoney = useCallback((value: number | ((prev: number) => number)) => {
+    setBeeState((prev: any) => {
+      if (!prev) return prev;
+      const newValue = typeof value === 'function' ? value(prev.regularHoney || 0) : value;
+      return { ...prev, regularHoney: newValue };
+    });
+  }, []);
+  
+  const setGoldenHoney = useCallback((value: number | ((prev: number) => number)) => {
+    setBeeState((prev: any) => {
+      if (!prev) return prev;
+      const newValue = typeof value === 'function' ? value(prev.goldenHoney || 0) : value;
+      return { ...prev, goldenHoney: newValue };
+    });
   }, []);
 
   const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus } = useGame();
@@ -1810,6 +1834,28 @@ function App() {
   const lastDayProcessedRef = useRef(day);
   const previousSeasonRef = useRef(season);
   const previousVeggieGrowthRef = useRef<Map<string, number>>(new Map());
+
+  const logWeatherChange = useCallback(
+    (
+      weatherType: WeatherType | string,
+      message: string,
+      details: string,
+      icon: string,
+      previousWeather?: WeatherType | string,
+      priority: EventPriority = 'normal'
+    ) => {
+      eventLog.addEvent('weather', message, {
+        priority,
+        details,
+        icon,
+        metadata: {
+          weatherType: weatherType as WeatherType,
+          previousWeather: previousWeather as WeatherType | undefined,
+        },
+      });
+    },
+    [eventLog]
+  );
   
   // Track growth completions
   useEffect(() => {
@@ -1819,7 +1865,7 @@ function App() {
       const prevGrowth = previousVeggieGrowthRef.current.get(veggie.name) || 0;
       
       // Check if this veggie just completed growth (crossed 100% threshold)
-      if (prevGrowth < 100 && veggie.growth >= 100) {
+      if (prevGrowth < GROWTH_COMPLETE_THRESHOLD && veggie.growth >= GROWTH_COMPLETE_THRESHOLD) {
         const growthBonus = getVeggieGrowthBonus(veggie, season, currentWeather, greenhouseOwned, irrigationOwned);
         const bonusPercent = ((growthBonus / veggie.growthRate) * 100 - 100).toFixed(0);
         
@@ -1902,28 +1948,24 @@ function App() {
       if (roll < rainChance) {
         if(season === 'Winter') {
           setCurrentWeather('Snow');
-          // Log snow event
-          eventLog.addEvent('weather', 'Snow begins to fall', {
-            priority: 'important',
-            details: 'All vegetables stop growing unless you have a Greenhouse',
-            icon: WEATHER_SNOW,
-            metadata: {
-              weatherType: 'Snow',
-              previousWeather: prevWeather
-            }
-          });
+          logWeatherChange(
+            'Snow',
+            'Snow begins to fall',
+            'All vegetables stop growing unless you have a Greenhouse',
+            WEATHER_SNOW,
+            prevWeather,
+            'important'
+          );
         } else {
           setCurrentWeather('Rain');
-          // Log rain event
-          eventLog.addEvent('weather', 'Rain begins to fall', {
-            priority: 'important',
-            details: 'All vegetables receive +20% growth bonus',
-            icon: WEATHER_RAIN,
-            metadata: {
-              weatherType: 'Rain',
-              previousWeather: prevWeather
-            }
-          });
+          logWeatherChange(
+            'Rain',
+            'Rain begins to fall',
+            'All vegetables receive +20% growth bonus',
+            WEATHER_RAIN,
+            prevWeather,
+            'important'
+          );
         }
         rainDaysRef.current = 1;
         droughtDaysRef.current = 0;
@@ -1931,54 +1973,48 @@ function App() {
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance) {
         setCurrentWeather('Drought');
-        // Log drought event
-        eventLog.addEvent('weather', 'Drought has begun', {
-          priority: 'critical',
-          details: irrigationOwned 
+        logWeatherChange(
+          'Drought',
+          'Drought has begun',
+          irrigationOwned 
             ? 'Irrigation system protecting crops from drought' 
             : '-50% growth penalty. Consider purchasing Irrigation',
-          icon: WEATHER_DROUGHT,
-          metadata: {
-            weatherType: 'Drought',
-            previousWeather: prevWeather
-          }
-        });
+          WEATHER_DROUGHT,
+          prevWeather,
+          'critical'
+        );
         droughtDaysRef.current = 1;
         rainDaysRef.current = 0;
         stormDaysRef.current = 0;
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance + stormChance) {
         setCurrentWeather('Storm');
-        // Log storm event
-        eventLog.addEvent('weather', 'Severe storm approaching', {
-          priority: 'important',
-          details: 'All vegetables receive +10% growth bonus',
-          icon: WEATHER_STORM,
-          metadata: {
-            weatherType: 'Storm',
-            previousWeather: prevWeather
-          }
-        });
+        logWeatherChange(
+          'Storm',
+          'Severe storm approaching',
+          'All vegetables receive +10% growth bonus',
+          WEATHER_STORM,
+          prevWeather,
+          'important'
+        );
         stormDaysRef.current = 1;
         rainDaysRef.current = 0;
         droughtDaysRef.current = 0;
         heatwaveDaysRef.current = 0;
       } else if (roll < rainChance + droughtChance + stormChance + heatwaveChance) {
         setCurrentWeather('Heatwave');
-        // Log heatwave event
-        eventLog.addEvent('weather', 'Heatwave has begun', {
-          priority: 'critical',
-          details: season === 'Summer' 
+        logWeatherChange(
+          'Heatwave',
+          'Heatwave has begun',
+          season === 'Summer' 
             ? '-30% growth penalty in Summer'
             : season === 'Winter'
             ? '+20% growth bonus in Winter'
             : '+20% bonus to summer vegetables',
-          icon: WEATHER_HEATWAVE,
-          metadata: {
-            weatherType: 'Heatwave',
-            previousWeather: prevWeather
-          }
-        });
+          WEATHER_HEATWAVE,
+          prevWeather,
+          'critical'
+        );
         heatwaveDaysRef.current = 1;
         rainDaysRef.current = 0;
         droughtDaysRef.current = 0;
@@ -1990,22 +2026,20 @@ function App() {
         heatwaveDaysRef.current = 0;
       }
     }
-    // If it's rain, after 3 days revert to clear
+    // If it's rain, after N days revert to clear
     if (currentWeather === 'Rain' || currentWeather === 'Snow') {
       rainDaysRef.current++;
-      if (rainDaysRef.current > 3) {
+      if (rainDaysRef.current > RAIN_DURATION_DAYS) {
         const weatherThatCleared = currentWeather; // Capture before state change
         setCurrentWeather('Clear');
-        // Log weather clearing
-        eventLog.addEvent('weather', `${weatherThatCleared === 'Snow' ? 'Snow' : 'Rain'} has cleared`, {
-          priority: 'normal',
-          details: 'Weather returns to normal',
-          icon: WEATHER_CLEAR,
-          metadata: {
-            weatherType: 'Clear',
-            previousWeather: weatherThatCleared
-          }
-        });
+        logWeatherChange(
+          'Clear',
+          `${weatherThatCleared === 'Snow' ? 'Snow' : 'Rain'} has cleared`,
+          'Weather returns to normal',
+          WEATHER_CLEAR,
+          weatherThatCleared,
+          'normal'
+        );
         rainDaysRef.current = 0;
       }
     }
@@ -2013,72 +2047,64 @@ function App() {
     if (currentWeather === 'Drought') {
       setKnowledge((k: number) => k + 1);
       droughtDaysRef.current++;
-      if (droughtDaysRef.current > 5) {
+      if (droughtDaysRef.current > DROUGHT_DURATION_DAYS) {
         setCurrentWeather('Clear');
-        // Log drought ending
-        eventLog.addEvent('weather', 'Drought has ended', {
-          priority: 'normal',
-          details: 'Weather returns to normal',
-          icon: WEATHER_CLEAR,
-          metadata: {
-            weatherType: 'Clear',
-            previousWeather: 'Drought'
-          }
-        });
+        logWeatherChange(
+          'Clear',
+          'Drought has ended',
+          'Weather returns to normal',
+          WEATHER_CLEAR,
+          'Drought',
+          'normal'
+        );
         droughtDaysRef.current = 0;
       }
     }
-    // If it's storm, after 2 days revert to clear
+    // If it's storm, after N days revert to clear
     if (currentWeather === 'Storm') {
       stormDaysRef.current++;
-      if (stormDaysRef.current > 2) {
+      if (stormDaysRef.current > STORM_DURATION_DAYS) {
         setCurrentWeather('Clear');
-        // Log storm ending
-        eventLog.addEvent('weather', 'Storm has passed', {
-          priority: 'normal',
-          details: 'Weather returns to normal',
-          icon: WEATHER_CLEAR,
-          metadata: {
-            weatherType: 'Clear',
-            previousWeather: 'Storm'
-          }
-        });
+        logWeatherChange(
+          'Clear',
+          'Storm has passed',
+          'Weather returns to normal',
+          WEATHER_CLEAR,
+          'Storm',
+          'normal'
+        );
         stormDaysRef.current = 0;
       }
     }
-    // If it's heatwave, after 4 days revert to clear
+    // If it's heatwave, after N days revert to clear
     if (currentWeather === 'Heatwave') {
       heatwaveDaysRef.current++;
-      if (heatwaveDaysRef.current > 4) {
+      if (heatwaveDaysRef.current > HEATWAVE_DURATION_DAYS) {
         // If heatwave was in summer, trigger drought next
         if (season === 'Summer') {
           setCurrentWeather('Drought');
-          // Log heatwave causing drought
-          eventLog.addEvent('weather', 'Heatwave causes drought', {
-            priority: 'critical',
-            details: 'The intense heat has dried out the soil',
-            icon: WEATHER_HEATWAVE,
-            metadata: {
-              weatherType: 'Drought',
-              previousWeather: 'Heatwave'
-            }
-          });
+          logWeatherChange(
+            'Drought',
+            'Heatwave causes drought',
+            'The intense heat has dried out the soil',
+            WEATHER_HEATWAVE,
+            'Heatwave',
+            'critical'
+          );
           droughtDaysRef.current = 1;
           rainDaysRef.current = 0;
           stormDaysRef.current = 0;
           heatwaveDaysRef.current = 0;
         } else {
           setCurrentWeather('Clear');
-          // Log heatwave ending
-          eventLog.addEvent('weather', 'Heatwave has ended', {
-            priority: 'normal',
-            details: 'Weather returns to normal',
-            icon: WEATHER_CLEAR,
-            metadata: {
-              weatherType: 'Clear',
-              previousWeather: 'Heatwave'
-            }
-          });
+          logWeatherChange(
+            'Clear',
+            'Heatwave has ended',
+            'Weather returns to normal',
+            WEATHER_CLEAR,
+            'Heatwave',
+            'normal'
+          );
           heatwaveDaysRef.current = 0;
         }
       }
@@ -2086,7 +2112,7 @@ function App() {
     
     // Update previous weather ref at the end
     previousWeatherRef.current = currentWeather;
-  }, [day, season, eventLog, irrigationOwned, setCurrentWeather, setKnowledge]);
+  }, [day, season, eventLog, irrigationOwned, setCurrentWeather, setKnowledge, logWeatherChange]);
   const v = veggies[activeVeggie];
   const growthMultiplier = getVeggieGrowthBonus(
     v,
@@ -2177,6 +2203,7 @@ function App() {
       christmasTreesSold={christmasEvent?.totalTreesSold ?? 0}
       earnCheer={christmasEvent?.earnCheer}
     />
+    <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
     <div className={styles.container}>
       <div className={styles.mainContent}>
         <header role="banner">
@@ -2607,132 +2634,151 @@ function App() {
       </main>
       </div>
     </div>
+    </ErrorBoundary>
     
     {/* Info Overlay */}
-    <InfoOverlay
-      visible={showInfoOverlay}
-      onClose={() => setShowInfoOverlay(false)}
-      GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
-      GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Info" onClose={() => setShowInfoOverlay(false)} />} onReset={() => setShowInfoOverlay(false)}>
+      <InfoOverlay
+        visible={showInfoOverlay}
+        onClose={() => setShowInfoOverlay(false)}
+        GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
+        GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
+      />
+    </ErrorBoundary>
     
     {/* Settings Overlay */}
-    <SettingsOverlay
-      visible={showSettingsOverlay}
-      onClose={() => setShowSettingsOverlay(false)}
-      soundEnabled={soundEnabled}
-      setSoundEnabled={setSoundEnabled}
-      archieAppearance={archieAppearance}
-      setArchieAppearance={setArchieAppearance}
-      unlockedAchievements={achievements.filter(a => a.unlocked).map(a => a.id)}
-      handleExportSave={handleExportSave}
-      handleImportSave={handleImportSave}
-      handleResetGame={handleResetGame}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Settings" onClose={() => setShowSettingsOverlay(false)} />} onReset={() => setShowSettingsOverlay(false)}>
+      <SettingsOverlay
+        visible={showSettingsOverlay}
+        onClose={() => setShowSettingsOverlay(false)}
+        soundEnabled={soundEnabled}
+        setSoundEnabled={setSoundEnabled}
+        archieAppearance={archieAppearance}
+        setArchieAppearance={setArchieAppearance}
+        unlockedAchievements={achievements.filter(a => a.unlocked).map(a => a.id)}
+        handleExportSave={handleExportSave}
+        handleImportSave={handleImportSave}
+        handleResetGame={handleResetGame}
+      />
+    </ErrorBoundary>
 
     {/* Advanced Stash Display Overlay */}
-    <AdvancedStashDisplay
-      visible={showAdvancedStash}
-      onClose={() => setShowAdvancedStash(false)}
-      veggies={veggies}
-      greenhouseOwned={greenhouseOwned}
-      irrigationOwned={irrigationOwned}
-      day={day}
-      onToggleSell={handleToggleSell}
-      beeYieldBonus={beeYieldBonus}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Stash" onClose={() => setShowAdvancedStash(false)} />} onReset={() => setShowAdvancedStash(false)}>
+      <AdvancedStashDisplay
+        visible={showAdvancedStash}
+        onClose={() => setShowAdvancedStash(false)}
+        veggies={veggies}
+        greenhouseOwned={greenhouseOwned}
+        irrigationOwned={irrigationOwned}
+        day={day}
+        onToggleSell={handleToggleSell}
+        beeYieldBonus={beeYieldBonus}
+      />
+    </ErrorBoundary>
 
     {/* Achievements Overlay */}
-    <AchievementDisplay
-      visible={showAchievements}
-      onClose={() => setShowAchievements(false)}
-      achievements={achievements}
-      totalUnlocked={totalUnlocked}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Achievements" onClose={() => setShowAchievements(false)} />} onReset={() => setShowAchievements(false)}>
+      <AchievementDisplay
+        visible={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        achievements={achievements}
+        totalUnlocked={totalUnlocked}
+      />
+    </ErrorBoundary>
 
     {/* Achievement Notification */}
-    <AchievementNotification
-      achievement={lastUnlockedAchievement}
-      onClose={clearLastUnlocked}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Achievement notification" onClose={clearLastUnlocked} />} onReset={clearLastUnlocked}>
+      <AchievementNotification
+        achievement={lastUnlockedAchievement}
+        onClose={clearLastUnlocked}
+      />
+    </ErrorBoundary>
 
     {/* Event Log Overlay */}
-    <EventLogOverlay
-      visible={showEventLog}
-      onClose={() => setShowEventLog(false)}
-      entries={eventLog.entries}
-      unreadCount={eventLog.getUnreadCountForCategories(enabledEventCategories)}
-      onMarkAsRead={eventLog.markAllAsRead}
-      onClearAll={eventLog.clearEvents}
-      getFilteredEvents={eventLog.getFilteredEvents}
-      getCategoryCounts={eventLog.getCategoryCounts}
-      enabledCategories={enabledEventCategories}
-      onEnabledCategoriesChange={setEnabledEventCategories}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Event Log" onClose={() => setShowEventLog(false)} />} onReset={() => setShowEventLog(false)}>
+      <EventLogOverlay
+        visible={showEventLog}
+        onClose={() => setShowEventLog(false)}
+        entries={eventLog.entries}
+        unreadCount={eventLog.getUnreadCountForCategories(enabledEventCategories)}
+        onMarkAsRead={eventLog.markAllAsRead}
+        onClearAll={eventLog.clearEvents}
+        getFilteredEvents={eventLog.getFilteredEvents}
+        getCategoryCounts={eventLog.getCategoryCounts}
+        enabledCategories={enabledEventCategories}
+        onEnabledCategoriesChange={setEnabledEventCategories}
+      />
+    </ErrorBoundary>
 
     {/* Harvest Tutorial Overlay */}
-    <HarvestTutorial
-      isVisible={showHarvestTutorial}
-      onDismiss={handleDismissHarvestTutorial}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Harvest tutorial" onClose={handleDismissHarvestTutorial} />} onReset={handleDismissHarvestTutorial}>
+      <HarvestTutorial
+        isVisible={showHarvestTutorial}
+        onDismiss={handleDismissHarvestTutorial}
+      />
+    </ErrorBoundary>
 
     {/* DevTools - Only visible in development mode */}
-    <DevTools
-      onAddMoney={(amount) => setMoney(prev => prev + amount)}
-      onAddExperience={(amount) => setExperience(prev => prev + amount)}
-      onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
-      onSkipDays={(days) => setDay(prev => prev + days)}
-      onResetGame={handleResetGame}
-      onAddHolidayCheer={christmasEvent?.earnCheer}
-      onHarvestAllTrees={christmasEvent?.harvestAllTrees}
-      onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
-      onAddTreeMaterials={() => {
-        if (christmasEvent?.eventState) {
-          // Add 100 of each material type
-          const materials = christmasEvent.eventState.materials;
-          materials.pinecones += 100;
-          materials.berries += 100;
-          materials.ribbons += 100;
-          materials.woodPlanks += 100;
-          materials.metalWire += 100;
-          materials.glassBeads += 100;
-        }
-      }}
-      onAddHoney={(amount) => {
-        if (globalBeeContext?.devAddHoney) {
-          globalBeeContext.devAddHoney(amount);
-        }
-      }}
-      onAddGoldenHoney={(amount) => {
-        if (globalBeeContext?.devAddGoldenHoney) {
-          globalBeeContext.devAddGoldenHoney(amount);
-        }
-      }}
-      onHarvestAllHoney={() => {
-        if (globalBeeContext?.harvestAllHoney) {
-          globalBeeContext.harvestAllHoney();
-        }
-      }}
-      onCompleteAllBoxes={() => {
-        if (globalBeeContext?.devCompleteAllBoxes) {
-          globalBeeContext.devCompleteAllBoxes();
-        }
-      }}
-      onAddBeeBox={() => {
-        if (globalBeeContext?.addBeeBox) {
-          globalBeeContext.addBeeBox();
-        }
-      }}
-    />
+    <ErrorBoundary fallback={<OverlayError title="DevTools" />}>
+      <DevTools
+        onAddMoney={(amount) => setMoney(prev => prev + amount)}
+        onAddExperience={(amount) => setExperience(prev => prev + amount)}
+        onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
+        onSkipDays={(days) => setDay(prev => prev + days)}
+        onResetGame={handleResetGame}
+        onAddHolidayCheer={christmasEvent?.earnCheer}
+        onHarvestAllTrees={christmasEvent?.harvestAllTrees}
+        onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
+        onAddTreeMaterials={() => {
+          if (christmasEvent?.eventState) {
+            // Add 100 of each material type
+            const materials = christmasEvent.eventState.materials;
+            materials.pinecones += 100;
+            materials.berries += 100;
+            materials.ribbons += 100;
+            materials.woodPlanks += 100;
+            materials.metalWire += 100;
+            materials.glassBeads += 100;
+          }
+        }}
+        onAddHoney={(amount) => {
+          if (globalBeeContext?.devAddHoney) {
+            globalBeeContext.devAddHoney(amount);
+          }
+        }}
+        onAddGoldenHoney={(amount) => {
+          if (globalBeeContext?.devAddGoldenHoney) {
+            globalBeeContext.devAddGoldenHoney(amount);
+          }
+        }}
+        onHarvestAllHoney={() => {
+          if (globalBeeContext?.harvestAllHoney) {
+            globalBeeContext.harvestAllHoney();
+          }
+        }}
+        onCompleteAllBoxes={() => {
+          if (globalBeeContext?.devCompleteAllBoxes) {
+            globalBeeContext.devCompleteAllBoxes();
+          }
+        }}
+        onAddBeeBox={() => {
+          if (globalBeeContext?.addBeeBox) {
+            globalBeeContext.addBeeBox();
+          }
+        }}
+      />
+    </ErrorBoundary>
 
     {/* Magical Register Bonus Toast */}
-    <Toast
-      message={magicalRegisterToast.message}
-      type="success"
-      visible={magicalRegisterToast.visible}
-      duration={3000}
-      onClose={() => setMagicalRegisterToast({ visible: false, message: '' })}
-    />
+    <ErrorBoundary fallback={<OverlayError title="Toast" onClose={() => setMagicalRegisterToast({ visible: false, message: '' })} />} onReset={() => setMagicalRegisterToast({ visible: false, message: '' })}>
+      <Toast
+        message={magicalRegisterToast.message}
+        type="success"
+        visible={magicalRegisterToast.visible}
+        duration={3000}
+        onClose={() => setMagicalRegisterToast({ visible: false, message: '' })}
+      />
+    </ErrorBoundary>
     </>
     </BeeProvider>
       )}

@@ -1,5 +1,6 @@
 import { SEASON_BONUS, veggieSeasonBonuses, COST_CONFIGS } from '../config/gameConstants';
 import type { Veggie, AutoPurchaseType, CurrencyType, AutoPurchaseConfig } from '../types/game';
+import { VEGGIE_CONFIGS, type VeggieConfig } from '../data/veggieConfigs';
 
 /**
  * Formats a number with K, M, B, T, Q suffixes for large values
@@ -255,3 +256,59 @@ export const createAutoPurchaserConfigs = (
     timer: 0
   }
 ];
+
+/**
+ * Creates a complete Veggie object from configuration data
+ * This factory function reduces code duplication by generating veggies from a config array
+ * @param config - The veggie configuration object
+ * @returns A fully initialized Veggie object
+ */
+export const createVeggieFromConfig = (config: VeggieConfig): Veggie => {
+  // Helper to get cost value (either direct number or calculated)
+  const getCost = (
+    cost: number | 'calculated',
+    upgradeType: 'fertilizer' | 'harvester' | 'betterSeeds' | 'harvesterSpeed' | 'additionalPlot'
+  ): number => {
+    return cost === 'calculated' ? calculateInitialCost(upgradeType, config.unlockIndex) : cost;
+  };
+
+  return {
+    name: config.name,
+    growth: 0,
+    growthRate: config.growthRate,
+    stash: 0,
+    unlocked: config.unlocked,
+    experience: 0,
+    experienceToUnlock: calculateExpRequirement(config.unlockIndex),
+    fertilizerLevel: 0,
+    fertilizerCost: getCost(config.initialFertilizerCost, 'fertilizer'),
+    harvesterOwned: false,
+    harvesterCost: getCost(config.initialHarvesterCost, 'harvester'),
+    harvesterTimer: 0,
+    salePrice: config.salePrice,
+    betterSeedsLevel: 0,
+    betterSeedsCost: getCost(config.initialBetterSeedsCost, 'betterSeeds'),
+    harvesterSpeedLevel: 0,
+    harvesterSpeedCost: config.initialHarvesterSpeedCost,
+    additionalPlotLevel: 0,
+    additionalPlotCost: config.initialAdditionalPlotCost,
+    fertilizerMaxLevel: config.fertilizerMaxLevel,
+    autoPurchasers: createAutoPurchaserConfigs(
+      config.autoPurchaserCosts[0],
+      config.autoPurchaserCosts[1],
+      config.autoPurchaserCosts[2],
+      config.autoPurchaserCosts[3]
+    ),
+    sellEnabled: true
+  };
+};
+
+/**
+ * Creates the initial veggies array from VEGGIE_CONFIGS
+ * This replaces the hardcoded initialVeggies array in App.tsx
+ * @returns Array of initialized Veggie objects
+ */
+export const createInitialVeggies = (): Veggie[] => {
+  return VEGGIE_CONFIGS.map(config => createVeggieFromConfig(config));
+};
+

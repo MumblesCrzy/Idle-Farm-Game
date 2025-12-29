@@ -15,7 +15,8 @@ import type {
   BeeBoxPurchaseInfo,
   UpgradeEffect,
   HoneyProduction,
-  BeeState
+  BeeState,
+  OfflineBeeProgress
 } from '../types/bees';
 import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
@@ -805,6 +806,18 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   }, []);
 
   /**
+   * Apply offline production results from external simulation
+   */
+  const applyOfflineProgress = useCallback((progress: OfflineBeeProgress) => {
+    setBoxes(progress.boxes);
+    setRegularHoney(progress.regularHoney);
+    setGoldenHoney(progress.goldenHoney);
+    setTotalHoneyCollected(progress.totalHoneyCollected);
+    setTotalGoldenHoneyCollected(progress.totalGoldenHoneyCollected);
+    setLastUpdateTime(progress.lastUpdateTime);
+  }, []);
+
+  /**
    * Get upgrade effect details
    */
   const getUpgradeEffect = useCallback((upgradeId: string): UpgradeEffect | null => {
@@ -966,6 +979,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     calculateProductionRate,
     calculateHoneyProductionMultiplier,
     resetBeeSystem,
+    applyOfflineProgress,
 
     // Helpers
     getBeeStats,
