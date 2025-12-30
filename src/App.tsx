@@ -1,66 +1,39 @@
-import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
 import EventLogOverlay from './components/EventLogOverlay';
-import GrowingTab from './components/GrowingTab';
-import CanningTab from './components/CanningTab';
-import BeesTab from './components/BeesTab';
-import TreeFarmTab from './components/TreeFarmTab';
-import WorkshopTab from './components/WorkshopTab';
-import ShopfrontTab from './components/ShopfrontTab';
+import FeatureFlagsPanel from './components/FeatureFlagsPanel';
+
+// Lazy-loaded tab components for code splitting
+const GrowingTab = lazy(() => import('./components/GrowingTab'));
+const CanningTab = lazy(() => import('./components/CanningTab'));
+const BeesTab = lazy(() => import('./components/BeesTab'));
+const TreeFarmTab = lazy(() => import('./components/TreeFarmTab'));
+const WorkshopTab = lazy(() => import('./components/WorkshopTab'));
+const ShopfrontTab = lazy(() => import('./components/ShopfrontTab'));
+
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
 import Toast from './components/Toast';
 import HarvestTutorial from './components/HarvestTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useEventLog } from './context/EventLogContext';
+import { useGameFlags } from './context/GameFlagsContext';
 import { ICON_BEE } from './config/assetPaths';
 
-// Module-level harvest callback for event logging
-let globalHarvestCallback: ((veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) | null = null;
-
-// Module-level auto-purchase callback for event logging
-let globalAutoPurchaseCallback: ((veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => void) | null = null;
-
-// Module-level merchant sale callback for event logging
-let globalMerchantSaleCallback: ((totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => void) | null = null;
-
-// Module-level achievement unlock callback for event logging
-let globalAchievementUnlockCallback: ((achievement: any) => void) | null = null;
-
-// Module-level achievement reset function
-let globalResetAchievements: (() => void) | null = null;
-
-// Module-level event log clear function
-let globalClearEventLog: (() => void) | null = null;
-
-// Module-level Christmas event callbacks for event logging
-let globalChristmasEventCallbacks = {
-  onTreeSold: null as ((treeType: string, quantity: number, cheerEarned: number) => void) | null,
-  onTreeHarvested: null as ((treeType: string, quality: string) => void) | null,
-  onItemCrafted: null as ((itemName: string, quantity: number) => void) | null,
-  onUpgradePurchased: null as ((upgradeName: string, cost: number) => void) | null,
-  onMilestoneClaimed: null as ((milestoneName: string) => void) | null,
-};
-
 // Module-level bee context reference for dev tools
-let globalBeeContext: any = null;
-
-// Module-level flag to prevent auto-save after game reset
-let justReset = false;
-
-// Module-level flag to prevent achievement checks during reset
-let blockAchievementChecks = false;
+let globalBeeContext: BeeContextValue | null = null;
 
 type OverlayErrorProps = { title: string; onClose?: () => void };
 const OverlayError = ({ title, onClose }: OverlayErrorProps) => (
-  <div style={{ padding: '1rem', background: '#2d2d2d', color: '#fff', border: '1px solid #555', borderRadius: '8px', maxWidth: '480px' }}>
-    <h4 style={{ marginTop: 0 }}>{title} unavailable</h4>
-    <p style={{ marginBottom: '0.5rem' }}>Something went wrong loading this section.</p>
+  <div className={styles.overlayError}>
+    <h4 className={styles.overlayErrorTitle}>{title} unavailable</h4>
+    <p className={styles.overlayErrorText}>Something went wrong loading this section.</p>
     {onClose && (
-      <button onClick={onClose} style={{ marginTop: '0.25rem' }}>
+      <button onClick={onClose} className={styles.overlayErrorButton}>
         Dismiss
       </button>
     )}
@@ -69,18 +42,29 @@ const OverlayError = ({ title, onClose }: OverlayErrorProps) => (
 
 type SectionErrorProps = { title: string };
 const SectionError = ({ title }: SectionErrorProps) => (
-  <div style={{ padding: '1rem', background: '#2d2d2d', color: '#fff', border: '1px solid #555', borderRadius: '8px' }}>
-    <h3 style={{ marginTop: 0 }}>{title} encountered an error</h3>
-    <p style={{ marginBottom: '0.5rem' }}>Try reloading the page to continue.</p>
-    <button onClick={() => window.location.reload()} style={{ marginTop: '0.25rem' }}>
+  <div className={styles.sectionError}>
+    <h3 className={styles.overlayErrorTitle}>{title} encountered an error</h3>
+    <p className={styles.overlayErrorText}>Try reloading the page to continue.</p>
+    <button onClick={() => window.location.reload()} className={styles.overlayErrorButton}>
       Reload
     </button>
   </div>
 );
 
+/**
+ * Loading fallback for lazy-loaded tab components
+ */
+const TabLoadingFallback = () => (
+  <div className={styles.tabLoadingFallback}>
+    <div className={styles.loadingSpinner} />
+    <span>Loading...</span>
+  </div>
+);
+
 import AchievementDisplay from './components/AchievementDisplay';
 import AchievementNotification from './components/AchievementNotification';
-import DevTools from './components/DevTools';
+// DevTools is lazy-loaded since it's only used in development
+const DevTools = lazy(() => import('./components/DevTools'));
 import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
 import { BeeProvider, useBees } from './context/BeeContext';
@@ -91,11 +75,14 @@ import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
 import { useGameLoop, useRobustInterval } from './hooks/useGameLoop';
-import { useEventLog } from './hooks/useEventLog';
+import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, saveGameStateWithCanning } from './utils/saveSystem';
 import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProgress';
 import type { Veggie, GameState, EventCategory, EventPriority, WeatherType } from './types/game';
+import type { BeeState, BeeContextValue } from './types/bees';
+import type { EventUpgrade } from './types/christmasEvent';
+import type { Achievement } from './types/achievements';
 import {
   RAIN_CHANCES,
   DROUGHT_CHANCES,
@@ -133,17 +120,40 @@ import {
   processAutoHarvest,
   processVeggieUnlocks
 } from './utils/gameLoopProcessors';
+import { calculateHarvestRewards } from './utils/harvestCalculations';
+import {
+  buildHarvestEvent,
+  buildAutoPurchaseEvent,
+  buildMerchantSaleEvent,
+  buildAchievementEvent,
+  buildCanningStartEvent,
+  buildCanningCompleteEvent,
+  buildTreeSoldEvent,
+  buildTreeHarvestedEvent,
+  buildItemCraftedEvent,
+  buildUpgradePurchasedEvent,
+  buildMilestoneClaimedEvent
+} from './utils/eventLogUtils';
 
 const initialVeggies: Veggie[] = createInitialVeggies();
+
+// Small helper to keep the latest value in a ref without large dependency arrays
+const useLatestRef = <T,>(value: T) => {
+  const ref = useRef(value);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref;
+};
 
 const createAutoPurchaseHandler = (
   autoPurchaseId: string,
   veggies: Veggie[],
-  setVeggies: React.Dispatch<React.SetStateAction<Veggie[]>>,
+  setVeggies: Dispatch<SetStateAction<Veggie[]>>,
   money: number,
-  setMoney: React.Dispatch<React.SetStateAction<number>>,
+  setMoney: Dispatch<SetStateAction<number>>,
   knowledge: number,
-  setKnowledge: React.Dispatch<React.SetStateAction<number>>,
+  setKnowledge: Dispatch<SetStateAction<number>>,
   maxPlots?: number
 ) => {
   return (index: number) => {
@@ -207,7 +217,11 @@ const GameContext = createContext<GameState | undefined>(undefined);
 
 // Removed unused saveGameState function
 
-const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  // Get event log callback interface and game flags from context
+  const eventLogCallbacks = useEventLog();
+  const { setJustReset, setBlockAchievementChecks } = useGameFlags();
+  
   // Load game state fresh each time - this ensures imports work correctly
   const getLoadedState = () => {
     const result = loadGameStateWithCanning();
@@ -285,45 +299,43 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     initialState: initialChristmasState,
     farmTier,
     onTreeSold: (treeType, quantity, cheerEarned) => {
-      globalChristmasEventCallbacks.onTreeSold?.(treeType, quantity, cheerEarned);
+      eventLogCallbacks.onTreeSold(treeType, quantity, cheerEarned);
     },
     onTreeHarvested: (treeType, quality) => {
-      globalChristmasEventCallbacks.onTreeHarvested?.(treeType, quality);
+      eventLogCallbacks.onTreeHarvested(treeType, quality);
     },
     onItemCrafted: (itemName, quantity) => {
-      globalChristmasEventCallbacks.onItemCrafted?.(itemName, quantity);
+      eventLogCallbacks.onItemCrafted(itemName, quantity);
     },
     onUpgradePurchased: (upgradeName, cost) => {
-      globalChristmasEventCallbacks.onUpgradePurchased?.(upgradeName, cost);
+      eventLogCallbacks.onUpgradePurchased(upgradeName, cost);
     },
     onMilestoneClaimed: (milestoneName) => {
-      globalChristmasEventCallbacks.onMilestoneClaimed?.(milestoneName);
+      eventLogCallbacks.onMilestoneClaimed(milestoneName);
     },
   });
 
   // Irrigation upgrade handler
   const irrigationCost = IRRIGATION_COST;
   const irrigationKnCost = IRRIGATION_KN_COST;
-  const handleBuyIrrigation = () => {
+  const handleBuyIrrigation = useCallback(() => {
     if (!irrigationOwned && money >= irrigationCost && knowledge >= irrigationKnCost) {
       setMoney((m: number) => m - irrigationCost);
       setKnowledge((k: number) => k - irrigationKnCost);
       setIrrigationOwned(true);
       
       // Log irrigation purchase milestone
-      if (globalAchievementUnlockCallback) {
-        globalAchievementUnlockCallback({
-          name: 'Irrigation System',
-          description: 'Installed irrigation system (Drought no longer affects crops)',
-          reward: null,
-          category: 'milestone'
-        });
-      }
+      eventLogCallbacks.onAchievementUnlock({
+        name: 'Irrigation System',
+        description: 'Installed irrigation system (Drought no longer affects crops)',
+        reward: null,
+        category: 'milestone'
+      });
     }
-  };
+  }, [irrigationOwned, money, irrigationCost, knowledge, irrigationKnCost]);
   
   // Farm purchase/reset logic
-  const handleBuyLargerFarm = () => {
+  const handleBuyLargerFarm = useCallback(() => {
     // Calculate new maxPlots (capped at twice the current max)
     const experienceBonus = Math.floor(experience / 100);
     const uncappedMaxPlots = maxPlots + experienceBonus;
@@ -339,7 +351,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
     
     // Reset veggies with fresh auto-purchaser configs
-    const resetVeggies = initialVeggies.map(v => ({
+    const resetVeggies = createInitialVeggies().map(v => ({
       ...v,
       autoPurchasers: createAutoPurchaserConfigs(
         v.autoPurchasers[0].cost,
@@ -352,11 +364,12 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Save current state of irrigation
     // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
     // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
+    // Set activeVeggie to 0 FIRST to prevent rendering issues
+    setActiveVeggie(0);
     setVeggies(resetVeggies);
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(startingExperience);
     setKnowledge(knowledgeKept);
-    setActiveVeggie(0);
     setDay(1);
     setGreenhouseOwned(false);
     setAlmanacLevel(0);
@@ -370,49 +383,45 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
     
     // Log farm tier upgrade milestone
-    if (globalAchievementUnlockCallback) {
-      globalAchievementUnlockCallback({
-        name: `Farm Tier ${newFarmTier}`,
-        description: `Upgraded to Farm Tier ${newFarmTier} with ${newMaxPlots} max plots`,
-        reward: null,
-        category: 'milestone'
-      });
-    }
+    eventLogCallbacks.onAchievementUnlock({
+      name: `Farm Tier ${newFarmTier}`,
+      description: `Upgraded to Farm Tier ${newFarmTier} with ${newMaxPlots} max plots`,
+      reward: null,
+      category: 'milestone'
+    });
     
     // Note: Canning state is preserved - auto-save will handle saving all state including canning
     // No manual save call needed here, the auto-save system will pick up these changes
-  };
+  }, [experience, money, farmTier, knowledge, maxPlots, farmCost]);
   // Removed duplicate loaded declaration and invalid farmTier type usage
   // Farmer's Almanac purchase handler
-  const handleBuyAlmanac = () => {
+  const handleBuyAlmanac = useCallback(() => {
     if (money >= almanacCost) {
       setMoney((m: number) => Math.max(0, m - almanacCost));
       setAlmanacLevel((lvl: number) => lvl + 1);
       setAlmanacCost((cost: number) => Math.ceil(cost * 1.15 + 5));
     }
-  };
+  }, [money, almanacCost]);
   // Auto Sell upgrade purchase handler
-  const handleBuyAutoSell = () => {
+  const handleBuyAutoSell = useCallback(() => {
     if (!autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST) {
       setMoney((m: number) => m - MERCHANT_COST);
       setKnowledge((k: number) => k - MERCHANT_KN_COST);
       setAutoSellOwned(true);
       
       // Log auto-sell purchase milestone
-      if (globalAchievementUnlockCallback) {
-        globalAchievementUnlockCallback({
-          name: 'Merchant Partnership',
-          description: 'Unlocked auto-sell (Merchant buys stashed veggies every 7 days)',
-          reward: null,
-          category: 'milestone'
-        });
-      }
+      eventLogCallbacks.onAchievementUnlock({
+        name: 'Merchant Partnership',
+        description: 'Unlocked auto-sell (Merchant buys stashed veggies every 7 days)',
+        reward: null,
+        category: 'milestone'
+      });
     }
-  };
+  }, [autoSellOwned, money, knowledge]);
   // Reset game handler
   const resetGame = () => {
   // Block achievement checks during reset to prevent re-unlocking
-  blockAchievementChecks = true;
+  setBlockAchievementChecks(true);
   
   // Remove all data from localStorage first
   localStorage.removeItem(GAME_STORAGE_KEY);
@@ -442,9 +451,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   
   // Reset achievements FIRST, before resetting bee system
   // This prevents achievements from being re-unlocked when bee state changes
-  if (globalResetAchievements) {
-    globalResetAchievements();
-  }
+  eventLogCallbacks.resetAchievements();
   
   // Reset bee system (this will trigger beeState update and achievement check)
   if (globalBeeContext?.resetBeeSystem) {
@@ -452,9 +459,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }
   
   // Clear event log
-  if (globalClearEventLog) {
-    globalClearEventLog();
-  }
+  eventLogCallbacks.clearEventLog();
+  
   // Reset Christmas event
   if (christmasEvent?.resetEvent) {
     christmasEvent.resetEvent();
@@ -464,8 +470,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // The auto-save system will save the reset state once justReset becomes false
   setTimeout(() => {
     // Re-enable achievement checks and auto-save after state updates propagate
-    blockAchievementChecks = false;
-    justReset = false;
+    setBlockAchievementChecks(false);
+    setJustReset(false);
     
     // Trigger a state change to ensure auto-save runs with reset values
     // This dummy state change forces the save effect to run
@@ -473,12 +479,12 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, 100);
   
   // Prevent auto-save from running until state updates propagate
-  justReset = true;
+  setJustReset(true);
   };
 
   
   // Auto Harvester Speed upgrade purchase
-  const handleBuyHarvesterSpeed = (index: number) => {
+  const handleBuyHarvesterSpeed = useCallback((index: number) => {
     const v = veggies[index];
     if (v.harvesterOwned && money >= v.harvesterSpeedCost!) {
       setMoney((m: number) => Math.max(0, m - v.harvesterSpeedCost!));
@@ -491,10 +497,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return updated;
       });
     }
-  };
+  }, [veggies, money]);
   
   // Prestige: Better Seeds upgrade purchase
-  const handleBuyBetterSeeds = (index: number) => {
+  const handleBuyBetterSeeds = useCallback((index: number) => {
     const v = veggies[index];
     if (knowledge >= v.betterSeedsCost) {
       const cost = v.betterSeedsCost;
@@ -510,31 +516,30 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return updated;
       });
     }
-  };
+  }, [veggies, knowledge, heirloomOwned]);
   // Heirloom Seeds purchase handler
-  const handleBuyHeirloom = () => {
+  const handleBuyHeirloom = useCallback(() => {
     if (!heirloomOwned && money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost) {
       setMoney((m: number) => m - heirloomMoneyCost);
       setKnowledge((k: number) => k - heirloomKnowledgeCost);
       setHeirloomOwned(true);
       
       // Log heirloom purchase milestone
-      if (globalAchievementUnlockCallback) {
-        globalAchievementUnlockCallback({
-          name: 'Heirloom Seeds Unlocked',
-          description: 'Unlocked Heirloom Seeds (Better Seeds now 1.5x more effective)',
-          reward: null,
-          category: 'milestone'
-        });
-      }
+      eventLogCallbacks.onAchievementUnlock({
+        name: 'Heirloom Seeds Unlocked',
+        description: 'Unlocked Heirloom Seeds (Better Seeds now 1.5x more effective)',
+        reward: null,
+        category: 'milestone'
+      });
       
       // Retroactively update all vegetable prices to reflect the heirloom bonus
       setVeggies((prev) => {
+        const baseVeggies = createInitialVeggies();
         return prev.map((v, index) => {
           if (v.betterSeedsLevel > 0) {
             // Recalculate the sale price with the heirloom multiplier
             // First, calculate the base price (original price before any Better Seeds)
-            const baseSalePrice = initialVeggies[index].salePrice;
+            const baseSalePrice = baseVeggies[index].salePrice;
             // Then apply the heirloom multiplier (1.5x per level instead of 1.25x)
             const newSalePrice = +(baseSalePrice * Math.pow(1.5, v.betterSeedsLevel)).toFixed(2);
             return { ...v, salePrice: newSalePrice };
@@ -543,7 +548,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         });
       });
     }
-  };
+  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost]);
 
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
@@ -622,7 +627,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               canningProcesses: [],
               canningUpgrades: {},
                 autoCanning: { enabled: false },
-                beeState: globalBeeContext?.getState?.() || undefined
+                beeState: globalBeeContext ? {
+                  unlocked: globalBeeContext.unlocked,
+                  boxes: globalBeeContext.boxes,
+                  upgrades: globalBeeContext.upgrades,
+                  beekeeperAssistant: globalBeeContext.beekeeperAssistant,
+                  regularHoney: globalBeeContext.regularHoney,
+                  goldenHoney: globalBeeContext.goldenHoney,
+                  totalHoneyCollected: globalBeeContext.totalHoneyCollected,
+                  totalGoldenHoneyCollected: globalBeeContext.totalGoldenHoneyCollected,
+                } : undefined
             });
             
             // Apply the offline progress to game state
@@ -650,7 +664,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               
               // Process Elves' Bench automation
               if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-                const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+                const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
                 if (elvesBenchOwned) {
                   for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
                     currentChristmasEvent.processDailyElvesCrafting();
@@ -714,7 +728,16 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           canningProcesses: [],
           canningUpgrades: {},
             autoCanning: { enabled: false },
-            beeState: globalBeeContext?.getState?.() || undefined
+            beeState: globalBeeContext ? {
+              unlocked: globalBeeContext.unlocked,
+              boxes: globalBeeContext.boxes,
+              upgrades: globalBeeContext.upgrades,
+              beekeeperAssistant: globalBeeContext.beekeeperAssistant,
+              regularHoney: globalBeeContext.regularHoney,
+              goldenHoney: globalBeeContext.goldenHoney,
+              totalHoneyCollected: globalBeeContext.totalHoneyCollected,
+              totalGoldenHoneyCollected: globalBeeContext.totalGoldenHoneyCollected,
+            } : undefined
         });
         
         if (offlineResult.timeElapsed >= 1000) {
@@ -741,7 +764,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           
           // Process Elves' Bench automation
           if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-            const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+            const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
             if (elvesBenchOwned) {
               for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
                 currentChristmasEvent.processDailyElvesCrafting();
@@ -791,7 +814,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (loaded && loaded.highestUnlockedVeggie === undefined && loaded.veggies) {
       // Find the highest index of unlocked veggies from the loaded save data
-      const currentHighest = loaded.veggies.reduce((highest: number, veggie: any, index: number) => {
+      const currentHighest = loaded.veggies.reduce((highest: number, veggie: Veggie, index: number) => {
         return veggie.unlocked && index > highest ? index : highest;
       }, 0);
       setHighestUnlockedVeggie(currentHighest);
@@ -813,7 +836,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, 1000, [season, currentWeather, greenhouseOwned, irrigationOwned]);
 
   // Greenhouse upgrade purchase handler
-  const handleBuyGreenhouse = () => {
+  const handleBuyGreenhouse = useCallback(() => {
     const greenhouseCost = GREENHOUSE_COST_PER_PLOT * maxPlots;
     const greenhouseKnCost = GREENHOUSE_KN_COST_PER_PLOT * maxPlots;
     if (!greenhouseOwned && money >= greenhouseCost && knowledge >= greenhouseKnCost) {
@@ -822,42 +845,29 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setGreenhouseOwned(true);
       
       // Log greenhouse purchase milestone
-      if (globalAchievementUnlockCallback) {
-        globalAchievementUnlockCallback({
-          name: 'Greenhouse Purchased',
-          description: `Built a greenhouse for ${maxPlots} plots (All plots grow year-round)`,
-          reward: null,
-          category: 'milestone'
-        });
-      }
+      eventLogCallbacks.onAchievementUnlock({
+        name: 'Greenhouse Purchased',
+        description: `Built a greenhouse for ${maxPlots} plots (All plots grow year-round)`,
+        reward: null,
+        category: 'milestone'
+      });
     }
-  };
+  }, [greenhouseOwned, money, maxPlots, knowledge]);
 
-  // Auto Harvester timer for each veggie - using requestAnimationFrame for Chrome compatibility
-  // Use refs to avoid restarting the loop when values change
-  const almanacLevelRef = useRef(almanacLevel);
-  const farmTierRef = useRef(farmTier);
-  const knowledgeRef = useRef(knowledge);
-  const dayRef = useRef(day);
-  const experienceRef = useRef(experience);
-  const maxPlotsRef = useRef(maxPlots);
-  const highestUnlockedVeggieRef = useRef(highestUnlockedVeggie);
-  const beeYieldBonusRef = useRef(beeYieldBonus);
-  const seasonRef = useRef(season);
-  const permanentBonusesRef = useRef(permanentBonuses);
-  
-  useEffect(() => {
-    almanacLevelRef.current = almanacLevel;
-    farmTierRef.current = farmTier;
-    knowledgeRef.current = knowledge;
-    dayRef.current = day;
-    experienceRef.current = experience;
-    maxPlotsRef.current = maxPlots;
-    highestUnlockedVeggieRef.current = highestUnlockedVeggie;
-    beeYieldBonusRef.current = beeYieldBonus;
-    seasonRef.current = season;
-    permanentBonusesRef.current = permanentBonuses;
-  }, [almanacLevel, farmTier, knowledge, day, experience, maxPlots, highestUnlockedVeggie, beeYieldBonus, season, permanentBonuses]);
+  // Latest-value refs to avoid large dependency arrays and restart of loops
+  // Only keep refs that are actually used in game loops
+  const knowledgeRef = useLatestRef(knowledge);
+  const dayRef = useLatestRef(day);
+  const almanacLevelRef = useLatestRef(almanacLevel);
+  const maxPlotsRef = useLatestRef(maxPlots);
+  const farmTierRef = useLatestRef(farmTier);
+  const highestUnlockedVeggieRef = useLatestRef(highestUnlockedVeggie);
+  const beeYieldBonusRef = useLatestRef(beeYieldBonus);
+  const seasonRef = useLatestRef(season);
+  const permanentBonusesRef = useLatestRef(permanentBonuses);
+  const christmasEventRef = useLatestRef(christmasEvent);
+  const experienceRef = useLatestRef(experience);
+  const autoSellOwnedRef = useLatestRef(autoSellOwned);
   
   useGameLoop(() => {
     setVeggies((prev) => {
@@ -877,10 +887,10 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         permanentBonusesRef.current
       );
 
-      // Log auto-harvests if callback is set
-      if (globalHarvestCallback && harvestedVeggies.length > 0) {
+      // Log auto-harvests if there are any (deferred to avoid render-time setState)
+      if (harvestedVeggies.length > 0) {
         harvestedVeggies.forEach(({ veggie, amount, expGain, knGain }) => {
-          globalHarvestCallback!(veggie.name, amount, expGain, knGain, true);
+          logHarvest(veggie.name, amount, expGain, knGain, true);
         });
       }
 
@@ -914,35 +924,24 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }, 1000, []); // Empty deps - refs prevent loop restart
 
   // Unified harvest logic for both auto and manual harvest
-  const harvestVeggie = (index: number, isAutoHarvest: boolean = false, onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) => {
+  const harvestVeggie = useCallback((index: number, isAutoHarvest: boolean = false, onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) => {
     // Calculate harvest amount before the state update
     const v = veggies[index];
     if (v.growth < 100) return; // Early exit if not ready to harvest
     
-    let harvestAmount = 1 + (v.additionalPlotLevel || 0);
+    // Use centralized harvest calculations
+    const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain } = calculateHarvestRewards(
+      v.additionalPlotLevel || 0,
+      season,
+      permanentBonuses,
+      beeYieldBonus,
+      almanacLevel,
+      farmTier,
+      knowledge,
+      isAutoHarvest
+    );
     
-    // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
-    if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
-      harvestAmount = Math.ceil(harvestAmount * 1.05);
-    }
-    
-    // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
-    if (beeYieldBonus > 0) {
-      harvestAmount = Math.ceil(harvestAmount * (1 + beeYieldBonus));
-    }
-    
-    // Since we already checked growth >= 100, we know we'll harvest
-    const almanacMultiplier = 1 + (almanacLevel * 0.10);
-    const knowledgeGain = isAutoHarvest ? 0.5 : 1;
-    
-    // Calculate what the new experience will be after this harvest
-    const experienceGain = isAutoHarvest 
-      ? (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5)
-      : harvestAmount + knowledge * 0.01;
     const newExperience = experience + experienceGain;
-    
-    // Calculate total knowledge gain including all bonuses
-    const totalKnowledgeGain = knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
     
     setVeggies((prev) => {
       const updated = [...prev];
@@ -981,15 +980,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
     if (day >= 1 && day <= 365) {
       setKnowledge((k: number) => k + totalKnowledgeGain);
-      
-      // Apply experience based on harvest type (auto vs manual)
-      if (isAutoHarvest) {
-        // Auto harvest gives half experience
-        setExperience((exp: number) => exp + (harvestAmount * 0.5) + (knowledge * 0.01 * 0.5));
-      } else {
-        // Manual harvest gives full experience
-        setExperience((exp: number) => exp + harvestAmount + knowledge * 0.01);
-      }
+      setExperience((exp: number) => exp + experienceGain);
     }
     
     // Increment total harvests counter
@@ -999,25 +990,35 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     if (onHarvestCallback) {
       onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
     }
-  };
+  }, [veggies, season, permanentBonuses, beeYieldBonus, almanacLevel, knowledge, experience, farmTier, maxPlots, highestUnlockedVeggie, day]);
+
+  // Safe harvest logger to avoid setState during render
+  const logHarvest = useCallback(
+    (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
+      setTimeout(() => {
+        eventLogCallbacks.onHarvest(name, amount, expGain, knGain, isAuto);
+      }, 0);
+    },
+    [eventLogCallbacks]
+  );
 
   // Manual harvest button uses unified logic
-  const handleHarvest = () => {
-    harvestVeggie(activeVeggie, false, globalHarvestCallback || undefined);
-  }
+  const handleHarvest = useCallback(() => {
+    harvestVeggie(activeVeggie, false, logHarvest);
+  }, [harvestVeggie, activeVeggie, logHarvest]);
 
   // Toggle sell enabled for a specific veggie
-  const handleToggleSell = (index: number) => {
+  const handleToggleSell = useCallback((index: number) => {
     setVeggies((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], sellEnabled: !updated[index].sellEnabled };
       return updated;
     });
-  };
+  }, []);
 
   // Fertilizer upgrade purchase
   // Additional Plot upgrade purchase
-  const handleBuyAdditionalPlot = (index: number) => {
+  const handleBuyAdditionalPlot = useCallback((index: number) => {
     const v = veggies[index];
     // Block purchase if maxPlots reached
     if (totalPlotsUsed >= maxPlots) return;
@@ -1032,8 +1033,8 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return updated;
       });
     }
-  };
-  const handleBuyFertilizer = (index: number) => {
+  }, [veggies, totalPlotsUsed, maxPlots, money]);
+  const handleBuyFertilizer = useCallback((index: number) => {
     const v = veggies[index];
     if (money >= v.fertilizerCost) {
       setMoney((m: number) => Math.max(0, m - v.fertilizerCost));
@@ -1046,15 +1047,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return updated;
       });
     }
-  };
+  }, [veggies, money]);
 
   // Generic auto-purchase handler using the new system
-  const handleBuyAutoPurchaser = (autoPurchaseId: string) => {
+  const handleBuyAutoPurchaser = useCallback((autoPurchaseId: string) => {
     return createAutoPurchaseHandler(autoPurchaseId, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, maxPlots);
-  };
+  }, [veggies, money, knowledge, maxPlots]);
 
   // Harvester upgrade purchase
-  const handleBuyHarvester = (index: number) => {
+  const handleBuyHarvester = useCallback((index: number) => {
     const v = veggies[index];
     if (!v.harvesterOwned && money >= v.harvesterCost) {
       setMoney((m: number) => Math.max(0, m - v.harvesterCost));
@@ -1066,7 +1067,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return updated;
       });
     }
-  };
+  }, [veggies, money]);
 
   // Sell handler - memoized to prevent useEffect re-runs
   const handleSell = useCallback((isAutoSell: boolean = false) => {
@@ -1095,9 +1096,9 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     });
     setMoney((m: number) => m + total);
     
-    // Log the sale if callback is set and something was sold
-    if (globalMerchantSaleCallback && total > 0) {
-      (globalMerchantSaleCallback as (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => void)(total, soldVeggies, isAutoSell);
+    // Log the sale if something was sold
+    if (total > 0) {
+      eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
   }, [setVeggies, setMoney]);
 
@@ -1115,19 +1116,15 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       handleBuyAdditionalPlot
     },
     initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
-    onPurchaseCallback: globalAutoPurchaseCallback || undefined
+    onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
   // Day counter timer with auto-sell and auto-purchase logic - using robust interval for better background tab support
-  const autoSellOwnedRef = useRef(autoSellOwned);
   const handleSellRef = useRef(handleSell);
-  const christmasEventRef = useRef(christmasEvent);
-  
+
   useEffect(() => {
-    autoSellOwnedRef.current = autoSellOwned;
     handleSellRef.current = handleSell;
-    christmasEventRef.current = christmasEvent;
-  }, [autoSellOwned, handleSell, christmasEvent]);
+  }, [handleSell]);
   
   useRobustInterval(() => {
     setTotalDaysElapsed((total: number) => total + 1);
@@ -1159,7 +1156,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   // Use useRobustInterval for better background tab performance
   useRobustInterval(() => {
     if (christmasEventRef.current?.isEventActive) {
-      const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false;
+      const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
       if (elvesBenchOwned) {
         christmasEventRef.current.processDailyElvesCrafting();
       }
@@ -1169,7 +1166,7 @@ const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 
   return (
-  <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus }}>
+    <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus }}>
       {children}
     </GameContext.Provider>
   );
@@ -1190,7 +1187,7 @@ interface BeesTabWrapperProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumber }) => {
+const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumber }) => {
   const beeContext = useBees();
   
   // Store bee context globally for dev tools access
@@ -1214,6 +1211,10 @@ const BeesTabWrapper: React.FC<BeesTabWrapperProps> = ({ farmTier, season, forma
 function App() {
   const { soundEnabled, setSoundEnabled, archieAppearance, setArchieAppearance } = useArchie();
   
+  // Get event log callback interface from context and game flags
+  const eventLogCallbacks = useEventLog();
+  const { justReset, blockAchievementChecks } = useGameFlags();
+  
   // ArchieIcon component adds a clickable character that
   // appears randomly on the screen and gives the player money when clicked
   
@@ -1229,7 +1230,7 @@ function App() {
   });
   
   // Track current bee state for auto-save
-  const [beeState, setBeeState] = useState<any>(null);
+  const [beeState, setBeeState] = useState<BeeState | null>(null);
   
   // Info overlay state
   const [showInfoOverlay, setShowInfoOverlay] = useState(false);
@@ -1322,23 +1323,23 @@ function App() {
   const regularHoney = beeState?.regularHoney || 0;
   const goldenHoney = beeState?.goldenHoney || 0;
   const totalHoneyCollected = beeState?.totalHoneyCollected || 0;
-  
+
   // Setters for honey that update bee state
-  const setRegularHoney = useCallback((value: number | ((prev: number) => number)) => {
-    setBeeState((prev: any) => {
-      if (!prev) return prev;
-      const newValue = typeof value === 'function' ? value(prev.regularHoney || 0) : value;
-      return { ...prev, regularHoney: newValue };
-    });
-  }, []);
-  
-  const setGoldenHoney = useCallback((value: number | ((prev: number) => number)) => {
-    setBeeState((prev: any) => {
-      if (!prev) return prev;
-      const newValue = typeof value === 'function' ? value(prev.goldenHoney || 0) : value;
-      return { ...prev, goldenHoney: newValue };
-    });
-  }, []);
+  const createBeeStateUpdater = useCallback(
+    (key: 'regularHoney' | 'goldenHoney') =>
+      (value: number | ((prev: number) => number)) => {
+        setBeeState((prev: BeeState | null) => {
+          if (!prev) return prev;
+          const currentValue = typeof prev[key] === 'number' ? prev[key] : 0;
+          const nextValue = typeof value === 'function' ? (value as (prev: number) => number)(currentValue) : value;
+          return { ...prev, [key]: nextValue };
+        });
+      },
+    []
+  );
+
+  const setRegularHoney = useMemo(() => createBeeStateUpdater('regularHoney'), [createBeeStateUpdater]);
+  const setGoldenHoney = useMemo(() => createBeeStateUpdater('goldenHoney'), [createBeeStateUpdater]);
 
   const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus } = useGame();
 
@@ -1394,7 +1395,7 @@ function App() {
     lastUnlockedId,
     checkAchievements,
     clearLastUnlocked,
-    resetAchievements
+    resetAchievements: _resetAchievements // Available but unused in this component
   } = useAchievements(
     initialAchievementState,
     (moneyReward, knowledgeReward) => {
@@ -1412,15 +1413,10 @@ function App() {
         });
       }
       
-      // Call the global callback if it's set
-      if (globalAchievementUnlockCallback) {
-        globalAchievementUnlockCallback(achievement);
-      }
+      // Call the event log callback
+      eventLogCallbacks.onAchievementUnlock(achievement);
     }
   );
-
-  // Make resetAchievements available to resetGame function
-  globalResetAchievements = resetAchievements;
 
   // Get the last unlocked achievement for notification
   const lastUnlockedAchievement = lastUnlockedId 
@@ -1448,7 +1444,7 @@ function App() {
     }
   });
 
-  const eventLog = useEventLog({
+  const eventLog = useEventLogSystem({
     maxEntries: 100,
     initialState: initialEventLogState,
     farmTier,
@@ -1456,202 +1452,77 @@ function App() {
     totalDaysElapsed
   });
 
-  // Make event log clear function available to resetGame
-  globalClearEventLog = eventLog.clearEvents;
+  // (refs consolidated earlier)
 
-  // Set up harvest logging callback
-  useEffect(() => {
-    globalHarvestCallback = (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
-      eventLog.addEvent('harvest', `Harvested ${veggieName}`, {
-        priority: 'normal',
-        details: isAuto 
-          ? `Auto-harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`
-          : `Manually harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`,
-        icon: isAuto ? ICON_AUTOMATION : ICON_HARVEST,
-        metadata: {
-          veggieName,
-          amount,
-          moneyGained: 0, // Harvesting doesn't directly give money
-          knowledgeGained: knGain,
-          experienceGained: expGain
-        }
-      });
-    };
-    
-    return () => {
-      globalHarvestCallback = null;
-    };
-  }, [eventLog]);
+  // Stable reference for event logging to avoid re-registering callbacks each render
+  const { addEvent } = eventLog;
 
-  // Set up auto-purchase logging callback
+  // Register all event logging callbacks with the context
   useEffect(() => {
-    globalAutoPurchaseCallback = (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => {
-      const upgradeNames: Record<string, string> = {
-        'fertilizer': 'Fertilizer',
-        'betterSeeds': 'Better Seeds',
-        'harvesterSpeed': 'Harvester Speed',
-        'additionalPlot': 'Additional Plot'
-      };
-      
-      const costDisplay = currencyType === 'money' ? `$${cost}` : `${cost} knowledge`;
-      
-      eventLog.addEvent('auto-purchase', `${autoPurchaserName} bought ${upgradeNames[upgradeType]}`, {
-        priority: 'minor',
-        details: `${veggieName} ${upgradeNames[upgradeType]} upgraded to level ${upgradeLevel} (${costDisplay})`,
-        icon: ICON_AUTOMATION,
-        metadata: {
-          veggieName,
-          autoPurchaserName,
-          upgradeType,
-          upgradeLevel,
-          cost
-        }
-      });
-    };
-    
-    return () => {
-      globalAutoPurchaseCallback = null;
-    };
-  }, [eventLog]);
+    eventLogCallbacks.registerCallbacks({
+      onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
+        const opts = buildHarvestEvent(veggieName, amount, expGain, knGain, isAuto, {
+          automation: ICON_AUTOMATION,
+          harvest: ICON_HARVEST
+        });
+        addEvent('harvest', `Harvested ${veggieName}`, opts);
+      },
+      onAutoPurchase: (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => {
+        const opts = buildAutoPurchaseEvent(veggieName, autoPurchaserName, upgradeType, upgradeLevel, cost, currencyType, ICON_AUTOMATION);
+        addEvent('auto-purchase', `${autoPurchaserName} bought ${opts.metadata.upgradeType === 'fertilizer' ? 'Fertilizer' : opts.metadata.upgradeType === 'betterSeeds' ? 'Better Seeds' : opts.metadata.upgradeType === 'harvesterSpeed' ? 'Harvester Speed' : 'Additional Plot'}`, opts);
+      },
+      onMerchantSale: (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => {
+        const opts = buildMerchantSaleEvent(totalMoney, veggiesSold, isAutoSell, {
+          merchant: ICON_MERCHANT,
+          money: ICON_MONEY
+        });
+        addEvent('merchant', isAutoSell ? 'Merchant auto-sold vegetables' : 'Sold vegetables to merchant', opts);
+      },
+      onAchievementUnlock: (achievement: Achievement) => {
+        const opts = buildAchievementEvent(achievement);
+        addEvent('milestone', `Achievement unlocked: ${achievement.name}`, opts);
+      },
+      onTreeSold: (treeType: string, quantity: number, cheerEarned: number) => {
+        const opts = buildTreeSoldEvent(treeType, quantity, cheerEarned);
+        addEvent('christmas', `Sold ${quantity}x ${treeType} tree${quantity > 1 ? 's' : ''}`, opts);
+      },
+      onTreeHarvested: (treeType: string, quality: string) => {
+        const opts = buildTreeHarvestedEvent(treeType, quality);
+        addEvent('christmas', `Harvested ${quality} ${treeType} tree`, opts);
+      },
+      onItemCrafted: (itemName: string, quantity: number) => {
+        const opts = buildItemCraftedEvent(itemName, quantity);
+        addEvent('christmas', `Crafted ${quantity}x ${itemName}`, opts);
+      },
+      onUpgradePurchased: (upgradeName: string, cost: number) => {
+        const opts = buildUpgradePurchasedEvent(upgradeName, cost);
+        addEvent('christmas', `Purchased upgrade: ${upgradeName}`, opts);
+      },
+      onMilestoneClaimed: (milestoneName: string) => {
+        const opts = buildMilestoneClaimedEvent(milestoneName);
+        addEvent('milestone', `Christmas milestone claimed: ${milestoneName}`, opts);
+      }
+    });
 
-  // Set up merchant sale logging callback
-  useEffect(() => {
-    globalMerchantSaleCallback = (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => {
-      // Create summary of what was sold
-      const veggiesList = veggiesSold.map(v => `${v.quantity} ${v.name}`).join(', ');
-      
-      eventLog.addEvent('merchant', isAutoSell ? 'Merchant auto-sold vegetables' : 'Sold vegetables to merchant', {
-        priority: 'important',
-        details: `Sold ${veggiesList} for $${totalMoney}`,
-        icon: isAutoSell ? ICON_MERCHANT : ICON_MONEY,
-        metadata: {
-          moneyGained: totalMoney,
-          veggiesSold: veggiesSold
-        }
-      });
-    };
-    
-    return () => {
-      globalMerchantSaleCallback = null;
-    };
-  }, [eventLog]);
-
-  // Set up canning logging callbacks
-  useEffect(() => {
+    // Set up canning callbacks on window (still needed for canningSystem.ts)
     (window as any).globalCanningStartCallback = (recipeName: string, ingredients: string, processingTime: number, isAuto: boolean) => {
-      eventLog.addEvent('canning', isAuto ? `Auto-canning started: ${recipeName}` : `Started canning: ${recipeName}`, {
-        priority: 'minor',
-        details: `Using ${ingredients} (${processingTime}s)`,
-        icon: isAuto ? ICON_AUTOMATION : ICON_CANNING,
-        metadata: {
-          recipeName,
-          processingTime
-        }
+      const opts = buildCanningStartEvent(recipeName, ingredients, processingTime, isAuto, {
+        automation: ICON_AUTOMATION,
+        canning: ICON_CANNING
       });
+      addEvent('canning', isAuto ? `Auto-canning started: ${recipeName}` : `Started canning: ${recipeName}`, opts);
     };
     
     (window as any).globalCanningCompleteCallback = (recipeName: string, moneyEarned: number, knowledgeEarned: number, itemsProduced: number, isAuto: boolean) => {
-      const bonusText = itemsProduced > 1 ? ` (${itemsProduced} items!)` : '';
-      eventLog.addEvent('canning', isAuto ? `Auto-canning completed: ${recipeName}` : `Completed canning: ${recipeName}`, {
-        priority: 'normal',
-        details: `Earned $${moneyEarned.toFixed(2)} and ${knowledgeEarned} knowledge${bonusText}`,
-        icon: isAuto ? '✅' : '🎉',
-        metadata: {
-          recipeName,
-          moneyGained: moneyEarned,
-          knowledgeGained: knowledgeEarned
-        }
-      });
+      const opts = buildCanningCompleteEvent(recipeName, moneyEarned, knowledgeEarned, itemsProduced, isAuto);
+      addEvent('canning', isAuto ? `Auto-canning completed: ${recipeName}` : `Completed canning: ${recipeName}`, opts);
     };
     
     return () => {
       (window as any).globalCanningStartCallback = null;
       (window as any).globalCanningCompleteCallback = null;
     };
-  }, [eventLog]);
-
-  // Set up achievement/milestone logging callback
-  useEffect(() => {
-    globalAchievementUnlockCallback = (achievement: any) => {
-      const rewardText = achievement.reward 
-        ? (() => {
-            const parts: string[] = [];
-            if (achievement.reward.money) parts.push(`+$${achievement.reward.money}`);
-            if (achievement.reward.knowledge) parts.push(`+${achievement.reward.knowledge} knowledge`);
-            return parts.length > 0 ? ` (${parts.join(', ')})` : '';
-          })()
-        : '';
-      
-      eventLog.addEvent('milestone', `Achievement unlocked: ${achievement.name}`, {
-        priority: 'important',
-        details: `${achievement.description}${rewardText}`,
-        icon: '🏆',
-        metadata: {
-          // Store achievement details in metadata
-        }
-      });
-    };
-    
-    return () => {
-      globalAchievementUnlockCallback = null;
-    };
-  }, [eventLog]);
-
-  // Set up Christmas event logging callbacks
-  useEffect(() => {
-    globalChristmasEventCallbacks.onTreeSold = (treeType: string, quantity: number, cheerEarned: number) => {
-      eventLog.addEvent('christmas', `Sold ${quantity}x ${treeType} tree${quantity > 1 ? 's' : ''}`, {
-        priority: 'normal',
-        details: `Earned ${cheerEarned} Holiday Cheer`,
-        icon: '🎄',
-        metadata: { treeType, quantity, cheerEarned }
-      });
-    };
-    
-    globalChristmasEventCallbacks.onTreeHarvested = (treeType: string, quality: string) => {
-      eventLog.addEvent('christmas', `Harvested ${quality} ${treeType} tree`, {
-        priority: 'minor',
-        details: `Quality: ${quality}`,
-        icon: '🌲',
-        metadata: { treeType, quality }
-      });
-    };
-    
-    globalChristmasEventCallbacks.onItemCrafted = (itemName: string, quantity: number) => {
-      eventLog.addEvent('christmas', `Crafted ${quantity}x ${itemName}`, {
-        priority: 'minor',
-        details: `Created ${quantity} ${itemName}`,
-        icon: '🎨',
-        metadata: { itemName, quantity }
-      });
-    };
-    
-    globalChristmasEventCallbacks.onUpgradePurchased = (upgradeName: string, cost: number) => {
-      eventLog.addEvent('christmas', `Purchased upgrade: ${upgradeName}`, {
-        priority: 'normal',
-        details: `Cost: ${cost} Holiday Cheer`,
-        icon: '⭐',
-        metadata: { upgradeName, cost }
-      });
-    };
-    
-    globalChristmasEventCallbacks.onMilestoneClaimed = (milestoneName: string) => {
-      eventLog.addEvent('milestone', `Christmas milestone claimed: ${milestoneName}`, {
-        priority: 'important',
-        details: milestoneName,
-        icon: '🎁',
-        metadata: { milestoneName }
-      });
-    };
-    
-    return () => {
-      globalChristmasEventCallbacks.onTreeSold = null;
-      globalChristmasEventCallbacks.onTreeHarvested = null;
-      globalChristmasEventCallbacks.onItemCrafted = null;
-      globalChristmasEventCallbacks.onUpgradePurchased = null;
-      globalChristmasEventCallbacks.onMilestoneClaimed = null;
-    };
-  }, [eventLog]);
+  }, [eventLogCallbacks, addEvent]);
 
   // Detect if we just loaded imported data (prevent immediate auto-save)
   useEffect(() => {
@@ -1680,7 +1551,7 @@ function App() {
     if (justReset) {
       return;
     }
-    
+
     if (canningState) {
       const gameState = {
         veggies,
@@ -1719,24 +1590,18 @@ function App() {
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [canningState, uiPreferences, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown]);
+  }, [justReset, canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown]);
 
   // Check achievements periodically
   useEffect(() => {
-    // Skip achievement checks during game reset
     if (blockAchievementChecks) {
       return;
     }
-    
+
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
-    
-    // Debug: Log bee box count for achievement checking
-    if (beeState?.boxes?.length) {
-      console.log(`[Achievement Check] Bee boxes: ${beeState.boxes.length}`);
-    }
-    
+
     checkAchievements({
       money,
       experience,
@@ -1749,7 +1614,7 @@ function App() {
       beeState,
       canningState
     });
-  }, [money, experience, knowledge, veggies, canningState, farmTier, totalHarvests, christmasEvent?.totalTreesSold, beeState, checkAchievements]);
+  }, [blockAchievementChecks, veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState]);
 
   // Debounced save effect - only trigger save if state has actually changed
   // and enough time has passed
@@ -1807,17 +1672,6 @@ function App() {
     }
   }, [activeTab, canningUnlocked]);
 
-  // // Debug buttons for testing
-  // const handleAddDebugMoney = () => {
-  //   setMoney((prev) => prev + 15000);
-  // };
-  // const handleAddDebugExperience = () => {
-  //   setExperience((prev) => prev + 100);
-  // }
-  // const handleAddDebugKnowledge = () => {
-  //   setKnowledge((prev) => prev + 10000);
-  // }
-  
   // Calculate totalPlotsUsed for UI
   // Memoized to prevent expensive recalculation on every render
   const totalPlotsUsed = useMemo(() => 
@@ -2180,11 +2034,12 @@ function App() {
       irrigationOwned={irrigationOwned}
       currentWeather={currentWeather}
       canningState={canningState}
+      beeState={beeState}
       christmasEventState={christmasEvent?.eventState}
       permanentBonuses={permanentBonuses}
       resetGame={resetGame}
     >
-      {({ handleExportSave, handleImportSave, handleResetGame }) => (
+      {({ handleExportSave, handleImportSave, handleResetGame, loadingStates }) => (
     <BeeProvider 
       farmTier={farmTier}
       season={season}
@@ -2204,6 +2059,10 @@ function App() {
       earnCheer={christmasEvent?.earnCheer}
     />
     <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
+    {/* Skip link for keyboard navigation */}
+    <a href="#main-content" className={styles.skipLink}>
+      Skip to main content
+    </a>
     <div className={styles.container}>
       <div className={styles.mainContent}>
         <header role="banner">
@@ -2241,130 +2100,103 @@ function App() {
         </aside>
 
         {/* Tab Navigation */}
-        <div style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #444' }}>
+        <nav aria-label="Game sections" className={styles.tabNav}>
+          <div role="tablist" aria-label="Game tabs" className={styles.tabList}>
             <button
+              role="tab"
+              id="tab-growing"
+              aria-selected={activeTab === 'growing'}
+              aria-controls="panel-growing"
               onClick={() => setActiveTab('growing')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: activeTab === 'growing' ? '#4caf50' : '#333',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: 'pointer',
-                fontWeight: activeTab === 'growing' ? 'bold' : 'normal',
-                fontSize: '1rem',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
+              className={activeTab === 'growing' ? styles.tabButtonGrowingActive : styles.tabButtonGrowing}
             >
-              <img src={ICON_GROWING} alt="Growing" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              <img src={ICON_GROWING} alt="" aria-hidden="true" className={styles.tabIcon} />
               Growing
             </button>
             <button
+              role="tab"
+              id="tab-canning"
+              aria-selected={activeTab === 'canning'}
+              aria-controls="panel-canning"
+              aria-disabled={!canningUnlocked}
               onClick={() => canningUnlocked ? setActiveTab('canning') : null}
               disabled={!canningUnlocked}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: canningUnlocked 
-                  ? (activeTab === 'canning' ? '#ff8503' : '#333')
-                  : '#666',
-                color: canningUnlocked ? '#fff' : '#bbb',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: canningUnlocked ? 'pointer' : 'not-allowed',
-                fontWeight: activeTab === 'canning' ? 'bold' : 'normal',
-                fontSize: '1rem',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                flexDirection: 'column'
-              }}
+              className={
+                !canningUnlocked 
+                  ? styles.tabButtonCanningLocked 
+                  : activeTab === 'canning' 
+                    ? styles.tabButtonCanningActive 
+                    : styles.tabButtonCanning
+              }
               title={canningUnlocked ? 'Canning System' : `Canning unlocks at Farm Tier 3`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <img src={ICON_CANNING} alt="Canning" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: canningUnlocked ? 1 : 0.5 }} />
+              <div className={styles.tabButtonContent}>
+                <img src={ICON_CANNING} alt="" aria-hidden="true" className={canningUnlocked ? styles.tabIcon : styles.tabIconFaded} />
                 Canning
               </div>
-              {/* {!canningUnlocked && (
-                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
-                  Req: {Math.round(5000 - experience).toLocaleString()} exp
-                </div>
-              )} */}
             </button>
             <button
+              role="tab"
+              id="tab-bees"
+              aria-selected={activeTab === 'bees'}
+              aria-controls="panel-bees"
+              aria-disabled={farmTier < 4}
               onClick={() => farmTier >= 4 ? setActiveTab('bees') : null}
               disabled={farmTier < 4}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: farmTier >= 4
-                  ? (activeTab === 'bees' ? '#f39c12' : '#333')
-                  : '#666',
-                color: farmTier >= 4 ? '#fff' : '#bbb',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: farmTier >= 4 ? 'pointer' : 'not-allowed',
-                fontWeight: activeTab === 'bees' ? 'bold' : 'normal',
-                fontSize: '1rem',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                flexDirection: 'column'
-              }}
+              className={
+                farmTier < 4
+                  ? styles.tabButtonBeesLocked
+                  : activeTab === 'bees'
+                    ? styles.tabButtonBeesActive
+                    : styles.tabButtonBees
+              }
               title={farmTier >= 4 ? 'Bee System' : `Bees unlock at Farm Tier 4`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <img src={ICON_BEE} alt="Bee" style={{ width: '20px', height: '20px', opacity: farmTier >= 4 ? 1 : 0.5 }} />
+              <div className={styles.tabButtonContent}>
+                <img src={ICON_BEE} alt="" aria-hidden="true" className={farmTier >= 4 ? styles.tabIcon : styles.tabIconFaded} />
                 Bees
               </div>
               {farmTier < 4 && (
-                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                <div className={styles.tabUnlockHint}>
                   Req: Tier 4
                 </div>
               )}
             </button>
             <button
+              role="tab"
+              id="tab-christmas"
+              aria-selected={activeTab === 'christmas'}
+              aria-controls="panel-christmas"
+              aria-disabled={!christmasEvent?.isEventActive}
               onClick={() => christmasEvent?.isEventActive ? setActiveTab('christmas') : null}
               disabled={!christmasEvent?.isEventActive}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: christmasEvent?.isEventActive 
-                  ? (activeTab === 'christmas' ? '#B80000' : '#3A3638')
-                  : '#666',
-                color: christmasEvent?.isEventActive ? '#ECEDE8' : '#bbb',
-                border: 'none',
-                borderRadius: '8px 8px 0 0',
-                cursor: christmasEvent?.isEventActive ? 'pointer' : 'not-allowed',
-                fontWeight: activeTab === 'christmas' ? 'bold' : 'normal',
-                fontSize: '1rem',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                flexDirection: 'column'
-              }}
+              className={
+                !christmasEvent?.isEventActive
+                  ? styles.tabButtonChristmasLocked
+                  : activeTab === 'christmas'
+                    ? styles.tabButtonChristmasActive
+                    : styles.tabButtonChristmas
+              }
               title={christmasEvent?.isEventActive ? 'Christmas Tree Shop (Nov 1 - Dec 25)' : 'Available November 1st - December 25th'}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <img src={TREE_DECORATED} alt="Tree Shop" style={{ width: '20px', height: '20px', objectFit: 'contain', opacity: christmasEvent?.isEventActive ? 1 : 0.5 }} />
+              <div className={styles.tabButtonContent}>
+                <img src={TREE_DECORATED} alt="" aria-hidden="true" className={christmasEvent?.isEventActive ? styles.tabIcon : styles.tabIconFaded} />
                 Tree Shop
               </div>
               {!christmasEvent?.isEventActive && (
-                <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '2px' }}>
+                <div className={styles.tabUnlockHint}>
                   Nov 1 - Dec 25
                 </div>
               )}
             </button>
           </div>
-        </div>
+        </nav>
 
           {/* Tab Content */}
           <main role="main" id="main-content">
             {activeTab === 'growing' && (
+              <div role="tabpanel" id="panel-growing" aria-labelledby="tab-growing">
+              <Suspense fallback={<TabLoadingFallback />}>
               <PerformanceWrapper id="GrowingTab">
                 <GrowingTab
                 veggies={veggies}
@@ -2420,12 +2252,16 @@ function App() {
                 formatNumber={formatNumber}
               />
             </PerformanceWrapper>
+            </Suspense>
+            </div>
           )}
 
 
       
       {/* Canning Tab Content */}
       {activeTab === 'canning' && (
+        <div role="tabpanel" id="panel-canning" aria-labelledby="tab-canning">
+        <Suspense fallback={<TabLoadingFallback />}>
         <PerformanceWrapper id="CanningTab">
           <CanningTab
             canningState={canningState}
@@ -2446,114 +2282,85 @@ function App() {
             onRecipeSortChange={setCanningRecipeSort}
           />
         </PerformanceWrapper>
+        </Suspense>
+        </div>
       )}
 
       {/* Bees Tab Content */}
       {activeTab === 'bees' && (
+        <div role="tabpanel" id="panel-bees" aria-labelledby="tab-bees">
+        <Suspense fallback={<TabLoadingFallback />}>
         <PerformanceWrapper id="BeesTab">
           <BeesTabWrapper farmTier={farmTier} season={season} formatNumber={formatNumber} />
         </PerformanceWrapper>
+        </Suspense>
+        </div>
       )}
 
       {/* Christmas Tree Shop Tab Content */}
       {activeTab === 'christmas' && christmasEvent?.isEventActive && christmasEvent && (
+        <div role="tabpanel" id="panel-christmas" aria-labelledby="tab-christmas">
+        <Suspense fallback={<TabLoadingFallback />}>
         <PerformanceWrapper id="ChristmasTab">
           {/* Christmas Sub-Tab Navigation */}
-          <div style={{
-            display: 'flex',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-            borderBottom: '2px solid #ddd',
-            paddingBottom: '0.5rem',
-          }}>
+          <div 
+            role="tablist" 
+            aria-label="Christmas sections"
+            className={styles.christmasSubTabList}
+          >
             <button
+              role="tab"
+              id="tab-christmas-farm"
+              aria-selected={christmasSubTab === 'farm'}
+              aria-controls="panel-christmas-farm"
               onClick={() => setChristmasSubTab('farm')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: christmasSubTab === 'farm' ? '#175034' : '#ECEDE8',
-                color: christmasSubTab === 'farm' ? 'white' : '#3A3638',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: christmasSubTab === 'farm' ? 'bold' : 'normal',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
+              className={christmasSubTab === 'farm' ? styles.christmasSubTabFarmActive : styles.christmasSubTabFarm}
             >
-              <img src={ICON_TREE_SHOP} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              <img src={ICON_TREE_SHOP} alt="" aria-hidden="true" className={styles.tabIcon} />
               Tree Farm
             </button>
             <button
+              role="tab"
+              id="tab-christmas-workshop"
+              aria-selected={christmasSubTab === 'workshop'}
+              aria-controls="panel-christmas-workshop"
               onClick={() => setChristmasSubTab('workshop')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: christmasSubTab === 'workshop' ? '#23705D' : '#ECEDE8',
-                color: christmasSubTab === 'workshop' ? 'white' : '#3A3638',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: christmasSubTab === 'workshop' ? 'bold' : 'normal',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
+              className={christmasSubTab === 'workshop' ? styles.christmasSubTabWorkshopActive : styles.christmasSubTabWorkshop}
             >
-              <img src={ICON_TREE_WORKSHOP} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              <img src={ICON_TREE_WORKSHOP} alt="" aria-hidden="true" className={styles.tabIcon} />
               Workshop
             </button>
             <button
+              role="tab"
+              id="tab-christmas-shopfront"
+              aria-selected={christmasSubTab === 'shopfront'}
+              aria-controls="panel-christmas-shopfront"
               onClick={() => setChristmasSubTab('shopfront')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: christmasSubTab === 'shopfront' ? '#B80000' : '#ECEDE8',
-                color: christmasSubTab === 'shopfront' ? 'white' : '#3A3638',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: christmasSubTab === 'shopfront' ? 'bold' : 'normal',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
+              className={christmasSubTab === 'shopfront' ? styles.christmasSubTabShopfrontActive : styles.christmasSubTabShopfront}
             >
-              <img src={ICON_TREE_STOREFRONT} alt="" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+              <img src={ICON_TREE_STOREFRONT} alt="" aria-hidden="true" className={styles.tabIcon} />
               Shopfront
             </button>
             
             {/* Daily Customer Bonus - Only show if Wreath Sign upgrade is owned */}
-            {christmasEvent.eventState.upgrades.find((u: any) => u.id === 'wreath_sign')?.owned && (
+            {christmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'wreath_sign')?.owned && (
               <div
-                style={{
-                  marginLeft: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.5rem 1rem',
-                  background: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0] 
-                    ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)'
-                    : '#ECEDE8',
-                  borderRadius: '8px',
-                  border: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
-                    ? '2px solid #FF8C00'
-                    : '2px solid #D1D5DB',
-                }}
+                className={
+                  christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
+                    ? styles.dailyBonusAvailable
+                    : styles.dailyBonusClaimed
+                }
               >
                 <img 
                   src={DECORATION_WREATH} 
                   alt="Daily Bonus" 
-                  style={{ width: '24px', height: '24px', objectFit: 'contain' }} 
+                  className={styles.dailyBonusIcon}
                 />
-                <span style={{ 
-                  fontWeight: 'bold', 
-                  fontSize: '0.95rem',
-                  color: christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
-                    ? '#3A3638'
-                    : '#9CA3AF'
-                }}>
+                <span className={
+                  christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
+                    ? styles.dailyBonusTextAvailable
+                    : styles.dailyBonusTextClaimed
+                }>
                   {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
                     ? 'Daily Bonus!'
                     : 'Claimed Today'}
@@ -2561,16 +2368,7 @@ function App() {
                 {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0] && (
                   <button
                     onClick={christmasEvent.claimDailyBonus}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: '#175034',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                    }}
+                    className={styles.dailyBonusClaimButton}
                   >
                     Claim
                   </button>
@@ -2581,6 +2379,7 @@ function App() {
 
           {/* Tree Farm Sub-Tab */}
           {christmasSubTab === 'farm' && (
+            <div role="tabpanel" id="panel-christmas-farm" aria-labelledby="tab-christmas-farm">
             <TreeFarmTab
               treePlots={christmasEvent.treePlots}
               materials={christmasEvent.materials}
@@ -2593,27 +2392,31 @@ function App() {
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
               formatNumber={formatNumber}
             />
+            </div>
           )}
 
           {/* Workshop Sub-Tab */}
           {christmasSubTab === 'workshop' && (
+            <div role="tabpanel" id="panel-christmas-workshop" aria-labelledby="tab-christmas-workshop">
             <WorkshopTab
               materials={christmasEvent.materials}
               treeInventory={christmasEvent.eventState.treeInventory}
               craftItem={(recipeId) => christmasEvent.craftItem(recipeId, 1)}
               decorateTree={christmasEvent.decorateTree}
               addToDecorationQueue={christmasEvent.addToDecorationQueue}
-              automationEnabled={christmasEvent.eventState.upgrades.find((u: any) => u.id === 'elves_bench')?.owned ?? false}
+              automationEnabled={christmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false}
               formatNumber={formatNumber}
               upgrades={christmasEvent.eventState.upgrades}
               holidayCheer={christmasEvent.holidayCheer}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
               currentElvesAction={(christmasEvent as unknown as UseChristmasEventReturn).currentElvesAction}
             />
+            </div>
           )}
 
           {/* Shopfront Sub-Tab */}
           {christmasSubTab === 'shopfront' && (
+            <div role="tabpanel" id="panel-christmas-shopfront" aria-labelledby="tab-christmas-shopfront">
             <ShopfrontTab
               treeInventory={christmasEvent.eventState.treeInventory}
               materials={christmasEvent.materials}
@@ -2628,8 +2431,11 @@ function App() {
               formatNumber={formatNumber}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
             />
+            </div>
           )}
         </PerformanceWrapper>
+        </Suspense>
+        </div>
       )}
       </main>
       </div>
@@ -2659,6 +2465,7 @@ function App() {
         handleExportSave={handleExportSave}
         handleImportSave={handleImportSave}
         handleResetGame={handleResetGame}
+        loadingStates={loadingStates}
       />
     </ErrorBoundary>
 
@@ -2718,55 +2525,57 @@ function App() {
       />
     </ErrorBoundary>
 
-    {/* DevTools - Only visible in development mode */}
+    {/* DevTools - Only visible in development mode, lazy loaded */}
     <ErrorBoundary fallback={<OverlayError title="DevTools" />}>
-      <DevTools
-        onAddMoney={(amount) => setMoney(prev => prev + amount)}
-        onAddExperience={(amount) => setExperience(prev => prev + amount)}
-        onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
-        onSkipDays={(days) => setDay(prev => prev + days)}
-        onResetGame={handleResetGame}
-        onAddHolidayCheer={christmasEvent?.earnCheer}
-        onHarvestAllTrees={christmasEvent?.harvestAllTrees}
-        onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
-        onAddTreeMaterials={() => {
-          if (christmasEvent?.eventState) {
-            // Add 100 of each material type
-            const materials = christmasEvent.eventState.materials;
-            materials.pinecones += 100;
-            materials.berries += 100;
-            materials.ribbons += 100;
-            materials.woodPlanks += 100;
-            materials.metalWire += 100;
-            materials.glassBeads += 100;
-          }
-        }}
-        onAddHoney={(amount) => {
-          if (globalBeeContext?.devAddHoney) {
-            globalBeeContext.devAddHoney(amount);
-          }
-        }}
-        onAddGoldenHoney={(amount) => {
-          if (globalBeeContext?.devAddGoldenHoney) {
-            globalBeeContext.devAddGoldenHoney(amount);
-          }
-        }}
-        onHarvestAllHoney={() => {
-          if (globalBeeContext?.harvestAllHoney) {
-            globalBeeContext.harvestAllHoney();
-          }
-        }}
-        onCompleteAllBoxes={() => {
-          if (globalBeeContext?.devCompleteAllBoxes) {
-            globalBeeContext.devCompleteAllBoxes();
-          }
-        }}
-        onAddBeeBox={() => {
-          if (globalBeeContext?.addBeeBox) {
-            globalBeeContext.addBeeBox();
-          }
-        }}
-      />
+      <Suspense fallback={null}>
+        <DevTools
+          onAddMoney={(amount) => setMoney(prev => prev + amount)}
+          onAddExperience={(amount) => setExperience(prev => prev + amount)}
+          onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
+          onSkipDays={(days) => setDay(prev => prev + days)}
+          onResetGame={handleResetGame}
+          onAddHolidayCheer={christmasEvent?.earnCheer}
+          onHarvestAllTrees={christmasEvent?.harvestAllTrees}
+          onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
+          onAddTreeMaterials={() => {
+            if (christmasEvent?.eventState) {
+              // Add 100 of each material type
+              const materials = christmasEvent.eventState.materials;
+              materials.pinecones += 100;
+              materials.berries += 100;
+              materials.ribbons += 100;
+              materials.woodPlanks += 100;
+              materials.metalWire += 100;
+              materials.glassBeads += 100;
+            }
+          }}
+          onAddHoney={(amount) => {
+            if (globalBeeContext?.devAddHoney) {
+              globalBeeContext.devAddHoney(amount);
+            }
+          }}
+          onAddGoldenHoney={(amount) => {
+            if (globalBeeContext?.devAddGoldenHoney) {
+              globalBeeContext.devAddGoldenHoney(amount);
+            }
+          }}
+          onHarvestAllHoney={() => {
+            if (globalBeeContext?.harvestAllHoney) {
+              globalBeeContext.harvestAllHoney();
+            }
+          }}
+          onCompleteAllBoxes={() => {
+            if (globalBeeContext?.devCompleteAllBoxes) {
+              globalBeeContext.devCompleteAllBoxes();
+            }
+          }}
+          onAddBeeBox={() => {
+            if (globalBeeContext?.addBeeBox) {
+              globalBeeContext.addBeeBox();
+            }
+          }}
+        />
+      </Suspense>
     </ErrorBoundary>
 
     {/* Magical Register Bonus Toast */}
@@ -2778,6 +2587,11 @@ function App() {
         duration={3000}
         onClose={() => setMagicalRegisterToast({ visible: false, message: '' })}
       />
+    </ErrorBoundary>
+
+    {/* Feature Flags Dev Panel */}
+    <ErrorBoundary fallback={null}>
+      <FeatureFlagsPanel />
     </ErrorBoundary>
     </>
     </BeeProvider>

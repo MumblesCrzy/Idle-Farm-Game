@@ -1,4 +1,4 @@
-import React, { useEffect, memo } from 'react';
+import { useEffect, memo, type FC, type MouseEvent } from 'react';
 import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
 import type { Veggie } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
@@ -67,7 +67,7 @@ type AdvancedStashDisplayProps = {
   beeYieldBonus?: number; // Decimal format (e.g., 0.05 = 5%)
 };
 
-const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
+const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
   visible,
   onClose,
   veggies,
@@ -91,7 +91,7 @@ const AdvancedStashDisplay: React.FC<AdvancedStashDisplayProps> = memo(({
   }, [visible]);
 
   // Handle backdrop click
-  const handleBackdropClick = (event: React.MouseEvent) => {
+  const handleBackdropClick = (event: MouseEvent) => {
     if (event.target === event.currentTarget) {
       onClose();
     }

@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import ProgressBar from './ProgressBar';
 import type { CanningProcess, Recipe } from '../types/canning';
 import styles from './CanningProcessDisplay.module.css';
@@ -9,7 +9,7 @@ interface CanningProcessDisplayProps {
   maxSimultaneousProcesses?: number;
 }
 
-const CanningProcessDisplay: React.FC<CanningProcessDisplayProps> = ({
+const CanningProcessDisplay: FC<CanningProcessDisplayProps> = ({
   processes,
   recipes,
   maxSimultaneousProcesses

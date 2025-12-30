@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
@@ -23,7 +23,7 @@ interface CanningTabProps {
   onRecipeSortChange: (sort: 'name' | 'profit' | 'time' | 'difficulty') => void;
 }
 
-const CanningTab: React.FC<CanningTabProps> = memo(({
+const CanningTab: FC<CanningTabProps> = memo(({
   canningState,
   canningUnlocked,
   veggies,

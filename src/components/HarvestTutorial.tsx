@@ -5,7 +5,7 @@
  * Points to the harvest button to help new players understand the core mechanic.
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import styles from './HarvestTutorial.module.css';
 
 interface HarvestTutorialProps {
@@ -13,7 +13,7 @@ interface HarvestTutorialProps {
   onDismiss: () => void;
 }
 
-const HarvestTutorial: React.FC<HarvestTutorialProps> = ({ isVisible, onDismiss }) => {
+const HarvestTutorial: FC<HarvestTutorialProps> = ({ isVisible, onDismiss }) => {
   const [shouldRender, setShouldRender] = useState(isVisible);
 
   useEffect(() => {

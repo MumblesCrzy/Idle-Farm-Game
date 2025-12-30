@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 
 // Extended veggie type that includes canning-related upgrades
 export type VeggieWithCanning = {
@@ -29,7 +29,7 @@ interface VeggieCanningUpgradesProps {
   isActive: boolean; // Whether this is the currently selected veggie
 }
 
-const VeggieCanningUpgrades: React.FC<VeggieCanningUpgradesProps> = ({
+const VeggieCanningUpgrades: FC<VeggieCanningUpgradesProps> = ({
   veggie,
   veggieIndex,
   money,

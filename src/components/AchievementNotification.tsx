@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect, memo, type FC } from 'react';
 import type { Achievement } from '../types/achievements';
 import { ICON_TROPHY } from '../config/assetPaths';
 import styles from './AchievementNotification.module.css';
@@ -8,7 +8,7 @@ interface AchievementNotificationProps {
   onClose: () => void;
 }
 
-const AchievementNotification: React.FC<AchievementNotificationProps> = ({
+const AchievementNotification: FC<AchievementNotificationProps> = memo(({
   achievement,
   onClose
 }) => {
@@ -68,6 +68,8 @@ const AchievementNotification: React.FC<AchievementNotificationProps> = ({
       </div>
     </div>
   );
-};
+});
+
+AchievementNotification.displayName = 'AchievementNotification';
 
 export default AchievementNotification;

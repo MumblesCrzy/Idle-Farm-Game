@@ -8,7 +8,7 @@
  * - Elves' Bench automation queue for automated decoration
  */
 
-import React, { memo } from 'react';
+import { memo, useState, type FC, type ReactNode } from 'react';
 import type { CraftingRecipe, CraftingMaterials, TreeType, DecorationType, EventUpgrade, TreeInventory } from '../types/christmasEvent';
 import { CRAFTING_RECIPES } from '../data/christmasEventData';
 import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR } from '../config/assetPaths';
@@ -60,7 +60,7 @@ interface RecipeCardProps {
   isActive?: boolean; // Whether this recipe is currently being worked on by elves
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, isActive }) => {
+const RecipeCard: FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, isActive }) => {
   // Check if player has enough materials
   const canCraft = Object.entries(recipe.inputs).every(([material, amount]) => {
     return materials[material as keyof CraftingMaterials] >= amount;
@@ -130,13 +130,13 @@ interface TreeDecorationSectionProps {
   onDecorate: (treeType: TreeType, decorations: DecorationType[]) => boolean;
 }
 
-const TreeDecorationSection: React.FC<TreeDecorationSectionProps> = memo(({ 
+const TreeDecorationSection: FC<TreeDecorationSectionProps> = memo(({ 
   materials,
   treeInventory,
   onDecorate
 }) => {
-  const [selectedTree, setSelectedTree] = React.useState<TreeType>('pine');
-  const [selectedDecorations, setSelectedDecorations] = React.useState<Set<DecorationType>>(new Set());
+  const [selectedTree, setSelectedTree] = useState<TreeType>('pine');
+  const [selectedDecorations, setSelectedDecorations] = useState<Set<DecorationType>>(new Set());
   
   const toggleDecoration = (decoration: DecorationType) => {
     const newSet = new Set(selectedDecorations);
@@ -261,7 +261,7 @@ interface ElvesBenchProps {
   onAddToQueue: (treeType: TreeType, decorations: DecorationType[]) => void;
 }
 
-const ElvesBench: React.FC<ElvesBenchProps> = memo(({ enabled }) => {
+const ElvesBench: FC<ElvesBenchProps> = memo(({ enabled }) => {
   if (!enabled) {
     return (
       <div className={styles.elvesBench}>
@@ -294,8 +294,8 @@ ElvesBench.displayName = 'ElvesBench';
 /**
  * Helper function to get material icon as JSX
  */
-function getMaterialIcon(material: string): React.ReactNode {
-  const iconMap: Record<string, React.ReactNode> = {
+function getMaterialIcon(material: string): ReactNode {
+  const iconMap: Record<string, ReactNode> = {
     wood: <img src={MATERIAL_WOOD} alt="Wood" className={styles.materialIcon} />,
     pinecones: <img src={MATERIAL_PINECONE} alt="Pinecones" className={styles.materialIcon} />,
     branches: <img src={MATERIAL_BRANCH} alt="Branches" className={styles.materialIcon} />,
@@ -310,7 +310,7 @@ function getMaterialIcon(material: string): React.ReactNode {
 /**
  * Main Workshop Tab Component
  */
-const WorkshopTab: React.FC<WorkshopTabProps> = ({
+const WorkshopTab: FC<WorkshopTabProps> = ({
   materials,
   treeInventory,
   craftItem,

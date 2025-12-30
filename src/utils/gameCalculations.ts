@@ -9,15 +9,26 @@ import { VEGGIE_CONFIGS, type VeggieConfig } from '../data/veggieConfigs';
  * @returns Formatted string representation of the number
  */
 export function formatNumber(num: number, decimalPlaces: number = 1): string {
-  if (num < 1000) {
-    const fixed = num.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2));
+  // Handle undefined, null, or NaN
+  if (num === undefined || num === null || isNaN(num)) {
+    return '0';
+  }
+  
+  // Ensure num is actually a number
+  const numValue = Number(num);
+  if (isNaN(numValue)) {
+    return '0';
+  }
+  
+  if (numValue < 1000) {
+    const fixed = numValue.toFixed(decimalPlaces === 0 ? 0 : Math.min(decimalPlaces, 2));
     // Only remove trailing zeros after a decimal point
     return fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
   }
   
   const units = ['', 'K', 'M', 'B', 'T', 'Q'];
   let unitIndex = 0;
-  let value = num;
+  let value = numValue;
   
   while (value >= 1000 && unitIndex < units.length - 1) {
     value /= 1000;

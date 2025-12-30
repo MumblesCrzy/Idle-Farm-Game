@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import styles from './VeggiePanel.module.css';
 
 type VeggiePanelProps = {
@@ -11,7 +11,7 @@ type VeggiePanelProps = {
   onToggleSell: () => void;
 };
 
-const VeggiePanel: React.FC<VeggiePanelProps> = memo(({ name, growth, stash, onHarvest, canHarvest, sellEnabled, onToggleSell }) => (
+const VeggiePanel: FC<VeggiePanelProps> = memo(({ name, growth, stash, onHarvest, canHarvest, sellEnabled, onToggleSell }) => (
   <div className="veggie-panel">
     <h2>{name}</h2>
     <div className="progress-bar">

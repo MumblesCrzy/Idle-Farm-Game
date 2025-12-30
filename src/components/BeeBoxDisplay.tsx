@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import ProgressBar from './ProgressBar';
 import type { BeeBox } from '../types/bees';
 import { ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
@@ -10,7 +10,7 @@ interface BeeBoxDisplayProps {
   productionSpeedBonus: number; // Percentage bonus from upgrades (e.g., 0.05 = 5%)
 }
 
-const BeeBoxDisplay: React.FC<BeeBoxDisplayProps> = memo(({
+const BeeBoxDisplay: FC<BeeBoxDisplayProps> = memo(({
   box,
   season,
   productionSpeedBonus

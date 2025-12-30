@@ -7,3 +7,317 @@
 .mainContent {
   width: 100%;
 }
+
+/* Error and Loading Fallback Styles */
+.overlayError {
+  padding: 1rem;
+  background: #2d2d2d;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+  max-width: 480px;
+}
+
+.overlayErrorTitle {
+  margin-top: 0;
+}
+
+.overlayErrorText {
+  margin-bottom: 0.5rem;
+}
+
+.overlayErrorButton {
+  margin-top: 0.25rem;
+}
+
+.sectionError {
+  padding: 1rem;
+  background: #2d2d2d;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+}
+
+/* Tab Loading Fallback */
+.tabLoadingFallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  min-height: 300px;
+  color: #666;
+  gap: 1rem;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Skip Link for Accessibility */
+.skipLink {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  z-index: 9999;
+  background: #4caf50;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.skipLink:focus {
+  top: 10px;
+  left: 10px;
+}
+
+/* Tab Navigation */
+.tabNav {
+  margin-bottom: 1rem;
+}
+
+.tabList {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #444;
+}
+
+.tabButton {
+  padding: 0.75rem 1.5rem;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tabButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.tabButtonActive {
+  font-weight: bold;
+}
+
+.tabButtonGrowing {
+  composes: tabButton;
+}
+
+.tabButtonGrowingActive {
+  composes: tabButtonGrowing;
+  composes: tabButtonActive;
+  background: #4caf50;
+}
+
+.tabButtonCanning {
+  composes: tabButton;
+  flex-direction: column;
+}
+
+.tabButtonCanningActive {
+  composes: tabButtonCanning;
+  composes: tabButtonActive;
+  background: #ff8503;
+}
+
+.tabButtonCanningLocked {
+  composes: tabButtonCanning;
+  background: #666;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+.tabButtonBees {
+  composes: tabButton;
+  flex-direction: column;
+}
+
+.tabButtonBeesActive {
+  composes: tabButtonBees;
+  composes: tabButtonActive;
+  background: #f39c12;
+}
+
+.tabButtonBeesLocked {
+  composes: tabButtonBees;
+  background: #666;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+.tabButtonChristmas {
+  composes: tabButton;
+  flex-direction: column;
+}
+
+.tabButtonChristmasActive {
+  composes: tabButtonChristmas;
+  composes: tabButtonActive;
+  background: #B80000;
+  color: #ECEDE8;
+}
+
+.tabButtonChristmasLocked {
+  composes: tabButtonChristmas;
+  background: #666;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+.tabButtonContent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tabIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.tabIconFaded {
+  composes: tabIcon;
+  opacity: 0.5;
+}
+
+.tabUnlockHint {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* Christmas Sub-Tabs */
+.christmasSubTabList {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+.christmasSubTab {
+  padding: 0.75rem 1.5rem;
+  background: #ECEDE8;
+  color: #3A3638;
+  border: none;
+  border-radius: 6px;
+  font-weight: normal;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.christmasSubTab:hover {
+  filter: brightness(0.95);
+}
+
+.christmasSubTabFarm {
+  composes: christmasSubTab;
+}
+
+.christmasSubTabFarmActive {
+  composes: christmasSubTabFarm;
+  background: #175034;
+  color: white;
+  font-weight: bold;
+}
+
+.christmasSubTabWorkshop {
+  composes: christmasSubTab;
+}
+
+.christmasSubTabWorkshopActive {
+  composes: christmasSubTabWorkshop;
+  background: #23705D;
+  color: white;
+  font-weight: bold;
+}
+
+.christmasSubTabShopfront {
+  composes: christmasSubTab;
+}
+
+.christmasSubTabShopfrontActive {
+  composes: christmasSubTabShopfront;
+  background: #B80000;
+  color: white;
+  font-weight: bold;
+}
+
+/* Daily Bonus Container */
+.dailyBonusContainer {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.dailyBonusAvailable {
+  composes: dailyBonusContainer;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border: 2px solid #FF8C00;
+}
+
+.dailyBonusClaimed {
+  composes: dailyBonusContainer;
+  background: #ECEDE8;
+  border: 2px solid #D1D5DB;
+}
+
+.dailyBonusIcon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.dailyBonusText {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.dailyBonusTextAvailable {
+  composes: dailyBonusText;
+  color: #3A3638;
+}
+
+.dailyBonusTextClaimed {
+  composes: dailyBonusText;
+  color: #9CA3AF;
+}
+
+.dailyBonusClaimButton {
+  padding: 0.5rem 1rem;
+  background: #175034;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dailyBonusClaimButton:hover {
+  filter: brightness(1.1);
+}

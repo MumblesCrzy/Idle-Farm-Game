@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FC, type Dispatch, type SetStateAction } from 'react';
 import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
 import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_REINDEER, SPECIAL_ARCHIE_SWEATER } from '../config/assetPaths';
 
 interface ArchieIconProps {
-  setMoney: (value: React.SetStateAction<number>) => void;
+  setMoney: Dispatch<SetStateAction<number>>;
   money: number;
   experience: number;
   totalPlotsUsed: number;
@@ -16,7 +16,7 @@ interface ArchieIconProps {
 
 const ARCHIE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-const ArchieIcon: React.FC<ArchieIconProps> = ({ 
+const ArchieIcon: FC<ArchieIconProps> = ({ 
   setMoney, 
   money, 
   experience, 

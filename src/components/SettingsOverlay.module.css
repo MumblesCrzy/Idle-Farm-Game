@@ -257,3 +257,45 @@
   background: #f5f5f5;
   transform: none;
 }
+
+/* Loading states */
+.buttonLoading {
+  position: relative;
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Disabled state for buttons during loading */
+.exportButton:disabled,
+.importButton:disabled,
+.resetButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.exportButton:disabled:not(.buttonLoading),
+.importButton:disabled:not(.buttonLoading) {
+  background: #94b8d9;
+}
+
+.resetButton:disabled:not(.buttonLoading) {
+  background: #e77a86;
+}

@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import { memo, useState, type FC } from 'react';
 import BaseTab from './BaseTab';
 import BeeBoxDisplay from './BeeBoxDisplay';
 import BeeBoxPurchase from './BeeBoxPurchase';
@@ -14,7 +14,7 @@ interface BeesTabProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeesTab: React.FC<BeesTabProps> = memo(({
+const BeesTab: FC<BeesTabProps> = memo(({
   beeContext,
   farmTier,
   season,

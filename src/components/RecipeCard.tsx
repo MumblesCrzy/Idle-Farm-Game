@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import type { Recipe } from '../types/canning';
 import styles from './RecipeCard.module.css';
 
@@ -16,7 +16,7 @@ interface RecipeCardProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = memo(({ 
+const RecipeCard: FC<RecipeCardProps> = memo(({
   recipe, 
   canMake, 
   onStartCanning, 

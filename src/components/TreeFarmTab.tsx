@@ -5,7 +5,7 @@
  * Displays tree plots, seed selector, growth progress, and harvest controls.
  */
 
-import React, { memo } from 'react';
+import { memo, useState, useEffect, type FC } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
 import FarmingUpgradesPanel from './FarmingUpgradesPanel';
@@ -68,7 +68,7 @@ interface TreeSelectorProps {
   onUnlock?: () => void;
 }
 
-const TreeSelector: React.FC<TreeSelectorProps> = memo(({ 
+const TreeSelector: FC<TreeSelectorProps> = memo(({ 
   treeType, 
   selected, 
   unlocked, 
@@ -132,7 +132,7 @@ interface TreePlotDisplayProps {
   onHarvest: () => void;
 }
 
-const TreePlotDisplay: React.FC<TreePlotDisplayProps> = memo(({
+const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
   plot,
   selectedTreeType,
   upgrades,
@@ -234,7 +234,7 @@ interface MaterialsDisplayProps {
   treeInventory: TreeInventory;
 }
 
-const MaterialsDisplay: React.FC<MaterialsDisplayProps> = memo(({ materials, treeInventory }) => {
+const MaterialsDisplay: FC<MaterialsDisplayProps> = memo(({ materials, treeInventory }) => {
   // Count plain trees across all qualities (normal, perfect, luxury)
   // New format: pine_normal_plain, pine_perfect_plain, pine_luxury_plain
   const getPlainTreeCount = (treeType: string): number => {
@@ -299,7 +299,7 @@ MaterialsDisplay.displayName = 'MaterialsDisplay';
 /**
  * Main Tree Farm Tab Component
  */
-const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
+const TreeFarmTab: FC<TreeFarmTabProps> = ({
   treePlots,
   materials,
   treeInventory,
@@ -327,10 +327,10 @@ const TreeFarmTab: React.FC<TreeFarmTabProps> = ({
     return 'pine';
   };
   
-  const [selectedTreeType, setSelectedTreeType] = React.useState<TreeType | null>(getHighestUnlockedTree());
+  const [selectedTreeType, setSelectedTreeType] = useState<TreeType | null>(getHighestUnlockedTree());
   
   // Update selected tree when a higher tier is unlocked
-  React.useEffect(() => {
+  useEffect(() => {
     const highestUnlocked = getHighestUnlockedTree();
     // Only update if the newly unlocked tree is higher tier than current selection
     if (selectedTreeType === 'pine' && (spruceUnlocked || firUnlocked)) {

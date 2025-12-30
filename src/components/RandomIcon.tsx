@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FC } from 'react';
 
 interface RandomIconProps {
   imagePath: string;
@@ -13,7 +13,7 @@ interface RandomIconProps {
  * RandomIcon - A component that displays a clickable icon at random positions
  * on the screen at random intervals.
  */
-const RandomIcon: React.FC<RandomIconProps> = ({ 
+const RandomIcon: FC<RandomIconProps> = ({ 
   imagePath, 
   minInterval, 
   maxInterval = minInterval * 2, 

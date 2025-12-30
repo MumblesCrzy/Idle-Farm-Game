@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { 
   CanningState, 
   Recipe, 
@@ -8,6 +8,7 @@ import type {
 } from '../types/canning';
 import { INITIAL_RECIPES, calculateRecipeProfit } from '../data/recipes';
 import { useGameLoop } from './useGameLoop';
+import { sortRecipesByPreference, type RecipeValueContext, filterRecipesByCategory } from '../utils/recipeHelpers';
 
 // Initial canning upgrades that affect the canning process
 const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
@@ -346,6 +347,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies, setRegularHoney, setGoldenHoney]);
   
   // Complete a canning process
+  // Refs to avoid stale closures in completeCanning
+  const heirloomOwnedRef = useRef(heirloomOwned);
+  heirloomOwnedRef.current = heirloomOwned;
+  
   const completeCanning = useCallback((processIndex: number): void => {
     const process = canningState.activeProcesses[processIndex];
     if (!process) return;
@@ -358,12 +363,14 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     const qualityUpgrade = canningState.upgrades.find(u => u.id === 'preservation_mastery');
     
     // Calculate better seeds multiplier for this recipe
+    // Use refs to avoid stale closures - currentVeggiesRef and heirloomOwnedRef
     const getBetterSeedsMultiplier = () => {
       if (recipe.ingredients.length === 0) return 1;
       
-      // Calculate average better seeds level of all ingredients
+      // Calculate average better seeds level of all ingredients using current veggie state
+      const currentVeggies = currentVeggiesRef.current;
       const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
-        const veggie = veggies.find(v => v.name === ingredient.veggieName);
+        const veggie = currentVeggies.find(v => v.name === ingredient.veggieName);
         return sum + (veggie?.betterSeedsLevel || 0);
       }, 0);
       
@@ -371,7 +378,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       
       // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
       // This keeps canning competitive but not overpowered
-      return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
+      return Math.pow(heirloomOwnedRef.current ? 1.5 : 1.25, averageBetterSeedsLevel);
     };
     
     const basePrice = recipe.baseSalePrice * (efficiencyUpgrade?.effect || 1) * getBetterSeedsMultiplier();
@@ -511,56 +518,18 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const autoCanningEnabled = canningState.autoCanning.enabled;
   const unlockedRecipeCount = canningState.recipes.filter(r => r.unlocked).length;
 
-  // Function to sort recipes based on current sort preference
-  const sortRecipes = useCallback((recipes: Recipe[]) => {
-    // Helper functions to match CanningPanel logic
-    const getBetterSeedsMultiplier = (recipe: Recipe) => {
-      if (recipe.ingredients.length === 0) return 1;
-      
-      const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
-        const veggie = veggies.find(v => v.name === ingredient.veggieName);
-        return sum + (veggie?.betterSeedsLevel || 0);
-      }, 0);
-      
-      const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
-      return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
-    };
+  const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
+  const efficiencyMultiplier = efficiencyUpgrade?.effect || 1;
 
-    const getEffectiveSalePrice = (recipe: Recipe) => {
-      const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
-      const efficiencyMultiplier = efficiencyUpgrade?.effect || 1;
-      return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe);
-    };
+  const recipeValueContext = useMemo<RecipeValueContext>(() => ({
+    veggies,
+    heirloomOwned,
+    efficiencyMultiplier
+  }), [veggies, heirloomOwned, efficiencyMultiplier]);
 
-    const getRawValue = (recipe: Recipe) => {
-      return recipe.ingredients.reduce((sum, ing) => {
-        const veggie = veggies.find(v => v.name === ing.veggieName);
-        return sum + (veggie?.salePrice || 0) * ing.quantity;
-      }, 0);
-    };
-
-    const getProfit = (recipe: Recipe) => {
-      return getEffectiveSalePrice(recipe) - getRawValue(recipe);
-    };
-
-    return [...recipes].sort((a, b) => {
-      switch (recipeSort) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'profit': {
-          const profitA = getProfit(a);
-          const profitB = getProfit(b);
-          return profitB - profitA; // Descending (higher profit first)
-        }
-        case 'time':
-          return a.processingTime - b.processingTime; // Ascending (faster first)
-        case 'difficulty':
-          return b.ingredients.length - a.ingredients.length; // Descending (more ingredients first)
-        default:
-          return 0;
-      }
-    });
-  }, [recipeSort, veggies, canningState.upgrades]);
+  const sortRecipes = useCallback((recipes: Recipe[]) => (
+    sortRecipesByPreference(recipes, recipeSort, recipeValueContext)
+  ), [recipeSort, recipeValueContext]);
 
   // Auto-canning timer - runs every 10 seconds when Canner upgrade is purchased and enabled
   // Using requestAnimationFrame for Chrome compatibility
@@ -617,9 +586,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {
-    return canningState.recipes.filter(recipe => 
-      recipe.unlocked && canMakeRecipe(recipe)
-    );
+    return filterRecipesByCategory(canningState.recipes, 'available', canMakeRecipe);
   }, [canningState.recipes, canMakeRecipe]);
   
   // Get recipe profit analysis

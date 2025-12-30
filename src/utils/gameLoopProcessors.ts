@@ -1,9 +1,10 @@
 import type { Veggie } from '../types/game';
-import { HARVESTER_BASE_TIMER, AUTO_HARVEST_KNOWLEDGE_MULTIPLIER, AUTO_HARVEST_EXPERIENCE_MULTIPLIER, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
+import { HARVESTER_BASE_TIMER, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import type { WeatherType } from '../config/gameConstants';
 import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
 import { processUnlocks } from './unlockSystem';
+import { calculateHarvestRewards } from './harvestCalculations';
 
 /**
  * Calculates new weather based on season and random chance
@@ -117,24 +118,17 @@ export function processAutoHarvest(
 
     // If timer is primed and veggie is ready, harvest immediately
     if (v.harvesterTimer >= timerMax && v.growth >= GROWTH_COMPLETE_THRESHOLD) {
-      let harvestAmount = 1 + (v.additionalPlotLevel || 0);
-      
-      // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
-      if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
-        harvestAmount = Math.ceil(harvestAmount * 1.05);
-      }
-      
-      // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
-      if (beeYieldBonus > 0) {
-        harvestAmount = Math.ceil(harvestAmount * (1 + beeYieldBonus));
-      }
-      
-      const almanacMultiplier = 1 + (almanacLevel * 0.10);
-      const knowledgeGain = AUTO_HARVEST_KNOWLEDGE_MULTIPLIER; // Auto harvest knowledge gain
-      
-      // Calculate experience gain for this harvest
-      const experienceGain = (harvestAmount * AUTO_HARVEST_EXPERIENCE_MULTIPLIER) + (knowledge * 0.01 * AUTO_HARVEST_EXPERIENCE_MULTIPLIER);
-      const totalKnGain = knowledgeGain * almanacMultiplier + (1.25 * (farmTier - 1));
+      // Use centralized harvest calculations
+      const { harvestAmount, experienceGain, knowledgeGain: totalKnGain } = calculateHarvestRewards(
+        v.additionalPlotLevel || 0,
+        season,
+        permanentBonuses,
+        beeYieldBonus,
+        almanacLevel,
+        farmTier,
+        knowledge,
+        true // isAutoHarvest
+      );
       
       totalExperienceGain += experienceGain;
       totalKnowledgeGain += totalKnGain;

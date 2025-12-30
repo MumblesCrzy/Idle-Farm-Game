@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo, type FC } from 'react';
 import type { Achievement } from '../types/achievements';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICON_TROPHY } from '../config/assetPaths';
@@ -11,7 +11,7 @@ interface AchievementDisplayProps {
   totalUnlocked: number;
 }
 
-const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
+const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
   visible,
   onClose,
   achievements,
@@ -180,6 +180,8 @@ const AchievementDisplay: React.FC<AchievementDisplayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+AchievementDisplay.displayName = 'AchievementDisplay';
 
 export default AchievementDisplay;

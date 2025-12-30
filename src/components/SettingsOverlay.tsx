@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, memo, type FC } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import type { LoadingStates } from './SaveLoadSystem';
 import styles from './SettingsOverlay.module.css';
 
 interface SettingsOverlayProps {
@@ -13,9 +14,10 @@ interface SettingsOverlayProps {
   handleExportSave: () => void;
   handleImportSave: () => void;
   handleResetGame: () => void;
+  loadingStates?: LoadingStates;
 }
 
-const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
+const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
   visible,
   onClose,
   soundEnabled,
@@ -25,7 +27,8 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
   unlockedAchievements,
   handleExportSave,
   handleImportSave,
-  handleResetGame
+  handleResetGame,
+  loadingStates
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
   const [itchViewport, setItchViewport] = useState(false);
@@ -75,17 +78,35 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
             <div className={styles.buttonGroup}>
               <button
                 onClick={handleExportSave}
-                className={styles.exportButton}
+                className={`${styles.exportButton} ${loadingStates?.isExporting ? styles.buttonLoading : ''}`}
                 aria-label="Export save file to download as JSON"
+                disabled={loadingStates?.isExporting || loadingStates?.isImporting}
+                aria-busy={loadingStates?.isExporting}
               >
-                Export Save
+                {loadingStates?.isExporting ? (
+                  <>
+                    <span className={styles.spinner} aria-hidden="true" />
+                    Exporting...
+                  </>
+                ) : (
+                  'Export Save'
+                )}
               </button>
               <button
                 onClick={handleImportSave}
-                className={styles.importButton}
+                className={`${styles.importButton} ${loadingStates?.isImporting ? styles.buttonLoading : ''}`}
                 aria-label="Import save file from JSON"
+                disabled={loadingStates?.isExporting || loadingStates?.isImporting}
+                aria-busy={loadingStates?.isImporting}
               >
-                Import Save
+                {loadingStates?.isImporting ? (
+                  <>
+                    <span className={styles.spinner} aria-hidden="true" />
+                    Importing...
+                  </>
+                ) : (
+                  'Import Save'
+                )}
               </button>
             </div>
           </div>
@@ -175,10 +196,19 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
                   onClose();
                   handleResetGame();
                 }}
-                className={styles.resetButton}
+                className={`${styles.resetButton} ${loadingStates?.isResetting ? styles.buttonLoading : ''}`}
                 aria-label="Reset game to beginning. Warning: This will permanently delete all progress"
+                disabled={loadingStates?.isResetting || loadingStates?.isExporting || loadingStates?.isImporting}
+                aria-busy={loadingStates?.isResetting}
               >
-                Reset Game
+                {loadingStates?.isResetting ? (
+                  <>
+                    <span className={styles.spinner} aria-hidden="true" />
+                    Resetting...
+                  </>
+                ) : (
+                  'Reset Game'
+                )}
               </button>
             </div>
             <p className={styles.warning} role="alert">
@@ -189,6 +219,8 @@ const SettingsOverlay: React.FC<SettingsOverlayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+SettingsOverlay.displayName = 'SettingsOverlay';
 
 export default SettingsOverlay;

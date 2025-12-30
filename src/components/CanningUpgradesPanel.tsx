@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import type { CanningUpgrade } from '../types/canning';
 import { formatNumber } from '../utils/gameCalculations';
 import styles from './CanningUpgradesPanel.module.css';
@@ -107,7 +107,7 @@ interface CanningUpgradesPanelProps {
   onToggleAutoCanning: () => void;
 }
 
-const CanningUpgradesPanel: React.FC<CanningUpgradesPanelProps> = memo(({
+const CanningUpgradesPanel: FC<CanningUpgradesPanelProps> = memo(({
   upgrades,
   money,
   knowledge,

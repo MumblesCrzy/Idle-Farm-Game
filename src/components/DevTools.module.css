@@ -130,6 +130,24 @@
   border-color: #667eea;
 }
 
+.inputError {
+  border-color: #ff6b6b;
+  background-color: #fff5f5;
+}
+
+.inputError:focus {
+  border-color: #ff5252;
+}
+
+.errorMessage {
+  display: block;
+  width: 100%;
+  color: #ff5252;
+  font-size: 10px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 .smallButton {
   padding: 6px 12px;
   background: #667eea;

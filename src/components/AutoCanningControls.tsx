@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, memo, type FC } from 'react';
 import type { Recipe } from '../types/canning';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
 import { ICON_AUTOMATION } from '../config/assetPaths';
@@ -10,7 +10,7 @@ interface AutoCanningControlsProps {
   onUpdateConfig: (config: AutoCanningConfig) => void;
 }
 
-const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
+const AutoCanningControls: FC<AutoCanningControlsProps> = memo(({
   config,
   recipes,
   onUpdateConfig
@@ -255,6 +255,8 @@ const AutoCanningControls: React.FC<AutoCanningControlsProps> = ({
       )}
     </div>
   );
-};
+});
+
+AutoCanningControls.displayName = 'AutoCanningControls';
 
 export default AutoCanningControls;

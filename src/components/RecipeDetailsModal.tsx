@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import type { Recipe } from '../types/canning';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
@@ -17,7 +17,7 @@ interface RecipeDetailsModalProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const RecipeDetailsModal: React.FC<RecipeDetailsModalProps> = ({
+const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
   recipe,
   isVisible,
   onClose,

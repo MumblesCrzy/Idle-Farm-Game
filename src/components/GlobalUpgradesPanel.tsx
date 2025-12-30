@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import UpgradeButton from './UpgradeButton';
 import ProgressBar from './ProgressBar';
 import styles from './GlobalUpgradesPanel.module.css';
@@ -42,7 +42,7 @@ interface GlobalUpgradesPanelProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const GlobalUpgradesPanel: React.FC<GlobalUpgradesPanelProps> = ({
+const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   money,
   knowledge,
   day,

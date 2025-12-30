@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 
 type ProgressBarProps = {
   value: number;
@@ -7,7 +7,7 @@ type ProgressBarProps = {
   height?: number;
 };
 
-const ProgressBar: React.FC<ProgressBarProps> = memo(({ value, max = 100, color, height }) => (
+const ProgressBar: FC<ProgressBarProps> = memo(({ value, max = 100, color, height }) => (
   <div
     className="progress-bar"
     data-testid="progress-bar"

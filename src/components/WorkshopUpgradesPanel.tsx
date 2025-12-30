@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import UpgradeButton from './UpgradeButton';
 import type { EventUpgrade } from '../types/christmasEvent';
 import styles from './WorkshopUpgradesPanel.module.css';
@@ -10,7 +10,7 @@ interface WorkshopUpgradesPanelProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const WorkshopUpgradesPanel: React.FC<WorkshopUpgradesPanelProps> = memo(({ 
+const WorkshopUpgradesPanel: FC<WorkshopUpgradesPanelProps> = memo(({
   upgrades, 
   holidayCheer, 
   purchaseUpgrade,

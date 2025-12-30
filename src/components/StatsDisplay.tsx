@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import type { Veggie } from '../types/game';
 import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import styles from './StatsDisplay.module.css';
@@ -23,7 +23,7 @@ interface StatsDisplayProps {
   isChristmasEventActive?: boolean;
 }
 
-const StatsDisplay: React.FC<StatsDisplayProps> = memo(({
+const StatsDisplay: FC<StatsDisplayProps> = memo(({
   day,
   totalDaysElapsed,
   season,

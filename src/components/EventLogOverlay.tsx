@@ -5,7 +5,7 @@
  * Semi-transparent to allow interaction with the main game area.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, type FC } from 'react';
 import type { EventLogEntry, EventCategory } from '../types/game';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useEventLogFilter } from '../hooks/useEventLog';
@@ -35,7 +35,7 @@ interface EventLogOverlayProps {
   onEnabledCategoriesChange: (categories: EventCategory[]) => void;
 }
 
-const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
+const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
   visible,
   onClose,
   entries,
@@ -339,6 +339,8 @@ const EventLogOverlay: React.FC<EventLogOverlayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+EventLogOverlay.displayName = 'EventLogOverlay';
 
 export default EventLogOverlay;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useMemo, memo, type FC } from 'react';
 import RecipeCard from './RecipeCard';
 import CanningProcessDisplay from './CanningProcessDisplay';
 import RecipeDetailsModal from './RecipeDetailsModal';
@@ -6,6 +6,7 @@ import type { Recipe, CanningState } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
 import { ICON_CANNING } from '../config/assetPaths';
+import { filterRecipesByCategory, sortRecipesByPreference, type RecipeValueContext } from '../utils/recipeHelpers';
 import styles from './CanningPanel.module.css';
 
 interface CanningPanelProps {
@@ -22,7 +23,7 @@ interface CanningPanelProps {
   onRecipeSortChange?: (sort: RecipeSort) => void;
 }
 
-const CanningPanel: React.FC<CanningPanelProps> = memo(({
+const CanningPanel: FC<CanningPanelProps> = memo(({
   canningState,
   veggies,
   heirloomOwned,
@@ -38,43 +39,16 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
   // Calculate efficiency multiplier from canning upgrades
   const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
   const efficiencyMultiplier = efficiencyUpgrade?.effect || 1;
-  
+
   // Calculate speed multiplier from canning upgrades
   const speedUpgrade = canningState.upgrades.find(u => u.id === 'canning_speed');
   const speedMultiplier = speedUpgrade?.effect || 1;
 
-  // Helper function to calculate better seeds multiplier for a recipe
-  const getBetterSeedsMultiplier = (recipe: Recipe) => {
-    if (recipe.ingredients.length === 0) return 1;
-    
-    // Calculate average better seeds level of all ingredients
-    const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      return sum + (veggie?.betterSeedsLevel || 0);
-    }, 0);
-    
-    const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
-
-    return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
-  };
-
-  // Helper function to calculate effective sale price (including all multipliers)
-  const getEffectiveSalePrice = (recipe: Recipe) => {
-    return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe);
-  };
-
-  // Helper function to calculate raw ingredient value
-  const getRawValue = (recipe: Recipe) => {
-    return recipe.ingredients.reduce((sum, ing) => {
-      const veggie = veggies.find(v => v.name === ing.veggieName);
-      return sum + (veggie?.salePrice || 0) * ing.quantity;
-    }, 0);
-  };
-
-  // Helper function to calculate profit
-  const getProfit = (recipe: Recipe) => {
-    return getEffectiveSalePrice(recipe) - getRawValue(recipe);
-  };
+  const recipeValueContext = useMemo<RecipeValueContext>(() => ({
+    veggies,
+    heirloomOwned,
+    efficiencyMultiplier
+  }), [veggies, heirloomOwned, efficiencyMultiplier]);
 
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -89,65 +63,14 @@ const CanningPanel: React.FC<CanningPanelProps> = memo(({
   const setRecipeFilter = onRecipeFilterChange ?? setLocalRecipeFilter;
   const setRecipeSort = onRecipeSortChange ?? setLocalRecipeSort;
 
-  // Filter recipes based on current filter
-  const getFilteredRecipes = useCallback(() => {
-    let filtered = canningState.recipes.filter(recipe => recipe.unlocked);
-    
-    switch (recipeFilter) {
-      case 'available':
-        filtered = filtered.filter(recipe => canMakeRecipe(recipe));
-        break;
-      case 'simple':
-        // Simple: 1-2 total ingredients (including honey)
-        filtered = filtered.filter(recipe => {
-          const totalIngredients = recipe.ingredients.length;
-          return totalIngredients <= 2;
-        });
-        break;
-      case 'complex':
-        // Complex: 3-4 total ingredients
-        filtered = filtered.filter(recipe => {
-          const totalIngredients = recipe.ingredients.length;
-          return totalIngredients >= 3 && totalIngredients <= 4;
-        });
-        break;
-      case 'gourmet':
-        // Gourmet: 5+ total ingredients
-        filtered = filtered.filter(recipe => {
-          const totalIngredients = recipe.ingredients.length;
-          return totalIngredients >= 5;
-        });
-        break;
-      case 'honey':
-        filtered = filtered.filter(recipe => !!recipe.honeyRequirement);
-        break;
-    }
+  const getFilteredRecipes = useCallback(() => (
+    filterRecipesByCategory(canningState.recipes, recipeFilter, canMakeRecipe)
+  ), [canningState.recipes, recipeFilter, canMakeRecipe]);
 
-    return filtered;
-  }, [canningState.recipes, recipeFilter, canMakeRecipe]);
-
-  // Sort recipes based on current sort
   const getSortedRecipes = useCallback(() => {
     const filtered = getFilteredRecipes();
-    
-    return [...filtered].sort((a, b) => {
-      switch (recipeSort) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'profit': {
-          const profitA = getProfit(a);
-          const profitB = getProfit(b);
-          return profitB - profitA; // Descending
-        }
-        case 'time':
-          return a.processingTime - b.processingTime; // Ascending
-        case 'difficulty':
-          return b.ingredients.length - a.ingredients.length; // Descending
-        default:
-          return 0;
-      }
-    });
-  }, [getFilteredRecipes, recipeSort, veggies]);
+    return sortRecipesByPreference(filtered, recipeSort, recipeValueContext);
+  }, [getFilteredRecipes, recipeSort, recipeValueContext]);
 
   const handleShowDetails = useCallback((recipe: Recipe) => {
     setSelectedRecipe(recipe);

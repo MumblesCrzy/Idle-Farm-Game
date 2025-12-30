@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
 import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP } from '../config/assetPaths';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -11,7 +11,7 @@ interface InfoOverlayProps {
   GREENHOUSE_KN_COST_PER_PLOT: number;
 }
 
-const InfoOverlay: React.FC<InfoOverlayProps> = ({
+const InfoOverlay: FC<InfoOverlayProps> = memo(({
   visible, 
   onClose, 
   GREENHOUSE_COST_PER_PLOT, 
@@ -642,7 +642,9 @@ const InfoOverlay: React.FC<InfoOverlayProps> = ({
       </div>
     </div>
   );
-};
+});
+
+InfoOverlay.displayName = 'InfoOverlay';
 
 export default InfoOverlay;
 

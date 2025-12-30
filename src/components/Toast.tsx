@@ -1,4 +1,4 @@
-import { useEffect, memo } from 'react';
+import { useEffect, memo, type FC } from 'react';
 import './Toast.css';
 
 interface ToastProps {
@@ -9,7 +9,7 @@ interface ToastProps {
   onClose: () => void;
 }
 
-const Toast: React.FC<ToastProps> = memo(({ 
+const Toast: FC<ToastProps> = memo(({
   message, 
   duration = 3000, 
   type = 'success', 

@@ -5,7 +5,7 @@
  * upgrades, and the Beekeeper Assistant automation.
  */
 
-import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef, type FC, type ReactNode } from 'react';
 import type { 
   BeeBox, 
   BeeUpgrade,
@@ -37,7 +37,7 @@ const BEE_CONSTANTS_IMPL = {
 const BeeContext = createContext<BeeContextValue | undefined>(undefined);
 
 interface BeeProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
   farmTier?: number; // Current farm tier to check unlock condition
   season?: string; // Current season (for winter production stoppage)
   onYieldBonusChange?: (bonus: number) => void; // Callback when yield bonus changes
@@ -93,7 +93,7 @@ const createBeekeeperAssistant = (): BeekeeperAssistant => ({
 /**
  * BeeProvider component - manages all bee system state
  */
-export const BeeProvider: React.FC<BeeProviderProps> = ({ 
+export const BeeProvider: FC<BeeProviderProps> = ({ 
   children, 
   farmTier = 1,
   season = 'Spring',

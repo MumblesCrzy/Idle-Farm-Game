@@ -7,6 +7,7 @@
 
 import type { Veggie } from '../types/game';
 import type { BeeBox, BeeUpgrade, BeekeeperAssistant, OfflineBeeProgress } from '../types/bees';
+import type { CanningProcess } from '../types/canning';
 import { CANNING_BASE_DURATION_SECONDS, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 
 interface OfflineBeeStateInput {
@@ -176,9 +177,9 @@ export function calculateOfflineProgress(
     almanacLevel: number;
     farmTier: number;
     knowledge: number;
-    canningProcesses: any[];
-    canningUpgrades: any;
-    autoCanning: any;
+    canningProcesses: CanningProcess[];
+    canningUpgrades: Record<string, number>;
+    autoCanning: { enabled: boolean };
     christmasEvent?: {
       isEventActive: boolean;
       passiveCheerPerSecond: number;
@@ -273,9 +274,9 @@ export function calculateOfflineProgress(
   const progressPerTick = (GROWTH_COMPLETE_THRESHOLD / (CANNING_BASE_DURATION_SECONDS * 10)) * canningSpeedMultiplier; // 30 seconds base = 300 ticks at 100ms
   const progressGained = progressPerTick * ticks;
 
-  gameState.canningProcesses.forEach((process: any) => {
+  gameState.canningProcesses.forEach((process: CanningProcess) => {
     if (!process.completed) {
-      canningProgressUpdates.set(process.id, progressGained);
+      canningProgressUpdates.set(process.recipeId, progressGained);
     }
   });
 

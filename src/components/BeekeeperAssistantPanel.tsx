@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import type { BeekeeperAssistant } from '../types/bees';
 import { ICON_HONEY } from '../config/assetPaths';
 import styles from './BeekeeperAssistantPanel.module.css';
@@ -14,7 +14,7 @@ interface BeekeeperAssistantPanelProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeekeeperAssistantPanel: React.FC<BeekeeperAssistantPanelProps> = memo(({
+const BeekeeperAssistantPanel: FC<BeekeeperAssistantPanelProps> = memo(({
   assistant,
   currentBoxes,
   regularHoney,

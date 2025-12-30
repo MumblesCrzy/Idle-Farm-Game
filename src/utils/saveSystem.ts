@@ -1,7 +1,37 @@
 import type { CanningState, LeanCanningProgress } from '../types/canning';
+import type { Veggie, EventLogState } from '../types/game';
+import type { BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
+import type { ChristmasEventState } from '../types/christmasEvent';
+import type { AchievementState } from '../types/achievements';
 import { INITIAL_RECIPES } from '../data/recipes';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
 import { CANNING_AUTO_PURCHASERS, DEFAULT_AUTO_CANNING_CONFIG } from '../utils/canningAutoPurchase';
+import {
+  runMigrations,
+  needsMigration,
+  CURRENT_SAVE_VERSION,
+  getMigrationLog,
+  getMigrationSummary
+} from './migrations';
+
+/**
+ * Saved bee state structure - doesn't include computed fields
+ * maxBoxes and honeyPerSecond are calculated at runtime
+ */
+interface SavedBeeState {
+  unlocked: boolean;
+  firstTimeSetup: boolean;
+  boxes: BeeBox[];
+  regularHoney: number;
+  goldenHoney: number;
+  totalHoneyCollected: number;
+  totalGoldenHoneyCollected: number;
+  lastUpdateTime: number;
+  upgrades: BeeUpgrade[];
+  beekeeperAssistant: BeekeeperAssistant;
+  totalBoxesPurchased: number;
+  honeySpent: number;
+}
 
 /**
  * Commented out for future use - will be needed for lean save system
@@ -211,7 +241,7 @@ type CanningAutoPurchase = {
  */
 export interface ExtendedGameState {
   // Existing game state
-  veggies: any[];
+  veggies: Veggie[];
   money: number;
   experience: number;
   knowledge: number;
@@ -237,7 +267,7 @@ export interface ExtendedGameState {
   canningProgress?: LeanCanningProgress; // New lean format
   canningAutoPurchasers?: CanningAutoPurchase[];
   autoCanningConfig?: AutoCanningConfig;
-  canningVersion?: number; // For migration purposes
+  canningVersion?: number; // Legacy - now using _saveVersion
   
   // UI preferences
   uiPreferences?: {
@@ -246,48 +276,33 @@ export interface ExtendedGameState {
   };
   
   // Achievement state
-  achievementState?: any; // AchievementState type from achievements.ts
+  achievementState?: AchievementState;
   
   // Event log state
-  eventLogState?: {
-    entries: any[];
-    maxEntries?: number;
-    unreadCount?: number;
-    lastReadId?: string;
-  };
+  eventLogState?: EventLogState;
   
   // Christmas event state
-  christmasEventState?: any; // ChristmasEventState type from christmasEvent.ts
+  christmasEventState?: ChristmasEventState;
   
   // Bee system state
-  beeState?: {
-    unlocked: boolean;
-    firstTimeSetup: boolean;
-    boxes: any[]; // BeeBox[]
-    regularHoney: number;
-    goldenHoney: number;
-    totalHoneyCollected: number;
-    totalGoldenHoneyCollected: number;
-    lastUpdateTime: number;
-    upgrades: any[]; // BeeUpgrade[]
-    beekeeperAssistant: any; // BeekeeperAssistant
-    totalBoxesPurchased: number;
-    honeySpent: number;
-  };
+  beeState?: SavedBeeState;
   
   // Tutorial state
   harvestTutorialShown?: boolean;
+  
+  // Save version for migration system
+  _saveVersion?: number;
 }
-
-/** Current version number for canning save data format */
-const CANNING_VERSION = 3; // Incremented to force migration for canner upgrade
 
 /** LocalStorage key for game state persistence */
 const GAME_STORAGE_KEY = 'farmIdleGameState';
 
+/** Legacy canning version - kept for backward compatibility */
+const CANNING_VERSION = 3;
+
 /**
- * Loads game state from localStorage with automatic canning system migration.
- * Handles backward compatibility for older save formats.
+ * Loads game state from localStorage with automatic migration.
+ * Uses the new migration framework for version-based migrations.
  * @returns The loaded and migrated game state, or null if no save exists
  */
 export function loadGameStateWithCanning(): ExtendedGameState | null {
@@ -295,28 +310,68 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
     const raw = localStorage.getItem(GAME_STORAGE_KEY);
     if (!raw) return null;
     
-    const loaded = JSON.parse(raw) as ExtendedGameState;
+    let loaded = JSON.parse(raw) as ExtendedGameState;
     
-    // Migrate canning data if needed
-    const migratedState = migrateCanningSaveData(loaded);
+    // Check if migration is needed
+    if (needsMigration(loaded)) {
+      const result = runMigrations(loaded, { 
+        verbose: typeof window !== 'undefined' && window.location.hostname === 'localhost',
+        enableSnapshots: true 
+      });
+      
+      if (result.success) {
+        // Return migrated data with version stamp
+        loaded = result.data as ExtendedGameState;
+        loaded._saveVersion = CURRENT_SAVE_VERSION;
+        // Keep canningVersion for backward compatibility
+        loaded.canningVersion = CANNING_VERSION;
+      } else {
+        // Migration failed - log and use legacy migration as fallback
+        console.error('Migration failed:', result.migrations.map(m => m.error).filter(Boolean));
+        // Still try legacy migration as fallback
+        loaded = migrateCanningSaveData(loaded);
+        loaded = migrateBeeStateSaveData(loaded);
+      }
+    }
     
-    // Migrate bee data if needed
-    return migrateBeeStateSaveData(migratedState);
-  } catch {
+    // Ensure critical fields exist even if at current version
+    // This handles edge cases where data was saved without all required fields
+    if (!loaded.canningState) {
+      loaded = migrateCanningSaveData(loaded);
+    }
+    if (!loaded.beeState) {
+      loaded = migrateBeeStateSaveData(loaded);
+    }
+    if (!loaded.canningAutoPurchasers) {
+      loaded.canningAutoPurchasers = CANNING_AUTO_PURCHASERS.map(ap => ({ ...ap }));
+    }
+    if (!loaded.autoCanningConfig) {
+      loaded.autoCanningConfig = { ...DEFAULT_AUTO_CANNING_CONFIG };
+    }
+    
+    // Ensure version fields are set
+    loaded._saveVersion = CURRENT_SAVE_VERSION;
+    loaded.canningVersion = CANNING_VERSION;
+    
+    return loaded;
+  } catch (error) {
+    console.error('loadGameStateWithCanning: Error loading from localStorage:', error);
     return null;
   }
 }
 
 /**
- * Saves game state to localStorage including all canning data.
- * Automatically sets the current canning version for future migration checks.
+ * Saves game state to localStorage including all data.
+ * Automatically sets the current save version for future migration checks.
  * @param state - The complete game state to save
  */
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
     const stateToSave = {
       ...state,
-      canningVersion: CANNING_VERSION
+      _saveVersion: CURRENT_SAVE_VERSION,
+      // Keep canningVersion for backward compatibility during transition
+      canningVersion: 3
     };
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (error) {
@@ -325,7 +380,24 @@ export function saveGameStateWithCanning(state: ExtendedGameState): void {
 }
 
 /**
+ * Gets the migration log for display to users.
+ * @returns Human-readable migration summary
+ */
+export function getSaveMigrationSummary(): string {
+  return getMigrationSummary();
+}
+
+/**
+ * Gets the detailed migration log.
+ * @returns Migration log entries
+ */
+export function getSaveMigrationLog() {
+  return getMigrationLog();
+}
+
+/**
  * Migrates old save data to include canning system or update to latest canning version.
+ * @deprecated Use the new migration framework instead. Kept for fallback compatibility.
  * Creates default canning state if none exists, preserves existing progress during updates.
  * @param loaded - The loaded game state to migrate
  * @returns Updated game state with current canning version

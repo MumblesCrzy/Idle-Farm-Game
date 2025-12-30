@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import type { BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 import UpgradeButton from './UpgradeButton';
 import { isUpgradeUnlocked } from '../data/beeUpgrades';
@@ -38,7 +38,7 @@ interface BeeUpgradesPanelProps {
   allUpgrades?: BeeUpgrade[]; // All upgrades for checking requirements across categories
 }
 
-const BeeUpgradesPanel: React.FC<BeeUpgradesPanelProps> = memo(({
+const BeeUpgradesPanel: FC<BeeUpgradesPanelProps> = memo(({
   upgrades,
   regularHoney,
   goldenHoney,

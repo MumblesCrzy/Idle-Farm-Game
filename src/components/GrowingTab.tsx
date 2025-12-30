@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
 import UpgradeButton from './UpgradeButton';
@@ -15,6 +15,7 @@ import {
   UPGRADE_AUTO_HARVESTER, 
   UPGRADE_HARVESTER_SPEED 
 } from '../config/assetPaths';
+import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import styles from './GrowingTab.module.css';
 
 interface GrowingTabProps {
@@ -203,7 +204,7 @@ function AutoPurchaserButton({ autoPurchaser, money, knowledge, description, onP
   );
 }
 
-const GrowingTab: React.FC<GrowingTabProps> = memo((props) => {
+const GrowingTab: FC<GrowingTabProps> = memo((props) => {
   const {
     veggies,
     activeVeggie,

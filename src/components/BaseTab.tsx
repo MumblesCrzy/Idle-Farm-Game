@@ -1,16 +1,16 @@
-import React from 'react';
+import type { FC, ReactNode, CSSProperties } from 'react';
 
 interface BaseTabProps {
   isUnlocked: boolean;
   isLoading?: boolean;
   loadingMessage?: string;
-  mainContent: React.ReactNode;
-  sidebarContent?: React.ReactNode;
-  sidebarStyle?: React.CSSProperties;
-  mainContentStyle?: React.CSSProperties;
+  mainContent: ReactNode;
+  sidebarContent?: ReactNode;
+  sidebarStyle?: CSSProperties;
+  mainContentStyle?: CSSProperties;
 }
 
-const BaseTab: React.FC<BaseTabProps> = ({
+const BaseTab: FC<BaseTabProps> = ({
   isUnlocked,
   isLoading = false,
   loadingMessage = 'Loading...',
@@ -42,7 +42,7 @@ const BaseTab: React.FC<BaseTabProps> = ({
   }
 
   // Default sidebar style - can be overridden
-  const defaultSidebarStyle: React.CSSProperties = {
+  const defaultSidebarStyle: CSSProperties = {
     width: '250px',
     borderRadius: '8px',
     padding: '1rem',
@@ -51,7 +51,7 @@ const BaseTab: React.FC<BaseTabProps> = ({
   };
 
   // Default main content style - can be overridden
-  const defaultMainContentStyle: React.CSSProperties = {
+  const defaultMainContentStyle: CSSProperties = {
     flex: 1,
     ...mainContentStyle
   };

@@ -367,17 +367,22 @@ export function useChristmasEvent({
   }, []);
   
   const spendCheer = useCallback((amount: number): boolean => {
-    if (eventState.holidayCheer < amount) {
-      return false;
-    }
+    // Use functional pattern with return value to avoid stale closure on holidayCheer
+    let success = false;
+    setEventState(prev => {
+      if (prev.holidayCheer < amount) {
+        success = false;
+        return prev;
+      }
+      success = true;
+      return {
+        ...prev,
+        holidayCheer: prev.holidayCheer - amount,
+      };
+    });
     
-    setEventState(prev => ({
-      ...prev,
-      holidayCheer: prev.holidayCheer - amount,
-    }));
-    
-    return true;
-  }, [eventState.holidayCheer]);
+    return success;
+  }, []);
   
   // ============================================================================
   // TREE MANAGEMENT
@@ -511,12 +516,17 @@ export function useChristmasEvent({
   }, []);
   
   const harvestAllTrees = useCallback(() => {
-    eventState.treePlots.forEach((plot, index) => {
-      if (plot.harvestReady) {
-        harvestTree(index);
-      }
+    // Use functional pattern to get current state and avoid stale closure
+    setEventState(prev => {
+      prev.treePlots.forEach((plot, index) => {
+        if (plot.harvestReady) {
+          // harvestTree will be called with current state
+          setTimeout(() => harvestTree(index), 0);
+        }
+      });
+      return prev; // No change needed, harvestTree handles updates
     });
-  }, [eventState.treePlots, harvestTree]);
+  }, [harvestTree]);
   
   // ============================================================================
   // CRAFTING
@@ -529,17 +539,20 @@ export function useChristmasEvent({
       return false;
     }
     
-    // Check if player has enough materials
-    const hasEnoughMaterials = Object.entries(recipe.inputs).every(([material, amount]) => {
-      return eventState.materials[material as keyof CraftingMaterials] >= amount * quantity;
-    });
-    
-    if (!hasEnoughMaterials) {
-      return false;
-    }
-    
-    // Deduct materials and add output
+    // Use functional pattern to avoid stale closure on eventState.materials
+    let success = false;
     setEventState(prev => {
+      // Check if player has enough materials using current state
+      const hasEnoughMaterials = Object.entries(recipe.inputs).every(([material, amount]) => {
+        return prev.materials[material as keyof CraftingMaterials] >= amount * quantity;
+      });
+      
+      if (!hasEnoughMaterials) {
+        success = false;
+        return prev;
+      }
+      
+      success = true;
       const newMaterials = { ...prev.materials };
       
       // Deduct inputs
@@ -559,48 +572,53 @@ export function useChristmasEvent({
     });
     
     // Log the crafting event
-    if (callbacksRef.current.onItemCrafted) {
+    if (success && callbacksRef.current.onItemCrafted) {
       callbacksRef.current.onItemCrafted(recipe.name, quantity);
     }
     
-    return true;
-  }, [eventState.materials]);
+    return success;
+  }, []);
   
   // ============================================================================
   // DECORATION
   // ============================================================================
   
   const decorateTree = useCallback((treeType: TreeType, decorations: DecorationType[]): boolean => {
-    // Check if player has a plain tree of this type (any quality)
-    // New format: treeType_quality_plain (e.g., pine_normal_plain, pine_perfect_plain)
-    const plainTreeKeys = Object.keys(eventState.treeInventory).filter(key => 
-      key.startsWith(`${treeType}_`) && key.endsWith('_plain')
-    );
+    // Use functional pattern to avoid stale closures on eventState
+    let success = false;
     
-    if (plainTreeKeys.length === 0) {
-      return false;
-    }
-    
-    // Use the first available plain tree (prioritize normal, then perfect, then luxury)
-    const sortedKeys = plainTreeKeys.sort((a, b) => {
-      const qualityOrder = { normal: 0, perfect: 1, luxury: 2 };
-      const qualityA = a.split('_')[1] as 'normal' | 'perfect' | 'luxury';
-      const qualityB = b.split('_')[1] as 'normal' | 'perfect' | 'luxury';
-      return qualityOrder[qualityA] - qualityOrder[qualityB];
-    });
-    const plainTreeKey = sortedKeys[0];
-    const quality = plainTreeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
-    
-    // Check if player has the materials for the decorations
-    const hasOrnaments = !decorations.includes('ornament') || eventState.materials.ornaments > 0;
-    const hasCandles = !decorations.includes('candle') || eventState.materials.candles > 0;
-    
-    if (!hasOrnaments || !hasCandles) {
-      return false;
-    }
-    
-    // Deduct plain tree, decoration materials, and add decorated tree to inventory
     setEventState(prev => {
+      // Check if player has a plain tree of this type (any quality)
+      // New format: treeType_quality_plain (e.g., pine_normal_plain, pine_perfect_plain)
+      const plainTreeKeys = Object.keys(prev.treeInventory).filter(key => 
+        key.startsWith(`${treeType}_`) && key.endsWith('_plain')
+      );
+      
+      if (plainTreeKeys.length === 0) {
+        success = false;
+        return prev;
+      }
+      
+      // Use the first available plain tree (prioritize normal, then perfect, then luxury)
+      const sortedKeys = plainTreeKeys.sort((a, b) => {
+        const qualityOrder = { normal: 0, perfect: 1, luxury: 2 };
+        const qualityA = a.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+        const qualityB = b.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+        return qualityOrder[qualityA] - qualityOrder[qualityB];
+      });
+      const plainTreeKey = sortedKeys[0];
+      const quality = plainTreeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+      
+      // Check if player has the materials for the decorations
+      const hasOrnaments = !decorations.includes('ornament') || prev.materials.ornaments > 0;
+      const hasCandles = !decorations.includes('candle') || prev.materials.candles > 0;
+      
+      if (!hasOrnaments || !hasCandles) {
+        success = false;
+        return prev;
+      }
+      
+      success = true;
       const newMaterials = { ...prev.materials };
       const newInventory = { ...prev.treeInventory };
       
@@ -631,8 +649,8 @@ export function useChristmasEvent({
       };
     });
     
-    return true;
-  }, [eventState.materials, eventState.treeInventory]);
+    return success;
+  }, []);
   
   const addToDecorationQueue = useCallback((treeType: TreeType, decorations: DecorationType[]) => {
     const newQueueItem = {
@@ -972,52 +990,67 @@ export function useChristmasEvent({
   const claimDailyBonus = useCallback((): boolean => {
     const today = new Date().toISOString().split('T')[0];
     
-    if (eventState.dailyBonus.lastClaimDate === today) {
-      return false; // Already claimed today
-    }
+    // Use functional pattern to avoid stale closure
+    let success = false;
+    setEventState(prev => {
+      if (prev.dailyBonus.lastClaimDate === today) {
+        success = false;
+        return prev; // Already claimed today
+      }
+      
+      success = true;
+      return {
+        ...prev,
+        holidayCheer: prev.holidayCheer + prev.dailyBonus.bonusAmount,
+        dailyBonus: {
+          ...prev.dailyBonus,
+          claimed: true,
+          lastClaimDate: today,
+        },
+      };
+    });
     
-    setEventState(prev => ({
-      ...prev,
-      holidayCheer: prev.holidayCheer + prev.dailyBonus.bonusAmount,
-      dailyBonus: {
-        ...prev.dailyBonus,
-        claimed: true,
-        lastClaimDate: today,
-      },
-    }));
-    
-    return true;
-  }, [eventState.dailyBonus]);
+    return success;
+  }, []);
   
   // ============================================================================
   // UPGRADES & MILESTONES
   // ============================================================================
   
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
-    const upgrade = eventState.upgrades.find(u => u.id === upgradeId);
+    // Use functional pattern to avoid stale closures
+    let success = false;
     
-    if (!upgrade) {
-      return false;
-    }
-    
-    // Check if upgrade is repeatable and at max level
-    if (upgrade.repeatable) {
-      const currentLevel = upgrade.level ?? 0;
-      const maxLevel = upgrade.maxLevel ?? Infinity;
+    setEventState(prev => {
+      const upgrade = prev.upgrades.find(u => u.id === upgradeId);
       
-      if (currentLevel >= maxLevel) {
-        return false; // Already at max level
+      if (!upgrade) {
+        success = false;
+        return prev;
       }
       
-      // Calculate cost for next level
-      const costScaling = upgrade.costScaling ?? 1.5;
-      const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
-      
-      if (!spendCheer(nextLevelCost)) {
-        return false;
-      }
-      
-      setEventState(prev => {
+      // Check if upgrade is repeatable and at max level
+      if (upgrade.repeatable) {
+        const currentLevel = upgrade.level ?? 0;
+        const maxLevel = upgrade.maxLevel ?? Infinity;
+        
+        if (currentLevel >= maxLevel) {
+          success = false;
+          return prev; // Already at max level
+        }
+        
+        // Calculate cost for next level
+        const costScaling = upgrade.costScaling ?? 1.5;
+        const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
+        
+        // Check if can afford
+        if (prev.holidayCheer < nextLevelCost) {
+          success = false;
+          return prev;
+        }
+        
+        success = true;
+        
         const newUpgrades = prev.upgrades.map(u => {
           if (u.id === upgradeId) {
             return {
@@ -1045,38 +1078,45 @@ export function useChristmasEvent({
             harvestReady: false,
           }];
           
+          // Log the upgrade purchase event (defer to avoid render-time setState)
+          if (callbacksRef.current.onUpgradePurchased) {
+            setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, nextLevelCost), 0);
+          }
+          
           return {
             ...prev,
+            holidayCheer: prev.holidayCheer - nextLevelCost,
             upgrades: newUpgrades,
             treePlots: newPlots,
             maxPlots: prev.maxPlots + 1,
           };
         }
         
+        // Log the upgrade purchase event (defer to avoid render-time setState)
+        if (callbacksRef.current.onUpgradePurchased) {
+          setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, nextLevelCost), 0);
+        }
+        
         return {
           ...prev,
+          holidayCheer: prev.holidayCheer - nextLevelCost,
           upgrades: newUpgrades,
         };
-      });
-      
-      // Log the upgrade purchase event
-      if (callbacksRef.current.onUpgradePurchased) {
-        callbacksRef.current.onUpgradePurchased(upgrade.name, nextLevelCost);
       }
       
-      return true;
-    }
-    
-    // Non-repeatable upgrade logic
-    if (upgrade.owned) {
-      return false;
-    }
-    
-    if (!spendCheer(upgrade.cost)) {
-      return false;
-    }
-    
-    setEventState(prev => {
+      // Non-repeatable upgrade logic
+      if (upgrade.owned) {
+        success = false;
+        return prev;
+      }
+      
+      if (prev.holidayCheer < upgrade.cost) {
+        success = false;
+        return prev;
+      }
+      
+      success = true;
+      
       const newUpgrades = prev.upgrades.map(u =>
         u.id === upgradeId ? { ...u, owned: true } : u
       );
@@ -1090,58 +1130,70 @@ export function useChristmasEvent({
         }
       }
       
+      // Log the upgrade purchase event (defer to avoid render-time setState)
+      if (callbacksRef.current.onUpgradePurchased) {
+        setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, upgrade.cost), 0);
+      }
+      
       return {
         ...prev,
+        holidayCheer: prev.holidayCheer - upgrade.cost,
         upgrades: newUpgrades,
         passiveCheerPerSecond: newPassiveCheerPerSecond,
       };
     });
     
-    // Log the upgrade purchase event
-    if (callbacksRef.current.onUpgradePurchased) {
-      callbacksRef.current.onUpgradePurchased(upgrade.name, upgrade.cost);
-    }
-    
-    return true;
-  }, [eventState.upgrades, spendCheer]);
+    return success;
+  }, []);
   
   const claimMilestone = useCallback((milestoneId: string): boolean => {
-    const milestone = eventState.milestones.find(m => m.id === milestoneId);
+    // Use functional pattern to avoid stale closures
+    let success = false;
+    let milestoneName = '';
     
-    if (!milestone || milestone.claimed) {
-      return false;
-    }
-    
-    if (eventState.totalTreesSold < milestone.requirement) {
-      return false;
-    }
-    
-    setEventState(prev => ({
-      ...prev,
-      milestones: prev.milestones.map(m =>
-        m.id === milestoneId ? { ...m, claimed: true } : m
-      ),
-    }));
-    
-    // Apply rewards
-    if (milestone.reward.cheerAmount) {
-      earnCheer(milestone.reward.cheerAmount);
-    }
-    
-    if (milestone.reward.cosmeticId) {
-      setEventState(prev => ({
+    setEventState(prev => {
+      const milestone = prev.milestones.find(m => m.id === milestoneId);
+      
+      if (!milestone || milestone.claimed) {
+        success = false;
+        return prev;
+      }
+      
+      if (prev.totalTreesSold < milestone.requirement) {
+        success = false;
+        return prev;
+      }
+      
+      success = true;
+      milestoneName = milestone.name;
+      
+      // Apply cheer reward directly in state update
+      const newHolidayCheer = milestone.reward.cheerAmount 
+        ? prev.holidayCheer + milestone.reward.cheerAmount 
+        : prev.holidayCheer;
+      
+      // Apply cosmetic reward if any
+      const newUnlockedCosmetics = milestone.reward.cosmeticId
+        ? [...prev.unlockedCosmetics, milestone.reward.cosmeticId]
+        : prev.unlockedCosmetics;
+      
+      return {
         ...prev,
-        unlockedCosmetics: [...prev.unlockedCosmetics, milestone.reward.cosmeticId!],
-      }));
+        holidayCheer: newHolidayCheer,
+        unlockedCosmetics: newUnlockedCosmetics,
+        milestones: prev.milestones.map(m =>
+          m.id === milestoneId ? { ...m, claimed: true } : m
+        ),
+      };
+    });
+    
+    // Log the milestone claim event (defer to avoid render-time setState)
+    if (success && callbacksRef.current.onMilestoneClaimed) {
+      setTimeout(() => callbacksRef.current.onMilestoneClaimed?.(milestoneName), 0);
     }
     
-    // Log the milestone claim event
-    if (callbacksRef.current.onMilestoneClaimed) {
-      callbacksRef.current.onMilestoneClaimed(milestone.name);
-    }
-    
-    return true;
-  }, [eventState.milestones, eventState.totalTreesSold, earnCheer]);
+    return success;
+  }, []);
   
   // ============================================================================
   // COSMETICS
@@ -1165,11 +1217,19 @@ export function useChristmasEvent({
   // ============================================================================
   
   const updatePassiveIncome = useCallback((deltaTime: number) => {
-    if (eventState.passiveCheerPerSecond > 0) {
-      const cheerGained = eventState.passiveCheerPerSecond * (deltaTime / 1000);
-      earnCheer(Math.floor(cheerGained));
-    }
-  }, [eventState.passiveCheerPerSecond, earnCheer]);
+    // Use functional pattern to avoid stale closure on passiveCheerPerSecond
+    setEventState(prev => {
+      if (prev.passiveCheerPerSecond > 0) {
+        const cheerGained = prev.passiveCheerPerSecond * (deltaTime / 1000);
+        return {
+          ...prev,
+          holidayCheer: prev.holidayCheer + Math.floor(cheerGained),
+          totalCheerEarned: prev.totalCheerEarned + Math.floor(cheerGained),
+        };
+      }
+      return prev;
+    });
+  }, []);
   
   // ============================================================================
   // TREE GROWTH PROCESSING

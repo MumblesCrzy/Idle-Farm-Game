@@ -10,7 +10,7 @@
  * - Passive income display (Golden Bell Counter)
  */
 
-import React, { memo, useState } from 'react';
+import { memo, useState, type FC, type ChangeEvent } from 'react';
 import type { TreeInventory, EventUpgrade, CraftingMaterials } from '../types/christmasEvent';
 import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import BaseTab from './BaseTab';
@@ -73,7 +73,7 @@ interface PriceCardProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const PriceCard: React.FC<PriceCardProps> = memo(({ variant, quantity, demandMultiplier, onSell, formatNumber }) => {
+const PriceCard: FC<PriceCardProps> = memo(({ variant, quantity, demandMultiplier, onSell, formatNumber }) => {
   const [sellQuantity, setSellQuantity] = useState(0);
   
   const finalPrice = Math.floor(variant.basePrice * variant.multiplier * demandMultiplier);
@@ -93,7 +93,7 @@ const PriceCard: React.FC<PriceCardProps> = memo(({ variant, quantity, demandMul
     }
   };
   
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSellQuantity(Math.min(parseInt(e.target.value) || 0, quantity));
   };
   
@@ -167,7 +167,7 @@ PriceCard.displayName = 'PriceCard';
 /**
  * Main Shopfront Tab Component
  */
-const ShopfrontTab: React.FC<ShopfrontTabProps> = ({
+const ShopfrontTab: FC<ShopfrontTabProps> = ({
   treeInventory,
   materials,
   sellTrees,

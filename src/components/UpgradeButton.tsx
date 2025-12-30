@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo, type FC } from 'react';
 import { ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
 import styles from './UpgradeButton.module.css';
 
@@ -26,7 +26,7 @@ export interface UpgradeButtonProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const UpgradeButton: React.FC<UpgradeButtonProps> = ({ 
+const UpgradeButton: FC<UpgradeButtonProps> = memo(({ 
   title, 
   imageSrc, 
   buttonText, 
@@ -194,6 +194,8 @@ const UpgradeButton: React.FC<UpgradeButtonProps> = ({
       {renderButtonContent()}
     </button>
   );
-};
+});
+
+UpgradeButton.displayName = 'UpgradeButton';
 
 export default UpgradeButton;

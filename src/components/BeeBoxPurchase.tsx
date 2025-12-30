@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import { ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
 import styles from './BeeBoxPurchase.module.css';
 
@@ -10,7 +10,7 @@ interface BeeBoxPurchaseProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeeBoxPurchase: React.FC<BeeBoxPurchaseProps> = memo(({
+const BeeBoxPurchase: FC<BeeBoxPurchaseProps> = memo(({
   currentBoxes,
   maxBoxes,
   regularHoney,

@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import UpgradeButton from './UpgradeButton';
 import type { EventUpgrade } from '../types/christmasEvent';
 import styles from './FarmingUpgradesPanel.module.css';
@@ -25,7 +25,7 @@ interface HolidayCheerUpgradeButtonProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const HolidayCheerUpgradeButton: React.FC<HolidayCheerUpgradeButtonProps> = ({
+const HolidayCheerUpgradeButton: FC<HolidayCheerUpgradeButtonProps> = ({
   title,
   imageSrc,
   buttonText,
@@ -64,7 +64,7 @@ const HolidayCheerUpgradeButton: React.FC<HolidayCheerUpgradeButtonProps> = ({
   );
 };
 
-const FarmingUpgradesPanel: React.FC<FarmingUpgradesPanelProps> = memo(({ 
+const FarmingUpgradesPanel: FC<FarmingUpgradesPanelProps> = memo(({
   upgrades, 
   holidayCheer, 
   purchaseUpgrade,

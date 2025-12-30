@@ -1,4 +1,4 @@
-import type { CanningAutoPurchase } from '../types/canning';
+import type { CanningAutoPurchase, CanningUpgrade, CanningIngredient, Recipe } from '../types/canning';
 
 /**
  * Pre-configured auto-purchaser definitions for the canning system.
@@ -109,7 +109,7 @@ export function canAffordAutoPurchaser(
  */
 export function shouldPurchaseUpgrade(
   autoPurchaser: CanningAutoPurchase,
-  upgrade: any, // CanningUpgrade type
+  upgrade: CanningUpgrade,
   money: number,
   knowledge: number
 ): boolean {
@@ -136,7 +136,7 @@ export function shouldPurchaseUpgrade(
  * @returns Recipe ID to make, or null if no eligible recipes
  */
 export function selectBestRecipe(
-  availableRecipes: any[], // Recipe[] type
+  availableRecipes: Recipe[],
   veggies: Array<{name: string, stash: number, salePrice: number}>,
   config: AutoCanningConfig
 ): string | null {
@@ -153,13 +153,13 @@ export function selectBestRecipe(
     
     // Check if we have enough ingredients (accounting for excess threshold)
     if (config.onlyUseExcess) {
-      return recipe.ingredients.every((ingredient: any) => {
+      return recipe.ingredients.every((ingredient: CanningIngredient) => {
         const veggie = veggies.find(v => v.name === ingredient.veggieName);
         if (!veggie) return false;
         return veggie.stash >= ingredient.quantity + config.excessThreshold;
       });
     } else {
-      return recipe.ingredients.every((ingredient: any) => {
+      return recipe.ingredients.every((ingredient: CanningIngredient) => {
         const veggie = veggies.find(v => v.name === ingredient.veggieName);
         if (!veggie) return false;
         return veggie.stash >= ingredient.quantity;
@@ -209,8 +209,8 @@ export function selectBestRecipe(
  * @param veggies - Current vegetable data with sale prices
  * @returns The profit amount (can be negative if recipe loses money)
  */
-function calculateRecipeProfit(recipe: any, veggies: Array<{name: string, stash: number, salePrice: number}>): number {
-  const rawValue = recipe.ingredients.reduce((total: number, ingredient: any) => {
+function calculateRecipeProfit(recipe: Recipe, veggies: Array<{name: string, stash: number, salePrice: number}>): number {
+  const rawValue = recipe.ingredients.reduce((total: number, ingredient: CanningIngredient) => {
     const veggie = veggies.find(v => v.name === ingredient.veggieName);
     return total + (veggie?.salePrice || 0) * ingredient.quantity;
   }, 0);
@@ -246,7 +246,7 @@ export function updateAutoPurchaserTimers(
  */
 export function processAutoPurchases(
   autoPurchasers: CanningAutoPurchase[],
-  upgrades: any[], // CanningUpgrade[] type
+  upgrades: CanningUpgrade[],
   money: number,
   knowledge: number,
   onPurchaseUpgrade: (upgradeId: string) => boolean

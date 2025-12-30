@@ -1,20 +1,20 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 
 interface ArchieContextType {
   archieClicked: boolean;
-  setArchieClicked: React.Dispatch<React.SetStateAction<boolean>>;
+  setArchieClicked: Dispatch<SetStateAction<boolean>>;
   archieReward: number;
-  setArchieReward: React.Dispatch<React.SetStateAction<number>>;
+  setArchieReward: Dispatch<SetStateAction<number>>;
   archieCheerReward: number;
-  setArchieCheerReward: React.Dispatch<React.SetStateAction<number>>;
+  setArchieCheerReward: Dispatch<SetStateAction<number>>;
   lastClickTime: number;
-  setLastClickTime: React.Dispatch<React.SetStateAction<number>>;
+  setLastClickTime: Dispatch<SetStateAction<number>>;
   archieClickStreak: number;
-  setArchieClickStreak: React.Dispatch<React.SetStateAction<number>>;
+  setArchieClickStreak: Dispatch<SetStateAction<number>>;
   soundEnabled: boolean;
-  setSoundEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+  setSoundEnabled: Dispatch<SetStateAction<boolean>>;
   archieAppearance: 'default' | 'reindeer' | 'sweater' | 'pinecones';
-  setArchieAppearance: React.Dispatch<React.SetStateAction<'default' | 'reindeer' | 'sweater' | 'pinecones'>>;
+  setArchieAppearance: Dispatch<SetStateAction<'default' | 'reindeer' | 'sweater' | 'pinecones'>>;
   handleArchieClick: (gameState?: { 
     money: number; 
     experience: number; 
@@ -29,7 +29,7 @@ const STREAK_TIMEOUT = 30 * 10000; // 300 seconds to maintain a streak
 
 const ArchieContext = createContext<ArchieContextType | undefined>(undefined);
 
-export const ArchieProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [archieClicked, setArchieClicked] = useState(false);
   const [archieReward, setArchieReward] = useState(0);
   const [archieCheerReward, setArchieCheerReward] = useState(0);

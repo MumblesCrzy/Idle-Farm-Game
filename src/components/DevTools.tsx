@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState, useCallback, type FC } from 'react';
 import styles from './DevTools.module.css';
 import { ICON_CANNING, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
+import { validateNumber, sanitizeDayCount } from '../utils/validation';
 
 interface DevToolsProps {
   onAddMoney: (amount: number) => void;
@@ -24,7 +25,7 @@ interface DevToolsProps {
   onAddBeeBox?: () => void;
 }
 
-const DevTools: React.FC<DevToolsProps> = ({
+const DevTools: FC<DevToolsProps> = ({
   onAddMoney,
   onAddExperience,
   onAddKnowledge,
@@ -48,22 +49,103 @@ const DevTools: React.FC<DevToolsProps> = ({
   const [customExp, setCustomExp] = useState('100');
   const [customKnowledge, setCustomKnowledge] = useState('100');
   const [customDays, setCustomDays] = useState('7');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Helper to skip days and process tree growth
-  const handleSkipDays = (days: number) => {
-    onSkipDays(days);
+  // Validation constants for resource inputs
+  const MAX_RESOURCE_AMOUNT = 1e12; // 1 trillion max
+  const MAX_SKIP_DAYS = 365000; // ~1000 years
+
+  // Validates and sanitizes resource input, returns sanitized value or null if invalid
+  const validateResourceInput = useCallback((value: string, fieldName: string): number | null => {
+    const result = validateNumber(value, {
+      min: 0,
+      max: MAX_RESOURCE_AMOUNT,
+      allowNegative: false,
+      allowDecimal: false,
+      defaultValue: 0
+    });
+
+    if (!result.valid) {
+      setValidationErrors(prev => ({ ...prev, [fieldName]: result.error || 'Invalid input' }));
+      return null;
+    }
+
+    // Clear any previous error
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+
+    return result.sanitizedValue ?? 0;
+  }, []);
+
+  // Handles adding money with validation
+  const handleAddMoney = useCallback(() => {
+    const amount = validateResourceInput(customMoney, 'money');
+    if (amount !== null && amount > 0) {
+      onAddMoney(amount);
+    }
+  }, [customMoney, onAddMoney, validateResourceInput]);
+
+  // Handles adding experience with validation
+  const handleAddExp = useCallback(() => {
+    const amount = validateResourceInput(customExp, 'exp');
+    if (amount !== null && amount > 0) {
+      onAddExperience(amount);
+    }
+  }, [customExp, onAddExperience, validateResourceInput]);
+
+  // Handles adding knowledge with validation
+  const handleAddKnowledge = useCallback(() => {
+    const amount = validateResourceInput(customKnowledge, 'knowledge');
+    if (amount !== null && amount > 0) {
+      onAddKnowledge(amount);
+    }
+  }, [customKnowledge, onAddKnowledge, validateResourceInput]);
+
+  // Helper to skip days and process tree growth with validation
+  const handleSkipDays = useCallback((days: number) => {
+    // Validate days - must be at least 1 and not exceed max
+    const sanitizedDays = sanitizeDayCount(days);
+    
+    onSkipDays(sanitizedDays);
     
     // Process tree growth for each day (86400 seconds per day)
     if (onProcessTreeGrowth) {
       const ticksPerDay = 86400; // 1 tick per second
-      const totalTicks = days * ticksPerDay;
+      const totalTicks = sanitizedDays * ticksPerDay;
       
       // Process all ticks
       for (let i = 0; i < totalTicks; i++) {
         onProcessTreeGrowth();
       }
     }
-  };
+  }, [onSkipDays, onProcessTreeGrowth]);
+
+  // Handles custom days input with validation
+  const handleCustomSkipDays = useCallback(() => {
+    const result = validateNumber(customDays, {
+      min: 1,
+      max: MAX_SKIP_DAYS,
+      allowNegative: false,
+      allowDecimal: false,
+      defaultValue: 1
+    });
+
+    if (!result.valid) {
+      setValidationErrors(prev => ({ ...prev, days: result.error || 'Invalid input' }));
+      return;
+    }
+
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.days;
+      return newErrors;
+    });
+
+    handleSkipDays(result.sanitizedValue ?? 1);
+  }, [customDays, handleSkipDays]);
 
   // Only show in development mode
   if (import.meta.env.PROD) {
@@ -131,14 +213,21 @@ const DevTools: React.FC<DevToolsProps> = ({
                   type="number"
                   value={customMoney}
                   onChange={(e) => setCustomMoney(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${validationErrors.money ? styles.inputError : ''}`}
+                  min="0"
+                  max={MAX_RESOURCE_AMOUNT}
+                  aria-invalid={!!validationErrors.money}
+                  aria-describedby={validationErrors.money ? 'money-error' : undefined}
                 />
                 <button 
-                  onClick={() => onAddMoney(parseInt(customMoney) || 0)}
+                  onClick={handleAddMoney}
                   className={styles.smallButton}
                 >
                   Add
                 </button>
+                {validationErrors.money && (
+                  <span id="money-error" className={styles.errorMessage}>{validationErrors.money}</span>
+                )}
               </label>
 
               <label className={styles.inputLabel}>
@@ -147,14 +236,21 @@ const DevTools: React.FC<DevToolsProps> = ({
                   type="number"
                   value={customExp}
                   onChange={(e) => setCustomExp(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${validationErrors.exp ? styles.inputError : ''}`}
+                  min="0"
+                  max={MAX_RESOURCE_AMOUNT}
+                  aria-invalid={!!validationErrors.exp}
+                  aria-describedby={validationErrors.exp ? 'exp-error' : undefined}
                 />
                 <button 
-                  onClick={() => onAddExperience(parseInt(customExp) || 0)}
+                  onClick={handleAddExp}
                   className={styles.smallButton}
                 >
                   Add
                 </button>
+                {validationErrors.exp && (
+                  <span id="exp-error" className={styles.errorMessage}>{validationErrors.exp}</span>
+                )}
               </label>
 
               <label className={styles.inputLabel}>
@@ -163,14 +259,21 @@ const DevTools: React.FC<DevToolsProps> = ({
                   type="number"
                   value={customKnowledge}
                   onChange={(e) => setCustomKnowledge(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${validationErrors.knowledge ? styles.inputError : ''}`}
+                  min="0"
+                  max={MAX_RESOURCE_AMOUNT}
+                  aria-invalid={!!validationErrors.knowledge}
+                  aria-describedby={validationErrors.knowledge ? 'knowledge-error' : undefined}
                 />
                 <button 
-                  onClick={() => onAddKnowledge(parseInt(customKnowledge) || 0)}
+                  onClick={handleAddKnowledge}
                   className={styles.smallButton}
                 >
                   Add
                 </button>
+                {validationErrors.knowledge && (
+                  <span id="knowledge-error" className={styles.errorMessage}>{validationErrors.knowledge}</span>
+                )}
               </label>
             </div>
           </div>
@@ -194,15 +297,21 @@ const DevTools: React.FC<DevToolsProps> = ({
                   type="number"
                   value={customDays}
                   onChange={(e) => setCustomDays(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${validationErrors.days ? styles.inputError : ''}`}
                   min="1"
+                  max={MAX_SKIP_DAYS}
+                  aria-invalid={!!validationErrors.days}
+                  aria-describedby={validationErrors.days ? 'days-error' : undefined}
                 />
                 <button 
-                  onClick={() => handleSkipDays(parseInt(customDays) || 0)}
+                  onClick={handleCustomSkipDays}
                   className={styles.smallButton}
                 >
                   Skip
                 </button>
+                {validationErrors.days && (
+                  <span id="days-error" className={styles.errorMessage}>{validationErrors.days}</span>
+                )}
               </label>
             </div>
           </div>

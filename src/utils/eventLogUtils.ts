@@ -158,6 +158,232 @@ export function formatExperience(amount: number): string {
   return `${amount.toFixed(0)} exp`;
 }
 
+// ============================================================================
+// TYPE-SAFE EVENT METADATA BUILDERS
+// ============================================================================
+
+export interface EventOptions {
+  priority: EventPriority;
+  details: string;
+  icon: string;
+  metadata: EventMetadata;
+}
+
+/**
+ * Build harvest event options
+ */
+export function buildHarvestEvent(
+  veggieName: string,
+  amount: number,
+  expGain: number,
+  knGain: number,
+  isAuto: boolean,
+  icons: { automation: string; harvest: string }
+): EventOptions {
+  return {
+    priority: 'normal',
+    details: isAuto
+      ? `Auto-harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`
+      : `Manually harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`,
+    icon: isAuto ? icons.automation : icons.harvest,
+    metadata: {
+      veggieName,
+      amount,
+      moneyGained: 0,
+      knowledgeGained: knGain,
+      experienceGained: expGain
+    }
+  };
+}
+
+/**
+ * Build auto-purchase event options
+ */
+export function buildAutoPurchaseEvent(
+  veggieName: string,
+  autoPurchaserName: string,
+  upgradeType: string,
+  upgradeLevel: number,
+  cost: number,
+  currencyType: 'money' | 'knowledge',
+  icon: string
+): EventOptions {
+  const upgradeNames: Record<string, string> = {
+    fertilizer: 'Fertilizer',
+    betterSeeds: 'Better Seeds',
+    harvesterSpeed: 'Harvester Speed',
+    additionalPlot: 'Additional Plot'
+  };
+  const costDisplay = currencyType === 'money' ? `$${cost}` : `${cost} knowledge`;
+
+  return {
+    priority: 'minor',
+    details: `${veggieName} ${upgradeNames[upgradeType] || upgradeType} upgraded to level ${upgradeLevel} (${costDisplay})`,
+    icon,
+    metadata: {
+      veggieName,
+      autoPurchaserName,
+      upgradeType,
+      upgradeLevel,
+      cost
+    }
+  };
+}
+
+/**
+ * Build merchant sale event options
+ */
+export function buildMerchantSaleEvent(
+  totalMoney: number,
+  veggiesSold: Array<{ name: string; quantity: number; earnings: number }>,
+  isAutoSell: boolean,
+  icons: { merchant: string; money: string }
+): EventOptions {
+  const veggiesList = veggiesSold.map(v => `${v.quantity} ${v.name}`).join(', ');
+
+  return {
+    priority: 'important',
+    details: `Sold ${veggiesList} for $${totalMoney}`,
+    icon: isAutoSell ? icons.merchant : icons.money,
+    metadata: {
+      moneyGained: totalMoney,
+      veggiesSold
+    }
+  };
+}
+
+/**
+ * Build achievement unlock event options
+ */
+export function buildAchievementEvent(
+  achievement: { name: string; description: string; reward?: { money?: number; knowledge?: number } | null }
+): EventOptions {
+  const rewardText = achievement.reward
+    ? (() => {
+        const parts: string[] = [];
+        if (achievement.reward.money) parts.push(`+$${achievement.reward.money}`);
+        if (achievement.reward.knowledge) parts.push(`+${achievement.reward.knowledge} knowledge`);
+        return parts.length > 0 ? ` (${parts.join(', ')})` : '';
+      })()
+    : '';
+
+  return {
+    priority: 'important',
+    details: `${achievement.description}${rewardText}`,
+    icon: '🏆',
+    metadata: {}
+  };
+}
+
+/**
+ * Build canning start event options
+ */
+export function buildCanningStartEvent(
+  recipeName: string,
+  ingredients: string,
+  processingTime: number,
+  isAuto: boolean,
+  icons: { automation: string; canning: string }
+): EventOptions {
+  return {
+    priority: 'minor',
+    details: `Using ${ingredients} (${processingTime}s)`,
+    icon: isAuto ? icons.automation : icons.canning,
+    metadata: {
+      recipeName,
+      processingTime
+    }
+  };
+}
+
+/**
+ * Build canning complete event options
+ */
+export function buildCanningCompleteEvent(
+  recipeName: string,
+  moneyEarned: number,
+  knowledgeEarned: number,
+  itemsProduced: number,
+  isAuto: boolean
+): EventOptions {
+  const bonusText = itemsProduced > 1 ? ` (${itemsProduced} items!)` : '';
+
+  return {
+    priority: 'normal',
+    details: `Earned $${moneyEarned.toFixed(2)} and ${knowledgeEarned} knowledge${bonusText}`,
+    icon: isAuto ? '✅' : '🎉',
+    metadata: {
+      recipeName,
+      moneyGained: moneyEarned,
+      knowledgeGained: knowledgeEarned
+    }
+  };
+}
+
+/**
+ * Build Christmas tree sold event options
+ */
+export function buildTreeSoldEvent(
+  treeType: string,
+  quantity: number,
+  cheerEarned: number
+): EventOptions {
+  return {
+    priority: 'normal',
+    details: `Earned ${cheerEarned} Holiday Cheer`,
+    icon: '🎄',
+    metadata: { treeType, quantity, cheerEarned }
+  };
+}
+
+/**
+ * Build Christmas tree harvested event options
+ */
+export function buildTreeHarvestedEvent(treeType: string, quality: string): EventOptions {
+  return {
+    priority: 'minor',
+    details: `Quality: ${quality}`,
+    icon: '🌲',
+    metadata: { treeType, quality }
+  };
+}
+
+/**
+ * Build Christmas item crafted event options
+ */
+export function buildItemCraftedEvent(itemName: string, quantity: number): EventOptions {
+  return {
+    priority: 'minor',
+    details: `Created ${quantity} ${itemName}`,
+    icon: '🎨',
+    metadata: { itemName, quantity }
+  };
+}
+
+/**
+ * Build Christmas upgrade purchased event options
+ */
+export function buildUpgradePurchasedEvent(upgradeName: string, cost: number): EventOptions {
+  return {
+    priority: 'normal',
+    details: `Cost: ${cost} Holiday Cheer`,
+    icon: '⭐',
+    metadata: { upgradeName, cost }
+  };
+}
+
+/**
+ * Build milestone claimed event options
+ */
+export function buildMilestoneClaimedEvent(milestoneName: string): EventOptions {
+  return {
+    priority: 'important',
+    details: milestoneName,
+    icon: '🎁',
+    metadata: { milestoneName }
+  };
+}
+
 /**
  * Trim event log to maximum entries (keeps most recent)
  */

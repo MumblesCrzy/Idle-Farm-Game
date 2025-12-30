@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo, type FC } from 'react';
 import { ICON_TROPHY, ICON_SCROLL } from '../config/assetPaths';
 import styles from './HeaderBar.module.css';
 
@@ -12,7 +12,7 @@ interface HeaderBarProps {
   unreadEventCount?: number;
 }
 
-const HeaderBar: React.FC<HeaderBarProps> = memo(({
+const HeaderBar: FC<HeaderBarProps> = memo(({
   setShowInfoOverlay,
   setShowSettingsOverlay,
   setShowAchievements,
