@@ -4,6 +4,7 @@ import { validateSaveData } from '../utils/validation';
 import type { Veggie } from '../types/game';
 import type { CanningState } from '../types/canning';
 import type { BeeState } from '../types/bees';
+import type { ChristmasEventState } from '../types/christmasEvent';
 import styles from './SaveLoadSystem.module.css';
 
 /** Loading states for async operations */
@@ -33,7 +34,7 @@ interface SaveLoadSystemProps {
   currentWeather: string;
   canningState: CanningState;
   beeState?: BeeState | null;
-  christmasEventState?: any; // ChristmasEventState
+  christmasEventState?: ChristmasEventState;
   permanentBonuses?: string[];
   
   // Function to reset the game

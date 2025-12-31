@@ -394,9 +394,6 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       type: 'custom',
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
-        if (boxCount >= 5) {
-          console.log(`[Buzzing Business] Box count: ${boxCount}, Required: 10`);
-        }
         return boxCount >= 10;
       }
     },
@@ -415,9 +412,6 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       type: 'custom',
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
-        if (boxCount >= 20) {
-          console.log(`[Apiary Master] Box count: ${boxCount}, Required: 25`);
-        }
         return boxCount >= 25;
       }
     },
@@ -437,9 +431,6 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       type: 'custom',
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
-        if (boxCount >= 25) {
-          console.log(`[Sweet Empire] Box count: ${boxCount}, Required: 30`);
-        }
         return boxCount >= 30;
       }
     },

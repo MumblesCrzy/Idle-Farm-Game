@@ -1,4 +1,5 @@
 import type { CanningAutoPurchase, CanningUpgrade, CanningIngredient, Recipe } from '../types/canning';
+import { CANNING_AUTO_PURCHASER_CONFIG, AUTO_CANNING_EXCESS_THRESHOLD } from '../config/gameConstants';
 
 /**
  * Pre-configured auto-purchaser definitions for the canning system.
@@ -9,10 +10,10 @@ export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
     id: 'canning_engineer',
     name: 'Canning Engineer',
     upgradeId: 'canning_speed',
-    cycleDays: 10, // Longer cycle for more expensive upgrades
+    cycleDays: CANNING_AUTO_PURCHASER_CONFIG.canningEngineer.cycleDays,
     owned: false,
     active: false,
-    cost: 2500,
+    cost: CANNING_AUTO_PURCHASER_CONFIG.canningEngineer.cost,
     timer: 0,
     costCurrency: 'money'
   },
@@ -20,10 +21,10 @@ export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
     id: 'preservation_specialist',
     name: 'Preservation Specialist',
     upgradeId: 'canning_efficiency',
-    cycleDays: 10,
+    cycleDays: CANNING_AUTO_PURCHASER_CONFIG.preservationSpecialist.cycleDays,
     owned: false,
     active: false,
-    cost: 3000,
+    cost: CANNING_AUTO_PURCHASER_CONFIG.preservationSpecialist.cost,
     timer: 0,
     costCurrency: 'knowledge'
   },
@@ -31,10 +32,10 @@ export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
     id: 'quality_inspector',
     name: 'Quality Inspector',
     upgradeId: 'preservation_mastery',
-    cycleDays: 12,
+    cycleDays: CANNING_AUTO_PURCHASER_CONFIG.qualityInspector.cycleDays,
     owned: false,
     active: false,
-    cost: 4000,
+    cost: CANNING_AUTO_PURCHASER_CONFIG.qualityInspector.cost,
     timer: 0,
     costCurrency: 'knowledge'
   },
@@ -42,10 +43,10 @@ export const CANNING_AUTO_PURCHASERS: CanningAutoPurchase[] = [
     id: 'factory_manager',
     name: 'Factory Manager',
     upgradeId: 'simultaneous_processing',
-    cycleDays: 15, // Longest cycle for most expensive upgrade
+    cycleDays: CANNING_AUTO_PURCHASER_CONFIG.factoryManager.cycleDays,
     owned: false,
     active: false,
-    cost: 7500,
+    cost: CANNING_AUTO_PURCHASER_CONFIG.factoryManager.cost,
     timer: 0,
     costCurrency: 'money'
   }
@@ -79,7 +80,7 @@ export const DEFAULT_AUTO_CANNING_CONFIG: AutoCanningConfig = {
   selectedRecipes: [],
   priorityOrder: [],
   onlyUseExcess: true,
-  excessThreshold: 10, // Keep 10 of each vegetable
+  excessThreshold: AUTO_CANNING_EXCESS_THRESHOLD,
   pauseWhenFull: true
 };
 

@@ -5,6 +5,7 @@ import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
 import EventLogOverlay from './components/EventLogOverlay';
 import FeatureFlagsPanel from './components/FeatureFlagsPanel';
+import { useFeatureFlag } from './context/FeatureFlagsContext';
 
 // Lazy-loaded tab components for code splitting
 const GrowingTab = lazy(() => import('./components/GrowingTab'));
@@ -82,7 +83,7 @@ import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProg
 import type { Veggie, GameState, EventCategory, EventPriority, WeatherType } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
-import type { Achievement } from './types/achievements';
+import type { AchievementOrMilestone } from './types/achievements';
 import {
   RAIN_CHANCES,
   DROUGHT_CHANCES,
@@ -1211,23 +1212,42 @@ const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumbe
 function App() {
   const { soundEnabled, setSoundEnabled, archieAppearance, setArchieAppearance } = useArchie();
   
+  // Feature flags for controlling feature visibility (dev mode only)
+  // In production, all features are always enabled (except DevTools which is always disabled)
+  const isDev = import.meta.env.DEV;
+  const beeSystemFlag = useFeatureFlag('beeSystem');
+  const christmasEventFlag = useFeatureFlag('christmasEvent');
+  const achievementSystemFlag = useFeatureFlag('achievementSystem');
+  const archieCharacterFlag = useFeatureFlag('archieCharacter');
+  const devToolsFlag = useFeatureFlag('enableDevTools');
+  
+  // Apply flags only in dev mode; in production all features enabled (except DevTools)
+  const beeSystemEnabled = isDev ? beeSystemFlag : true;
+  const christmasEventEnabled = isDev ? christmasEventFlag : true;
+  const achievementSystemEnabled = isDev ? achievementSystemFlag : true;
+  const archieCharacterEnabled = isDev ? archieCharacterFlag : true;
+  const devToolsEnabled = isDev ? devToolsFlag : false;
+  
   // Get event log callback interface from context and game flags
   const eventLogCallbacks = useEventLog();
   const { justReset, blockAchievementChecks } = useGameFlags();
   
+  // Load game state once and memoize it for all initial state values
+  // This prevents multiple localStorage reads during component initialization
+  const [loadedGameState] = useState(() => {
+    try {
+      return loadGameStateWithCanning();
+    } catch (error) {
+      console.error('Error loading game state:', error);
+      return null;
+    }
+  });
+  
   // ArchieIcon component adds a clickable character that
   // appears randomly on the screen and gives the player money when clicked
   
-  // Initialize bee state for game
-  const [initialBeeState] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      return loaded?.beeState || undefined;
-    } catch (error) {
-      console.error('Error loading bee state:', error);
-      return undefined;
-    }
-  });
+  // Initialize bee state for game (uses pre-loaded state)
+  const [initialBeeState] = useState(() => loadedGameState?.beeState || undefined);
   
   // Track current bee state for auto-save
   const [beeState, setBeeState] = useState<BeeState | null>(null);
@@ -1266,15 +1286,10 @@ function App() {
     message: '',
   });
 
-  // Harvest tutorial state - one-time tutorial for first harvest
-  const [harvestTutorialShown, setHarvestTutorialShown] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      return loaded?.harvestTutorialShown || false;
-    } catch (error) {
-      return false;
-    }
-  });
+  // Harvest tutorial state - one-time tutorial for first harvest (uses pre-loaded state)
+  const [harvestTutorialShown, setHarvestTutorialShown] = useState(
+    () => loadedGameState?.harvestTutorialShown || false
+  );
   const [showHarvestTutorial, setShowHarvestTutorial] = useState(false);
 
   // Handler to dismiss harvest tutorial
@@ -1287,28 +1302,17 @@ function App() {
   const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas'>('growing');
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
   
-  // Load initial canning state fresh each time
-  const [initialCanningState] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      return loaded?.canningState || undefined;
-    } catch (error) {
-      console.error('Error loading canning state:', error);
-      return undefined;
-    }
-  });
+  // Initialize canning state (uses pre-loaded state)
+  const [initialCanningState] = useState(() => loadedGameState?.canningState || undefined);
 
-  // Load and manage UI preferences
+  // Load and manage UI preferences (uses pre-loaded state)
   const [uiPreferences, setUiPreferences] = useState<{
     canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
     canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
-  }>(() => {
-    const loaded = loadGameStateWithCanning();
-    return {
-      canningRecipeFilter: loaded?.uiPreferences?.canningRecipeFilter || 'all',
-      canningRecipeSort: loaded?.uiPreferences?.canningRecipeSort || 'profit'
-    };
-  });
+  }>(() => ({
+    canningRecipeFilter: loadedGameState?.uiPreferences?.canningRecipeFilter || 'all',
+    canningRecipeSort: loadedGameState?.uiPreferences?.canningRecipeSort || 'profit'
+  }));
 
   // Handlers for updating UI preferences
   const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey') => {
@@ -1378,16 +1382,10 @@ function App() {
   const canningUnlocked = useMemo(() => farmTier >= 3, [farmTier]);
 
 
-  // Initialize achievement system
-  const [initialAchievementState] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      return loaded?.achievementState || undefined;
-    } catch (error) {
-      console.error('Error loading achievement state:', error);
-      return undefined;
-    }
-  });
+  // Initialize achievement system (uses pre-loaded state)
+  const [initialAchievementState] = useState(
+    () => loadedGameState?.achievementState || undefined
+  );
 
   const {
     achievements,
@@ -1423,25 +1421,19 @@ function App() {
     ? achievements.find(a => a.id === lastUnlockedId) || null
     : null;
 
-  // Initialize event log system
+  // Initialize event log system (uses pre-loaded state)
   const [initialEventLogState] = useState(() => {
-    try {
-      const loaded = loadGameStateWithCanning();
-      const savedState = loaded?.eventLogState;
-      if (savedState) {
-        // Ensure all required properties are present
-        return {
-          entries: savedState.entries || [],
-          maxEntries: savedState.maxEntries || 100,
-          unreadCount: savedState.unreadCount || 0,
-          lastReadId: savedState.lastReadId
-        };
-      }
-      return undefined;
-    } catch (error) {
-      console.error('Error loading event log state:', error);
-      return undefined;
+    const savedState = loadedGameState?.eventLogState;
+    if (savedState) {
+      // Ensure all required properties are present
+      return {
+        entries: savedState.entries || [],
+        maxEntries: savedState.maxEntries || 100,
+        unreadCount: savedState.unreadCount || 0,
+        lastReadId: savedState.lastReadId
+      };
     }
+    return undefined;
   });
 
   const eventLog = useEventLogSystem({
@@ -1478,7 +1470,7 @@ function App() {
         });
         addEvent('merchant', isAutoSell ? 'Merchant auto-sold vegetables' : 'Sold vegetables to merchant', opts);
       },
-      onAchievementUnlock: (achievement: Achievement) => {
+      onAchievementUnlock: (achievement: AchievementOrMilestone) => {
         const opts = buildAchievementEvent(achievement);
         addEvent('milestone', `Achievement unlocked: ${achievement.name}`, opts);
       },
@@ -1982,8 +1974,8 @@ function App() {
 
   // Watch for Magical Register bonuses and show toast only on actual sales
   useEffect(() => {
-    const event = christmasEvent as unknown as UseChristmasEventReturn;
-    const bonus = event?.lastMagicalRegisterBonus;
+    // Type assertion needed due to TypeScript inference limitations with complex hook return types
+    const bonus = (christmasEvent as UseChristmasEventReturn)?.lastMagicalRegisterBonus;
     
     // Only show toast if timestamp is new (different from last seen)
     if (bonus && bonus.amount > 0 && bonus.timestamp > lastBonusTimestamp.current) {
@@ -2049,15 +2041,17 @@ function App() {
       addEventLogEntry={eventLog.addEvent}
     >
     <>
-    <ArchieIcon 
-      setMoney={setMoney} 
-      money={money} 
-      experience={experience} 
-      totalPlotsUsed={totalPlotsUsed}
-      isChristmasEventActive={christmasEvent?.isEventActive ?? false}
-      christmasTreesSold={christmasEvent?.totalTreesSold ?? 0}
-      earnCheer={christmasEvent?.earnCheer}
-    />
+    {archieCharacterEnabled && (
+      <ArchieIcon 
+        setMoney={setMoney} 
+        money={money} 
+        experience={experience} 
+        totalPlotsUsed={totalPlotsUsed}
+        isChristmasEventActive={christmasEvent?.isEventActive ?? false}
+        christmasTreesSold={christmasEvent?.totalTreesSold ?? 0}
+        earnCheer={christmasEvent?.earnCheer}
+      />
+    )}
     <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
     {/* Skip link for keyboard navigation */}
     <a href="#main-content" className={styles.skipLink}>
@@ -2135,60 +2129,64 @@ function App() {
                 Canning
               </div>
             </button>
-            <button
-              role="tab"
-              id="tab-bees"
-              aria-selected={activeTab === 'bees'}
-              aria-controls="panel-bees"
-              aria-disabled={farmTier < 4}
-              onClick={() => farmTier >= 4 ? setActiveTab('bees') : null}
-              disabled={farmTier < 4}
-              className={
-                farmTier < 4
-                  ? styles.tabButtonBeesLocked
-                  : activeTab === 'bees'
-                    ? styles.tabButtonBeesActive
-                    : styles.tabButtonBees
-              }
-              title={farmTier >= 4 ? 'Bee System' : `Bees unlock at Farm Tier 4`}
-            >
-              <div className={styles.tabButtonContent}>
-                <img src={ICON_BEE} alt="" aria-hidden="true" className={farmTier >= 4 ? styles.tabIcon : styles.tabIconFaded} />
-                Bees
-              </div>
-              {farmTier < 4 && (
-                <div className={styles.tabUnlockHint}>
-                  Req: Tier 4
+            {beeSystemEnabled && (
+              <button
+                role="tab"
+                id="tab-bees"
+                aria-selected={activeTab === 'bees'}
+                aria-controls="panel-bees"
+                aria-disabled={farmTier < 4}
+                onClick={() => farmTier >= 4 ? setActiveTab('bees') : null}
+                disabled={farmTier < 4}
+                className={
+                  farmTier < 4
+                    ? styles.tabButtonBeesLocked
+                    : activeTab === 'bees'
+                      ? styles.tabButtonBeesActive
+                      : styles.tabButtonBees
+                }
+                title={farmTier >= 4 ? 'Bee System' : `Bees unlock at Farm Tier 4`}
+              >
+                <div className={styles.tabButtonContent}>
+                  <img src={ICON_BEE} alt="" aria-hidden="true" className={farmTier >= 4 ? styles.tabIcon : styles.tabIconFaded} />
+                  Bees
                 </div>
-              )}
-            </button>
-            <button
-              role="tab"
-              id="tab-christmas"
-              aria-selected={activeTab === 'christmas'}
-              aria-controls="panel-christmas"
-              aria-disabled={!christmasEvent?.isEventActive}
-              onClick={() => christmasEvent?.isEventActive ? setActiveTab('christmas') : null}
-              disabled={!christmasEvent?.isEventActive}
-              className={
-                !christmasEvent?.isEventActive
-                  ? styles.tabButtonChristmasLocked
-                  : activeTab === 'christmas'
-                    ? styles.tabButtonChristmasActive
-                    : styles.tabButtonChristmas
-              }
-              title={christmasEvent?.isEventActive ? 'Christmas Tree Shop (Nov 1 - Dec 25)' : 'Available November 1st - December 25th'}
-            >
-              <div className={styles.tabButtonContent}>
-                <img src={TREE_DECORATED} alt="" aria-hidden="true" className={christmasEvent?.isEventActive ? styles.tabIcon : styles.tabIconFaded} />
-                Tree Shop
-              </div>
-              {!christmasEvent?.isEventActive && (
-                <div className={styles.tabUnlockHint}>
-                  Nov 1 - Dec 25
+                {farmTier < 4 && (
+                  <div className={styles.tabUnlockHint}>
+                    Req: Tier 4
+                  </div>
+                )}
+              </button>
+            )}
+            {christmasEventEnabled && (
+              <button
+                role="tab"
+                id="tab-christmas"
+                aria-selected={activeTab === 'christmas'}
+                aria-controls="panel-christmas"
+                aria-disabled={!christmasEvent?.isEventActive}
+                onClick={() => christmasEvent?.isEventActive ? setActiveTab('christmas') : null}
+                disabled={!christmasEvent?.isEventActive}
+                className={
+                  !christmasEvent?.isEventActive
+                    ? styles.tabButtonChristmasLocked
+                    : activeTab === 'christmas'
+                      ? styles.tabButtonChristmasActive
+                      : styles.tabButtonChristmas
+                }
+                title={christmasEvent?.isEventActive ? 'Christmas Tree Shop (Nov 1 - Dec 25)' : 'Available November 1st - December 25th'}
+              >
+                <div className={styles.tabButtonContent}>
+                  <img src={TREE_DECORATED} alt="" aria-hidden="true" className={christmasEvent?.isEventActive ? styles.tabIcon : styles.tabIconFaded} />
+                  Tree Shop
                 </div>
-              )}
-            </button>
+                {!christmasEvent?.isEventActive && (
+                  <div className={styles.tabUnlockHint}>
+                    Nov 1 - Dec 25
+                  </div>
+                )}
+              </button>
+            )}
           </div>
         </nav>
 
@@ -2287,7 +2285,7 @@ function App() {
       )}
 
       {/* Bees Tab Content */}
-      {activeTab === 'bees' && (
+      {beeSystemEnabled && activeTab === 'bees' && (
         <div role="tabpanel" id="panel-bees" aria-labelledby="tab-bees">
         <Suspense fallback={<TabLoadingFallback />}>
         <PerformanceWrapper id="BeesTab">
@@ -2298,7 +2296,7 @@ function App() {
       )}
 
       {/* Christmas Tree Shop Tab Content */}
-      {activeTab === 'christmas' && christmasEvent?.isEventActive && christmasEvent && (
+      {christmasEventEnabled && activeTab === 'christmas' && christmasEvent?.isEventActive && christmasEvent && (
         <div role="tabpanel" id="panel-christmas" aria-labelledby="tab-christmas">
         <Suspense fallback={<TabLoadingFallback />}>
         <PerformanceWrapper id="ChristmasTab">
@@ -2409,7 +2407,7 @@ function App() {
               upgrades={christmasEvent.eventState.upgrades}
               holidayCheer={christmasEvent.holidayCheer}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
-              currentElvesAction={(christmasEvent as unknown as UseChristmasEventReturn).currentElvesAction}
+              currentElvesAction={(christmasEvent as UseChristmasEventReturn)?.currentElvesAction}
             />
             </div>
           )}
@@ -2494,12 +2492,14 @@ function App() {
     </ErrorBoundary>
 
     {/* Achievement Notification */}
-    <ErrorBoundary fallback={<OverlayError title="Achievement notification" onClose={clearLastUnlocked} />} onReset={clearLastUnlocked}>
-      <AchievementNotification
-        achievement={lastUnlockedAchievement}
-        onClose={clearLastUnlocked}
-      />
-    </ErrorBoundary>
+    {achievementSystemEnabled && (
+      <ErrorBoundary fallback={<OverlayError title="Achievement notification" onClose={clearLastUnlocked} />} onReset={clearLastUnlocked}>
+        <AchievementNotification
+          achievement={lastUnlockedAchievement}
+          onClose={clearLastUnlocked}
+        />
+      </ErrorBoundary>
+    )}
 
     {/* Event Log Overlay */}
     <ErrorBoundary fallback={<OverlayError title="Event Log" onClose={() => setShowEventLog(false)} />} onReset={() => setShowEventLog(false)}>
@@ -2525,10 +2525,11 @@ function App() {
       />
     </ErrorBoundary>
 
-    {/* DevTools - Only visible in development mode, lazy loaded */}
-    <ErrorBoundary fallback={<OverlayError title="DevTools" />}>
-      <Suspense fallback={null}>
-        <DevTools
+    {/* DevTools - Only visible when feature flag enabled, lazy loaded */}
+    {devToolsEnabled && (
+      <ErrorBoundary fallback={<OverlayError title="DevTools" />}>
+        <Suspense fallback={null}>
+          <DevTools
           onAddMoney={(amount) => setMoney(prev => prev + amount)}
           onAddExperience={(amount) => setExperience(prev => prev + amount)}
           onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
@@ -2575,8 +2576,9 @@ function App() {
             }
           }}
         />
-      </Suspense>
-    </ErrorBoundary>
+        </Suspense>
+      </ErrorBoundary>
+    )}
 
     {/* Magical Register Bonus Toast */}
     <ErrorBoundary fallback={<OverlayError title="Toast" onClose={() => setMagicalRegisterToast({ visible: false, message: '' })} />} onReset={() => setMagicalRegisterToast({ visible: false, message: '' })}>
@@ -2590,7 +2592,13 @@ function App() {
     </ErrorBoundary>
 
     {/* Feature Flags Dev Panel */}
-    <ErrorBoundary fallback={null}>
+    <ErrorBoundary 
+      fallback={null}
+      onError={(error, info) => {
+        // eslint-disable-next-line no-console
+        console.warn('[FeatureFlagsPanel] Error caught:', error.message, '\nComponent stack:', info.componentStack);
+      }}
+    >
       <FeatureFlagsPanel />
     </ErrorBoundary>
     </>

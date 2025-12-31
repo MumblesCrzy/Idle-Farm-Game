@@ -3,18 +3,20 @@ import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
 import styles from './CanningTab.module.css';
+import type { CanningState, Recipe } from '../types/canning';
+import type { Veggie } from '../types/game';
 
 interface CanningTabProps {
-  canningState: any;
+  canningState: CanningState;
   canningUnlocked: boolean;
-  veggies: any;
+  veggies: Veggie[];
   money: number;
   knowledge: number;
   heirloomOwned: boolean;
   regularHoney?: number;
   goldenHoney?: number;
   startCanning: (recipeId: string) => boolean;
-  canMakeRecipe: (recipe: any) => boolean;
+  canMakeRecipe: (recipe: Recipe) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
   toggleAutoCanning: () => void;
   recipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';

@@ -13,6 +13,7 @@ import {
   featureFlags, 
   type FeatureFlagKey, 
   type FeatureFlagDefinition,
+  type FeatureFlagCategory,
   FEATURE_FLAG_DEFINITIONS 
 } from '../utils/featureFlags';
 
@@ -36,7 +37,7 @@ interface FeatureFlagsContextType {
     definition: FeatureFlagDefinition;
   }>;
   /** Get flags by category */
-  getFlagsByCategory: (category: 'event' | 'feature' | 'debug' | 'experimental') => Array<{
+  getFlagsByCategory: (category: FeatureFlagCategory) => Array<{
     key: FeatureFlagKey;
     enabled: boolean;
     definition: FeatureFlagDefinition;
@@ -111,7 +112,7 @@ export function FeatureFlagsProvider({ children }: FeatureFlagsProviderProps) {
     return featureFlags.getUserConfigurableFlags();
   }, []);
 
-  const getFlagsByCategory = useCallback((category: 'event' | 'feature' | 'debug' | 'experimental') => {
+  const getFlagsByCategory = useCallback((category: FeatureFlagCategory) => {
     return featureFlags.getFlagsByCategory(category);
   }, []);
 
@@ -170,4 +171,4 @@ export function FeatureGate({
 
 // Export the definitions for use in UI
 export { FEATURE_FLAG_DEFINITIONS };
-export type { FeatureFlagKey, FeatureFlagDefinition };
+export type { FeatureFlagKey, FeatureFlagDefinition, FeatureFlagCategory };

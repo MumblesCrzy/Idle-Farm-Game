@@ -19,6 +19,7 @@ import {
   BEE_FLOWER_POWER,
   BEE_SWIFT_GATHERERS
 } from '../config/assetPaths';
+import { BEE_UPGRADE_COSTS } from '../config/gameConstants';
 
 /**
  * Initial bee upgrades available to players
@@ -34,8 +35,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Your bees work faster! Reduces honey production time by 1% per level.',
     category: 'production',
     icon: BEE_BUSY_BEES,
-    cost: 75, // 5 * 15
-    baseCost: 75,
+    cost: BEE_UPGRADE_COSTS.busyBees,
+    baseCost: BEE_UPGRADE_COSTS.busyBees,
     costScaling: 1.15, // Moderate scaling for repeatable upgrade
     costCurrency: 'regularHoney',
     effectType: 'productionSpeed',
@@ -54,8 +55,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Feed your bees royal jelly to increase Golden Honey chance by +1% (from 1% base to 2% total).',
     category: 'quality',
     icon: BEE_ROYAL_JELLY,
-    cost: 375, // 25 * 15
-    baseCost: 375,
+    cost: BEE_UPGRADE_COSTS.royalJelly,
+    baseCost: BEE_UPGRADE_COSTS.royalJelly,
     costCurrency: 'regularHoney',
     effectType: 'goldenHoneyChance',
     effectValue: 0.01, // adds 5% to base
@@ -69,8 +70,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'The queen bee blesses your hive! Doubles your Golden Honey chance (e.g., 2% becomes 4%).',
     category: 'quality',
     icon: BEE_QUEENS_BLESSING,
-    cost: 150, // 10 * 15
-    baseCost: 150,
+    cost: BEE_UPGRADE_COSTS.queensBlessing,
+    baseCost: BEE_UPGRADE_COSTS.queensBlessing,
     costCurrency: 'goldenHoney',
     effectType: 'goldenHoneyDouble',
     effectValue: 2.0, // 2x multiplier
@@ -88,8 +89,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Optimize your hive structure! Increases honey production by 5% per level.',
     category: 'production',
     icon: BEE_HEXCOMB_ENGINEERING,
-    cost: 120, // 8 * 15
-    baseCost: 120,
+    cost: BEE_UPGRADE_COSTS.hexcombEngineering,
+    baseCost: BEE_UPGRADE_COSTS.hexcombEngineering,
     costScaling: 1.2, // Slightly higher scaling
     costCurrency: 'regularHoney',
     effectType: 'honeyProduction',
@@ -108,8 +109,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Bee pollination boosts your crops! Increases crop yield bonus by +0.5% per box per level.',
     category: 'yield',
     icon: BEE_MEADOW_MAGIC,
-    cost: 225, // 15 * 15
-    baseCost: 225,
+    cost: BEE_UPGRADE_COSTS.meadowMagic,
+    baseCost: BEE_UPGRADE_COSTS.meadowMagic,
     costScaling: 1.25, // Higher cost for powerful effect
     costCurrency: 'regularHoney',
     effectType: 'cropYieldBonus',
@@ -128,8 +129,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Your bees produce honey even in winter! Normally bees stop producing during winter months.',
     category: 'production',
     icon: BEE_WINTER_HARDINESS,
-    cost: 45, // 3 * 15
-    baseCost: 45,
+    cost: BEE_UPGRADE_COSTS.winterHardiness,
+    baseCost: BEE_UPGRADE_COSTS.winterHardiness,
     costCurrency: 'goldenHoney',
     effectType: 'winterProduction',
     effectValue: 0, // Special effect: allows production during winter
@@ -144,8 +145,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Master beekeeper technique! +2% Golden Honey chance (stacks with other bonuses).',
     category: 'quality',
     icon: BEE_GOLDEN_TOUCH,
-    cost: 75, // 5 * 15
-    baseCost: 75,
+    cost: BEE_UPGRADE_COSTS.goldenTouch,
+    baseCost: BEE_UPGRADE_COSTS.goldenTouch,
     costCurrency: 'goldenHoney',
     effectType: 'goldenHoneyChance',
     effectValue: 0.02, // Additional 2% chance
@@ -161,8 +162,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Expand your apiary! Increases maximum bee boxes to 30.',
     category: 'automation',
     icon: BEE_HIVE_EXPANSION,
-    cost: 1500, // 100 * 15
-    baseCost: 1500,
+    cost: BEE_UPGRADE_COSTS.hiveExpansion,
+    baseCost: BEE_UPGRADE_COSTS.hiveExpansion,
     costCurrency: 'regularHoney',
     effectType: 'hiveCapacity', // Special: increases max boxes instead of honey production
     effectValue: 10, // Special upgrade - increases max boxes from 20 to 30
@@ -177,8 +178,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Your bees extract more honey from nectar! +10% honey production.',
     category: 'production',
     icon: BEE_NECTAR_EFFICIENCY,
-    cost: 30, // 2 * 15
-    baseCost: 30,
+    cost: BEE_UPGRADE_COSTS.nectarEfficiency,
+    baseCost: BEE_UPGRADE_COSTS.nectarEfficiency,
     costCurrency: 'goldenHoney',
     effectType: 'honeyProduction',
     effectValue: 0.1, // 10% bonus
@@ -193,8 +194,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Plant wildflowers around your farm! +0.2% crop yield per box.',
     category: 'yield',
     icon: BEE_FLOWER_POWER,
-    cost: 120, // 8 * 15
-    baseCost: 120,
+    cost: BEE_UPGRADE_COSTS.flowerPower,
+    baseCost: BEE_UPGRADE_COSTS.flowerPower,
     costCurrency: 'goldenHoney',
     effectType: 'cropYieldBonus',
     effectValue: 0.002, // +0.2% per box
@@ -210,8 +211,8 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     description: 'Train your bees to gather nectar faster! -15% production time.',
     category: 'production',
     icon: BEE_SWIFT_GATHERERS,
-    cost: 75, // 5 * 15
-    baseCost: 75,
+    cost: BEE_UPGRADE_COSTS.swiftGatherers,
+    baseCost: BEE_UPGRADE_COSTS.swiftGatherers,
     costCurrency: 'goldenHoney',
     effectType: 'productionSpeed',
     effectValue: 0.15, // 15% speed boost

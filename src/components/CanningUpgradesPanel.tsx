@@ -1,5 +1,5 @@
 import { memo, type FC } from 'react';
-import type { CanningUpgrade } from '../types/canning';
+import type { CanningUpgrade, CanningState } from '../types/canning';
 import { formatNumber } from '../utils/gameCalculations';
 import styles from './CanningUpgradesPanel.module.css';
 import { 
@@ -103,7 +103,7 @@ interface CanningUpgradesPanelProps {
   money: number;
   knowledge: number;
   onPurchaseUpgrade: (upgradeId: string) => boolean;
-  canningState: any;
+  canningState: CanningState;
   onToggleAutoCanning: () => void;
 }
 

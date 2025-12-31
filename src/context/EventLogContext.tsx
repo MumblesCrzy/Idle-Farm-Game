@@ -1,5 +1,6 @@
 import { createContext, useContext, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
+import type { AchievementOrMilestone } from '../types/achievements';
 
 /**
  * Event Log Context
@@ -17,8 +18,8 @@ interface EventLogCallbacks {
   // Merchant sale event callback
   onMerchantSale: (totalMoney: number, veggiesSold: Array<{ name: string; quantity: number; earnings: number }>, isAutoSell: boolean) => void;
   
-  // Achievement unlock event callback
-  onAchievementUnlock: (achievement: any) => void;
+  // Achievement unlock event callback (accepts full achievements or milestone notifications)
+  onAchievementUnlock: (achievement: AchievementOrMilestone) => void;
   
   // Reset achievements
   resetAchievements: () => void;

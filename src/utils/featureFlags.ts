@@ -13,6 +13,9 @@
  *   if (featureFlags.isEnabled('newFeature')) { ... }
  */
 
+// Category type for feature flags - exported for use across the codebase
+export type FeatureFlagCategory = 'event' | 'feature' | 'debug' | 'experimental';
+
 // Define all available feature flags with their defaults and metadata
 export interface FeatureFlagDefinition {
   /** Human-readable name */
@@ -22,7 +25,7 @@ export interface FeatureFlagDefinition {
   /** Human-readable description */
   description: string;
   /** Category for organization */
-  category: 'event' | 'feature' | 'debug' | 'experimental';
+  category: FeatureFlagCategory;
   /** Whether this flag can be changed by users (vs admin-only) */
   userConfigurable: boolean;
   /** Whether this flag is only for development */
@@ -88,7 +91,7 @@ export const FEATURE_FLAG_DEFINITIONS: Record<string, FeatureFlagDefinition> = {
   },
   enableDevTools: {
     name: 'Dev Tools',
-    defaultValue: false,
+    defaultValue: true, // Default to true so panel is accessible in dev mode
     description: 'Enable developer tools and feature flags panel',
     category: 'debug',
     userConfigurable: false,

@@ -50,6 +50,9 @@ export function useGameLoop(
       }
       previousTimeRef.current = undefined;
     };
+  // Note: exhaustive-deps disabled because we intentionally spread the dependencies array.
+  // ESLint cannot statically analyze spread dependencies, but this pattern is intentional
+  // to allow callers to specify their own dependency arrays for the game loop.
   }, [animate, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
@@ -110,5 +113,8 @@ export function useRobustInterval(
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
+  // Note: exhaustive-deps disabled because we intentionally spread the dependencies array.
+  // ESLint cannot statically analyze spread dependencies, but this pattern is intentional
+  // to allow callers to specify their own dependency arrays for the interval.
   }, [intervalMs, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 }

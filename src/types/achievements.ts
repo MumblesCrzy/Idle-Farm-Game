@@ -3,7 +3,7 @@ export interface Achievement {
   name: string;
   description: string;
   icon: string;
-  category: 'farming' | 'canning' | 'progression' | 'wealth' | 'special';
+  category: 'farming' | 'canning' | 'progression' | 'wealth' | 'special' | 'milestone';
   
   // Unlock requirements
   requirement: {
@@ -12,12 +12,12 @@ export interface Achievement {
     customCheck?: (gameState: any) => boolean;
   };
   
-  // Rewards
+  // Rewards (optional - can be null or undefined)
   reward?: {
     money?: number;
     knowledge?: number;
     message?: string;
-  };
+  } | null;
   
   // Progress tracking
   unlocked: boolean;
@@ -28,6 +28,20 @@ export interface Achievement {
     goal: number;
   };
 }
+
+/**
+ * Milestone notification - simpler type for logging game milestones
+ * that don't have all achievement properties
+ */
+export interface MilestoneNotification {
+  name: string;
+  description: string;
+  category: 'milestone';
+  reward: null;
+}
+
+/** Union type for achievement unlock events - can be full achievement or milestone */
+export type AchievementOrMilestone = Achievement | MilestoneNotification;
 
 export interface AchievementState {
   achievements: Achievement[];

@@ -226,6 +226,84 @@ export const FREQUENT_RENDER_THRESHOLD = 50; // Flag components with >50 renders
 export const CANNING_BASE_DURATION_SECONDS = 30; // Base canning time
 export const CANNING_TICK_INTERVAL_MS = 100; // Canning progress tick rate
 
+// Auto-canning configuration
+export const AUTO_CANNING_EXCESS_THRESHOLD = 10; // Keep this many of each vegetable in reserve
+
+// Canning auto-purchaser costs and cycle times
+export const CANNING_AUTO_PURCHASER_CONFIG = {
+  canningEngineer: {
+    cycleDays: 10,
+    cost: 2500,
+  },
+  preservationSpecialist: {
+    cycleDays: 10,
+    cost: 3000,
+  },
+  qualityInspector: {
+    cycleDays: 12,
+    cost: 4000,
+  },
+  factoryManager: {
+    cycleDays: 15,
+    cost: 7500,
+  },
+} as const;
+
+// ============================================================================
+// BEE SYSTEM
+// ============================================================================
+
+export const BEE_CONSTANTS = {
+  // Production timing
+  BASE_PRODUCTION_TIME: 132, // Days per harvest (reduced from 182 to account for 50-day winter pause)
+  
+  // Box limits
+  STARTING_BEE_BOXES: 2,
+  MAX_BEE_BOXES: 30,
+  
+  // Yield bonuses
+  BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% per box
+  MAX_YIELD_BONUS: 1.0, // 100% max yield bonus from bees
+  
+  // Unlock requirements
+  UNLOCK_FARM_TIER: 4,
+  BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4,
+  
+  // Box purchase costs
+  BOX_BASE_COST: 150, // First box costs 150 honey
+  BOX_COST_INCREMENT: 75, // Each additional box costs 75 more
+  
+  // Beekeeper Assistant costs
+  BEEKEEPER_BASE_UPGRADE_COST: 1500,
+  BEEKEEPER_COST_SCALING: 1.5,
+  BEEKEEPER_MAX_LEVEL: 10,
+  
+  // Golden honey
+  BASE_GOLDEN_HONEY_CHANCE: 0.01, // 1% base chance
+} as const;
+
+// Bee upgrade costs (multiplied by 15 for honey economy balance)
+export const BEE_UPGRADE_COSTS = {
+  // Production upgrades
+  busyBees: 75, // 5 * 15
+  hexcombEngineering: 120, // 8 * 15
+  swiftGatherers: 75, // 5 * 15 (golden honey)
+  
+  // Quality upgrades
+  royalJelly: 375, // 25 * 15
+  queensBlessing: 150, // 10 * 15 (golden honey)
+  goldenTouch: 75, // 5 * 15 (golden honey)
+  
+  // Yield upgrades
+  meadowMagic: 225, // 15 * 15
+  flowerPower: 120, // 8 * 15 (golden honey)
+  
+  // Advanced upgrades
+  winterHardiness: 45, // 3 * 15 (golden honey)
+  nectarEfficiency: 30, // 2 * 15 (golden honey)
+  hiveExpansion: 1500, // 100 * 15
+} as const;
+
 // ============================================================================
 // KNOWLEDGE SYSTEM
 // ============================================================================

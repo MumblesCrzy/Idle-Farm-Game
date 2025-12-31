@@ -17,7 +17,7 @@ import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, IC
  * Generate a unique ID for an event
  */
 export function generateEventId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**

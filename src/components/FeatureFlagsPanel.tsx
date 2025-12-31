@@ -10,7 +10,8 @@ import {
   useFeatureFlags, 
   FEATURE_FLAG_DEFINITIONS,
   type FeatureFlagKey,
-  type FeatureFlagDefinition
+  type FeatureFlagDefinition,
+  type FeatureFlagCategory
 } from '../context/FeatureFlagsContext';
 import styles from './FeatureFlagsPanel.module.css';
 
@@ -69,12 +70,12 @@ const FlagToggle = memo(({ flagKey, definition, enabled, onToggle }: FlagToggleP
 FlagToggle.displayName = 'FlagToggle';
 
 interface CategorySectionProps {
-  category: 'event' | 'feature' | 'debug' | 'experimental';
+  category: FeatureFlagCategory;
   flags: Array<{ key: FeatureFlagKey; enabled: boolean; definition: FeatureFlagDefinition }>;
   onToggle: (key: FeatureFlagKey) => void;
 }
 
-const categoryLabels: Record<'event' | 'feature' | 'debug' | 'experimental', string> = {
+const categoryLabels: Record<FeatureFlagCategory, string> = {
   event: '🎄 Events',
   feature: '✨ Features',
   debug: '🔧 Debug',
@@ -106,7 +107,7 @@ function FeatureFlagsPanelContent({ onClose }: { onClose: () => void }) {
   
   const flagsByCategory = useMemo(() => {
     const flags = getAllFlags();
-    const categories: Record<'event' | 'feature' | 'debug' | 'experimental', Array<{
+    const categories: Record<FeatureFlagCategory, Array<{
       key: FeatureFlagKey;
       enabled: boolean;
       definition: FeatureFlagDefinition;
@@ -198,19 +199,19 @@ function FeatureFlagsPanelContent({ onClose }: { onClose: () => void }) {
 
 /**
  * Feature Flags Panel component
- * Only renders when devTools are enabled
+ * Only renders in development mode when devTools are enabled
  */
 export function FeatureFlagsPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const { isEnabled } = useFeatureFlags();
   
-  // Only show if dev tools are enabled
-  if (!isEnabled('enableDevTools')) {
+  // Only show in development mode
+  if (!import.meta.env.DEV) {
     return null;
   }
   
-  // Don't show trigger if panel should be hidden
-  if (!isEnabled('showDevPanel')) {
+  // Only show if dev tools are enabled
+  if (!isEnabled('enableDevTools')) {
     return null;
   }
   
