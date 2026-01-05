@@ -12,7 +12,6 @@ import {
   BEE_MEADOW_MAGIC,
   BEE_WINTER_HARDINESS,
   BEE_GOLDEN_TOUCH,
-  BEE_HIVE_EXPANSION,
   BEE_NECTAR_EFFICIENCY,
   BEE_FLOWER_POWER,
   BEE_SWIFT_GATHERERS,
@@ -88,8 +87,6 @@ const BeeUpgradesPanel: FC<BeeUpgradesPanelProps> = memo(({
       return `+${(upgrade.effectValue * 100).toFixed(1)}% crops/box/level`;
     } else if (upgrade.effectType === 'automationSpeed') {
       return 'Auto-harvest enabled';
-    } else if (upgrade.effectType === 'hiveCapacity') {
-      return `+${upgrade.effectValue} hives`;
     } else if (upgrade.effectType === 'winterProduction') {
       return 'Honey production during winter';
     }
@@ -107,7 +104,6 @@ const BeeUpgradesPanel: FC<BeeUpgradesPanelProps> = memo(({
       'meadow_magic': BEE_MEADOW_MAGIC,
       'winter_hardiness': BEE_WINTER_HARDINESS,
       'golden_touch': BEE_GOLDEN_TOUCH,
-      'hive_expansion': BEE_HIVE_EXPANSION,
       'nectar_efficiency': BEE_NECTAR_EFFICIENCY,
       'flower_power': BEE_FLOWER_POWER,
       'swift_gatherers': BEE_SWIFT_GATHERERS,

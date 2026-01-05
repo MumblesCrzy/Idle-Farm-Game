@@ -143,8 +143,7 @@ export type BeeUpgradeEffectType =
   | 'cropYieldBonus'     // Increases yield bonus per box (e.g., Meadow Magic +0.5%)
   | 'automationSpeed'    // Reduces automation delay (Beekeeper Assistant)
   | 'goldenHoneyDouble'  // Doubles Golden Honey chance (Queen's Blessing)
-  | 'winterProduction'   // Allows production during winter (Winter Hardiness)
-  | 'hiveCapacity';      // Increases maximum number of hives (Hive Expansion)
+  | 'winterProduction';  // Allows production during winter (Winter Hardiness)
 
 // ============================================================================
 // BEEKEEPER ASSISTANT

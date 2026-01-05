@@ -200,6 +200,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
               currentBoxes={beeContext.boxes.length}
               maxBoxes={beeContext.maxBoxes}
               regularHoney={beeContext.regularHoney}
+              cost={beeContext.getBeeBoxPurchaseInfo().cost}
               onPurchase={beeContext.addBeeBox}
               formatNumber={formatNumber}
             />
@@ -212,6 +213,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
             currentBoxes={beeContext.boxes.length}
             maxBoxes={beeContext.maxBoxes}
             regularHoney={beeContext.regularHoney}
+            cost={beeContext.getBeeBoxPurchaseInfo().cost}
             onPurchase={beeContext.addBeeBox}
             formatNumber={formatNumber}
           />
@@ -241,7 +243,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
   const goldenHoneyUpgrades = beeContext.upgrades.filter(u => u.costCurrency === 'goldenHoney');
   
   const sidebarContent = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '700px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Tab Buttons */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         <button
@@ -348,13 +350,9 @@ const BeesTab: FC<BeesTabProps> = memo(({
 
   // Custom sidebar styling for bee tab
   const sidebarStyle = {
-    width: '250px',
-    minWidth: '250px',
-    maxWidth: '250px',
-    padding: '0',
-    background: 'transparent',
-    border: 'none',
-    boxShadow: 'none'
+    background: 'linear-gradient(135deg, #F7C91F 0%, #AA7942 100%)',
+    border: '1px solid #AA7942',
+    boxShadow: '0 2px 8px rgba(247, 201, 31, 0.3)'
   };
 
   return (

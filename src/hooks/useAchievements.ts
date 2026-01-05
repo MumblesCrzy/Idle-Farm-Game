@@ -133,6 +133,14 @@ export function useAchievements(
       case 'total_harvests':
         current = gameState.totalHarvests || 0;
         break;
+      case 'custom':
+        // Use custom getProgress function if provided
+        if (requirement.getProgress) {
+          current = requirement.getProgress(gameState);
+        } else {
+          return undefined;
+        }
+        break;
       default:
         return undefined;
     }

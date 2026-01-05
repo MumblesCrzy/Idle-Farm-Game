@@ -3,13 +3,14 @@ export interface Achievement {
   name: string;
   description: string;
   icon: string;
-  category: 'farming' | 'canning' | 'progression' | 'wealth' | 'special' | 'milestone';
+  category: 'farming' | 'canning' | 'bees' | 'progression' | 'wealth' | 'special' | 'milestone';
   
   // Unlock requirements
   requirement: {
     type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'custom';
     value?: number;
     customCheck?: (gameState: any) => boolean;
+    getProgress?: (gameState: any) => number; // For custom achievements that want progress tracking
   };
   
   // Rewards (optional - can be null or undefined)

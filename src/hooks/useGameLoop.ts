@@ -50,16 +50,12 @@ export function useGameLoop(
       }
       previousTimeRef.current = undefined;
     };
-  // Note: exhaustive-deps disabled because we intentionally spread the dependencies array.
-  // ESLint cannot statically analyze spread dependencies, but this pattern is intentional
-  // to allow callers to specify their own dependency arrays for the game loop.
   }, [animate, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /**
  * Alternative: Hybrid approach that uses setInterval with Page Visibility API
  * to prevent Chrome throttling. Falls back to keeping tab "active".
- * This is more reliable for background tabs than requestAnimationFrame.
  */
 export function useRobustInterval(
   callback: () => void,
@@ -68,7 +64,7 @@ export function useRobustInterval(
 ): void {
   const intervalRef = useRef<number | undefined>(undefined);
   const callbackRef = useRef(callback);
-  const lastTickRef = useRef<number>(Date.now());
+  const isVisible = useRef(true);
 
   // Keep callback ref updated
   useEffect(() => {
@@ -78,19 +74,11 @@ export function useRobustInterval(
   useEffect(() => {
     // Track visibility
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // If tab becomes visible again, check how much time passed and catch up
-        const now = Date.now();
-        const timePassed = now - lastTickRef.current;
-        const missedTicks = Math.floor(timePassed / intervalMs);
-        
-        // Execute missed ticks (up to a reasonable limit to avoid hanging)
-        const catchUpLimit = Math.min(missedTicks, 60); // Max 60 ticks catch-up
-        for (let i = 0; i < catchUpLimit; i++) {
-          callbackRef.current();
-        }
-        
-        lastTickRef.current = now;
+      isVisible.current = !document.hidden;
+      
+      // If tab becomes visible again, force a tick immediately
+      if (isVisible.current) {
+        callbackRef.current();
       }
     };
 
@@ -99,12 +87,10 @@ export function useRobustInterval(
     // Start the interval
     intervalRef.current = window.setInterval(() => {
       callbackRef.current();
-      lastTickRef.current = Date.now();
     }, intervalMs);
 
     // Force immediate tick
     callbackRef.current();
-    lastTickRef.current = Date.now();
 
     // Cleanup
     return () => {
@@ -113,8 +99,5 @@ export function useRobustInterval(
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  // Note: exhaustive-deps disabled because we intentionally spread the dependencies array.
-  // ESLint cannot statically analyze spread dependencies, but this pattern is intentional
-  // to allow callers to specify their own dependency arrays for the interval.
   }, [intervalMs, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 }

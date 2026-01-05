@@ -5,7 +5,7 @@
  * upgrades, and the Beekeeper Assistant automation.
  */
 
-import { createContext, useState, useContext, useEffect, useCallback, useRef, type FC, type ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import type { 
   BeeBox, 
   BeeUpgrade,
@@ -15,19 +15,28 @@ import type {
   BeeBoxPurchaseInfo,
   UpgradeEffect,
   HoneyProduction,
-  BeeState,
-  OfflineBeeProgress
+  BeeState
 } from '../types/bees';
 import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
 import { useGameLoop } from '../hooks/useGameLoop';
-import { BEE_CONSTANTS, BEE_UPGRADE_COSTS } from '../config/gameConstants';
+
+// Import constants
+const BEE_CONSTANTS_IMPL = {
+  BASE_PRODUCTION_TIME: 132, // Reduced from 182 to account for 50-day winter pause (maintains 2 harvests/year)
+  STARTING_BEE_BOXES: 2,
+  MAX_BEE_BOXES: 30,
+  BASE_YIELD_BONUS_PER_BOX: 0.005,
+  MAX_YIELD_BONUS: 1.0,
+  UNLOCK_FARM_TIER: 4,
+  BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4,
+} as const;
 
 // Context definition
 const BeeContext = createContext<BeeContextValue | undefined>(undefined);
 
 interface BeeProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
   farmTier?: number; // Current farm tier to check unlock condition
   season?: string; // Current season (for winter production stoppage)
   onYieldBonusChange?: (bonus: number) => void; // Callback when yield bonus changes
@@ -48,7 +57,7 @@ interface BeeProviderProps {
  * Generate a unique ID for bee boxes
  */
 const generateBoxId = (): string => {
-  return `box_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  return `box_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
 /**
@@ -58,7 +67,7 @@ const createBeeBox = (): BeeBox => ({
   id: generateBoxId(),
   active: true,
   productionTimer: 0,
-  productionTime: BEE_CONSTANTS.BASE_PRODUCTION_TIME,
+  productionTime: BEE_CONSTANTS_IMPL.BASE_PRODUCTION_TIME,
   honeyProduced: 0,
   lastHarvestTime: Date.now(),
   harvestReady: false,
@@ -74,16 +83,16 @@ const createBeekeeperAssistant = (): BeekeeperAssistant => ({
   productionSpeedBonus: 0,
   downtimeReduction: 0,
   level: 0,
-  upgradeCost: BEE_CONSTANTS.BEEKEEPER_BASE_UPGRADE_COST,
-  baseUpgradeCost: BEE_CONSTANTS.BEEKEEPER_BASE_UPGRADE_COST,
-  costScaling: BEE_CONSTANTS.BEEKEEPER_COST_SCALING,
-  maxLevel: BEE_CONSTANTS.BEEKEEPER_MAX_LEVEL,
+  upgradeCost: 1500, // 100 * 15
+  baseUpgradeCost: 1500,
+  costScaling: 1.5,
+  maxLevel: 10,
 });
 
 /**
  * BeeProvider component - manages all bee system state
  */
-export const BeeProvider: FC<BeeProviderProps> = ({ 
+export const BeeProvider: React.FC<BeeProviderProps> = ({ 
   children, 
   farmTier = 1,
   season = 'Spring',
@@ -115,13 +124,8 @@ export const BeeProvider: FC<BeeProviderProps> = ({
           
           if (savedUpgrade.id === 'winter_hardiness' || savedUpgrade.id === 'nectar_efficiency' || savedUpgrade.id === 'swift_gatherers') {
             costCurrency = 'goldenHoney' as const;
-            const upgradeCostMap: Record<string, number> = {
-              winter_hardiness: BEE_UPGRADE_COSTS.winterHardiness,
-              nectar_efficiency: BEE_UPGRADE_COSTS.nectarEfficiency,
-              swift_gatherers: BEE_UPGRADE_COSTS.swiftGatherers,
-            };
-            baseCost = upgradeCostMap[savedUpgrade.id];
-            cost = upgradeCostMap[savedUpgrade.id];
+            baseCost = savedUpgrade.id === 'winter_hardiness' ? 45 : savedUpgrade.id === 'nectar_efficiency' ? 30 : 75;
+            cost = savedUpgrade.id === 'winter_hardiness' ? 45 : savedUpgrade.id === 'nectar_efficiency' ? 30 : 75;
           }
           
           return {
@@ -157,13 +161,13 @@ export const BeeProvider: FC<BeeProviderProps> = ({
    * Initialize bee system when player reaches Tier 3
    */
   const initializeBeeSystem = useCallback(() => {
-    if (farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER && !unlocked) {
+    if (farmTier >= BEE_CONSTANTS_IMPL.UNLOCK_FARM_TIER && !unlocked) {
       setUnlocked(true);
       
       // Give starting bee boxes if this is first time setup
       if (!firstTimeSetup && boxes.length === 0) {
         const startingBoxes: BeeBox[] = [];
-        for (let i = 0; i < BEE_CONSTANTS.STARTING_BEE_BOXES; i++) {
+        for (let i = 0; i < BEE_CONSTANTS_IMPL.STARTING_BEE_BOXES; i++) {
           startingBoxes.push(createBeeBox());
         }
         setBoxes(startingBoxes);
@@ -192,13 +196,13 @@ export const BeeProvider: FC<BeeProviderProps> = ({
    * Add a new bee hive (purchase)
    */
   const addBeeBox = useCallback((): boolean => {
-    if (boxes.length >= BEE_CONSTANTS.MAX_BEE_BOXES) {
+    if (boxes.length >= BEE_CONSTANTS_IMPL.MAX_BEE_BOXES) {
       console.warn('Maximum bee boxes reached');
       return false;
     }
 
-    // Calculate cost (increases with each box)
-    const cost = BEE_CONSTANTS.BOX_BASE_COST + (boxes.length * BEE_CONSTANTS.BOX_COST_INCREMENT);
+    // Calculate cost (increases with each box) - scaled by 15x
+    const cost = 150 + (boxes.length * 75); // 150, 225, 300, 375... honey
 
     if (regularHoney < cost) {
       console.warn('Not enough honey to purchase bee box');
@@ -375,7 +379,7 @@ export const BeeProvider: FC<BeeProviderProps> = ({
    * Calculate production time with speed bonuses
    */
   const calculateProductionTime = useCallback((): number => {
-    let baseTime = BEE_CONSTANTS.BASE_PRODUCTION_TIME;
+    let baseTime = BEE_CONSTANTS_IMPL.BASE_PRODUCTION_TIME;
 
     // Apply Busy Bees upgrade (+1% speed per level)
     const busyBees = upgrades.find(u => u.id === 'busy_bees');
@@ -567,8 +571,8 @@ export const BeeProvider: FC<BeeProviderProps> = ({
       return false;
     }
 
-    if (boxes.length < BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES) {
-      console.warn(`Need ${BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES} boxes to unlock assistant`);
+    if (boxes.length < BEE_CONSTANTS_IMPL.BEEKEEPER_ASSISTANT_UNLOCK_BOXES) {
+      console.warn(`Need ${BEE_CONSTANTS_IMPL.BEEKEEPER_ASSISTANT_UNLOCK_BOXES} boxes to unlock assistant`);
       return false;
     }
 
@@ -678,7 +682,7 @@ export const BeeProvider: FC<BeeProviderProps> = ({
    * Calculate total crop yield bonus from bee boxes
    */
   const calculateYieldBonus = useCallback((): number => {
-    let bonus = boxes.length * BEE_CONSTANTS.BASE_YIELD_BONUS_PER_BOX;
+    let bonus = boxes.length * BEE_CONSTANTS_IMPL.BASE_YIELD_BONUS_PER_BOX;
 
     // Apply Meadow Magic upgrade (+0.5% per level per box)
     const meadowMagic = upgrades.find(u => u.id === 'meadow_magic');
@@ -730,23 +734,55 @@ export const BeeProvider: FC<BeeProviderProps> = ({
   }, [boxes, totalHoneyCollected, totalGoldenHoneyCollected, calculateProductionRate, calculateProductionTime, calculateYieldBonus]);
 
   /**
+   * Calculate bee box cost with tiered scaling
+   * Cost increases more significantly every 5 boxes
+   */
+  const calculateBeeBoxCost = useCallback((boxCount: number): number => {
+    const baseCost = 150;
+    const baseIncrement = 75;
+    
+    // Calculate which tier (0-5 = tier 0, 6-10 = tier 1, etc.)
+    const tier = Math.floor(boxCount / 5);
+    
+    // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
+    const tierMultiplier = Math.pow(2, tier);
+    
+    // Calculate cost with tier-based scaling
+    // Within each tier, cost still increases linearly, but the increment grows with tier
+    const withinTierIndex = boxCount % 5;
+    
+    // Sum up costs from previous tiers
+    let totalCost = baseCost;
+    for (let t = 0; t < tier; t++) {
+      const prevTierMultiplier = Math.pow(2, t);
+      // Each tier has 5 boxes worth of increments
+      totalCost += baseIncrement * prevTierMultiplier * 5;
+    }
+    
+    // Add current tier's partial increment
+    totalCost += baseIncrement * tierMultiplier * withinTierIndex;
+    
+    return Math.floor(totalCost);
+  }, []);
+
+  /**
    * Get bee box purchase information
    */
   const getBeeBoxPurchaseInfo = useCallback((): BeeBoxPurchaseInfo => {
-    const cost = 150 + (boxes.length * 75);
+    const cost = calculateBeeBoxCost(boxes.length);
     const canAfford = regularHoney >= cost;
-    const atMaxCapacity = boxes.length >= BEE_CONSTANTS.MAX_BEE_BOXES;
-    const yieldBonusGain = BEE_CONSTANTS.BASE_YIELD_BONUS_PER_BOX;
+    const atMaxCapacity = boxes.length >= BEE_CONSTANTS_IMPL.MAX_BEE_BOXES;
+    const yieldBonusGain = BEE_CONSTANTS_IMPL.BASE_YIELD_BONUS_PER_BOX;
 
     return {
       cost,
       canAfford,
       atMaxCapacity,
       currentCount: boxes.length,
-      maxCount: BEE_CONSTANTS.MAX_BEE_BOXES,
+      maxCount: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
       yieldBonusGain,
     };
-  }, [boxes.length, regularHoney]);
+  }, [boxes.length, regularHoney, calculateBeeBoxCost]);
 
   /**
    * Check if player can afford a new bee hive
@@ -801,18 +837,6 @@ export const BeeProvider: FC<BeeProviderProps> = ({
   }, []);
 
   /**
-   * Apply offline production results from external simulation
-   */
-  const applyOfflineProgress = useCallback((progress: OfflineBeeProgress) => {
-    setBoxes(progress.boxes);
-    setRegularHoney(progress.regularHoney);
-    setGoldenHoney(progress.goldenHoney);
-    setTotalHoneyCollected(progress.totalHoneyCollected);
-    setTotalGoldenHoneyCollected(progress.totalGoldenHoneyCollected);
-    setLastUpdateTime(progress.lastUpdateTime);
-  }, []);
-
-  /**
    * Get upgrade effect details
    */
   const getUpgradeEffect = useCallback((upgradeId: string): UpgradeEffect | null => {
@@ -851,13 +875,8 @@ export const BeeProvider: FC<BeeProviderProps> = ({
       updateProduction(elapsedSeconds, season);
       setLastUpdateTime(now);
     }
-  // Note: exhaustive-deps disabled intentionally. We only want this effect to run:
-  // 1. On component mount (to process offline production)
-  // 2. When unlocked status changes
-  // 3. When number of boxes changes
-  // Including updateProduction, lastUpdateTime, or season would cause unwanted re-runs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlocked, boxes.length]);
+  }, [unlocked, boxes.length]); // Only run on mount or when unlocked/boxes change
 
   // Set up production update loop using useGameLoop (runs every second)
   useGameLoop(
@@ -912,7 +931,7 @@ export const BeeProvider: FC<BeeProviderProps> = ({
       unlocked,
       firstTimeSetup,
       boxes,
-      maxBoxes: BEE_CONSTANTS.MAX_BEE_BOXES,
+      maxBoxes: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
       regularHoney,
       goldenHoney,
       totalHoneyCollected,
@@ -950,7 +969,7 @@ export const BeeProvider: FC<BeeProviderProps> = ({
     unlocked,
     firstTimeSetup,
     boxes,
-    maxBoxes: BEE_CONSTANTS.MAX_BEE_BOXES,
+    maxBoxes: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
     regularHoney,
     goldenHoney,
     totalHoneyCollected,
@@ -979,7 +998,6 @@ export const BeeProvider: FC<BeeProviderProps> = ({
     calculateProductionRate,
     calculateHoneyProductionMultiplier,
     resetBeeSystem,
-    applyOfflineProgress,
 
     // Helpers
     getBeeStats,

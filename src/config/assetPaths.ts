@@ -27,7 +27,6 @@ export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event curr
 export const ICON_BEE = './Bee.png';
 export const ICON_HONEY = './Honey.png';
 export const ICON_GOLDEN_HONEY = './Golden Honey.png';
-export const ICON_BEE_BOX = './Bee Box.png';
 export const ICON_BEE_HIVE = './Bee Hive.png';
 
 // Season Images
@@ -255,7 +254,7 @@ export const ALL_IMAGES = [
   ICON_BEE,
   ICON_HONEY,
   ICON_GOLDEN_HONEY,
-  ICON_BEE_BOX,
+  ICON_BEE_HIVE,
   ICON_BEE_HIVE,
   
   // Special images

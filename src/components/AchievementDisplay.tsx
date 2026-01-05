@@ -33,6 +33,7 @@ const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
   const categories = [
     { key: 'farming', label: 'Farming', color: '#4caf50' },
     { key: 'canning', label: 'Canning', color: '#ff8503' },
+    { key: 'bees', label: 'Bees & Honey', color: '#f39c12' },
     { key: 'progression', label: 'Progression', color: '#2196f3' },
     { key: 'wealth', label: 'Wealth', color: '#ffc107' },
     { key: 'special', label: 'Special', color: '#9c27b0' }

@@ -7,13 +7,13 @@ import EventLogOverlay from './components/EventLogOverlay';
 import FeatureFlagsPanel from './components/FeatureFlagsPanel';
 import { useFeatureFlag } from './context/FeatureFlagsContext';
 
-// Lazy-loaded tab components for code splitting
-const GrowingTab = lazy(() => import('./components/GrowingTab'));
-const CanningTab = lazy(() => import('./components/CanningTab'));
-const BeesTab = lazy(() => import('./components/BeesTab'));
-const TreeFarmTab = lazy(() => import('./components/TreeFarmTab'));
-const WorkshopTab = lazy(() => import('./components/WorkshopTab'));
-const ShopfrontTab = lazy(() => import('./components/ShopfrontTab'));
+// Tab components - loaded eagerly to avoid per-tab loading delays
+import GrowingTab from './components/GrowingTab';
+import CanningTab from './components/CanningTab';
+import BeesTab from './components/BeesTab';
+import TreeFarmTab from './components/TreeFarmTab';
+import WorkshopTab from './components/WorkshopTab';
+import ShopfrontTab from './components/ShopfrontTab';
 
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
@@ -49,16 +49,6 @@ const SectionError = ({ title }: SectionErrorProps) => (
     <button onClick={() => window.location.reload()} className={styles.overlayErrorButton}>
       Reload
     </button>
-  </div>
-);
-
-/**
- * Loading fallback for lazy-loaded tab components
- */
-const TabLoadingFallback = () => (
-  <div className={styles.tabLoadingFallback}>
-    <div className={styles.loadingSpinner} />
-    <span>Loading...</span>
   </div>
 );
 
@@ -137,6 +127,16 @@ import {
 } from './utils/eventLogUtils';
 
 const initialVeggies: Veggie[] = createInitialVeggies();
+
+/**
+ * Check if the Christmas Tree Shop tab should be visible
+ * Only show from November 1st to December 31st
+ */
+function isChristmasTabVisible(): boolean {
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed (0 = January, 10 = November, 11 = December)
+  return month === 10 || month === 11; // November or December
+}
 
 // Small helper to keep the latest value in a ref without large dependency arrays
 const useLatestRef = <T,>(value: T) => {
@@ -1223,7 +1223,8 @@ function App() {
   
   // Apply flags only in dev mode; in production all features enabled (except DevTools)
   const beeSystemEnabled = isDev ? beeSystemFlag : true;
-  const christmasEventEnabled = isDev ? christmasEventFlag : true;
+  // Christmas tab only visible Nov 1 - Dec 31 (hide completely Jan 1 - Oct 31)
+  const christmasEventEnabled = (isDev ? christmasEventFlag : true) && isChristmasTabVisible();
   const achievementSystemEnabled = isDev ? achievementSystemFlag : true;
   const archieCharacterEnabled = isDev ? archieCharacterFlag : true;
   const devToolsEnabled = isDev ? devToolsFlag : false;
@@ -2190,11 +2191,15 @@ function App() {
           </div>
         </nav>
 
-          {/* Tab Content */}
+          {/* Tab Content - All tabs are always rendered, hidden via CSS when inactive */}
           <main role="main" id="main-content">
-            {activeTab === 'growing' && (
-              <div role="tabpanel" id="panel-growing" aria-labelledby="tab-growing">
-              <Suspense fallback={<TabLoadingFallback />}>
+            {/* Growing Tab Content */}
+            <div 
+              role="tabpanel" 
+              id="panel-growing" 
+              aria-labelledby="tab-growing"
+              className={activeTab !== 'growing' ? styles.tabPanelHidden : undefined}
+            >
               <PerformanceWrapper id="GrowingTab">
                 <GrowingTab
                 veggies={veggies}
@@ -2250,16 +2255,17 @@ function App() {
                 formatNumber={formatNumber}
               />
             </PerformanceWrapper>
-            </Suspense>
             </div>
-          )}
 
 
       
       {/* Canning Tab Content */}
-      {activeTab === 'canning' && (
-        <div role="tabpanel" id="panel-canning" aria-labelledby="tab-canning">
-        <Suspense fallback={<TabLoadingFallback />}>
+        <div 
+          role="tabpanel" 
+          id="panel-canning" 
+          aria-labelledby="tab-canning"
+          className={activeTab !== 'canning' ? styles.tabPanelHidden : undefined}
+        >
         <PerformanceWrapper id="CanningTab">
           <CanningTab
             canningState={canningState}
@@ -2280,25 +2286,30 @@ function App() {
             onRecipeSortChange={setCanningRecipeSort}
           />
         </PerformanceWrapper>
-        </Suspense>
         </div>
-      )}
 
       {/* Bees Tab Content */}
-      {beeSystemEnabled && activeTab === 'bees' && (
-        <div role="tabpanel" id="panel-bees" aria-labelledby="tab-bees">
-        <Suspense fallback={<TabLoadingFallback />}>
+      {beeSystemEnabled && (
+        <div 
+          role="tabpanel" 
+          id="panel-bees" 
+          aria-labelledby="tab-bees"
+          className={activeTab !== 'bees' ? styles.tabPanelHidden : undefined}
+        >
         <PerformanceWrapper id="BeesTab">
           <BeesTabWrapper farmTier={farmTier} season={season} formatNumber={formatNumber} />
         </PerformanceWrapper>
-        </Suspense>
         </div>
       )}
 
       {/* Christmas Tree Shop Tab Content */}
-      {christmasEventEnabled && activeTab === 'christmas' && christmasEvent?.isEventActive && christmasEvent && (
-        <div role="tabpanel" id="panel-christmas" aria-labelledby="tab-christmas">
-        <Suspense fallback={<TabLoadingFallback />}>
+      {christmasEventEnabled && christmasEvent?.isEventActive && christmasEvent && (
+        <div 
+          role="tabpanel" 
+          id="panel-christmas" 
+          aria-labelledby="tab-christmas"
+          className={activeTab !== 'christmas' ? styles.tabPanelHidden : undefined}
+        >
         <PerformanceWrapper id="ChristmasTab">
           {/* Christmas Sub-Tab Navigation */}
           <div 
@@ -2432,7 +2443,6 @@ function App() {
             </div>
           )}
         </PerformanceWrapper>
-        </Suspense>
         </div>
       )}
       </main>

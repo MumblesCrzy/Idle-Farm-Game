@@ -301,7 +301,6 @@ export const BEE_UPGRADE_COSTS = {
   // Advanced upgrades
   winterHardiness: 45, // 3 * 15 (golden honey)
   nectarEfficiency: 30, // 2 * 15 (golden honey)
-  hiveExpansion: 1500, // 100 * 15
 } as const;
 
 // ============================================================================

@@ -107,10 +107,35 @@ function calculateGoldenHoneyChance(upgrades: BeeUpgrade[]): number {
 }
 
 /**
- * Calculate bee box purchase cost
+ * Calculate bee box purchase cost with tiered scaling
+ * Cost increases more significantly every 5 boxes
  */
-function calculateBeeBoxCost(currentBoxCount: number): number {
-  return 150 + (currentBoxCount * 75); // 150, 225, 300, 375...
+function calculateBeeBoxCost(boxCount: number): number {
+  const baseCost = 150;
+  const baseIncrement = 75;
+  
+  // Calculate which tier (0-4 = tier 0, 5-9 = tier 1, etc.)
+  const tier = Math.floor(boxCount / 5);
+  
+  // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
+  const tierMultiplier = Math.pow(2, tier);
+  
+  // Calculate cost with tier-based scaling
+  // Within each tier, cost still increases linearly, but the increment grows with tier
+  const withinTierIndex = boxCount % 5;
+  
+  // Sum up costs from previous tiers
+  let totalCost = baseCost;
+  for (let t = 0; t < tier; t++) {
+    const prevTierMultiplier = Math.pow(2, t);
+    // Each tier has 5 boxes worth of increments
+    totalCost += baseIncrement * prevTierMultiplier * 5;
+  }
+  
+  // Add current tier's partial increment
+  totalCost += baseIncrement * tierMultiplier * withinTierIndex;
+  
+  return Math.floor(totalCost);
 }
 
 describe('Bee System Calculations', () => {
@@ -315,20 +340,42 @@ describe('Bee System Calculations', () => {
       expect(calculateBeeBoxCost(0)).toBe(150);
     });
 
-    it('should calculate subsequent box costs correctly', () => {
-      expect(calculateBeeBoxCost(1)).toBe(225); // 150 + 75
-      expect(calculateBeeBoxCost(2)).toBe(300); // 150 + 150
-      expect(calculateBeeBoxCost(3)).toBe(375); // 150 + 225
-      expect(calculateBeeBoxCost(10)).toBe(900); // 150 + 750
+    it('should calculate tier 0 costs correctly (boxes 0-4)', () => {
+      expect(calculateBeeBoxCost(0)).toBe(150);  // Base cost
+      expect(calculateBeeBoxCost(1)).toBe(225);  // 150 + 75*1
+      expect(calculateBeeBoxCost(2)).toBe(300);  // 150 + 75*2
+      expect(calculateBeeBoxCost(3)).toBe(375);  // 150 + 75*3
+      expect(calculateBeeBoxCost(4)).toBe(450);  // 150 + 75*4
     });
 
-    it('should scale cost linearly', () => {
-      const cost1 = calculateBeeBoxCost(1);
-      const cost2 = calculateBeeBoxCost(2);
-      const cost3 = calculateBeeBoxCost(3);
+    it('should jump costs at tier 1 (boxes 5-9)', () => {
+      // Tier 1: base + tier0 sum (75*5=375) + tier1 increment (150 per box)
+      expect(calculateBeeBoxCost(5)).toBe(525);  // 150 + 375 + 0
+      expect(calculateBeeBoxCost(6)).toBe(675);  // 150 + 375 + 150*1
+      expect(calculateBeeBoxCost(7)).toBe(825);  // 150 + 375 + 150*2
+      expect(calculateBeeBoxCost(8)).toBe(975);  // 150 + 375 + 150*3
+      expect(calculateBeeBoxCost(9)).toBe(1125); // 150 + 375 + 150*4
+    });
+
+    it('should have larger jumps at higher tiers', () => {
+      // Tier 2: base + tier0 sum (375) + tier1 sum (150*5=750) + tier2 increment (300 per box)
+      expect(calculateBeeBoxCost(10)).toBe(1275); // 150 + 375 + 750 + 0
+      expect(calculateBeeBoxCost(15)).toBe(2775); // Start of tier 3 (increment 600)
+      expect(calculateBeeBoxCost(20)).toBe(5775); // Start of tier 4 (increment 1200)
+      expect(calculateBeeBoxCost(25)).toBe(11775); // Start of tier 5 (increment 2400)
+    });
+
+    it('should scale cost exponentially by tier', () => {
+      // Difference between tier boundaries shows increasing costs
+      const tier0End = calculateBeeBoxCost(4);
+      const tier1Start = calculateBeeBoxCost(5);
+      const tier1End = calculateBeeBoxCost(9);
+      const tier2Start = calculateBeeBoxCost(10);
       
-      expect(cost2 - cost1).toBe(75);
-      expect(cost3 - cost2).toBe(75);
+      // Jump from tier 0 to tier 1
+      expect(tier1Start - tier0End).toBe(75);
+      // Jump from tier 1 to tier 2
+      expect(tier2Start - tier1End).toBe(150);
     });
   });
 

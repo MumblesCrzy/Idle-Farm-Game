@@ -50,6 +50,11 @@
   gap: 1rem;
 }
 
+/* Hidden tab panel - keeps component mounted but invisible */
+.tabPanelHidden {
+  display: none !important;
+}
+
 .loadingSpinner {
   width: 40px;
   height: 40px;
@@ -129,6 +134,7 @@
 .tabButtonCanning {
   composes: tabButton;
   flex-direction: column;
+  justify-content: center;
 }
 
 .tabButtonCanningActive {
@@ -147,6 +153,7 @@
 .tabButtonBees {
   composes: tabButton;
   flex-direction: column;
+  justify-content: center;
 }
 
 .tabButtonBeesActive {
@@ -165,6 +172,7 @@
 .tabButtonChristmas {
   composes: tabButton;
   flex-direction: column;
+  justify-content: center;
 }
 
 .tabButtonChristmasActive {

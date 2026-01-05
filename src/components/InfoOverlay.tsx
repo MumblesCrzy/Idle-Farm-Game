@@ -1,6 +1,6 @@
 import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER } from '../config/assetPaths';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './InfoOverlay.module.css';
 
@@ -559,6 +559,80 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Manage Ingredients:</strong> Keep a good stock of common vegetables for consistent canning</li>
                   <li><strong>Sort by Profit:</strong> Default sorting helps maximize income per time invested</li>
                   <li><strong>Batch Processing:</strong> Upgrade simultaneous processes to handle multiple recipes</li>
+                </ul>
+              </div>
+            )}
+
+            {selectedInfoCategory === 'bees' && (
+              <div>
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_BEE} alt="" className={styles.sectionIcon} />
+                  Bee System
+                </h4>
+                <p>The Bee System unlocks at <strong>Farm Tier 3</strong> and allows you to raise bees that produce honey and boost your crop yields. Bees provide passive income and valuable bonuses to your farming operation.</p>
+
+                <h5><img src={ICON_BEE_HIVE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Getting Started:</h5>
+                <ul>
+                  <li><strong>Unlock Requirement:</strong> Reach Farm Tier 3 to access the bee system</li>
+                  <li><strong>Bee Boxes:</strong> Purchase bee boxes to start producing honey</li>
+                  <li><strong>Maximum Boxes:</strong> You can own up to 30 bee boxes</li>
+                  <li><strong>Box Cost:</strong> First box costs $1,000, increasing by 1.15× per box owned</li>
+                </ul>
+
+                <h5><img src={ICON_HONEY} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Honey Production:</h5>
+                <ul>
+                  <li><strong>Production Time:</strong> Each box produces honey every 182 in-game days (~6 months)</li>
+                  <li><strong>Regular Honey:</strong> Standard honey used in canning recipes</li>
+                  <li><strong>Golden Honey:</strong> <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Rare honey with 1% base chance (upgradeable)</li>
+                  <li><strong>Harvesting:</strong> Click "Collect All Honey" to harvest from all ready boxes</li>
+                  <li><strong>Winter Dormancy:</strong> Bees hibernate in Winter and don't produce (unless upgraded)</li>
+                </ul>
+
+                <h5><img src={ICON_GROWING} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Crop Yield Bonus:</h5>
+                <ul>
+                  <li><strong>Base Bonus:</strong> +0.5% crop yield per bee box owned</li>
+                  <li><strong>Meadow Magic:</strong> Upgrade doubles yield bonus to +1% per box</li>
+                  <li><strong>Maximum Bonus:</strong> With 30 boxes and Meadow Magic = +30% yield</li>
+                  <li><strong>Application:</strong> Applies to all vegetable harvests automatically</li>
+                </ul>
+
+                <h5><img src={ICON_UPGRADE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Bee Upgrades:</h5>
+                <ul>
+                  <li><strong>Busy Bees:</strong> +1% production speed per level (max 50 levels)</li>
+                  <li><strong>Royal Jelly:</strong> +1% Golden Honey chance (one-time purchase)</li>
+                  <li><strong>Hexcomb Engineering:</strong> -10% honey production time (one-time purchase)</li>
+                  <li><strong>Meadow Magic:</strong> Doubles crop yield bonus from bees (one-time purchase)</li>
+                  <li><strong>Queen's Blessing:</strong> +2% Golden Honey chance (one-time purchase)</li>
+                  <li><strong>Winter Hardiness:</strong> Bees produce during Winter (one-time purchase)</li>
+                  <li><strong>Golden Touch:</strong> +5% Golden Honey chance (one-time purchase)</li>
+                </ul>
+
+                <h5><img src={BEE_BEEKEEPER} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Beekeeper Assistant:</h5>
+                <ul>
+                  <li><strong>Function:</strong> Automatically collects honey when boxes are ready</li>
+                  <li><strong>Cost:</strong> $10,000 + 100 Knowledge</li>
+                  <li><strong>Production Bonus:</strong> +5% production speed while active</li>
+                  <li><strong>Toggle:</strong> Can be turned on/off after purchase</li>
+                </ul>
+
+                <h5><img src={ICON_CANNING} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Honey in Canning:</h5>
+                <ul>
+                  <li><strong>Honey Recipes:</strong> Several canning recipes require Regular Honey</li>
+                  <li><strong>Golden Honey Recipes:</strong> Premium recipes require rare Golden Honey</li>
+                  <li><strong>Beekeeper's Pride:</strong> The ultimate honey recipe for achievement hunters</li>
+                </ul>
+
+                <h4 className={styles.sectionTitle}>
+                  <img src={ICON_IDEA} alt="" aria-hidden="true" className={styles.sectionIcon} />
+                  Bee Strategy:
+                </h4>
+                <ul>
+                  <li><strong>Early Priority:</strong> Buy boxes early - the yield bonus helps all crops</li>
+                  <li><strong>Busy Bees First:</strong> Speed upgrades compound over time for more honey</li>
+                  <li><strong>Golden Honey:</strong> Stack Royal Jelly, Queen's Blessing, and Golden Touch for 9% chance</li>
+                  <li><strong>Winter Planning:</strong> Get Winter Hardiness to avoid 3-month production gaps</li>
+                  <li><strong>Beekeeper Assistant:</strong> Great for idle play, collect honey automatically</li>
+                  <li><strong>Max Boxes:</strong> 30 boxes with Meadow Magic = +30% yield on everything!</li>
                 </ul>
               </div>
             )}

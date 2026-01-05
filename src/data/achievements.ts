@@ -13,7 +13,7 @@ import {
   ICON_BEE,
   ICON_HONEY,
   ICON_GOLDEN_HONEY,
-  ICON_BEE_BOX
+  ICON_BEE_HIVE
 } from '../config/assetPaths';
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -359,7 +359,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     name: 'First Harvest',
     description: 'Collect your first honey from a bee box',
     icon: ICON_HONEY,
-    category: 'special',
+    category: 'bees',
     requirement: {
       type: 'custom',
       customCheck: (gameState) => (gameState.beeState?.totalHoneyCollected || 0) >= 1
@@ -374,7 +374,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     name: 'Golden Touch',
     description: 'Collect your first Golden Honey',
     icon: ICON_GOLDEN_HONEY,
-    category: 'special',
+    category: 'bees',
     requirement: {
       type: 'custom',
       customCheck: (gameState) => (gameState.beeState?.totalGoldenHoneyCollected || 0) >= 1
@@ -388,14 +388,16 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'buzzing_business',
     name: 'Buzzing Business',
     description: 'Own 10 bee boxes',
-    icon: ICON_BEE_BOX,
-    category: 'special',
+    icon: ICON_BEE_HIVE,
+    category: 'bees',
     requirement: {
       type: 'custom',
+      value: 10,
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
         return boxCount >= 10;
-      }
+      },
+      getProgress: (gameState) => gameState.beeState?.boxes?.length || 0
     },
     reward: {
       knowledge: 20,
@@ -406,14 +408,16 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'apiary_master',
     name: 'Apiary Master',
     description: 'Own 25 bee boxes',
-    icon: ICON_BEE_BOX,
-    category: 'special',
+    icon: ICON_BEE_HIVE,
+    category: 'bees',
     requirement: {
       type: 'custom',
+      value: 25,
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
         return boxCount >= 25;
-      }
+      },
+      getProgress: (gameState) => gameState.beeState?.boxes?.length || 0
     },
     reward: {
       knowledge: 50,
@@ -425,14 +429,16 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     id: 'sweet_empire',
     name: 'Sweet Empire',
     description: 'Own 30 bee boxes (maximum)',
-    icon: ICON_BEE_BOX,
-    category: 'special',
+    icon: ICON_BEE_HIVE,
+    category: 'bees',
     requirement: {
       type: 'custom',
+      value: 30,
       customCheck: (gameState) => {
         const boxCount = gameState.beeState?.boxes?.length || 0;
         return boxCount >= 30;
-      }
+      },
+      getProgress: (gameState) => gameState.beeState?.boxes?.length || 0
     },
     reward: {
       knowledge: 100,
@@ -445,10 +451,12 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     name: 'Honey Hoarder',
     description: 'Collect 100 honey total (lifetime)',
     icon: ICON_HONEY,
-    category: 'special',
+    category: 'bees',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => (gameState.beeState?.totalHoneyCollected || 0) >= 100
+      value: 100,
+      customCheck: (gameState) => (gameState.beeState?.totalHoneyCollected || 0) >= 100,
+      getProgress: (gameState) => gameState.beeState?.totalHoneyCollected || 0
     },
     reward: {
       knowledge: 30,
@@ -460,7 +468,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     name: 'Beekeeper\'s Pride',
     description: 'Craft the ultimate honey recipe (Beekeeper\'s Pride)',
     icon: ICON_CANNING,
-    category: 'special',
+    category: 'bees',
     requirement: {
       type: 'custom',
       customCheck: (gameState) => {
@@ -480,7 +488,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     name: 'Queen\'s Court',
     description: 'Unlock all bee upgrades',
     icon: ICON_BEE,
-    category: 'special',
+    category: 'bees',
     requirement: {
       type: 'custom',
       customCheck: (gameState) => {

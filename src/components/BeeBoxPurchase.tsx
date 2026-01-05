@@ -6,6 +6,7 @@ interface BeeBoxPurchaseProps {
   currentBoxes: number;
   maxBoxes: number;
   regularHoney: number;
+  cost: number; // Cost from BeeContext (uses tiered scaling)
   onPurchase: () => boolean;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
@@ -14,15 +15,10 @@ const BeeBoxPurchase: FC<BeeBoxPurchaseProps> = memo(({
   currentBoxes,
   maxBoxes,
   regularHoney,
+  cost,
   onPurchase,
   formatNumber
 }) => {
-  // Calculate cost (same formula as BeeContext: 150 + (boxes.length * 75))
-  const calculateCost = (boxCount: number): number => {
-    return 150 + (boxCount * 75);
-  };
-
-  const cost = calculateCost(currentBoxes);
   const canAfford = regularHoney >= cost;
   const atMaxCapacity = currentBoxes >= maxBoxes;
 

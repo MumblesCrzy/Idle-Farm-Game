@@ -6,21 +6,6 @@
  */
 
 import type { Veggie } from '../types/game';
-import type { BeeBox, BeeUpgrade, BeekeeperAssistant, OfflineBeeProgress } from '../types/bees';
-import type { CanningProcess } from '../types/canning';
-import { CANNING_BASE_DURATION_SECONDS, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
-
-interface OfflineBeeStateInput {
-  unlocked?: boolean;
-  boxes: BeeBox[];
-  upgrades: BeeUpgrade[];
-  beekeeperAssistant?: BeekeeperAssistant;
-  regularHoney: number;
-  goldenHoney: number;
-  totalHoneyCollected: number;
-  totalGoldenHoneyCollected: number;
-  lastUpdateTime?: number;
-}
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 
 export interface OfflineProgressResult {
@@ -35,129 +20,6 @@ export interface OfflineProgressResult {
   christmasTreeGrowthTicks: number; // number of tree growth ticks processed
   christmasElvesCraftingTicks: number; // number of elves crafting ticks processed
   christmasPassiveCheerGain: number; // passive Holiday Cheer earned
-  beeProgress?: OfflineBeeProgress; // Honey production and updated bee state
-}
-
-function getUpgrade(beeUpgrades: BeeUpgrade[] | undefined, id: string): BeeUpgrade | undefined {
-  return beeUpgrades?.find(u => u.id === id);
-}
-
-function simulateBeeOfflineProduction(
-  elapsedSeconds: number,
-  season: string,
-  beeState?: OfflineBeeStateInput
-): OfflineBeeProgress | undefined {
-  if (!beeState?.unlocked || beeState.boxes.length === 0) {
-    return undefined;
-  }
-
-  const isWinter = season === 'Winter';
-  const winterHardiness = getUpgrade(beeState.upgrades, 'winter_hardiness');
-  const hasWinterHardiness = Boolean(winterHardiness?.purchased || (winterHardiness?.level ?? 0) > 0);
-  const boxesActive = !isWinter || hasWinterHardiness;
-
-  if (!boxesActive) {
-    return {
-      boxes: beeState.boxes,
-      regularHoney: beeState.regularHoney,
-      goldenHoney: beeState.goldenHoney,
-      totalHoneyCollected: beeState.totalHoneyCollected,
-      totalGoldenHoneyCollected: beeState.totalGoldenHoneyCollected,
-      lastUpdateTime: Date.now(),
-      honeyGained: 0,
-      goldenHoneyGained: 0,
-      harvestsProcessed: 0,
-    };
-  }
-
-  const busyBees = getUpgrade(beeState.upgrades, 'busy_bees');
-  const speedBonus = busyBees ? (busyBees.level ?? 0) * 0.01 : 0;
-  const assistantBonus = beeState.beekeeperAssistant?.active ? (beeState.beekeeperAssistant.productionSpeedBonus || 0) : 0;
-  const autoCollectEnabled = Boolean(beeState.beekeeperAssistant?.active && beeState.beekeeperAssistant.autoCollectEnabled);
-
-  let productionTime = 132; // base seconds
-  productionTime = productionTime / (1 + speedBonus);
-  if (assistantBonus > 0) {
-    productionTime = productionTime / (1 + assistantBonus);
-  }
-
-  const hexcomb = getUpgrade(beeState.upgrades, 'hexcomb_engineering');
-  const productionMultiplier = 1 + ((hexcomb?.level ?? 0) * 0.05);
-  const honeyPerHarvest = Math.round(15 * productionMultiplier);
-
-  let goldenChance = 0.01;
-  const royalJelly = getUpgrade(beeState.upgrades, 'royal_jelly');
-  if (royalJelly && (royalJelly.purchased || (royalJelly.level ?? 0) > 0)) {
-    goldenChance += 0.01;
-  }
-  const queensBlessing = getUpgrade(beeState.upgrades, 'queens_blessing');
-  if (queensBlessing && (queensBlessing.purchased || (queensBlessing.level ?? 0) > 0) && goldenChance > 0) {
-    goldenChance *= 2;
-  }
-
-  let totalHoneyGain = 0;
-  let totalGoldenHoneyGain = 0;
-  let harvestsProcessed = 0;
-  const updatedBoxes = beeState.boxes.map(box => {
-    if (!box.active) return box;
-
-    const progress = box.productionTimer + elapsedSeconds;
-    const completed = Math.floor(progress / productionTime);
-    const remainder = progress % productionTime;
-
-    if (completed <= 0) {
-      return {
-        ...box,
-        productionTimer: Math.min(progress, productionTime),
-      };
-    }
-
-    harvestsProcessed += completed;
-    let boxRegularGain = 0;
-    let boxGoldenGain = 0;
-
-    for (let i = 0; i < completed; i++) {
-      const isGolden = Math.random() < goldenChance;
-      if (isGolden) {
-        boxGoldenGain += honeyPerHarvest;
-      } else {
-        boxRegularGain += honeyPerHarvest;
-      }
-    }
-
-    if (autoCollectEnabled) {
-      totalHoneyGain += boxRegularGain;
-      totalGoldenHoneyGain += boxGoldenGain;
-
-      return {
-        ...box,
-        productionTimer: remainder,
-        harvestReady: false,
-        lastHarvestTime: Date.now(),
-        honeyProduced: box.honeyProduced + boxRegularGain + boxGoldenGain,
-      };
-    }
-
-    return {
-      ...box,
-      productionTimer: productionTime,
-      harvestReady: true,
-    };
-  });
-
-  const now = Date.now();
-
-  return {
-    boxes: updatedBoxes,
-    regularHoney: beeState.regularHoney + totalHoneyGain,
-    goldenHoney: beeState.goldenHoney + totalGoldenHoneyGain,
-    totalHoneyCollected: beeState.totalHoneyCollected + totalHoneyGain,
-    totalGoldenHoneyCollected: beeState.totalGoldenHoneyCollected + totalGoldenHoneyGain,
-    lastUpdateTime: now,
-    honeyGained: totalHoneyGain,
-    goldenHoneyGained: totalGoldenHoneyGain,
-    harvestsProcessed,
-  };
 }
 
 /**
@@ -177,14 +39,13 @@ export function calculateOfflineProgress(
     almanacLevel: number;
     farmTier: number;
     knowledge: number;
-    canningProcesses: CanningProcess[];
-    canningUpgrades: Record<string, number>;
-    autoCanning: { enabled: boolean };
+    canningProcesses: any[];
+    canningUpgrades: any;
+    autoCanning: any;
     christmasEvent?: {
       isEventActive: boolean;
       passiveCheerPerSecond: number;
     };
-    beeState?: OfflineBeeStateInput;
   }
 ): OfflineProgressResult {
   // Don't process if less than 1 second elapsed (avoid flickering on quick tab switches)
@@ -212,7 +73,6 @@ export function calculateOfflineProgress(
   
   const canningProgressUpdates = new Map<string, number>();
   let autoCanningCycles = 0;
-  let beeProgress: OfflineBeeProgress | undefined;
 
   // Process in chunks to avoid performance issues with very long offline periods
   // Max 8 hours of offline time (can be increased to 24 hours for prestige system later)
@@ -271,12 +131,12 @@ export function calculateOfflineProgress(
   // Process canning progress
   // Each active process gains progress based on elapsed time
   const canningSpeedMultiplier = 1 + (gameState.canningUpgrades?.canningSpeed || 0) * 0.1;
-  const progressPerTick = (GROWTH_COMPLETE_THRESHOLD / (CANNING_BASE_DURATION_SECONDS * 10)) * canningSpeedMultiplier; // 30 seconds base = 300 ticks at 100ms
+  const progressPerTick = (100 / 300) * canningSpeedMultiplier; // 30 seconds base = 300 ticks at 100ms
   const progressGained = progressPerTick * ticks;
 
-  gameState.canningProcesses.forEach((process: CanningProcess) => {
+  gameState.canningProcesses.forEach((process: any) => {
     if (!process.completed) {
-      canningProgressUpdates.set(process.recipeId, progressGained);
+      canningProgressUpdates.set(process.id, progressGained);
     }
   });
 
@@ -304,9 +164,6 @@ export function calculateOfflineProgress(
     }
   }
 
-  // Process bee system offline production
-  beeProgress = simulateBeeOfflineProduction(cappedTime / 1000, gameState.season, gameState.beeState);
-
   return {
     timeElapsed: cappedTime,
     veggies: currentVeggies,
@@ -319,7 +176,6 @@ export function calculateOfflineProgress(
     christmasTreeGrowthTicks,
     christmasElvesCraftingTicks,
     christmasPassiveCheerGain,
-    beeProgress,
   };
 }
 

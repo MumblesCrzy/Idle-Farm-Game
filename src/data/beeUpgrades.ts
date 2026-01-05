@@ -14,7 +14,6 @@ import {
   BEE_MEADOW_MAGIC,
   BEE_WINTER_HARDINESS,
   BEE_GOLDEN_TOUCH,
-  BEE_HIVE_EXPANSION,
   BEE_NECTAR_EFFICIENCY,
   BEE_FLOWER_POWER,
   BEE_SWIFT_GATHERERS
@@ -154,22 +153,6 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     unlocked: false,
     requiredUpgrades: ['royal_jelly', 'queens_blessing'],
     requiredBoxes: 15,
-  },
-  
-  {
-    id: 'hive_expansion',
-    name: 'Hive Expansion',
-    description: 'Expand your apiary! Increases maximum bee boxes to 30.',
-    category: 'automation',
-    icon: BEE_HIVE_EXPANSION,
-    cost: BEE_UPGRADE_COSTS.hiveExpansion,
-    baseCost: BEE_UPGRADE_COSTS.hiveExpansion,
-    costCurrency: 'regularHoney',
-    effectType: 'hiveCapacity', // Special: increases max boxes instead of honey production
-    effectValue: 10, // Special upgrade - increases max boxes from 20 to 30
-    repeatable: false,
-    unlocked: false,
-    requiredBoxes: 20, // Only available when approaching max boxes
   },
   
   {
