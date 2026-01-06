@@ -8,7 +8,7 @@ import type { AchievementOrMilestone } from '../types/achievements';
  * Replaces module-level global callbacks for better testability
  */
 
-interface EventLogCallbacks {
+export interface EventLogCallbacks {
   // Harvest event callback
   onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void;
   

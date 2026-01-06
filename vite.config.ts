@@ -20,8 +20,9 @@ export default defineConfig({
     target: 'es2020',
     // Enable minification
     minify: 'esbuild',
-    // Reduce chunk size warning threshold
-    chunkSizeWarningLimit: 500,
+    // Game bundles are larger due to all features loading upfront
+    // 600 kB is reasonable for a feature-rich idle game
+    chunkSizeWarningLimit: 600,
     // Enable CSS code splitting
     cssCodeSplit: true,
     // Generate source maps for production debugging (optional)

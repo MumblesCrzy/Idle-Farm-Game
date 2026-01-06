@@ -349,6 +349,11 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
       loaded.autoCanningConfig = { ...DEFAULT_AUTO_CANNING_CONFIG };
     }
     
+    // Always migrate veggie data to fix any broken upgrade costs
+    if (loaded.veggies && Array.isArray(loaded.veggies)) {
+      loaded.veggies = migrateVeggieDataWithCanning(loaded.veggies);
+    }
+    
     // Ensure version fields are set
     loaded._saveVersion = CURRENT_SAVE_VERSION;
     loaded.canningVersion = CANNING_VERSION;
@@ -652,18 +657,28 @@ function migrateBeeStateSaveData(loaded: ExtendedGameState): ExtendedGameState {
 /**
  * Extends veggie data to include canning-specific upgrade fields.
  * Adds canningYieldLevel, canningYieldCost, canningQualityLevel, and canningQualityCost.
+ * Also fixes Radish upgrade costs that were incorrectly set to 'calculated' string.
  * @param veggies - Array of vegetable data to extend
  * @returns Updated veggie array with canning upgrade fields
  */
 export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
-  return veggies.map(veggie => {
+  return veggies.map((veggie, veggieIndex) => {
+    // Fix Radish upgrade costs that were incorrectly set to 'calculated' string
+    if (veggie.name === 'Radish') {
+      if (typeof veggie.harvesterSpeedCost !== 'number' || isNaN(veggie.harvesterSpeedCost)) {
+        veggie.harvesterSpeedCost = 50;
+      }
+      if (typeof veggie.additionalPlotCost !== 'number' || isNaN(veggie.additionalPlotCost)) {
+        veggie.additionalPlotCost = 40;
+      }
+    }
+    
     // Add canning upgrade fields if they don't exist
     if (veggie.canningYieldLevel === undefined) {
       veggie.canningYieldLevel = 0;
     }
     if (veggie.canningYieldCost === undefined) {
       // Calculate initial cost based on veggie tier
-      const veggieIndex = veggies.indexOf(veggie);
       veggie.canningYieldCost = Math.ceil(200 * Math.pow(1.5, veggieIndex));
     }
     if (veggie.canningQualityLevel === undefined) {
@@ -671,7 +686,6 @@ export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
     }
     if (veggie.canningQualityCost === undefined) {
       // Calculate initial cost based on veggie tier
-      const veggieIndex = veggies.indexOf(veggie);
       veggie.canningQualityCost = Math.ceil(150 * Math.pow(1.5, veggieIndex));
     }
     

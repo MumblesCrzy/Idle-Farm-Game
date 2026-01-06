@@ -40,8 +40,8 @@ export const VEGGIE_CONFIGS: VeggieConfig[] = [
     initialFertilizerCost: 'calculated',
     initialHarvesterCost: 'calculated',
     initialBetterSeedsCost: 'calculated',
-    initialHarvesterSpeedCost: 'calculated' as any,
-    initialAdditionalPlotCost: 'calculated' as any,
+    initialHarvesterSpeedCost: 50,
+    initialAdditionalPlotCost: 40,
     autoPurchaserCosts: [8, 10, 30 * 5, 38]
   },
   {

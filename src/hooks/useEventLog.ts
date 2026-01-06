@@ -30,7 +30,7 @@ interface UseEventLogOptions {
   totalDaysElapsed: number;
 }
 
-interface UseEventLogReturn {
+export interface UseEventLogReturn {
   // State
   entries: EventLogEntry[];
   unreadCount: number;

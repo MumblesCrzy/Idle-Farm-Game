@@ -8,6 +8,8 @@
 import type { Veggie } from '../types/game';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 
+import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
+
 export interface OfflineProgressResult {
   timeElapsed: number; // milliseconds
   veggies: Veggie[];
@@ -20,6 +22,7 @@ export interface OfflineProgressResult {
   christmasTreeGrowthTicks: number; // number of tree growth ticks processed
   christmasElvesCraftingTicks: number; // number of elves crafting ticks processed
   christmasPassiveCheerGain: number; // passive Holiday Cheer earned
+  beeProgress?: OfflineBeeProgress; // bee system offline progress (optional until fully implemented)
 }
 
 /**
@@ -45,6 +48,16 @@ export function calculateOfflineProgress(
     christmasEvent?: {
       isEventActive: boolean;
       passiveCheerPerSecond: number;
+    };
+    beeState?: {
+      unlocked: boolean;
+      boxes: BeeBox[];
+      upgrades: BeeUpgrade[];
+      beekeeperAssistant: BeekeeperAssistant;
+      regularHoney: number;
+      goldenHoney: number;
+      totalHoneyCollected: number;
+      totalGoldenHoneyCollected: number;
     };
   }
 ): OfflineProgressResult {

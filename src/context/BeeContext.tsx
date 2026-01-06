@@ -835,6 +835,26 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   }, []);
 
   /**
+   * Apply offline progress to bee system
+   * This is called when the player returns after being away
+   */
+  const applyOfflineProgress = useCallback((progress: {
+    boxes: BeeBox[];
+    regularHoney: number;
+    goldenHoney: number;
+    totalHoneyCollected: number;
+    totalGoldenHoneyCollected: number;
+    lastUpdateTime: number;
+  }) => {
+    setBoxes(progress.boxes);
+    setRegularHoney(progress.regularHoney);
+    setGoldenHoney(progress.goldenHoney);
+    setTotalHoneyCollected(progress.totalHoneyCollected);
+    setTotalGoldenHoneyCollected(progress.totalGoldenHoneyCollected);
+    lastUpdateTimeRef.current = progress.lastUpdateTime;
+  }, []);
+
+  /**
    * Get upgrade effect details
    */
   const getUpgradeEffect = useCallback((upgradeId: string): UpgradeEffect | null => {
@@ -982,6 +1002,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     removeBeeBox,
     harvestHoney,
     harvestAllHoney,
+    applyOfflineProgress,
     updateProduction,
     checkReadyBoxes,
     purchaseUpgrade,
