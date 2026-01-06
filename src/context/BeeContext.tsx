@@ -152,7 +152,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   });
   const [totalBoxesPurchased, setTotalBoxesPurchased] = useState(initialState?.totalBoxesPurchased ?? 0);
   const [honeySpent, setHoneySpent] = useState(initialState?.honeySpent ?? 0);
-  const [lastUpdateTime, setLastUpdateTime] = useState(initialState?.lastUpdateTime ?? Date.now());
+  
+  // Use ref for lastUpdateTime to avoid re-renders every second
+  const lastUpdateTimeRef = useRef(initialState?.lastUpdateTime ?? Date.now());
 
   // Refs for tracking
   const previousYieldBonus = useRef(0);
@@ -833,7 +835,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     setHoneySpent(0);
     setUpgrades(createInitialBeeUpgrades());
     setBeekeeperAssistant(createBeekeeperAssistant());
-    setLastUpdateTime(Date.now());
+    lastUpdateTimeRef.current = Date.now();
   }, []);
 
   /**
@@ -867,13 +869,13 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     if (!unlocked || boxes.length === 0) return;
 
     const now = Date.now();
-    const elapsedSeconds = (now - lastUpdateTime) / 1000;
+    const elapsedSeconds = (now - lastUpdateTimeRef.current) / 1000;
 
     // Only process offline production if more than 2 seconds have passed
     if (elapsedSeconds > 2) {
       console.log(`Processing ${elapsedSeconds.toFixed(1)}s of offline bee production`);
       updateProduction(elapsedSeconds, season);
-      setLastUpdateTime(now);
+      lastUpdateTimeRef.current = now;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked, boxes.length]); // Only run on mount or when unlocked/boxes change
@@ -884,8 +886,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       if (!unlocked || boxes.length === 0) return;
 
       const now = Date.now();
-      const deltaTime = (now - lastUpdateTime) / 1000; // Convert to seconds
-      setLastUpdateTime(now);
+      const deltaTime = (now - lastUpdateTimeRef.current) / 1000; // Convert to seconds
+      lastUpdateTimeRef.current = now;
 
       updateProduction(deltaTime, season);
     },
@@ -936,7 +938,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       goldenHoney,
       totalHoneyCollected,
       totalGoldenHoneyCollected,
-      lastUpdateTime,
+      lastUpdateTime: lastUpdateTimeRef.current,
       honeyPerSecond: calculateProductionRate(),
       upgrades,
       beekeeperAssistant,
@@ -954,7 +956,6 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     goldenHoney,
     totalHoneyCollected,
     totalGoldenHoneyCollected,
-    lastUpdateTime,
     upgrades,
     beekeeperAssistant,
     totalBoxesPurchased,
@@ -974,7 +975,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     goldenHoney,
     totalHoneyCollected,
     totalGoldenHoneyCollected,
-    lastUpdateTime,
+    lastUpdateTime: lastUpdateTimeRef.current,
     honeyPerSecond: calculateProductionRate(),
     upgrades,
     beekeeperAssistant,

@@ -351,7 +351,6 @@ const BeesTab: FC<BeesTabProps> = memo(({
   // Custom sidebar styling for bee tab
   const sidebarStyle = {
     background: 'linear-gradient(135deg, #F7C91F 0%, #AA7942 100%)',
-    border: '1px solid #AA7942',
     boxShadow: '0 2px 8px rgba(247, 201, 31, 0.3)'
   };
 
