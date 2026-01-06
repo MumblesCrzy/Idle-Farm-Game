@@ -25,11 +25,8 @@ const BeeBoxPurchase: FC<BeeBoxPurchaseProps> = memo(({
   const handlePurchase = () => {
     if (atMaxCapacity || !canAfford) return;
     
-    const success = onPurchase();
-    if (success) {
-      // Optional: Could add visual feedback here
-      console.log('Bee box purchased successfully');
-    }
+    onPurchase();
+    // Visual feedback is provided by state updates
   };
 
   return (

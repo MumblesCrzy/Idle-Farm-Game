@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { createContext, useState, useContext, useRef, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 
 interface ArchieContextType {
   archieClicked: boolean;
@@ -38,30 +38,28 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [archieAppearance, setArchieAppearance] = useState<'default' | 'reindeer' | 'sweater' | 'pinecones'>('default');
 
+  // Reuse a single audio instance to prevent memory leaks
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   // Shared function to play Archie sound
   const playArchieSound = () => {
     if (soundEnabled) {
       try {
-        const archieSound = new Audio('./Archie Bark.mp3');
-        archieSound.volume = 0.4; // 40% volume - friendly but not overwhelming
+        // Create audio element only once and reuse it
+        if (!audioRef.current) {
+          audioRef.current = new Audio('./Archie Bark.mp3');
+          audioRef.current.volume = 0.4; // 40% volume - friendly but not overwhelming
+        }
         
-        // Add more robust error handling
-        archieSound.addEventListener('canplaythrough', () => {
-          console.log('ArchieContext: Audio ready to play');
-        });
+        // Reset to beginning if already played
+        audioRef.current.currentTime = 0;
         
-        archieSound.addEventListener('error', (e) => {
-          console.warn('ArchieContext: Audio failed to load:', e);
+        audioRef.current.play().catch(() => {
+          // Silently fail - autoplay restrictions are expected
         });
-        
-        archieSound.play().catch((error) => {
-          console.warn('ArchieContext: Audio play failed (this is normal if autoplay is restricted):', error);
-        });
-      } catch (error) {
-        console.warn('ArchieContext: Audio initialization failed:', error);
+      } catch {
+        // Silently fail - audio initialization issues are expected on some browsers
       }
-    } else {
-      console.log('ArchieContext: Sound disabled, skipping audio');
     }
   };
 

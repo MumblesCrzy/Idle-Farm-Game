@@ -309,11 +309,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     if (isGolden) {
       setGoldenHoney(prev => prev + honeyAmount);
       setTotalGoldenHoneyCollected(prev => prev + honeyAmount);
-      console.log(`✨ Collected ${honeyAmount} Golden Honey from box ${boxId}`);
     } else {
       setRegularHoney(prev => prev + honeyAmount);
       setTotalHoneyCollected(prev => prev + honeyAmount);
-      console.log(`🍯 Collected ${honeyAmount} Honey from box ${boxId}`);
     }
 
     // Reset box production
@@ -347,8 +345,6 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     }
 
     if (productions.length > 0) {
-      console.log(`🐝 Harvested honey from ${productions.length} boxes`);
-      
       // Log harvest with summary
       if (addEventLogEntry) {
         const regularCount = productions.filter(p => p.type === 'regular').length;
@@ -946,7 +942,6 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       honeySpent,
     };
     
-    console.log(`[BeeContext] State changed - Bee boxes: ${boxes.length}`);
     onStateChange(currentState);
   }, [
     unlocked,

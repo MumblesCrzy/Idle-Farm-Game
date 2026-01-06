@@ -303,7 +303,7 @@ describe('ArchieContext', () => {
     })
 
     it('should handle audio play errors gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // Audio play errors should be silently handled (no console output)
       mockAudio.play.mockRejectedValueOnce(new Error('Audio play failed'))
 
       render(
@@ -312,16 +312,13 @@ describe('ArchieContext', () => {
         </ArchieProvider>
       )
 
+      // This should not throw, even when audio fails
       await act(async () => {
         fireEvent.click(screen.getByTestId('archie-appear'))
       })
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'ArchieContext: Audio play failed (this is normal if autoplay is restricted):',
-        expect.any(Error)
-      )
-      
-      consoleSpy.mockRestore()
+      // Test passes if no error is thrown - audio errors are silently ignored
+      // to handle browsers with autoplay restrictions
     })
 
     it('should save sound setting to localStorage', async () => {

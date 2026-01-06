@@ -573,12 +573,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           setTimeout(() => {
             startCanning(recipeToStart.id, true);
           }, 0);
-        } else {
-          console.log('Auto-canning: No recipes have enough ingredients');
         }
-      } else {
-        console.log('Auto-canning: All process slots full');
+        // Silently skip if no recipes available - this is normal behavior
       }
+      // Silently skip if all slots full - this is normal behavior
       
       return currentState; // Return unchanged state
     });
