@@ -260,6 +260,7 @@ export interface HoneyRecipe {
   unlocked: boolean;
   honeyCollectedRequired: number; // Total honey collected to unlock
   experienceRequired: number;
+  requiredAchievementId?: string; // Achievement ID that must be unlocked to unlock this recipe
   
   // Stats
   timesCompleted: number;

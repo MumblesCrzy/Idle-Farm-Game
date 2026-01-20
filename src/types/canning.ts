@@ -24,6 +24,7 @@ export type Recipe = {
   salePrice: number; // How much the canned product sells for
   baseSalePrice: number; // Original sale price (for upgrade calculations)
   experienceRequired: number; // Experience needed to unlock this recipe
+  requiredAchievementId?: string; // Achievement ID that must be unlocked to unlock this recipe
   unlocked: boolean; // Whether player has unlocked this recipe
   timesCompleted: number; // Track how many times player has made this recipe
 };
@@ -110,6 +111,7 @@ export type RecipeConfig = {
   baseProcessingTime: number; // In seconds
   baseSalePrice: number;
   experienceRequired: number;
+  requiredAchievementId?: string; // Achievement ID that must be unlocked to unlock this recipe
   category: 'simple' | 'complex' | 'gourmet'; // Difficulty categories
 };
 

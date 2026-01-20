@@ -114,7 +114,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   goldenHoney?: number,
   totalHoneyCollected?: number,
   setRegularHoney?: (value: number | ((prev: number) => number)) => void,
-  setGoldenHoney?: (value: number | ((prev: number) => number)) => void
+  setGoldenHoney?: (value: number | ((prev: number) => number)) => void,
+  unlockedAchievementIds?: string[]
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -141,19 +142,23 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         // Check if this is a honey recipe
         const isHoneyRecipe = !!config.honeyRequirement;
         
+        // Check if required achievement is unlocked (if one is required)
+        const achievementCheck = !config.requiredAchievementId || 
+          (unlockedAchievementIds || []).includes(config.requiredAchievementId);
+        
         // For honey recipes, also check honey collected requirement
         let unlocked: boolean;
         if (isHoneyRecipe) {
           const honeyUnlocked = (totalHoneyCollected || 0) >= (config.honeyCollectedRequired || 0);
-          unlocked = honeyUnlocked && (
+          unlocked = achievementCheck && honeyUnlocked && (
             isFirstRecipe 
               ? (farmTier || 1) >= 3
               : prev.canningExperience >= config.experienceRequired
           );
         } else {
-          unlocked = isFirstRecipe 
+          unlocked = achievementCheck && (isFirstRecipe 
             ? (farmTier || 1) >= 3
-            : prev.canningExperience >= config.experienceRequired;
+            : prev.canningExperience >= config.experienceRequired);
         }
         
         return {
@@ -169,6 +174,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           salePrice: config.baseSalePrice,
           baseSalePrice: config.baseSalePrice,
           experienceRequired: config.experienceRequired,
+          requiredAchievementId: config.requiredAchievementId,
           unlocked,
           timesCompleted: 0
         };
@@ -184,7 +190,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: unlockedRecipeIds
       };
     });
-  }, [veggies, farmTier, totalHoneyCollected]); // Watch farmTier instead of experience for first recipe unlock
+  }, [veggies, farmTier, totalHoneyCollected, unlockedAchievementIds]); // Watch farmTier instead of experience for first recipe unlock
   
   // Update recipe unlocks based on canning experience and farm tier
   useEffect(() => {
@@ -196,18 +202,22 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         // Check if this is a honey recipe
         const isHoneyRecipe = !!recipe.honeyRequirement;
         
+        // Check if required achievement is unlocked (if one is required)
+        const achievementCheck = !recipe.requiredAchievementId || 
+          (unlockedAchievementIds || []).includes(recipe.requiredAchievementId);
+        
         let unlocked: boolean;
         if (isHoneyRecipe) {
           const honeyUnlocked = (totalHoneyCollected || 0) >= (recipe.honeyCollectedRequired || 0);
-          unlocked = honeyUnlocked && (
+          unlocked = achievementCheck && honeyUnlocked && (
             isFirstRecipe 
               ? (farmTier || 1) >= 3
               : prev.canningExperience >= recipe.experienceRequired
           );
         } else {
-          unlocked = isFirstRecipe 
+          unlocked = achievementCheck && (isFirstRecipe 
             ? (farmTier || 1) >= 3
-            : prev.canningExperience >= recipe.experienceRequired;
+            : prev.canningExperience >= recipe.experienceRequired);
         }
         
         return {
@@ -226,7 +236,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: newUnlockedRecipes
       };
     });
-  }, [farmTier, canningState.canningExperience, totalHoneyCollected]); // Watch farmTier and honey collected
+  }, [farmTier, canningState.canningExperience, totalHoneyCollected, unlockedAchievementIds]); // Watch farmTier, honey collected, and achievements
 
   // Note: Canning state is now preserved across farm tier upgrades
   // The reset logic has been removed to maintain player progress
@@ -584,7 +594,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {
-    return filterRecipesByCategory(canningState.recipes, 'available', canMakeRecipe);
+    return filterRecipesByCategory(canningState.recipes, 'all', canMakeRecipe, true);
   }, [canningState.recipes, canMakeRecipe]);
   
   // Get recipe profit analysis

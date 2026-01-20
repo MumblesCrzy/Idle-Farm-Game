@@ -271,7 +271,8 @@ export interface ExtendedGameState {
   
   // UI preferences
   uiPreferences?: {
-    canningRecipeFilter?: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    canningRecipeFilter?: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    canningCanMakeOnly?: boolean;
     canningRecipeSort?: 'name' | 'profit' | 'time' | 'difficulty';
   };
   

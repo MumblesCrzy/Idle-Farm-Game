@@ -19,10 +19,12 @@ interface CanningTabProps {
   canMakeRecipe: (recipe: Recipe) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
   toggleAutoCanning: () => void;
-  recipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
+  recipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
   recipeSort: 'name' | 'profit' | 'time' | 'difficulty';
-  onRecipeFilterChange: (filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey') => void;
+  canMakeOnly: boolean;
+  onRecipeFilterChange: (filter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey') => void;
   onRecipeSortChange: (sort: 'name' | 'profit' | 'time' | 'difficulty') => void;
+  onCanMakeOnlyChange: (value: boolean) => void;
 }
 
 const CanningTab: FC<CanningTabProps> = memo(({
@@ -40,8 +42,10 @@ const CanningTab: FC<CanningTabProps> = memo(({
   toggleAutoCanning,
   recipeFilter,
   recipeSort,
+  canMakeOnly,
   onRecipeFilterChange,
-  onRecipeSortChange
+  onRecipeSortChange,
+  onCanMakeOnlyChange
 }) => {
   // Main canning content
   const mainContent = (
@@ -57,8 +61,10 @@ const CanningTab: FC<CanningTabProps> = memo(({
           canMakeRecipe={canMakeRecipe}
           recipeFilter={recipeFilter}
           recipeSort={recipeSort}
+          canMakeOnly={canMakeOnly}
           onRecipeFilterChange={onRecipeFilterChange}
           onRecipeSortChange={onRecipeSortChange}
+          onCanMakeOnlyChange={onCanMakeOnlyChange}
         />
       </div>
     </div>

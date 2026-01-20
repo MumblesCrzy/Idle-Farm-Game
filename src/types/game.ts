@@ -249,7 +249,7 @@ export interface BaseTabProps {
 
 export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'bees';
 
-export type RecipeFilter = 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
+export type RecipeFilter = 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
 // ============================================================================

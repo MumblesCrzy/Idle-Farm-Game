@@ -19,8 +19,10 @@ interface CanningPanelProps {
   canMakeRecipe: (recipe: Recipe) => boolean;
   recipeFilter?: RecipeFilter;
   recipeSort?: RecipeSort;
+  canMakeOnly?: boolean;
   onRecipeFilterChange?: (filter: RecipeFilter) => void;
   onRecipeSortChange?: (sort: RecipeSort) => void;
+  onCanMakeOnlyChange?: (value: boolean) => void;
 }
 
 const CanningPanel: FC<CanningPanelProps> = memo(({
@@ -33,8 +35,10 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
   canMakeRecipe,
   recipeFilter: propRecipeFilter,
   recipeSort: propRecipeSort,
+  canMakeOnly: propCanMakeOnly,
   onRecipeFilterChange,
-  onRecipeSortChange
+  onRecipeSortChange,
+  onCanMakeOnlyChange
 }) => {
   // Calculate efficiency multiplier from canning upgrades
   const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
@@ -56,16 +60,19 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
   // Use props for filter state, fallback to local state if props not provided
   const [localRecipeFilter, setLocalRecipeFilter] = useState<RecipeFilter>('all');
   const [localRecipeSort, setLocalRecipeSort] = useState<RecipeSort>('profit');
+  const [localCanMakeOnly, setLocalCanMakeOnly] = useState(false);
   
   const recipeFilter = propRecipeFilter ?? localRecipeFilter;
   const recipeSort = propRecipeSort ?? localRecipeSort;
+  const canMakeOnly = propCanMakeOnly ?? localCanMakeOnly;
   
   const setRecipeFilter = onRecipeFilterChange ?? setLocalRecipeFilter;
   const setRecipeSort = onRecipeSortChange ?? setLocalRecipeSort;
+  const setCanMakeOnly = onCanMakeOnlyChange ?? setLocalCanMakeOnly;
 
   const getFilteredRecipes = useCallback(() => (
-    filterRecipesByCategory(canningState.recipes, recipeFilter, canMakeRecipe)
-  ), [canningState.recipes, recipeFilter, canMakeRecipe]);
+    filterRecipesByCategory(canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly)
+  ), [canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly]);
 
   const getSortedRecipes = useCallback(() => {
     const filtered = getFilteredRecipes();
@@ -142,6 +149,16 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
         </div>
         
         <div className={styles.controls}>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={canMakeOnly}
+              onChange={(e) => setCanMakeOnly(e.target.checked)}
+              className={styles.checkbox}
+            />
+            Can Make
+          </label>
+          
           <select
             value={recipeFilter}
             onChange={(e) => setRecipeFilter(e.target.value as RecipeFilter)}
@@ -149,7 +166,6 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
             aria-label="Filter recipes by category"
           >
             <option value="all">All Recipes</option>
-            <option value="available">Can Make</option>
             <option value="simple">Simple</option>
             <option value="complex">Complex</option>
             <option value="gourmet">Gourmet</option>
@@ -175,7 +191,7 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
         {sortedRecipes.length === 0 ? (
           <div className={styles.emptyState}>
             No recipes match the current filter.
-            {recipeFilter === 'available' && (
+            {canMakeOnly && (
               <div className={styles.emptyStateHint}>
                 Try growing more vegetables to unlock ingredients!
               </div>

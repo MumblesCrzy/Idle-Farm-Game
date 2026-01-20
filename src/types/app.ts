@@ -126,8 +126,9 @@ export interface EventLogCallbacks {
  * UI preferences for recipe filtering/sorting
  */
 export interface UIPreferences {
-  canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
+  canningRecipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
   canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
+  canningCanMakeOnly: boolean;
 }
 
 // ============================================================================

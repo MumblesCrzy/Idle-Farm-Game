@@ -1308,20 +1308,34 @@ function App() {
 
   // Load and manage UI preferences (uses pre-loaded state)
   const [uiPreferences, setUiPreferences] = useState<{
-    canningRecipeFilter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    canningRecipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
     canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
-  }>(() => ({
-    canningRecipeFilter: loadedGameState?.uiPreferences?.canningRecipeFilter || 'all',
-    canningRecipeSort: loadedGameState?.uiPreferences?.canningRecipeSort || 'profit'
-  }));
+    canningCanMakeOnly: boolean;
+  }>(() => {
+    // Handle legacy saves that may have 'available' as the filter value
+    const legacyFilter = loadedGameState?.uiPreferences?.canningRecipeFilter as string | undefined;
+    const wasAvailable = legacyFilter === 'available';
+    const validFilters = ['all', 'simple', 'complex', 'gourmet', 'honey'];
+    const filter = (validFilters.includes(legacyFilter || '') ? legacyFilter : 'all') as 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    
+    return {
+      canningRecipeFilter: filter,
+      canningRecipeSort: loadedGameState?.uiPreferences?.canningRecipeSort || 'profit',
+      canningCanMakeOnly: loadedGameState?.uiPreferences?.canningCanMakeOnly ?? wasAvailable
+    };
+  });
 
   // Handlers for updating UI preferences
-  const setCanningRecipeFilter = useCallback((filter: 'all' | 'available' | 'simple' | 'complex' | 'gourmet' | 'honey') => {
+  const setCanningRecipeFilter = useCallback((filter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey') => {
     setUiPreferences(prev => ({ ...prev, canningRecipeFilter: filter }));
   }, []);
 
   const setCanningRecipeSort = useCallback((sort: 'name' | 'profit' | 'time' | 'difficulty') => {
     setUiPreferences(prev => ({ ...prev, canningRecipeSort: sort }));
+  }, []);
+
+  const setCanningCanMakeOnly = useCallback((value: boolean) => {
+    setUiPreferences(prev => ({ ...prev, canningCanMakeOnly: value }));
   }, []);
 
   // Extract honey values from bee state for canning system
@@ -1351,39 +1365,8 @@ function App() {
   // Season system hook
   const { season } = useSeasonSystem(day);
 
-  // Initialize canning system
-  const {
-    canningState,
-    startCanning,
-    completeCanning: _completeCanning, // Used internally by useCanningSystem for auto-collection
-    purchaseUpgrade,
-    canMakeRecipe,
-    toggleAutoCanning
-  } = useCanningSystem(
-    // experience parameter removed - unused
-    veggies, 
-    setVeggies, 
-    heirloomOwned, 
-    money, 
-    setMoney, 
-    knowledge, 
-    setKnowledge, 
-    initialCanningState, 
-    uiPreferences.canningRecipeSort, 
-    farmTier,
-    regularHoney,
-    goldenHoney,
-    totalHoneyCollected,
-    setRegularHoney,
-    setGoldenHoney
-  );
-
-  // Check if canning is unlocked (requires Farm Tier 3)
-  // Memoized to prevent recalculation on every render
-  const canningUnlocked = useMemo(() => farmTier >= 3, [farmTier]);
-
-
-  // Initialize achievement system (uses pre-loaded state)
+  // Initialize achievement system BEFORE canning system (uses pre-loaded state)
+  // This allows canning system to check for achievement-locked recipes
   const [initialAchievementState] = useState(
     () => loadedGameState?.achievementState || undefined
   );
@@ -1416,6 +1399,44 @@ function App() {
       eventLogCallbacks.onAchievementUnlock(achievement);
     }
   );
+
+  // Get unlocked achievement IDs for systems that need to check achievement-locked content
+  const unlockedAchievementIds = useMemo(() => 
+    achievements.filter(a => a.unlocked).map(a => a.id),
+    [achievements]
+  );
+
+  // Initialize canning system
+  const {
+    canningState,
+    startCanning,
+    completeCanning: _completeCanning, // Used internally by useCanningSystem for auto-collection
+    purchaseUpgrade,
+    canMakeRecipe,
+    toggleAutoCanning
+  } = useCanningSystem(
+    // experience parameter removed - unused
+    veggies, 
+    setVeggies, 
+    heirloomOwned, 
+    money, 
+    setMoney, 
+    knowledge, 
+    setKnowledge, 
+    initialCanningState, 
+    uiPreferences.canningRecipeSort, 
+    farmTier,
+    regularHoney,
+    goldenHoney,
+    totalHoneyCollected,
+    setRegularHoney,
+    setGoldenHoney,
+    unlockedAchievementIds
+  );
+
+  // Check if canning is unlocked (requires Farm Tier 3)
+  // Memoized to prevent recalculation on every render
+  const canningUnlocked = useMemo(() => farmTier >= 3, [farmTier]);
 
   // Get the last unlocked achievement for notification
   const lastUnlockedAchievement = lastUnlockedId 
@@ -2282,8 +2303,10 @@ function App() {
             toggleAutoCanning={toggleAutoCanning}
             recipeFilter={uiPreferences.canningRecipeFilter}
             recipeSort={uiPreferences.canningRecipeSort}
+            canMakeOnly={uiPreferences.canningCanMakeOnly}
             onRecipeFilterChange={setCanningRecipeFilter}
             onRecipeSortChange={setCanningRecipeSort}
+            onCanMakeOnlyChange={setCanningCanMakeOnly}
           />
         </PerformanceWrapper>
         </div>

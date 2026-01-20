@@ -474,7 +474,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       customCheck: (gameState) => {
         // Check if the player has crafted at least one Beekeeper's Pride recipe
         const recipe = gameState.canningState?.recipes?.find((r: any) => r.name === "Beekeeper's Pride");
-        return recipe ? (recipe.timesCrafted || 0) >= 1 : false;
+        return recipe ? (recipe.timesCompleted || 0) >= 1 : false;
       }
     },
     reward: {

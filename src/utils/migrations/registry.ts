@@ -319,7 +319,8 @@ const migrationV6: MigrationDefinition = {
     if (!state.uiPreferences) {
       state.uiPreferences = {
         canningRecipeFilter: 'all',
-        canningRecipeSort: 'profit'
+        canningRecipeSort: 'profit',
+        canningCanMakeOnly: false
       };
     }
     

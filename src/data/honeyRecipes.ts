@@ -359,6 +359,7 @@ export const HONEY_RECIPES: Omit<HoneyRecipe, 'unlocked' | 'timesCompleted'>[] =
     salePrice: 250,
     honeyCollectedRequired: 75,
     experienceRequired: 60000,
+    requiredAchievementId: 'canners_cocoa', // Requires the Christmas event achievement
   },
   
   {

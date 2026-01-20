@@ -16,14 +16,18 @@ export type RecipeValueContext = {
 export const filterRecipesByCategory = (
   recipes: Recipe[],
   recipeFilter: RecipeFilter,
-  canMakeRecipe: (recipe: Recipe) => boolean
+  canMakeRecipe: (recipe: Recipe) => boolean,
+  canMakeOnly: boolean = false
 ): Recipe[] => {
   let filtered = recipes.filter(recipe => recipe.unlocked);
 
+  // Apply "Can Make" filter first if enabled
+  if (canMakeOnly) {
+    filtered = filtered.filter(recipe => canMakeRecipe(recipe));
+  }
+
+  // Then apply category filter
   switch (recipeFilter) {
-    case 'available':
-      filtered = filtered.filter(recipe => canMakeRecipe(recipe));
-      break;
     case 'simple':
       filtered = filtered.filter(recipe => recipe.ingredients.length <= 2);
       break;
