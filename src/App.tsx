@@ -14,6 +14,7 @@ import BeesTab from './components/BeesTab';
 import TreeFarmTab from './components/TreeFarmTab';
 import WorkshopTab from './components/WorkshopTab';
 import ShopfrontTab from './components/ShopfrontTab';
+import GuildsTab from './components/GuildsTab';
 
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
@@ -23,7 +24,13 @@ import HarvestTutorial from './components/HarvestTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useEventLog } from './context/EventLogContext';
 import { useGameFlags } from './context/GameFlagsContext';
-import { ICON_BEE } from './config/assetPaths';
+import { ICON_BEE, ICON_GUILDS } from './config/assetPaths';
+
+// Guild system imports
+import { DEFAULT_GUILD_STATE } from './types/guilds';
+import type { GuildState, GuildType } from './types/guilds';
+import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
+import { applyGuildPriceBonuses, getUpgradeLevel, isCommittedTo } from './utils/guildCalculations';
 
 // Module-level bee context reference for dev tools
 let globalBeeContext: BeeContextValue | null = null;
@@ -104,7 +111,8 @@ import {
   calculateInitialCost,
   calculateUpgradeCost,
   createAutoPurchaserConfigs,
-  createInitialVeggies
+  createInitialVeggies,
+  createInitialFruits
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
@@ -126,7 +134,7 @@ import {
   buildMilestoneClaimedEvent
 } from './utils/eventLogUtils';
 
-const initialVeggies: Veggie[] = createInitialVeggies();
+const initialVeggies: Veggie[] = [...createInitialVeggies(), ...createInitialFruits()];
 
 /**
  * Check if the Christmas Tree Shop tab should be visible
@@ -284,6 +292,12 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Bee yield bonus tracking (from bee boxes and Meadow Magic upgrades)
   const [beeYieldBonus, setBeeYieldBonus] = useState(0); // Decimal format (e.g., 0.05 = 5%)
+
+  // Guild system state (moved to GameProvider for growth calculations)
+  const [guildState, setGuildState] = useState<GuildState>(() => {
+    const loaded = getLoadedState();
+    return loaded?.guildState || DEFAULT_GUILD_STATE;
+  });
 
   // Initialize Christmas Tree Shop event
   const [initialChristmasState] = useState(() => {
@@ -823,14 +837,30 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, []); // Run only once on mount with empty dependency array since loaded is stable    
  
   // Growth timer for all unlocked veggies - using requestAnimationFrame for Chrome compatibility
+  // Performance monitoring ref to detect excessive rerenders
+  const growthLoopCountRef = useRef(0);
+  const lastGrowthLoopResetRef = useRef(Date.now());
+  
   useGameLoop(() => {
+    // Monitor for excessive loop executions (possible memory leak)
+    growthLoopCountRef.current++;
+    const now = Date.now();
+    if (now - lastGrowthLoopResetRef.current > 60000) { // Every minute
+      if (growthLoopCountRef.current > 100) {
+        console.warn('⚠️ Growth loop executed', growthLoopCountRef.current, 'times in last minute (expected ~60)');
+      }
+      growthLoopCountRef.current = 0;
+      lastGrowthLoopResetRef.current = now;
+    }
+    
     setVeggies((prev) => {
       const { veggies: newVeggies } = processVeggieGrowth(
         prev,
         season,
         currentWeather,
         greenhouseOwned,
-        irrigationOwned
+        irrigationOwned,
+        guildStateRef.current
       );
       return newVeggies;
     });
@@ -869,6 +899,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const christmasEventRef = useLatestRef(christmasEvent);
   const experienceRef = useLatestRef(experience);
   const autoSellOwnedRef = useLatestRef(autoSellOwned);
+  const guildStateRef = useLatestRef(guildState);
   
   useGameLoop(() => {
     setVeggies((prev) => {
@@ -926,12 +957,13 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Unified harvest logic for both auto and manual harvest
   const harvestVeggie = useCallback((index: number, isAutoHarvest: boolean = false, onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) => {
-    // Calculate harvest amount before the state update
-    const v = veggies[index];
-    if (v.growth < 100) return; // Early exit if not ready to harvest
+    try {
+      // Calculate harvest amount before the state update
+      const v = veggies[index];
+      if (!v || v.growth < 100) return; // Early exit if not ready to harvest or invalid index
     
-    // Use centralized harvest calculations
-    const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain } = calculateHarvestRewards(
+    // Use centralized harvest calculations with guild bonuses (use ref for latest state)
+    const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain, blessedCropTriggered } = calculateHarvestRewards(
       v.additionalPlotLevel || 0,
       season,
       permanentBonuses,
@@ -939,10 +971,35 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       almanacLevel,
       farmTier,
       knowledge,
-      isAutoHarvest
+      isAutoHarvest,
+      guildStateRef.current
     );
     
     const newExperience = experience + experienceGain;
+    
+    // Award guild currency on harvest:
+    // - Manual harvests always earn 1 currency
+    // - Blessed crop (Soilbound Pact) triggers earn 1 currency (even on auto-harvest)
+    const earnCurrency = !isAutoHarvest || blessedCropTriggered;
+    if (earnCurrency && farmTier >= 5) { // Only after guilds unlock at tier 5
+      const currentGuildState = guildStateRef.current;
+      if (currentGuildState.committedGuild !== null) {
+        // After commitment: award guild-specific currency (sigils for Growers)
+        setGuildState(prev => ({
+          ...prev,
+          guildCurrencies: {
+            ...prev.guildCurrencies,
+            [currentGuildState.committedGuild!]: prev.guildCurrencies[currentGuildState.committedGuild!] + 1
+          }
+        }));
+      } else {
+        // Before commitment: award generic guild tokens
+        setGuildState(prev => ({
+          ...prev,
+          guildTokens: prev.guildTokens + 1
+        }));
+      }
+    }
     
     setVeggies((prev) => {
       const updated = [...prev];
@@ -991,6 +1048,10 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (onHarvestCallback) {
       onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
     }
+    } catch (error) {
+      console.error('❌ Error in harvestVeggie:', error);
+      // Don't rethrow - prevent cascade failures
+    }
   }, [veggies, season, permanentBonuses, beeYieldBonus, almanacLevel, knowledge, experience, farmTier, maxPlots, highestUnlockedVeggie, day]);
 
   // Safe harvest logger to avoid setState during render
@@ -1008,11 +1069,51 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     harvestVeggie(activeVeggie, false, logHarvest);
   }, [harvestVeggie, activeVeggie, logHarvest]);
 
+  // Ritual harvest: spend sigils to harvest all ready crops
+  const handleRitualHarvestAll = useCallback(() => {
+    const currentGuildState = guildStateRef.current;
+    if (!currentGuildState || !isCommittedTo(currentGuildState, 'growers')) return;
+    if (getUpgradeLevel(currentGuildState, 'growers_ritual_circles') <= 0) return;
+
+    const ritualCost = 5;
+    const currentSigils = currentGuildState.guildCurrencies['growers'] ?? 0;
+    const readyIndices = veggies
+      .map((v, index) => (v.growth >= GROWTH_COMPLETE_THRESHOLD ? index : -1))
+      .filter(index => index >= 0);
+
+    if (currentSigils < ritualCost || readyIndices.length === 0) return;
+
+    setGuildState(prev => {
+      const prevSigils = prev.guildCurrencies['growers'] ?? 0;
+      if (prevSigils < ritualCost) return prev;
+      return {
+        ...prev,
+        guildCurrencies: {
+          ...prev.guildCurrencies,
+          growers: prevSigils - ritualCost
+        }
+      };
+    });
+
+    readyIndices.forEach(index => {
+      harvestVeggie(index, false, logHarvest);
+    });
+  }, [veggies, harvestVeggie, logHarvest]);
+
   // Toggle sell enabled for a specific veggie
   const handleToggleSell = useCallback((index: number) => {
     setVeggies((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], sellEnabled: !updated[index].sellEnabled };
+      return updated;
+    });
+  }, []);
+
+  // Toggle auto-harvester enabled for a specific veggie
+  const handleToggleAutoHarvester = useCallback((index: number) => {
+    setVeggies((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], autoHarvesterEnabled: !updated[index].autoHarvesterEnabled };
       return updated;
     });
   }, []);
@@ -1079,13 +1180,18 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       total = prev.reduce((sum, v) => {
         // Only include vegetables that are enabled for selling
         if (v.sellEnabled && v.stash > 0) {
-          const earnings = v.stash * v.salePrice;
+          // Apply guild price bonuses to each item individually (for Quality Grading)
+          let veggieEarnings = 0;
+          for (let i = 0; i < v.stash; i++) {
+            // Pass true to apply quality grading bonus chance per item
+            veggieEarnings += applyGuildPriceBonuses(v.salePrice, guildState, true);
+          }
           soldVeggies.push({
             name: v.name,
             quantity: v.stash,
-            earnings: earnings
+            earnings: veggieEarnings
           });
-          return sum + earnings;
+          return sum + veggieEarnings;
         }
         return sum;
       }, 0);
@@ -1101,7 +1207,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (total > 0) {
       eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
-  }, [setVeggies, setMoney]);
+  }, [setVeggies, setMoney, guildState]);
 
   // Initialize auto-purchase system
   const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
@@ -1167,7 +1273,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 
   return (
-    <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus }}>
+    <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState }}>
       {children}
     </GameContext.Provider>
   );
@@ -1300,8 +1406,18 @@ function App() {
   }, []);
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas'>('growing');
+  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas' | 'guilds'>('growing');
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
+  
+  // Guild UI state (guild data state is in GameProvider context)
+  const [guildIntroShown, setGuildIntroShown] = useState(
+    () => loadedGameState?.guildIntroShown || false
+  );
+  
+  // Handler to dismiss guild intro overlay
+  const handleDismissGuildIntro = useCallback(() => {
+    setGuildIntroShown(true);
+  }, []);
   
   // Initialize canning state (uses pre-loaded state)
   const [initialCanningState] = useState(() => loadedGameState?.canningState || undefined);
@@ -1360,7 +1476,124 @@ function App() {
   const setRegularHoney = useMemo(() => createBeeStateUpdater('regularHoney'), [createBeeStateUpdater]);
   const setGoldenHoney = useMemo(() => createBeeStateUpdater('goldenHoney'), [createBeeStateUpdater]);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleSell, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState } = useGame();
+
+  // Guild system handlers (needs day from useGame)
+  const handleCommitToGuild = useCallback((guildId: GuildType) => {
+    setGuildState(prev => ({
+      ...prev,
+      committedGuild: guildId,
+      status: 'committed',
+      commitmentDay: day,
+      // Convert guild tokens to the committed guild's currency
+      guildCurrencies: {
+        ...prev.guildCurrencies,
+        [guildId]: prev.guildCurrencies[guildId] + prev.guildTokens
+      },
+      // Clear guild tokens after conversion
+      guildTokens: 0
+    }));
+  }, [day]);
+
+  const handlePurchaseGuildUpgrade = useCallback((upgradeId: string) => {
+    // Find the upgrade from guild data
+    let upgrade = null;
+    for (const guild of GUILDS) {
+      upgrade = guild.upgrades.find(u => u.id === upgradeId);
+      if (upgrade) break;
+    }
+    
+    if (!upgrade) {
+      console.warn(`Guild upgrade not found: ${upgradeId}`);
+      return;
+    }
+    
+    // Calculate the cost based on current level
+    const currentLevel = guildState.upgradeLevels[upgradeId] ?? 0;
+    const cost = upgrade.baseCost * Math.pow(upgrade.costScaling, currentLevel);
+    
+    // Check if already maxed
+    const isMaxed = upgrade.isOneTime 
+      ? guildState.purchasedUpgrades.includes(upgradeId)
+      : currentLevel >= upgrade.maxLevel;
+    
+    if (isMaxed) {
+      return;
+    }
+    
+    // Check if player can afford it based on currency type
+    let canAfford = false;
+    if (upgrade.currencyType === 'sigils') {
+      // Sigils are stored in guildCurrencies for the specific guild
+      const guildId = upgrade.guild;
+      canAfford = guildState.guildCurrencies[guildId] >= cost;
+    } else if (upgrade.currencyType === 'guildTokens') {
+      // Guild tokens are used before commitment
+      canAfford = guildState.guildTokens >= cost;
+    } else if (upgrade.currencyType === 'money') {
+      canAfford = money >= cost;
+    } else if (upgrade.currencyType === 'knowledge') {
+      canAfford = knowledge >= cost;
+    }
+    
+    if (!canAfford) {
+      return;
+    }
+    
+    // Deduct the cost based on currency type
+    if (upgrade.currencyType === 'sigils') {
+      const guildId = upgrade.guild;
+      setGuildState(prev => ({
+        ...prev,
+        guildCurrencies: {
+          ...prev.guildCurrencies,
+          [guildId]: prev.guildCurrencies[guildId] - cost
+        }
+      }));
+    } else if (upgrade.currencyType === 'guildTokens') {
+      setGuildState(prev => ({
+        ...prev,
+        guildTokens: prev.guildTokens - cost
+      }));
+    } else if (upgrade.currencyType === 'money') {
+      setMoney(m => m - cost);
+    } else if (upgrade.currencyType === 'knowledge') {
+      setKnowledge(k => k - cost);
+    }
+    
+    // Update guild state
+    setGuildState(prev => {
+      const newPurchased = [...prev.purchasedUpgrades];
+      if (!newPurchased.includes(upgradeId)) {
+        newPurchased.push(upgradeId);
+      }
+      const newLevels = { ...prev.upgradeLevels };
+      newLevels[upgradeId] = (newLevels[upgradeId] ?? 0) + 1;
+      
+      // Track sampling for uncommitted players
+      if (prev.status !== 'committed') {
+        // Find which guild this upgrade belongs to (e.g., 'growers_fertile_soil' -> 'growers')
+        const guildId = upgradeId.split('_')[0] as GuildType;
+        const newSampled = { ...prev.sampledUpgrades };
+        if (!newSampled[guildId]?.includes(upgradeId)) {
+          newSampled[guildId] = [...(newSampled[guildId] ?? []), upgradeId];
+        }
+        return {
+          ...prev,
+          purchasedUpgrades: newPurchased,
+          upgradeLevels: newLevels,
+          sampledUpgrades: newSampled,
+          status: 'sampling' as const
+        };
+      }
+      
+      return {
+        ...prev,
+        purchasedUpgrades: newPurchased,
+        upgradeLevels: newLevels
+      };
+    });
+  }, [money, knowledge, guildState]);
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1431,7 +1664,8 @@ function App() {
     totalHoneyCollected,
     setRegularHoney,
     setGoldenHoney,
-    unlockedAchievementIds
+    unlockedAchievementIds,
+    guildState
   );
 
   // Check if canning is unlocked (requires Farm Tier 3)
@@ -1598,13 +1832,15 @@ function App() {
         eventLogState: eventLog.getState(),
         christmasEventState: christmasEvent?.eventState,
         beeState: beeState || undefined,
-        harvestTutorialShown
+        harvestTutorialShown,
+        guildIntroShown,
+        guildState
       };
       saveGameStateWithCanning(gameState);
       lastSaveTimeRef.current = Date.now();
       pendingSaveRef.current = false;
     }
-  }, [justReset, canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown]);
+  }, [justReset, canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, guildState]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -1734,7 +1970,7 @@ function App() {
       
       // Check if this veggie just completed growth (crossed 100% threshold)
       if (prevGrowth < GROWTH_COMPLETE_THRESHOLD && veggie.growth >= GROWTH_COMPLETE_THRESHOLD) {
-        const growthBonus = getVeggieGrowthBonus(veggie, season, currentWeather, greenhouseOwned, irrigationOwned);
+        const growthBonus = getVeggieGrowthBonus(veggie, season, currentWeather, greenhouseOwned, irrigationOwned, guildState);
         const bonusPercent = ((growthBonus / veggie.growthRate) * 100 - 100).toFixed(0);
         
         let bonusText = '';
@@ -1987,7 +2223,8 @@ function App() {
     season,
     currentWeather,
     greenhouseOwned,
-    irrigationOwned
+    irrigationOwned,
+    guildState
   );
   const daysToGrow = growthMultiplier > 0 ? Math.ceil(100 / growthMultiplier) : 0;
 
@@ -2112,6 +2349,7 @@ function App() {
             handleBuyLargerFarm={handleBuyLargerFarm}
             holidayCheer={christmasEvent?.holidayCheer ?? 0}
             isChristmasEventActive={christmasEvent?.isEventActive ?? false}
+            guildState={guildState}
           />
         </aside>
 
@@ -2180,6 +2418,34 @@ function App() {
                 )}
               </button>
             )}
+            {/* Guilds Tab Button */}
+            <button
+              role="tab"
+              id="tab-guilds"
+              aria-selected={activeTab === 'guilds'}
+              aria-controls="panel-guilds"
+              aria-disabled={farmTier < GUILDS_UNLOCK_TIER}
+              onClick={() => farmTier >= GUILDS_UNLOCK_TIER ? setActiveTab('guilds') : null}
+              disabled={farmTier < GUILDS_UNLOCK_TIER}
+              className={
+                farmTier < GUILDS_UNLOCK_TIER
+                  ? styles.tabButtonGuildsLocked
+                  : activeTab === 'guilds'
+                    ? styles.tabButtonGuildsActive
+                    : styles.tabButtonGuilds
+              }
+              title={farmTier >= GUILDS_UNLOCK_TIER ? 'Guild System' : `Guilds unlock at Farm Tier ${GUILDS_UNLOCK_TIER}`}
+            >
+              <div className={styles.tabButtonContent}>
+                <img src={ICON_GUILDS} alt="" aria-hidden="true" className={farmTier >= GUILDS_UNLOCK_TIER ? styles.tabIcon : styles.tabIconFaded} />
+                Guilds
+              </div>
+              {farmTier < GUILDS_UNLOCK_TIER && (
+                <div className={styles.tabUnlockHint}>
+                  Req: Tier {GUILDS_UNLOCK_TIER}
+                </div>
+              )}
+            </button>
             {christmasEventEnabled && (
               <button
                 role="tab"
@@ -2261,7 +2527,9 @@ function App() {
                 setActiveVeggie={setActiveVeggie}
                 handleHarvest={handleHarvest}
                 handleToggleSell={handleToggleSell}
+                handleToggleAutoHarvester={handleToggleAutoHarvester}
                 handleSell={handleSell}
+                handleRitualHarvestAll={handleRitualHarvestAll}
                 handleBuyFertilizer={handleBuyFertilizer}
                 handleBuyHarvester={handleBuyHarvester}
                 handleBuyBetterSeeds={handleBuyBetterSeeds}
@@ -2274,6 +2542,7 @@ function App() {
                 handleBuyGreenhouse={handleBuyGreenhouse}
                 handleBuyHeirloom={handleBuyHeirloom}
                 formatNumber={formatNumber}
+                guildState={guildState}
               />
             </PerformanceWrapper>
             </div>
@@ -2324,6 +2593,29 @@ function App() {
         </PerformanceWrapper>
         </div>
       )}
+
+      {/* Guilds Tab Content */}
+      <div 
+        role="tabpanel" 
+        id="panel-guilds" 
+        aria-labelledby="tab-guilds"
+        className={activeTab !== 'guilds' ? styles.tabPanelHidden : undefined}
+      >
+        <PerformanceWrapper id="GuildsTab">
+          <GuildsTab
+            farmTier={farmTier}
+            guildState={guildState}
+            money={money}
+            knowledge={knowledge}
+            experience={experience}
+            introShown={guildIntroShown}
+            onDismissIntro={handleDismissGuildIntro}
+            onCommitToGuild={handleCommitToGuild}
+            onPurchaseUpgrade={handlePurchaseGuildUpgrade}
+            formatNumber={formatNumber}
+          />
+        </PerformanceWrapper>
+      </div>
 
       {/* Christmas Tree Shop Tab Content */}
       {christmasEventEnabled && christmasEvent?.isEventActive && christmasEvent && (
@@ -2568,6 +2860,7 @@ function App() {
           onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
           onSkipDays={(days) => setDay(prev => prev + days)}
           onResetGame={handleResetGame}
+          onResetGuild={() => setGuildState(DEFAULT_GUILD_STATE)}
           onAddHolidayCheer={christmasEvent?.earnCheer}
           onHarvestAllTrees={christmasEvent?.harvestAllTrees}
           onProcessTreeGrowth={christmasEvent?.processTreeGrowth}

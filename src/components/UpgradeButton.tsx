@@ -24,6 +24,10 @@ export interface UpgradeButtonProps {
   regularHoney?: number; // Honey currency for bee upgrades
   goldenHoney?: number; // Golden honey currency for bee upgrades
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  // Togglable support - for items that become on/off toggles after purchase
+  isTogglable?: boolean;
+  isActive?: boolean; // Only used when isTogglable && isOwned
+  onToggle?: () => void; // Click handler when toggling (not purchasing)
 }
 
 const UpgradeButton: FC<UpgradeButtonProps> = memo(({ 
@@ -46,7 +50,10 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   knowledgeCost,
   regularHoney = 0,
   goldenHoney = 0,
-  formatNumber
+  formatNumber,
+  isTogglable = false,
+  isActive = true,
+  onToggle
 }) => {
   // Determine if user can afford based on currency type
   const canAfford = (() => {
@@ -82,6 +89,12 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   };
   
   const getButtonClass = () => {
+    // When owned and togglable, show active/inactive states
+    if (isOwned && isTogglable) {
+      return isActive 
+        ? `${styles.button} ${styles.toggleActive}` 
+        : `${styles.button} ${styles.toggleInactive}`;
+    }
     if (isOwned) return styles.button;
     if (isMaxLevel) return `${styles.button} ${styles.maxLevel}`;
     if (disabled) return `${styles.button} ${styles.disabled}`;
@@ -136,7 +149,12 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
               )}
             </>
           )}
-          {isOwned && (
+          {isOwned && isTogglable && (
+            <div className={isActive ? styles.statusActive : styles.statusInactive}>
+              {isActive ? '✓ Active' : '⏸ Paused'}
+            </div>
+          )}
+          {isOwned && !isTogglable && (
             <div className={styles.cost}>
               Owned
             </div>
@@ -181,15 +199,21 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
     return label;
   };
 
+  // Determine click handler and disabled state
+  const handleClick = isOwned && isTogglable && onToggle ? onToggle : onClick;
+  const isDisabled = isOwned && isTogglable 
+    ? false  // Togglable owned items are always clickable
+    : disabled || !canAfford || isMaxLevel || isOwned;
+
   return (
     <button
       title={title}
       className={getButtonClass()}
       style={flex ? { flex: 1 } : undefined}
-      onClick={onClick}
-      disabled={disabled || !canAfford || isMaxLevel || isOwned}
+      onClick={handleClick}
+      disabled={isDisabled}
       aria-label={getAriaLabel()}
-      aria-disabled={disabled || !canAfford || isMaxLevel || isOwned}
+      aria-disabled={isDisabled}
     >
       {renderButtonContent()}
     </button>

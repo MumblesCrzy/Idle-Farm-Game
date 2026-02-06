@@ -1,0 +1,796 @@
+/**
+ * Guilds Tab Styles
+ * 
+ * Styling for the guild system UI including:
+ * - Guild selection cards
+ * - Upgrade panels
+ * - Theming support for each guild
+ */
+
+/* Unlock Message */
+.unlockMessage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 500px;
+  padding: 2rem;
+}
+
+.unlockCard {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 600px;
+  text-align: center;
+  color: #fff;
+}
+
+.unlockTitle {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #ffd700;
+}
+
+.unlockDescription {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.unlockDetails {
+  font-size: 1rem;
+  margin: 0.5rem 0;
+  color: #aaa;
+}
+
+.unlockFeatures {
+  background: #333;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.unlockFeatures h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #ffd700;
+}
+
+.unlockFeatures ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.unlockFeatures li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #444;
+}
+
+.unlockFeatures li:last-child {
+  border-bottom: none;
+}
+
+.unlockHint {
+  font-style: italic;
+  color: #888;
+  margin-top: 1rem;
+}
+
+/* Selection Container */
+.selectionContainer {
+  padding: 0.75rem;
+  position: relative;
+}
+
+/* Intro Overlay - first time popup */
+.introOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.introDialog {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+}
+
+.introTitle {
+  font-size: 1.5rem;
+  color: #ffd700;
+  margin: 0 0 1rem 0;
+}
+
+.introDescription {
+  color: #ccc;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.introWarning {
+  color: #ff9800;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 152, 0, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.introButton {
+  padding: 0.75rem 2rem;
+  background: #ffd700;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.introButton:hover {
+  background: #ffed4a;
+  transform: scale(1.05);
+}
+
+/* Guild Grid */
+.guildGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Guild Card */
+.guildCard {
+  background: linear-gradient(135deg, var(--guild-background) 0%, #1a1a1a 100%);
+  border: 2px solid var(--guild-border);
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.guildCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--guild-primary), var(--guild-accent));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.guildCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.guildCard:hover::before {
+  opacity: 1;
+}
+
+.guildCardSelected {
+  border-color: var(--guild-accent);
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
+}
+
+.guildCardSelected::before {
+  opacity: 1;
+}
+
+.guildEmblem {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.guildEmblemPlaceholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.guildEmblemImage {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.guildName {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.guildPhilosophy {
+  text-align: center;
+  font-style: italic;
+  color: #aaa;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  min-height: 2.4em;
+}
+
+.guildFocuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.guildFocus {
+  background: var(--guild-primary);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.guildSampleCount {
+  text-align: center;
+  color: var(--guild-accent);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* Sampling Progress */
+.samplingProgress {
+  text-align: center;
+  color: var(--guild-accent);
+  font-size: 0.85rem;
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+/* Card Benefits & Trade-offs */
+.cardBenefits,
+.cardTradeoffs {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.cardBenefits {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.cardTradeoffs {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.cardBenefitsTitle,
+.cardTradeoffsTitle {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.cardBenefitsTitle {
+  color: #81c784;
+}
+
+.cardTradeoffsTitle {
+  color: #ffcc80;
+}
+
+.cardBenefitsList,
+.cardTradeoffsList {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.cardBenefitItem,
+.cardTradeoffItem {
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.cardBenefitItem {
+  color: #a5d6a7;
+}
+
+.cardTradeoffItem {
+  color: #ffe0b2;
+}
+
+.commitButton {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--guild-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.commitButton:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+.commitButton:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+/* Sampling Section */
+.samplingSection {
+  background: #2d2d2d;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.samplingTitle {
+  color: #ffd700;
+  margin-bottom: 0.35rem;
+  font-size: 1rem;
+}
+
+.samplingHint {
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Soft Cap Warning */
+.softCapWarning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 152, 0, 0.15);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.softCapIcon {
+  font-size: 1rem;
+}
+
+.softCapText {
+  color: #ffcc80;
+  font-size: 0.8rem;
+}
+
+.softCapText strong {
+  color: #ffa726;
+}
+
+/* Sampling Effects Preview */
+.samplingEffects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.2);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.samplingEffectsTitle {
+  color: #81c784;
+  font-size: 0.8rem;
+}
+
+.samplingEffect {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 0.8rem;
+  background: rgba(76, 175, 80, 0.15);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.samplingUpgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Upgrade Row */
+.upgradeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #333;
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid;
+  transition: all 0.2s;
+  gap: 0.35rem;
+}
+
+.upgradeRow:hover {
+  background: #3a3a3a;
+}
+
+.upgradeInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.upgradeName {
+  color: #fff;
+  margin: 0 0 0.1rem 0;
+  font-size: 0.8rem;
+}
+
+.upgradeDescription {
+  color: #aaa;
+  margin: 0 0 0.1rem 0;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upgradeEffect {
+  color: #4caf50;
+  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.currentEffect {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.nextEffect {
+  color: #81c784;
+}
+
+.maxedEffect {
+  color: #a5d6a7;
+  font-style: italic;
+}
+
+.upgradeActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.upgradeLevel {
+  color: #888;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.upgradeBuyButton {
+  padding: 0.25rem 0.5rem;
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 60px;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.upgradeBuyButton:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+.upgradeBuyButtonDisabled {
+  background: #555 !important;
+  cursor: not-allowed;
+}
+
+/* Confirmation Dialog */
+.confirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.confirmDialog {
+  background: #2d2d2d;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 450px;
+  text-align: center;
+  color: #fff;
+}
+
+.confirmDialog h3 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+}
+
+.confirmWarning {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+.confirmList {
+  text-align: left;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #ccc;
+}
+
+.confirmList li {
+  padding: 0.25rem 0;
+}
+
+.confirmButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirmCancel {
+  padding: 0.75rem 1.5rem;
+  background: #555;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.confirmCancel:hover {
+  background: #666;
+}
+
+.confirmCommit {
+  padding: 0.75rem 1.5rem;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.confirmCommit:hover {
+  filter: brightness(1.2);
+}
+
+/* Committed Panel */
+.committedPanel {
+  padding: 0.5rem;
+  color: #fff;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.committedHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--guild-border);
+}
+
+.committedEmblem {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.committedTitleArea {
+  flex: 1;
+}
+
+.committedTitle {
+  margin: 0 0 0.15rem 0;
+  font-size: 1.1rem;
+  color: var(--guild-accent);
+}
+
+.committedPhilosophy {
+  margin: 0;
+  font-style: italic;
+  color: #aaa;
+  font-size: 0.75rem;
+}
+
+/* Guild Currency Display */
+.committedCurrency {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.15) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  min-width: 70px;
+}
+
+.currencyIcon {
+  font-size: 1.25rem;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.currencyAmount {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.currencyLabel {
+  font-size: 0.6rem;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Two-column layout for committed panel content */
+.committedContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.committedLeftColumn,
+.committedRightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Bonuses & Trade-offs Sections */
+.bonusesSection,
+.tradeoffsSection,
+.upgradesSection {
+  margin-bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sectionTitle {
+  color: var(--guild-accent);
+  margin: 0 0 0.35rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--guild-border);
+  padding-bottom: 0.2rem;
+}
+
+.bonusesList,
+.tradeoffsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.35rem;
+}
+
+.bonusItem,
+.tradeoffItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.bonusIcon {
+  color: #4caf50;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.tradeoffIcon {
+  color: #ff9800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.bonusText,
+.tradeoffText {
+  color: #ccc;
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
+.bonusValue {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.penaltyValue {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* Sidebar */
+.sidebar {
+  color: #fff;
+}
+
+.sidebarTitle {
+  margin: 0 0 1rem 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.sidebarContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.statusItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.statusLabel {
+  color: #aaa;
+}
+
+.statusValue {
+  font-weight: bold;
+}

@@ -97,6 +97,9 @@ const INITIAL_CANNING_STATE: CanningState = {
   }
 };
 
+import type { GuildState } from '../types/guilds';
+import { getGrowerCanningProfitMultiplier } from '../utils/guildCalculations';
+
 // Hook for managing canning system state and logic
 export function useCanningSystem<T extends {name: string, stash: number, salePrice: number, betterSeedsLevel?: number}>(
   // experience: number, // Unused parameter
@@ -115,7 +118,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   totalHoneyCollected?: number,
   setRegularHoney?: (value: number | ((prev: number) => number)) => void,
   setGoldenHoney?: (value: number | ((prev: number) => number)) => void,
-  unlockedAchievementIds?: string[]
+  unlockedAchievementIds?: string[],
+  guildState?: GuildState
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -361,6 +365,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const heirloomOwnedRef = useRef(heirloomOwned);
   heirloomOwnedRef.current = heirloomOwned;
   
+  const guildStateRef = useRef(guildState);
+  guildStateRef.current = guildState;
+  
   const completeCanning = useCallback((processIndex: number): void => {
     const process = canningState.activeProcesses[processIndex];
     if (!process) return;
@@ -398,7 +405,11 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     const bonusItems = Math.random() * 100 < bonusChance ? 1 : 0;
     const totalItems = 1 + bonusItems;
     
-    const totalEarnings = basePrice * totalItems;
+    // Apply guild canning profit penalty (Growers get -15%)
+    const guildCanningMultiplier = guildStateRef.current 
+      ? getGrowerCanningProfitMultiplier(guildStateRef.current) 
+      : 1;
+    const totalEarnings = basePrice * totalItems * guildCanningMultiplier;
     
     // Calculate knowledge reward based on recipe complexity
     // Base: 2 knowledge per ingredient, with bonus items giving extra knowledge

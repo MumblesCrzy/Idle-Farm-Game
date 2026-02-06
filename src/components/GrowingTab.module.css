@@ -21,6 +21,42 @@
   color: #056608;
 }
 
+/* Guild Bonuses Indicator */
+.guildBonusesIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, #2d5016 0%, #3d6b1e 100%);
+  border: 1px solid #4a8c24;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.guildBonusesTitle {
+  font-weight: bold;
+  color: #c5e8b0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.guildBonusesList {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.guildBonus {
+  font-size: 0.8rem;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: help;
+}
+
 /* Veggie Selector */
 .veggieSelectorContainer {
   display: flex;
@@ -31,6 +67,7 @@
   font-size: 0.9rem;
   margin-left: -0.5rem;
   margin-right: -0.5rem;
+  padding-left: 4px;
   min-width: 0;
 }
 
@@ -54,6 +91,40 @@
 .veggieSelectorButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.veggieSelectorButtonReady {
+  outline: 2px solid #66B032;
+  outline-offset: 1px;
+  animation: readyPulse 2s ease-in-out infinite;
+}
+
+@keyframes readyPulse {
+  0%, 100% { outline-color: #66B032; }
+  50% { outline-color: #8ed656; }
+}
+
+/* Fruit Row Styling */
+.fruitRowLabel {
+  color: #ff6b9d;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin: 0.5rem 0 0.25rem 0;
+  padding-left: 4px;
+}
+
+.fruitButton {
+  background-color: #4a2040;
+  border-color: #ff6b9d;
+}
+
+.fruitButton:hover:not(:disabled) {
+  border-color: #ff9dc0;
+  background-color: #5a2850;
+}
+
+.fruitButton:disabled {
+  background-color: #3a1530;
 }
 
 .needLargerFarm {
@@ -134,6 +205,25 @@
   cursor: not-allowed;
 }
 
+.ritualHarvestButton {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  padding: 4px 10px;
+  background: #6a3a7a;
+  color: #fff;
+  border: 1px solid #b07ad6;
+  border-radius: 5px;
+  min-width: 150px;
+}
+
+.ritualHarvestButton:hover:not(:disabled) {
+  background: #7b4a8a;
+}
+
+.ritualHarvestButton:disabled {
+  opacity: 0.6;
+}
+
 .sellButton {
   margin-left: 0.5rem;
   font-size: 1rem;
@@ -185,11 +275,22 @@
   user-select: none;
 }
 
-.harvesterProgressWrapper {
-  position: relative;
+/* Auto Harvester Progress Row */
+.harvesterRow {
+  display: flex;
+  align-items: center;
   width: 100%;
   margin-top: 0.25rem;
+}
+
+.harvesterProgressWrapper {
+  position: relative;
+  flex: 1;
   height: 22px;
+}
+
+.harvesterDisabled {
+  opacity: 0.6;
 }
 
 /* Upgrades Grid */

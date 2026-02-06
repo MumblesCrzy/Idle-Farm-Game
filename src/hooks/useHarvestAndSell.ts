@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Veggie } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
 
@@ -47,6 +48,8 @@ export interface UseHarvestAndSellDeps {
   activeVeggie: number;
   /** Event log callbacks for logging */
   eventLogCallbacks: EventLogCallbacks;
+  /** Guild state for guild bonuses */
+  guildState?: GuildState;
 }
 
 /**
@@ -140,6 +143,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     beeYieldBonus,
     activeVeggie,
     eventLogCallbacks,
+    guildState,
   } = deps;
 
   /**
@@ -156,7 +160,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     const v = veggies[index];
     if (v.growth < 100) return; // Early exit if not ready to harvest
     
-    // Use centralized harvest calculations
+    // Use centralized harvest calculations with guild bonuses
     const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain } = calculateHarvestRewards(
       v.additionalPlotLevel || 0,
       season,
@@ -165,7 +169,8 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       almanacLevel,
       farmTier,
       knowledge,
-      isAutoHarvest
+      isAutoHarvest,
+      guildState
     );
     
     const newExperience = experience + experienceGain;

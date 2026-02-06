@@ -35,6 +35,8 @@ export interface AutoPurchaseConfig {
 // VEGETABLE TYPES
 // ============================================================================
 
+export type CropType = 'vegetable' | 'fruit';
+
 export interface Veggie {
   name: string;
   growth: number;
@@ -43,6 +45,9 @@ export interface Veggie {
   unlocked: boolean;
   experience: number;
   experienceToUnlock: number;
+  
+  // Crop type - determines which row to display in
+  cropType?: CropType;
   
   // Fertilizer upgrade
   fertilizerLevel: number;
@@ -55,6 +60,7 @@ export interface Veggie {
   harvesterTimer: number;
   harvesterSpeedLevel?: number;
   harvesterSpeedCost?: number;
+  autoHarvesterEnabled: boolean;
   
   // Pricing and seeds
   salePrice: number;
@@ -121,7 +127,9 @@ export interface GameState {
   // Core Actions
   handleHarvest: () => void;
   handleToggleSell: (index: number) => void;
+  handleToggleAutoHarvester: (index: number) => void;
   handleSell: () => void;
+  handleRitualHarvestAll: () => void;
   
   // Veggie Upgrades
   handleBuyFertilizer: (index: number) => void;
@@ -182,6 +190,10 @@ export interface GameState {
   // Bee System Integration
   beeYieldBonus: number;
   setBeeYieldBonus: React.Dispatch<React.SetStateAction<number>>;
+  
+  // Guild System (v0.11.0)
+  guildState: import('./guilds').GuildState;
+  setGuildState: React.Dispatch<React.SetStateAction<import('./guilds').GuildState>>;
   
   // Game Management
   resetGame: () => void;

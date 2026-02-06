@@ -6,6 +6,7 @@
  */
 
 import type { Veggie } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
@@ -45,6 +46,7 @@ export function calculateOfflineProgress(
     canningProcesses: any[];
     canningUpgrades: any;
     autoCanning: any;
+    guildState?: GuildState;
     christmasEvent?: {
       isEventActive: boolean;
       passiveCheerPerSecond: number;
@@ -115,7 +117,8 @@ export function calculateOfflineProgress(
       gameState.season,
       gameState.currentWeather,
       gameState.greenhouseOwned,
-      gameState.irrigationOwned
+      gameState.irrigationOwned,
+      gameState.guildState
     );
     currentVeggies = growthResult.veggies;
 

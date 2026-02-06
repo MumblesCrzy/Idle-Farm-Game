@@ -12,6 +12,7 @@ interface DevToolsProps {
   onUnlockAllRecipes?: () => void;
   onMaxUpgrades?: () => void;
   onResetGame?: () => void;
+  onResetGuild?: () => void;
   // Christmas Event
   onAddHolidayCheer?: (amount: number) => void;
   onHarvestAllTrees?: () => void;
@@ -34,6 +35,7 @@ const DevTools: FC<DevToolsProps> = ({
   onUnlockAllRecipes,
   onMaxUpgrades,
   onResetGame,
+  onResetGuild,
   onAddHolidayCheer,
   onHarvestAllTrees,
   onAddTreeMaterials,
@@ -455,19 +457,33 @@ const DevTools: FC<DevToolsProps> = ({
           )}
 
           {/* Danger Zone */}
-          {onResetGame && (
+          {(onResetGame || onResetGuild) && (
             <div className={`${styles.section} ${styles.dangerZone}`}>
               <h4 className={styles.sectionTitle}>⚠️ Danger Zone</h4>
-              <button 
-                onClick={() => {
-                  if (window.confirm('Reset all game progress? This cannot be undone!')) {
-                    onResetGame();
-                  }
-                }}
-                className={styles.dangerButton}
-              >
-                Reset Game
-              </button>
+              {onResetGuild && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Reset guild progress? This will remove you from your guild and reset all guild upgrades.')) {
+                      onResetGuild();
+                    }
+                  }}
+                  className={styles.dangerButton}
+                >
+                  Reset Guild
+                </button>
+              )}
+              {onResetGame && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Reset all game progress? This cannot be undone!')) {
+                      onResetGame();
+                    }
+                  }}
+                  className={styles.dangerButton}
+                >
+                  Reset Game
+                </button>
+              )}
             </div>
           )}
 

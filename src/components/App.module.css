@@ -189,6 +189,26 @@
   cursor: not-allowed;
 }
 
+.tabButtonGuilds {
+  composes: tabButton;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tabButtonGuildsActive {
+  composes: tabButtonGuilds;
+  composes: tabButtonActive;
+  background: #6b21a8;
+  color: #fff;
+}
+
+.tabButtonGuildsLocked {
+  composes: tabButtonGuilds;
+  background: #666;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
 .tabButtonContent {
   display: flex;
   align-items: center;

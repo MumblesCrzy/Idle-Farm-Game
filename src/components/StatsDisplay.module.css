@@ -72,6 +72,12 @@
   margin-right: 4px;
 }
 
+.guildCurrencyIcon {
+  font-size: 18px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .stashButton {
   padding: 4px 8px;
   font-size: 0.85rem;

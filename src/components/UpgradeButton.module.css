@@ -43,6 +43,39 @@
   cursor: not-allowed;
 }
 
+/* Toggle states for items that become on/off after purchase */
+.button.toggleActive {
+  background: #2e7d32;
+  cursor: pointer;
+}
+
+.button.toggleActive:hover {
+  background: #388e3c;
+}
+
+.button.toggleInactive {
+  background: #8a2424;
+  cursor: pointer;
+}
+
+.button.toggleInactive:hover {
+  background: #a02c2c;
+}
+
+.statusActive {
+  font-size: 11px;
+  color: #81c784;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.statusInactive {
+  font-size: 11px;
+  color: #ef9a9a;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
 .imageWrapper {
   width: 2.5em;
   height: 2.5em;

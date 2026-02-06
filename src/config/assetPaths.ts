@@ -22,6 +22,10 @@ export const ICON_MERCHANT = './Merchant.png';
 export const ICON_SCROLL = './Scroll.png';
 export const ICON_DETAIL = './Detail.png';
 export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event currency
+export const ICON_GUILDS = './Guilds.png'; // Guild system icon
+
+// Guild Emblems
+export const GUILD_GROWERS = './Growers.png';
 
 // Bee System Icons
 export const ICON_BEE = './Bee.png';

@@ -1,10 +1,12 @@
 import type { Veggie } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import { HARVESTER_BASE_TIMER, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import type { WeatherType } from '../config/gameConstants';
 import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
 import { processUnlocks } from './unlockSystem';
 import { calculateHarvestRewards } from './harvestCalculations';
+import { getGrowersHarvesterSpeedMultiplier } from './guildCalculations';
 
 /**
  * Calculates new weather based on season and random chance
@@ -46,6 +48,7 @@ export function calculateWeatherChange(season: string, currentWeather: WeatherTy
  * @param currentWeather - Current weather conditions
  * @param greenhouseOwned - Whether greenhouse upgrade is owned
  * @param irrigationOwned - Whether irrigation upgrade is owned
+ * @param guildState - Optional guild state for guild bonuses
  * @returns Object with updated veggies array, whether any updates occurred, and array of completed veggies
  */
 export function processVeggieGrowth(
@@ -53,7 +56,8 @@ export function processVeggieGrowth(
   season: string,
   currentWeather: string,
   greenhouseOwned: boolean,
-  irrigationOwned: boolean
+  irrigationOwned: boolean,
+  guildState?: GuildState
 ): { veggies: Veggie[]; needsUpdate: boolean; completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> } {
   let needsUpdate = false;
   const completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> = [];
@@ -61,7 +65,7 @@ export function processVeggieGrowth(
   const newVeggies = veggies.map((v) => {
     if (!v.unlocked || v.growth >= GROWTH_COMPLETE_THRESHOLD) return v;
     
-    const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned);
+    const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned, guildState);
     const newGrowth = Math.min(100, v.growth + growthAmount);
     
     if (newGrowth !== v.growth) {
@@ -87,6 +91,7 @@ export function processVeggieGrowth(
  * @param almanacLevel - Current almanac upgrade level
  * @param farmTier - Current farm tier
  * @param knowledge - Current knowledge amount
+ * @param guildState - Optional guild state for guild bonuses
  * @returns Object with updated veggies, experience gain, knowledge gain, and update flag
  */
 export function processAutoHarvest(
@@ -96,7 +101,8 @@ export function processAutoHarvest(
   knowledge: number,
   beeYieldBonus: number = 0,
   season: string = '',
-  permanentBonuses: string[] = []
+  permanentBonuses: string[] = [],
+  guildState?: GuildState
 ): {
   veggies: Veggie[];
   experienceGain: number;
@@ -110,15 +116,23 @@ export function processAutoHarvest(
   const harvestedVeggies: Array<{ veggie: Veggie; amount: number; expGain: number; knGain: number }> = [];
   
   const newVeggies = veggies.map((v) => {
-    if (!v.harvesterOwned) return v;
+    // Skip if harvester not owned or auto-harvester is disabled
+    if (!v.harvesterOwned || !v.autoHarvesterEnabled) return v;
     
-    const speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
+    // Calculate speed multiplier from harvester speed level
+    let speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
+    
+    // Apply Growers Guild harvester speed penalty (25% slower for committed Growers)
+    if (guildState) {
+      speedMultiplier *= getGrowersHarvesterSpeedMultiplier(guildState);
+    }
+    
     const timerMax = Math.max(1, Math.round(HARVESTER_BASE_TIMER / speedMultiplier));
     let newV = v;
 
     // If timer is primed and veggie is ready, harvest immediately
     if (v.harvesterTimer >= timerMax && v.growth >= GROWTH_COMPLETE_THRESHOLD) {
-      // Use centralized harvest calculations
+      // Use centralized harvest calculations with guild bonuses
       const { harvestAmount, experienceGain, knowledgeGain: totalKnGain } = calculateHarvestRewards(
         v.additionalPlotLevel || 0,
         season,
@@ -127,7 +141,8 @@ export function processAutoHarvest(
         almanacLevel,
         farmTier,
         knowledge,
-        true // isAutoHarvest
+        true, // isAutoHarvest
+        guildState
       );
       
       totalExperienceGain += experienceGain;

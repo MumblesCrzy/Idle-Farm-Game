@@ -1,6 +1,9 @@
 import { SEASON_BONUS, veggieSeasonBonuses, COST_CONFIGS } from '../config/gameConstants';
 import type { Veggie, AutoPurchaseType, CurrencyType, AutoPurchaseConfig } from '../types/game';
 import { VEGGIE_CONFIGS, type VeggieConfig } from '../data/veggieConfigs';
+import { FRUIT_CONFIGS, calculateFruitExpRequirement, type FruitConfig } from '../data/fruitConfigs';
+import type { GuildState } from '../types/guilds';
+import { getGuildGrowthMultiplier, getFertilizerEffectivenessMultiplier } from './guildCalculations';
 
 /**
  * Formats a number with K, M, B, T, Q suffixes for large values
@@ -47,6 +50,7 @@ export function formatNumber(num: number, decimalPlaces: number = 1): string {
  * @param currentWeather - Current weather condition
  * @param greenhouseOwned - Whether the player owns a greenhouse
  * @param irrigationOwned - Whether the player owns irrigation
+ * @param guildState - Optional guild state for guild-based bonuses
  * @returns The modified growth rate per tick
  */
 export function getVeggieGrowthBonus(
@@ -54,11 +58,22 @@ export function getVeggieGrowthBonus(
   season: string,
   currentWeather: string,
   greenhouseOwned: boolean,
-  irrigationOwned: boolean
+  irrigationOwned: boolean,
+  guildState?: GuildState
 ): number {
   let growthAmount = v.growthRate;
+  
   // Fertilizer bonus - 5% multiplicative increase per level
-  growthAmount *= (1 + v.fertilizerLevel * 0.05);
+  // Verdant Glyphs (Guild) boosts fertilizer effectiveness by 25%
+  const fertilizerBoostMultiplier = guildState ? getFertilizerEffectivenessMultiplier(guildState) : 1;
+  const effectiveFertilizerBonus = v.fertilizerLevel * 0.05 * fertilizerBoostMultiplier;
+  growthAmount *= (1 + effectiveFertilizerBonus);
+  
+  // Guild growth bonuses (Fertile Soil, Advanced Fertilizer Research)
+  if (guildState) {
+    growthAmount *= getGuildGrowthMultiplier(guildState);
+  }
+  
   // Season bonus
   const bonusSeasons = veggieSeasonBonuses[v.name] || [];
   if (bonusSeasons.includes(season)) {
@@ -291,11 +306,13 @@ export const createVeggieFromConfig = (config: VeggieConfig): Veggie => {
     unlocked: config.unlocked,
     experience: 0,
     experienceToUnlock: calculateExpRequirement(config.unlockIndex),
+    cropType: 'vegetable',
     fertilizerLevel: 0,
     fertilizerCost: getCost(config.initialFertilizerCost, 'fertilizer'),
     harvesterOwned: false,
     harvesterCost: getCost(config.initialHarvesterCost, 'harvester'),
     harvesterTimer: 0,
+    autoHarvesterEnabled: true,
     salePrice: config.salePrice,
     betterSeedsLevel: 0,
     betterSeedsCost: getCost(config.initialBetterSeedsCost, 'betterSeeds'),
@@ -323,3 +340,51 @@ export const createInitialVeggies = (): Veggie[] => {
   return VEGGIE_CONFIGS.map(config => createVeggieFromConfig(config));
 };
 
+/**
+ * Creates a complete Veggie object from a fruit configuration
+ * Fruits use the same Veggie type but have different scaling
+ * @param config - The fruit configuration object
+ * @returns A fully initialized Veggie object for the fruit
+ */
+export const createFruitFromConfig = (config: FruitConfig): Veggie => {
+  return {
+    name: config.name,
+    growth: 0,
+    growthRate: config.growthRate,
+    stash: 0,
+    unlocked: config.unlocked,
+    experience: 0,
+    experienceToUnlock: calculateFruitExpRequirement(config.unlockIndex),
+    cropType: 'fruit',
+    fertilizerLevel: 0,
+    fertilizerCost: config.initialFertilizerCost,
+    harvesterOwned: false,
+    harvesterCost: config.initialHarvesterCost,
+    harvesterTimer: 0,
+    autoHarvesterEnabled: true,
+    salePrice: config.salePrice,
+    betterSeedsLevel: 0,
+    betterSeedsCost: config.initialBetterSeedsCost,
+    harvesterSpeedLevel: 0,
+    harvesterSpeedCost: config.initialHarvesterSpeedCost,
+    additionalPlotLevel: 0,
+    additionalPlotCost: config.initialAdditionalPlotCost,
+    fertilizerMaxLevel: config.fertilizerMaxLevel,
+    autoPurchasers: createAutoPurchaserConfigs(
+      config.autoPurchaserCosts[0],
+      config.autoPurchaserCosts[1],
+      config.autoPurchaserCosts[2],
+      config.autoPurchaserCosts[3]
+    ),
+    sellEnabled: true
+  };
+};
+
+/**
+ * Creates the initial fruits array from FRUIT_CONFIGS
+ * Fruits are unlocked via the Growers Guild "Fruit Cultivation" upgrade
+ * @returns Array of initialized Veggie objects for fruits
+ */
+export const createInitialFruits = (): Veggie[] => {
+  return FRUIT_CONFIGS.map(config => createFruitFromConfig(config));
+};

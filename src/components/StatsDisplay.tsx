@@ -1,5 +1,7 @@
 import { memo, type FC } from 'react';
 import type { Veggie } from '../types/game';
+import type { GuildState } from '../types/guilds';
+import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import styles from './StatsDisplay.module.css';
 
@@ -21,6 +23,7 @@ interface StatsDisplayProps {
   handleBuyLargerFarm: () => void;
   holidayCheer?: number; // Optional: only shown during Christmas event
   isChristmasEventActive?: boolean;
+  guildState: GuildState;
 }
 
 const StatsDisplay: FC<StatsDisplayProps> = memo(({
@@ -40,8 +43,22 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   farmTier,
   handleBuyLargerFarm,
   holidayCheer,
-  isChristmasEventActive
+  isChristmasEventActive,
+  guildState
 }) => {
+  // Calculate guild currency display
+  const isGuildsUnlocked = farmTier >= GUILDS_UNLOCK_TIER;
+  const isCommitted = guildState.committedGuild !== null;
+  const guildCurrencyAmount = isCommitted 
+    ? guildState.guildCurrencies[guildState.committedGuild!] 
+    : guildState.guildTokens;
+  const guildCurrencyName = isCommitted 
+    ? (guildState.committedGuild === 'growers' ? 'Sigils' : 'Guild Currency')
+    : 'Guild Tokens';
+  const guildCurrencyIcon = isCommitted 
+    ? (guildState.committedGuild === 'growers' ? '✦' : '🏛️')
+    : '🎫';
+
   return (
     <>
       <div className={styles.dayCounter}>
@@ -64,6 +81,9 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
       </div>
       <div className={styles.divider} />
       <div className={styles.stats}>
+        <span className={styles.statItem} title={`Farm Tier ${farmTier} - Expand your farm to unlock new features!`}>
+          🏠 Farm Tier: {farmTier}
+        </span>
         <span className={styles.statItem}>
           <img src={ICON_PLOTS} alt="" className={styles.statIcon} aria-hidden="true" />
           Plots: {totalPlotsUsed} / {maxPlots}
@@ -91,6 +111,14 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <img src={ICON_KNOWLEDGE} alt="" className={styles.statIcon} aria-hidden="true" />
           Knowledge: {formatNumber(knowledge, 2)}
         </span>
+        {isGuildsUnlocked && (
+          <span className={styles.statItem} title={isCommitted 
+            ? `${guildCurrencyName} - Earned from manual harvests` 
+            : 'Guild Tokens - Will convert to guild currency when you commit to a guild'}>
+            <span className={styles.guildCurrencyIcon}>{guildCurrencyIcon}</span>
+            {guildCurrencyName}: {formatNumber(guildCurrencyAmount)}
+          </span>
+        )}
         {isChristmasEventActive && holidayCheer !== undefined && (
             <span className={styles.statItem}>
               <img src={ICON_HOLIDAY_CHEER} alt="" className={styles.statIcon} aria-hidden="true" />

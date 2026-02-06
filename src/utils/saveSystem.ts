@@ -288,8 +288,12 @@ export interface ExtendedGameState {
   // Bee system state
   beeState?: SavedBeeState;
   
+  // Guild system state (v0.11.0)
+  guildState?: import('../types/guilds').GuildState;
+  
   // Tutorial state
   harvestTutorialShown?: boolean;
+  guildIntroShown?: boolean;
   
   // Save version for migration system
   _saveVersion?: number;

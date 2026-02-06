@@ -6,6 +6,16 @@
  */
 
 import { AUTO_HARVEST_EXPERIENCE_MULTIPLIER, AUTO_HARVEST_KNOWLEDGE_MULTIPLIER } from '../config/gameConstants';
+import type { GuildState } from '../types/guilds';
+import { getGrowersManualHarvestBonus, getBlessedCropChance, getQualityGradingExpBonus, getGuildBeeYieldBonus } from './guildCalculations';
+
+/**
+ * Result of harvest amount calculation
+ */
+export interface HarvestAmountResult {
+  amount: number;
+  blessedCropTriggered: boolean;
+}
 
 /**
  * Calculates the base harvest amount for a veggie
@@ -14,9 +24,17 @@ export function calculateHarvestAmount(
   additionalPlotLevel: number,
   season: string,
   permanentBonuses: string[],
-  beeYieldBonus: number
-): number {
+  beeYieldBonus: number,
+  isAutoHarvest: boolean = false,
+  guildState?: GuildState
+): HarvestAmountResult {
   let harvestAmount = 1 + (additionalPlotLevel || 0);
+  let blessedCropTriggered = false;
+  
+  // Apply Growers Guild manual harvest bonus (+1 for committed Growers on manual harvest)
+  if (!isAutoHarvest && guildState) {
+    harvestAmount += getGrowersManualHarvestBonus(guildState);
+  }
   
   // Apply Frost Fertilizer bonus: +5% yield during winter if achievement unlocked
   if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
@@ -24,11 +42,26 @@ export function calculateHarvestAmount(
   }
   
   // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
-  if (beeYieldBonus > 0) {
-    harvestAmount = Math.ceil(harvestAmount * (1 + beeYieldBonus));
+  // Plus guild bee synergy bonus
+  let totalBeeBonus = beeYieldBonus;
+  if (guildState) {
+    totalBeeBonus += getGuildBeeYieldBonus(guildState);
+  }
+  if (totalBeeBonus > 0) {
+    harvestAmount = Math.ceil(harvestAmount * (1 + totalBeeBonus));
   }
   
-  return harvestAmount;
+  // Apply Blessed Crop chance (Soilbound Pact) - chance for double yield
+  // This triggers on manual harvest OR when soilbound pact causes self-harvest
+  if (!isAutoHarvest && guildState) {
+    const blessedChance = getBlessedCropChance(guildState);
+    if (blessedChance > 0 && Math.random() < blessedChance) {
+      harvestAmount *= 2;
+      blessedCropTriggered = true;
+    }
+  }
+  
+  return { amount: harvestAmount, blessedCropTriggered };
 }
 
 /**
@@ -37,13 +70,23 @@ export function calculateHarvestAmount(
 export function calculateExperienceGain(
   harvestAmount: number,
   knowledge: number,
-  isAutoHarvest: boolean
+  isAutoHarvest: boolean,
+  guildState?: GuildState
 ): number {
+  let baseExp: number;
   if (isAutoHarvest) {
-    return (harvestAmount * AUTO_HARVEST_EXPERIENCE_MULTIPLIER) + (knowledge * 0.01 * AUTO_HARVEST_EXPERIENCE_MULTIPLIER);
+    baseExp = (harvestAmount * AUTO_HARVEST_EXPERIENCE_MULTIPLIER) + (knowledge * 0.01 * AUTO_HARVEST_EXPERIENCE_MULTIPLIER);
   } else {
-    return harvestAmount + (knowledge * 0.01);
+    baseExp = harvestAmount + (knowledge * 0.01);
   }
+  
+  // Apply Quality Grading experience bonus from Growers Guild
+  if (guildState) {
+    const expBonus = getQualityGradingExpBonus(guildState);
+    baseExp *= (1 + expBonus);
+  }
+  
+  return baseExp;
 }
 
 /**
@@ -67,6 +110,8 @@ export interface HarvestResult {
   harvestAmount: number;
   experienceGain: number;
   knowledgeGain: number;
+  /** Whether a blessed crop event triggered (Soilbound Pact double yield) */
+  blessedCropTriggered: boolean;
 }
 
 /**
@@ -81,19 +126,23 @@ export function calculateHarvestRewards(
   almanacLevel: number,
   farmTier: number,
   knowledge: number,
-  isAutoHarvest: boolean
+  isAutoHarvest: boolean,
+  guildState?: GuildState
 ): HarvestResult {
-  const harvestAmount = calculateHarvestAmount(
+  const harvestResult = calculateHarvestAmount(
     additionalPlotLevel,
     season,
     permanentBonuses,
-    beeYieldBonus
+    beeYieldBonus,
+    isAutoHarvest,
+    guildState
   );
   
   const experienceGain = calculateExperienceGain(
-    harvestAmount,
+    harvestResult.amount,
     knowledge,
-    isAutoHarvest
+    isAutoHarvest,
+    guildState
   );
   
   const knowledgeGain = calculateKnowledgeGain(
@@ -103,8 +152,9 @@ export function calculateHarvestRewards(
   );
   
   return {
-    harvestAmount,
+    harvestAmount: harvestResult.amount,
     experienceGain,
-    knowledgeGain
+    knowledgeGain,
+    blessedCropTriggered: harvestResult.blessedCropTriggered
   };
 }

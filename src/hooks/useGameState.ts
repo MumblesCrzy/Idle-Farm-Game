@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import type { Veggie } from '../types/game';
-import { createAutoPurchaserConfigs } from '../utils/gameCalculations';
 import { HEIRLOOM_COST_PER_VEGGIE, HEIRLOOM_KN_PER_VEGGIE } from '../config/gameConstants';
 
 interface LoadedGameState {
@@ -37,25 +36,39 @@ interface UseGameStateParams {
  */
 export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams) => {
   // Migration function to add missing properties to saved veggie data
+  // Also handles adding new crops (fruits) that weren't in older saves
   const migrateVeggieData = (loadedVeggies: any[]): Veggie[] => {
     if (!loadedVeggies) return initialVeggies;
     
-    return loadedVeggies.map((savedVeggie, index) => {
-      const initialVeggie = initialVeggies[index];
+    // Create a map of saved veggies by name for efficient lookup
+    const savedByName = new Map<string, any>();
+    loadedVeggies.forEach(v => savedByName.set(v.name, v));
+    
+    // Map over initialVeggies to ensure all crops exist (including new fruits)
+    return initialVeggies.map((initialVeggie) => {
+      const savedVeggie = savedByName.get(initialVeggie.name);
+      
+      // If this crop wasn't in the save, use the initial data
+      if (!savedVeggie) {
+        return initialVeggie;
+      }
       
       // Add missing properties with defaults
       const migratedVeggie: any = { ...savedVeggie };
       
       // If autoPurchasers is missing, add it from the initial veggie data
       if (!savedVeggie.autoPurchasers) {
-        migratedVeggie.autoPurchasers = initialVeggie 
-          ? initialVeggie.autoPurchasers 
-          : createAutoPurchaserConfigs(8, 10, 30, 38);
+        migratedVeggie.autoPurchasers = initialVeggie.autoPurchasers;
       }
       
       // If sellEnabled is missing, default to true (allow selling)
       if (savedVeggie.sellEnabled === undefined) {
         migratedVeggie.sellEnabled = true;
+      }
+      
+      // If cropType is missing, inherit from initial data
+      if (savedVeggie.cropType === undefined) {
+        migratedVeggie.cropType = initialVeggie.cropType;
       }
       
       return migratedVeggie;

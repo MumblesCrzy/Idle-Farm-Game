@@ -4,6 +4,7 @@ import ProgressBar from './ProgressBar';
 import UpgradeButton from './UpgradeButton';
 import GlobalUpgradesPanel from './GlobalUpgradesPanel';
 import type { Veggie, AutoPurchaseConfig } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import { 
   getVeggieImage, 
   getAutoPurchaserImage, 
@@ -16,6 +17,17 @@ import {
   UPGRADE_HARVESTER_SPEED 
 } from '../config/assetPaths';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
+import { 
+  getGrowersGrowthBonus, 
+  getGrowersPriceBonus, 
+  isCommittedTo,
+  getGrowersManualHarvestBonus,
+  getBlessedCropChance,
+  getGrowersBeePollinationBonus,
+  applyGuildPriceBonuses,
+  hasFruitCultivation,
+  getUpgradeLevel
+} from '../utils/guildCalculations';
 import styles from './GrowingTab.module.css';
 
 interface GrowingTabProps {
@@ -57,7 +69,9 @@ interface GrowingTabProps {
   setActiveVeggie: (index: number) => void;
   handleHarvest: () => void;
   handleToggleSell: (index: number) => void;
+  handleToggleAutoHarvester: (index: number) => void;
   handleSell: () => void;
+  handleRitualHarvestAll: () => void;
   handleBuyFertilizer: (index: number) => void;
   handleBuyHarvester: (index: number) => void;
   handleBuyBetterSeeds: (index: number) => void;
@@ -70,6 +84,7 @@ interface GrowingTabProps {
   handleBuyGreenhouse: () => void;
   handleBuyHeirloom: () => void;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  guildState?: GuildState;
 }
 
 // Component definitions
@@ -242,7 +257,9 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
     setActiveVeggie,
     handleHarvest,
     handleToggleSell,
+    handleToggleAutoHarvester,
     handleSell,
+    handleRitualHarvestAll,
     handleBuyFertilizer,
     handleBuyHarvester,
     handleBuyBetterSeeds,
@@ -254,8 +271,15 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
     handleBuyAutoSell,
     handleBuyGreenhouse,
     handleBuyHeirloom,
-    formatNumber
+    formatNumber,
+    guildState
   } = props;
+
+  const ritualHarvestCost = 5;
+  const ritualCirclesUnlocked = !!guildState && isCommittedTo(guildState, 'growers') && getUpgradeLevel(guildState, 'growers_ritual_circles') > 0;
+  const ritualSigils = guildState?.guildCurrencies?.growers ?? 0;
+  const hasReadyCrops = veggies.some(v => v.growth >= GROWTH_COMPLETE_THRESHOLD);
+  const canRitualHarvest = ritualCirclesUnlocked && ritualSigils >= ritualHarvestCost && hasReadyCrops;
 
   // Main growing content
   const mainContent = (
@@ -268,22 +292,55 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
         </span>
       </div>
 
+      {/* Guild Bonuses Indicator (only show if committed to Growers) */}
+      {guildState && isCommittedTo(guildState, 'growers') && (
+        <div className={styles.guildBonusesIndicator}>
+          <span className={styles.guildBonusesTitle}>🌱 Growers Guild</span>
+          <div className={styles.guildBonusesList}>
+            {getGrowersGrowthBonus(guildState) > 0 && (
+              <span className={styles.guildBonus} title="Growth Speed Bonus from Guild Upgrades">
+                +{Math.round(getGrowersGrowthBonus(guildState) * 100)}% Growth
+              </span>
+            )}
+            {getGrowersPriceBonus(guildState) > 0 && (
+              <span className={styles.guildBonus} title="Sale Price Bonus from Guild Upgrades">
+                +{Math.round(getGrowersPriceBonus(guildState) * 100)}% Price
+              </span>
+            )}
+            {getGrowersManualHarvestBonus(guildState) > 0 && (
+              <span className={styles.guildBonus} title="Manual Harvest Bonus">
+                +{getGrowersManualHarvestBonus(guildState)} Manual
+              </span>
+            )}
+            {getBlessedCropChance(guildState) > 0 && (
+              <span className={styles.guildBonus} title="Blessed Crop Chance (Double Yield)">
+                {Math.round(getBlessedCropChance(guildState) * 100)}% Blessed
+              </span>
+            )}
+            {getGrowersBeePollinationBonus(guildState) > 0 && (
+              <span className={styles.guildBonus} title="Bee Pollination Synergy">
+                +{Math.round(getGrowersBeePollinationBonus(guildState) * 100)}% Bees
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Veggie Selection */}
       <div className="veggie-selector">
-        <div className={styles.veggieSelectorContainer}
-        >
-          {veggies.map((v, i) => (
-            v.unlocked ? (
+        {/* Vegetables Row */}
+        <div className={styles.veggieSelectorContainer}>
+          {veggies.filter(v => v.cropType !== 'fruit').map((v) => {
+            // Find the actual index in the full veggies array
+            const actualIndex = veggies.findIndex(veg => veg.name === v.name);
+            return v.unlocked ? (
               <button
                 key={v.name}
-                className={`${styles.veggieSelectorButton} ${[ 
-                  i === activeVeggie ? 'active' : '',
-                  v.growth >= GROWTH_COMPLETE_THRESHOLD ? 'ready' : ''
-                ].filter(Boolean).join(' ')}`}
-                onClick={() => setActiveVeggie(i)}
-                aria-label={`${v.name}. Growth: ${Math.floor(v.growth)}%. Stash: ${v.stash}${i === activeVeggie ? '. Currently selected' : ''}`}
-                aria-current={i === activeVeggie ? 'true' : undefined}
-                disabled={i === activeVeggie}
+                className={`${styles.veggieSelectorButton} ${v.growth >= GROWTH_COMPLETE_THRESHOLD ? styles.veggieSelectorButtonReady : ''}`}
+                onClick={() => setActiveVeggie(actualIndex)}
+                aria-label={`${v.name}. Growth: ${Math.floor(v.growth)}%. Stash: ${v.stash}${actualIndex === activeVeggie ? '. Currently selected' : ''}`}
+                aria-current={actualIndex === activeVeggie ? 'true' : undefined}
+                disabled={actualIndex === activeVeggie}
               >
                 {v.name}
               </button>
@@ -293,20 +350,61 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
                 disabled 
                 aria-label={totalPlotsUsed >= maxPlots 
                   ? `${v.name}. Locked. You need to expand your farm to unlock more vegetables`
-                  : `${v.name}. Locked. Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`
+                  : `${v.name}. Locked. Requires ${v.experienceToUnlock} experience to unlock`
                 }
                 className={styles.veggieSelectorButton}
-                title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock} experience to unlock`}
+                title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more vegetables' : `Requires ${v.experienceToUnlock} experience to unlock`}
               >
                 {totalPlotsUsed >= maxPlots ? (
                   <span className={styles.needLargerFarm}>Need Larger Farm</span>
                 ) : (
-                  `Exp: ${i > 0 ? veggies[i].experienceToUnlock : v.experienceToUnlock}`
+                  `Exp: ${v.experienceToUnlock}`
                 )}
               </button>
-            )
-          ))}
+            );
+          })}
         </div>
+        
+        {/* Fruits Row - Only shown if Fruit Cultivation is unlocked */}
+        {guildState && hasFruitCultivation(guildState) && (
+          <>
+            <div className={styles.fruitRowLabel}></div>
+            <div className={styles.veggieSelectorContainer}>
+              {veggies.filter(v => v.cropType === 'fruit').map((v) => {
+                const actualIndex = veggies.findIndex(veg => veg.name === v.name);
+                return v.unlocked ? (
+                  <button
+                    key={v.name}
+                    className={`${styles.veggieSelectorButton} ${styles.fruitButton} ${v.growth >= GROWTH_COMPLETE_THRESHOLD ? styles.veggieSelectorButtonReady : ''}`}
+                    onClick={() => setActiveVeggie(actualIndex)}
+                    aria-label={`${v.name}. Growth: ${Math.floor(v.growth)}%. Stash: ${v.stash}${actualIndex === activeVeggie ? '. Currently selected' : ''}`}
+                    aria-current={actualIndex === activeVeggie ? 'true' : undefined}
+                    disabled={actualIndex === activeVeggie}
+                  >
+                    {v.name}
+                  </button>
+                ) : (
+                  <button 
+                    key={v.name} 
+                    disabled 
+                    aria-label={totalPlotsUsed >= maxPlots 
+                      ? `${v.name}. Locked. You need to expand your farm to unlock more fruits`
+                      : `${v.name}. Locked. Requires ${v.experienceToUnlock} experience to unlock`
+                    }
+                    className={`${styles.veggieSelectorButton} ${styles.fruitButton}`}
+                    title={totalPlotsUsed >= maxPlots ? 'You need to expand your farm to unlock more fruits' : `Requires ${formatNumber(v.experienceToUnlock, 0)} experience to unlock`}
+                  >
+                    {totalPlotsUsed >= maxPlots ? (
+                      <span className={styles.needLargerFarm}>Need Larger Farm</span>
+                    ) : (
+                      `Exp: ${formatNumber(v.experienceToUnlock, 0)}`
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
       <div className={styles.spacer} />
       
@@ -327,7 +425,14 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
                 🚫 HOLD
               </span>
             )}
-            <span className={styles.salePrice}>${formatNumber(veggies[activeVeggie].salePrice, 2)}</span>
+            <span 
+              className={styles.salePrice}
+              title={guildState && getGrowersPriceBonus(guildState) > 0 
+                ? `Base: $${formatNumber(veggies[activeVeggie].salePrice, 2)} + ${Math.round(getGrowersPriceBonus(guildState) * 100)}% guild bonus`
+                : `Sale price per unit`}
+            >
+              ${formatNumber(guildState ? applyGuildPriceBonuses(veggies[activeVeggie].salePrice, guildState, false) : veggies[activeVeggie].salePrice, 2)}
+            </span>
             {beeYieldBonus > 0 && (
               <span style={{
                 fontSize: '0.75rem',
@@ -355,6 +460,22 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
           >
             {veggies[activeVeggie].growth < 100 ? 'Growing...' : 'Harvest'}
           </button>
+          {ritualCirclesUnlocked && (
+            <button
+              onClick={handleRitualHarvestAll}
+              className={styles.ritualHarvestButton}
+              disabled={!canRitualHarvest}
+              title={canRitualHarvest
+                ? `Ritual Harvest: Spend ${ritualHarvestCost} sigils to harvest all ready crops`
+                : ritualSigils < ritualHarvestCost
+                  ? `Need ${ritualHarvestCost} sigils (you have ${ritualSigils})`
+                  : 'No crops are ready to harvest'}
+              aria-label={`Ritual harvest all ready crops for ${ritualHarvestCost} sigils`}
+              style={{ cursor: canRitualHarvest ? 'pointer' : 'not-allowed' }}
+            >
+              🔮 Ritual Harvest ({ritualHarvestCost}✦)
+            </button>
+          )}
           <button
             onClick={() => handleToggleSell(activeVeggie)}
             className={veggies[activeVeggie].sellEnabled ? styles.sellButton : styles.holdButton}
@@ -381,22 +502,28 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
         
         {/* Auto Harvester Progress Bar */}
         {veggies[activeVeggie].harvesterOwned && (
-          <div 
-            className={styles.harvesterProgressWrapper}
-            title={`Auto Harvester: ${Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))) - veggies[activeVeggie].harvesterTimer} seconds until next harvest attempt`}
-          >
-            <ProgressBar
-              value={veggies[activeVeggie].harvesterTimer}
-              max={Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))}
-              color="#5D76B1"
-              height={22}
-            />
-            <span className={styles.progressBarLabel}>
-              {`${Math.floor(
-                (veggies[activeVeggie].harvesterTimer /
-                Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))) * 100
-              )}%`}
-            </span>
+          <div className={styles.harvesterRow}>
+            <div 
+              className={`${styles.harvesterProgressWrapper} ${!veggies[activeVeggie].autoHarvesterEnabled ? styles.harvesterDisabled : ''}`}
+              title={veggies[activeVeggie].autoHarvesterEnabled 
+                ? `Auto Harvester: ${Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05))) - veggies[activeVeggie].harvesterTimer} seconds until next harvest attempt`
+                : 'Auto Harvester: Disabled'}
+            >
+              <ProgressBar
+                value={veggies[activeVeggie].harvesterTimer}
+                max={Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))}
+                color={veggies[activeVeggie].autoHarvesterEnabled ? "#5D76B1" : "#666"}
+                height={22}
+              />
+              <span className={styles.progressBarLabel}>
+                {veggies[activeVeggie].autoHarvesterEnabled 
+                  ? `${Math.floor(
+                      (veggies[activeVeggie].harvesterTimer /
+                      Math.max(1, Math.round(50 / (1 + (veggies[activeVeggie].harvesterSpeedLevel ?? 0) * 0.05)))) * 100
+                    )}%`
+                  : 'OFF'}
+              </span>
+            </div>
           </div>
         )}
         
@@ -499,7 +626,11 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
           {/* Auto Harvester */}
           <div className={styles.upgradeColumnWithMargin}>
             <UpgradeButton
-              title={veggies[activeVeggie].harvesterOwned ? 'Purchased' : `Auto Harvester - Cost: $${formatNumber(veggies[activeVeggie].harvesterCost, 1)}`}
+              title={veggies[activeVeggie].harvesterOwned 
+                ? (veggies[activeVeggie].autoHarvesterEnabled 
+                  ? 'Auto Harvester: Active (click to pause)' 
+                  : 'Auto Harvester: Paused (click to resume)')
+                : `Auto Harvester - Cost: $${formatNumber(veggies[activeVeggie].harvesterCost, 1)}`}
               imageSrc={UPGRADE_AUTO_HARVESTER}
               imageAlt="Auto Harvester"
               buttonText="Auto Harvester"
@@ -512,6 +643,9 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
               isOwned={veggies[activeVeggie].harvesterOwned}
               effect="Auto-harvests when ready"
               formatNumber={formatNumber}
+              isTogglable={true}
+              isActive={veggies[activeVeggie].autoHarvesterEnabled}
+              onToggle={() => handleToggleAutoHarvester(activeVeggie)}
             />
           </div>
           
@@ -575,7 +709,7 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
           disabled={veggies.every((v) => !v.sellEnabled || v.stash === 0)}
           aria-label="Sell all veggies (only those marked for selling)"
         >
-          {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${formatNumber(veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * v.salePrice : sum, 1), 2)})
+          {veggies.every((v) => !v.sellEnabled || v.stash === 0) ? 'No sellable veggies' : 'Sell All'}  (${formatNumber(veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * (guildState ? applyGuildPriceBonuses(v.salePrice, guildState, false) : v.salePrice) : sum, 0), 2)})
         </button>
       </div>
     </>
