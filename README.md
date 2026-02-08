@@ -205,13 +205,13 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - **Fall Pumpkin Rush**: Harvest competition with decorating
 
 ### 🌟 Planned Features
-- **Bees**: Per-veggie upgrade to increase yield without additional plots
-- **Orchard**: Slower growers with larger payouts (apples, pears, cherries)
 - **Guilds**: 
   - Growers - Help things grow through rituals that shun technology
   - Engineers - Smarter machines, but lose feel for the earth
   - Preservers - Better taste, but watch for the glutton
   - Merchants - Profits over people
+- **Wisdom of the Ages**:
+  - The true presitge mechanic of the game. The player will have 80 years to grow their farm as large as they can.
 - **More Achievements**: Unlock rewards for hitting milestones across all systems
 
 ### 🎮 New Player Guide
