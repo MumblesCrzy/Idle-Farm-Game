@@ -33,6 +33,34 @@ interface SavedBeeState {
   honeySpent: number;
 }
 
+/** Prestige / Wisdom state persisted across lifetimes */
+export interface WisdomUpgrades {
+  extendedLifespan?: number;
+  permanentGuildBenefits?: number;
+  startingGold?: number;
+  startingKnowledge?: number;
+  startingExperience?: number;
+}
+
+export interface PrestigeState {
+  wisdom: number;
+  lifetimeCount: number;
+  wisdomUpgrades: WisdomUpgrades;
+
+  // Lifetime tracking (reset each prestige)
+  totalMoneyEarned?: number;
+  totalKnowledgeGained?: number;
+  maxFarmTierReached?: number;
+
+  // achievements unlocked map
+  achievementsUnlocked?: Record<string, { unlockedAt: number; lifetimeWhenUnlocked: number }>;
+}
+
+export interface TutorialFlags {
+  hasSeenLifespanIntro?: boolean;
+  hasSeenShopExplanation?: boolean;
+}
+
 /**
  * Commented out for future use - will be needed for lean save system
  * These functions convert between full CanningState and lean progress format
@@ -294,9 +322,19 @@ export interface ExtendedGameState {
   // Tutorial state
   harvestTutorialShown?: boolean;
   guildIntroShown?: boolean;
+  lifespanIntroShown?: boolean;
+  shopExplanationShown?: boolean;
   
   // Save version for migration system
   _saveVersion?: number;
+  
+  // Prestige / tutorial and offline tracking
+  prestigeState?: PrestigeState;
+  tutorialFlags?: TutorialFlags;
+  // Timestamp of last save (UTC ms) used for offline catch-up
+  lastSavedAt?: number;
+  // Snapshot of totalDaysElapsed at last save used to compute remainingDays
+  lastTotalDaysElapsed?: number;
 }
 
 /** LocalStorage key for game state persistence */
@@ -362,6 +400,31 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
     // Ensure version fields are set
     loaded._saveVersion = CURRENT_SAVE_VERSION;
     loaded.canningVersion = CANNING_VERSION;
+
+    // Initialize new prestige/tutorial/offline fields if missing (migration safe)
+    if (!loaded.prestigeState) {
+      loaded.prestigeState = {
+        wisdom: 0,
+        lifetimeCount: 1,
+        wisdomUpgrades: {},
+        totalMoneyEarned: 0,
+        totalKnowledgeGained: 0,
+        maxFarmTierReached: 1,
+        achievementsUnlocked: {}
+      } as PrestigeState;
+    }
+
+    if (!loaded.tutorialFlags) {
+      loaded.tutorialFlags = {} as TutorialFlags;
+    }
+
+    if (!loaded.lastSavedAt) {
+      loaded.lastSavedAt = Date.now();
+    }
+
+    if (typeof loaded.lastTotalDaysElapsed === 'undefined') {
+      loaded.lastTotalDaysElapsed = loaded.totalDaysElapsed || 0;
+    }
     
     return loaded;
   } catch (error) {
@@ -377,11 +440,15 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
  */
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
   try {
+    // Ensure offline tracking fields are updated on save
+    const now = Date.now();
     const stateToSave = {
       ...state,
       _saveVersion: CURRENT_SAVE_VERSION,
       // Keep canningVersion for backward compatibility during transition
-      canningVersion: 3
+      canningVersion: 3,
+      lastSavedAt: now,
+      lastTotalDaysElapsed: state.totalDaysElapsed || 0
     };
     localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
   } catch (error) {
@@ -403,6 +470,66 @@ export function getSaveMigrationSummary(): string {
  */
 export function getSaveMigrationLog() {
   return getMigrationLog();
+}
+
+// --- Offline / lifetime helpers ---
+
+/**
+ * How many real milliseconds equal one in-game day in the offline simulator.
+ * The game loop and all offline call-sites use dayLength = 1000 (1 second per
+ * game day), so this constant must match.
+ */
+export const DEFAULT_MS_PER_GAME_DAY = 1000; // 1 real second = 1 game day
+
+/** Convert real-time milliseconds to in-game days. */
+export function convertMsToDays(ms: number, msPerDay: number = DEFAULT_MS_PER_GAME_DAY): number {
+  if (msPerDay <= 0) return 0;
+  return ms / msPerDay;
+}
+
+/** Convert in-game days to real-time milliseconds. */
+export function convertDaysToMs(days: number, msPerDay: number = DEFAULT_MS_PER_GAME_DAY): number {
+  return days * msPerDay;
+}
+
+/**
+ * Maximum lifetime length in game-days for a player, accounting for the
+ * `extendedLifespan` wisdom upgrade (+5 years per level).
+ * Base: 80 years × 365 = 29 200 days.
+ */
+export function getMaxLifetimeDaysForPlayer(prestigeState?: PrestigeState): number {
+  const baseYears = 80;
+  const bonusYears = (prestigeState?.wisdomUpgrades?.extendedLifespan || 0) * 5;
+  return (baseYears + bonusYears) * 365;
+}
+
+/**
+ * Compute how much offline ms can be applied without crossing the lifetime
+ * boundary.  Used by App.tsx on load to pre-check capping before handing off
+ * to `calculateOfflineProgress`.
+ *
+ * @param loaded        - The loaded save state (needs `lastTotalDaysElapsed` and `prestigeState`)
+ * @param offlineMsRequested - Raw offline ms (Date.now() − lastSavedAt)
+ * @param msPerDay      - ms per game-day (default: DEFAULT_MS_PER_GAME_DAY = 1000)
+ * @returns Object with the ms to apply, whether it was capped, and diagnostic values
+ */
+export function computeAllowedOfflineMs(
+  loaded: ExtendedGameState,
+  offlineMsRequested: number,
+  msPerDay: number = DEFAULT_MS_PER_GAME_DAY
+) {
+  const lifetimeEndDays = getMaxLifetimeDaysForPlayer(loaded.prestigeState);
+  const currentDays = loaded.lastTotalDaysElapsed || 0;
+  const predictedTotalDays = currentDays + convertMsToDays(offlineMsRequested, msPerDay);
+
+  if (predictedTotalDays < lifetimeEndDays) {
+    return { appliedMs: offlineMsRequested, capped: false, predictedTotalDays, lifetimeEndDays };
+  }
+
+  // Cap to remaining days until lifetime end
+  const remainingDays = Math.max(0, lifetimeEndDays - currentDays);
+  const allowedOfflineMs = Math.max(0, convertDaysToMs(remainingDays, msPerDay));
+  return { appliedMs: allowedOfflineMs, capped: true, predictedTotalDays, lifetimeEndDays };
 }
 
 /**

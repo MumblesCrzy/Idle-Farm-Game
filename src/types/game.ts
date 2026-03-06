@@ -248,6 +248,11 @@ export interface GameState {
     calculateYieldBonus: () => number;
     getBeeStats: () => any;
   };
+  
+  // Prestige System - Lifetime Stat Tracking (v0.12.0)
+  trackMoneyEarned: (amount: number) => void;
+  trackKnowledgeGained: (amount: number) => void;
+  trackFarmTierReached: (tier: number) => void;
 }
 
 // ============================================================================

@@ -1,0 +1,428 @@
+/**
+ * Wisdom Tab Styles
+ * 
+ * Styling for the prestige/wisdom system UI including:
+ * - Lifetime summary card
+ * - Upgrade cards grid
+ * - Wisdom balance sidebar
+ * - Purple/gold color theme for prestige feel
+ */
+
+/* Container */
+.container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ============================================
+   LIFETIME SUMMARY (shown at end of lifetime)
+   ============================================ */
+.lifetimeSummary {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #7c4dff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(124, 77, 255, 0.3);
+}
+
+.summaryTitle {
+  font-size: 1.75rem;
+  margin: 0 0 1.5rem 0;
+  color: #ffd700;
+  text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+.summaryStats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.statRow:last-child {
+  border-bottom: none;
+}
+
+.statLabel {
+  color: #b0bec5;
+  font-size: 1rem;
+}
+
+.statValue {
+  color: #ffd700;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.wisdomCalculation {
+  background: linear-gradient(135deg, #4a148c 0%, #311b92 100%);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wisdomTitle {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  color: #e1bee7;
+}
+
+.wisdomFormula {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #b39ddb;
+  margin-bottom: 0.75rem;
+}
+
+.formulaLine {
+  display: block;
+  word-break: break-word;
+}
+
+.wisdomResult {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+}
+
+.summaryHint {
+  color: #90caf9;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ============================================
+   CATEGORY FILTER
+   ============================================ */
+.categoryFilter {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.categoryButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #7c4dff;
+  border-radius: 20px;
+  background: transparent;
+  color: #b39ddb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.categoryButton:hover {
+  background: rgba(124, 77, 255, 0.2);
+  color: #fff;
+}
+
+.categoryButtonActive {
+  background: #7c4dff;
+  color: #fff;
+  border-color: #7c4dff;
+}
+
+/* ============================================
+   UPGRADES GRID
+   ============================================ */
+.upgradesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* ============================================
+   UPGRADE CARD
+   ============================================ */
+.upgradeCard {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.upgradeCard:hover {
+  border-color: #7c4dff;
+  box-shadow: 0 2px 12px rgba(124, 77, 255, 0.2);
+}
+
+.upgradeCardMaxed {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #1b3a2d 0%, #1a1a1a 100%);
+}
+
+.upgradeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.upgradeName {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.upgradeLevel {
+  font-size: 0.85rem;
+  color: #b39ddb;
+  background: rgba(124, 77, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.upgradeDescription {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #aaa;
+  line-height: 1.4;
+}
+
+.upgradeEffect {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.effectLabel {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.effectValue {
+  font-size: 0.9rem;
+  color: #ffd700;
+  font-weight: 500;
+}
+
+.upgradeNote {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #90caf9;
+  padding: 0.25rem 0.5rem;
+  background: rgba(144, 202, 249, 0.1);
+  border-radius: 4px;
+}
+
+.noteIcon {
+  font-size: 1rem;
+}
+
+/* Purchase Button */
+.purchaseButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.purchaseButtonEnabled {
+  background: linear-gradient(135deg, #7c4dff 0%, #536dfe 100%);
+  color: #fff;
+}
+
+.purchaseButtonEnabled:hover {
+  background: linear-gradient(135deg, #651fff 0%, #304ffe 100%);
+  transform: translateY(-1px);
+}
+
+.purchaseButtonDisabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.purchaseCost {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.purchaseStatus {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.maxLevelBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  color: #81c784;
+  font-weight: 500;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.sidebarTitle {
+  text-align: center;
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #e1bee7;
+}
+
+.wisdomBalance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.wisdomIcon {
+  font-size: 1.5rem;
+}
+
+.wisdomTotal {
+  font-variant-numeric: tabular-nums;
+}
+
+.wisdomPending {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.pendingLabel {
+  font-size: 0.85rem;
+  color: #b39ddb;
+}
+
+.pendingAmount {
+  color: #81c784;
+  font-weight: 600;
+}
+
+.lifetimeInfo {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.lifetimeRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #b0bec5;
+  padding: 0.5rem 0;
+}
+
+.startNextLifetimeButton {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.startNextLifetimeButton:hover {
+  background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.buttonIcon {
+  font-size: 1.5rem;
+}
+
+.buttonText {
+  font-weight: 600;
+}
+
+.currentLifetimeNote {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.currentLifetimeNote p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #b0bec5;
+}
+
+.currentLifetimeNote p:last-child {
+  margin-bottom: 0;
+}
+
+.noteSmall {
+  font-size: 0.8rem !important;
+  color: #888 !important;
+  font-style: italic;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .upgradesGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summaryStats {
+    padding: 0.75rem;
+  }
+  
+  .wisdomResult {
+    font-size: 1.25rem;
+  }
+}

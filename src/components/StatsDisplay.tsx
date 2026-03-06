@@ -1,6 +1,7 @@
 import { memo, type FC } from 'react';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
+import type { PrestigeState } from '../utils/saveSystem';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import styles from './StatsDisplay.module.css';
@@ -24,6 +25,9 @@ interface StatsDisplayProps {
   holidayCheer?: number; // Optional: only shown during Christmas event
   isChristmasEventActive?: boolean;
   guildState: GuildState;
+  // Prestige system props
+  prestigeState?: PrestigeState;
+  lifetimeMaxDays?: number; // Max days for current lifetime (default 29200)
 }
 
 const StatsDisplay: FC<StatsDisplayProps> = memo(({
@@ -44,7 +48,9 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   handleBuyLargerFarm,
   holidayCheer,
   isChristmasEventActive,
-  guildState
+  guildState,
+  prestigeState,
+  lifetimeMaxDays = 29200 // Default: 80 years
 }) => {
   // Calculate guild currency display
   const isGuildsUnlocked = farmTier >= GUILDS_UNLOCK_TIER;
@@ -59,10 +65,26 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
     ? (guildState.committedGuild === 'growers' ? '✦' : '🏛️')
     : '🎫';
 
+  // Calculate lifetime progress for visual indicator
+  const currentYear = Math.floor(totalDaysElapsed / 365) + 1;
+  const maxYears = Math.floor(lifetimeMaxDays / 365);
+  const yearsRemaining = maxYears - currentYear + 1;
+  const isNearEndOfLifetime = yearsRemaining <= 5; // Golden accent at year 75+
+  const lifetimeCount = prestigeState?.lifetimeCount ?? 1;
+
   return (
     <>
       <div className={styles.dayCounter}>
-        Year: {Math.floor(totalDaysElapsed / 365) + 1} | Day: {day}{' '}
+        {/* Lifetime Counter Badge */}
+        <span 
+          className={`${styles.lifetimeBadge} ${isNearEndOfLifetime ? styles.lifetimeBadgeGolden : ''}`}
+          title={`You are in lifetime ${lifetimeCount}. ${yearsRemaining} year${yearsRemaining !== 1 ? 's' : ''} remaining in this lifetime.`}
+          aria-label={`Lifetime ${lifetimeCount}. ${yearsRemaining} year${yearsRemaining !== 1 ? 's' : ''} remaining.`}
+        >
+          ✨ Lifetime {lifetimeCount}
+        </span>
+        <span className={styles.timeSeparator}>|</span>
+        Year: {currentYear} | Day: {day}{' '}
         <span className={styles.seasonWeather}>
           <img
             src={getSeasonImage(season)}

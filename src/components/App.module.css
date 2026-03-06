@@ -232,6 +232,23 @@
   margin-top: 2px;
 }
 
+/* Wisdom Tab */
+.tabButtonWisdom {
+  composes: tabButton;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(135deg, #6b21a8 0%, #9333ea 100%);
+  color: #ffd700;
+  border: 2px solid #ffd700;
+}
+
+.tabButtonWisdomActive {
+  composes: tabButtonWisdom;
+  composes: tabButtonActive;
+  background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
 /* Christmas Sub-Tabs */
 .christmasSubTabList {
   display: flex;

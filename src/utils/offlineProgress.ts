@@ -8,8 +8,14 @@
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
-
+import { getSeason } from './gameCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
+
+/** Options for offline progress calculation */
+export interface OfflineProgressOptions {
+  /** If provided, cap simulation so totalDaysElapsed does not exceed this value */
+  maxTotalDays?: number;
+}
 
 export interface OfflineProgressResult {
   timeElapsed: number; // milliseconds
@@ -24,10 +30,15 @@ export interface OfflineProgressResult {
   christmasElvesCraftingTicks: number; // number of elves crafting ticks processed
   christmasPassiveCheerGain: number; // passive Holiday Cheer earned
   beeProgress?: OfflineBeeProgress; // bee system offline progress (optional until fully implemented)
+  // Optional flags added to indicate offline handling decisions
+  cappedToLifetime?: boolean; // true if offline time was capped by lifetime end
+  offlineMsApplied?: number; // actual ms applied by this simulation (after capping)
+  lifetimeEnded?: boolean; // true if lifetime end was reached during the offline period
 }
 
 /**
- * Calculate and simulate game progress for the time the player was away
+ * Calculate and simulate game progress for the time the player was away.
+ * Supports capping to a lifetime boundary via opts.maxTotalDays.
  */
 export function calculateOfflineProgress(
   timeElapsedMs: number,
@@ -36,7 +47,7 @@ export function calculateOfflineProgress(
     day: number;
     totalDaysElapsed: number;
     dayLength: number;
-    season: string;
+    season: string; // Initial season (used as fallback, but we derive from day during sim)
     currentWeather: string;
     greenhouseOwned: boolean;
     irrigationOwned: boolean;
@@ -61,7 +72,8 @@ export function calculateOfflineProgress(
       totalHoneyCollected: number;
       totalGoldenHoneyCollected: number;
     };
-  }
+  },
+  opts?: OfflineProgressOptions
 ): OfflineProgressResult {
   // Don't process if less than 1 second elapsed (avoid flickering on quick tab switches)
   if (timeElapsedMs < 1000) {
@@ -77,6 +89,9 @@ export function calculateOfflineProgress(
       christmasTreeGrowthTicks: 0,
       christmasElvesCraftingTicks: 0,
       christmasPassiveCheerGain: 0,
+      cappedToLifetime: false,
+      offlineMsApplied: 0,
+      lifetimeEnded: false
     };
   }
 
@@ -93,7 +108,26 @@ export function calculateOfflineProgress(
   // Max 8 hours of offline time (can be increased to 24 hours for prestige system later)
   const MAX_OFFLINE_HOURS = 8; // Change to 24 for prestige system
   const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000;
-  const cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
+  let cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
+
+  // If a lifetime cap (maxTotalDays) is provided, compute the ms that would
+  // reach that lifetime and cap the offline time to not cross the boundary.
+  let cappedToLifetime = false;
+  let lifetimeEnded = false;
+  if (typeof opts?.maxTotalDays === 'number' && gameState.dayLength > 0) {
+    const remainingDays = opts.maxTotalDays - gameState.totalDaysElapsed;
+    if (remainingDays <= 0) {
+      // Lifetime already ended or no time remaining
+      lifetimeEnded = true;
+      cappedTime = 0;
+    } else {
+      const allowedMsForLifetime = remainingDays * gameState.dayLength;
+      if (allowedMsForLifetime < cappedTime) {
+        cappedTime = allowedMsForLifetime;
+        cappedToLifetime = true;
+      }
+    }
+  }
   
   // Use larger tick sizes for longer offline periods to improve performance
   // For periods > 1 hour, use 1 second ticks instead of 100ms ticks
@@ -111,10 +145,13 @@ export function calculateOfflineProgress(
   for (let i = 0; i < ticks; i++) {
     elapsedMs += TICK_MS;
 
+    // Derive current season from day (season changes as days advance)
+    const currentSeason = getSeason(currentDay);
+
     // Veggie growth (every tick)
     const growthResult = processVeggieGrowth(
       currentVeggies,
-      gameState.season,
+      currentSeason,
       gameState.currentWeather,
       gameState.greenhouseOwned,
       gameState.irrigationOwned,
@@ -192,6 +229,9 @@ export function calculateOfflineProgress(
     christmasTreeGrowthTicks,
     christmasElvesCraftingTicks,
     christmasPassiveCheerGain,
+    cappedToLifetime,
+    offlineMsApplied: cappedTime,
+    lifetimeEnded
   };
 }
 

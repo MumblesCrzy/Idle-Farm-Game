@@ -1,0 +1,272 @@
+/* ============================================================================
+   LIFESPAN TUTORIAL OVERLAY STYLES
+   Tutorial overlays for the Wisdom of the Ages prestige system
+   ============================================================================ */
+
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9998;
+  transition: opacity 0.3s ease;
+}
+
+.backdrop.visible {
+  opacity: 1;
+}
+
+.backdrop.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Tutorial Container */
+.tutorialContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tutorialContainer.visible {
+  opacity: 1;
+}
+
+.tutorialContainer.hidden {
+  opacity: 0;
+  transform: translate(-50%, -45%);
+  pointer-events: none;
+}
+
+/* Tutorial Box */
+.tutorialBox {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(147, 51, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-width: 480px;
+  text-align: center;
+  border: 2px solid #9333ea;
+}
+
+.shopExplanationBox {
+  border-color: #ffd700;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 215, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Tutorial Icon */
+.tutorialIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* Tutorial Title */
+.tutorialTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shopExplanationBox .tutorialTitle {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tutorial Text */
+.tutorialText {
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.tutorialText p {
+  margin: 0 0 0.75rem 0;
+  color: #e0e0e0;
+}
+
+.tutorialText p:last-child {
+  margin-bottom: 0;
+}
+
+.tutorialText strong {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.shopExplanationBox .tutorialText strong {
+  color: #ffd700;
+}
+
+/* Wisdom Badge */
+.wisdomBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #6b21a8 0%, #9333ea 100%);
+  border-radius: 24px;
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.3);
+}
+
+.wisdomIcon {
+  font-size: 1.25rem;
+}
+
+.wisdomAmount {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+/* Button Row */
+.buttonRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 400px) {
+  .buttonRow {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+/* Primary Button */
+.primaryButton {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4);
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(147, 51, 234, 0.5);
+}
+
+.primaryButton:focus {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
+.shopExplanationBox .primaryButton {
+  background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%);
+  color: #1a1a2e;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.shopExplanationBox .primaryButton:hover {
+  box-shadow: 0 6px 16px rgba(255, 215, 0, 0.5);
+}
+
+.shopExplanationBox .primaryButton:focus {
+  outline-color: #ffd700;
+}
+
+/* Secondary Button */
+.secondaryButton {
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #9333ea;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: #c084fc;
+}
+
+.secondaryButton:hover {
+  background: rgba(147, 51, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.secondaryButton:focus {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
+.shopExplanationBox .secondaryButton {
+  border-color: #9333ea;
+  color: #c084fc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 520px) {
+  .tutorialBox {
+    margin: 1rem;
+    padding: 1.5rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .tutorialTitle {
+    font-size: 1.25rem;
+  }
+
+  .tutorialText {
+    font-size: 0.9rem;
+  }
+
+  .tutorialIcon {
+    font-size: 2.5rem;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tutorialIcon {
+    animation: none;
+  }
+
+  .backdrop,
+  .tutorialContainer {
+    transition: none;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    transition: none;
+  }
+}

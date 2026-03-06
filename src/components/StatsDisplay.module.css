@@ -5,6 +5,41 @@
   text-align: center;
 }
 
+/* Lifetime Counter Badge */
+.lifetimeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  margin-right: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #6b21a8 0%, #9333ea 100%);
+  color: #fff;
+  border-radius: 4px;
+  cursor: help;
+}
+
+.lifetimeBadgeGolden {
+  background: linear-gradient(135deg, #b8860b 0%, #ffd700 50%, #b8860b 100%);
+  color: #1a1a1a;
+  animation: goldenPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+@keyframes goldenPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.timeSeparator {
+  margin: 0 0.5rem;
+  color: #666;
+}
+
 .seasonWeather {
   margin-left: 1rem;
   display: inline-flex;
