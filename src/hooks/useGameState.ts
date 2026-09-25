@@ -66,6 +66,11 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
         migratedVeggie.sellEnabled = true;
       }
       
+      // If autoHarvesterEnabled is missing (saves before the guild update), default to on
+      if (savedVeggie.autoHarvesterEnabled === undefined) {
+        migratedVeggie.autoHarvesterEnabled = true;
+      }
+      
       // If cropType is missing, inherit from initial data
       if (savedVeggie.cropType === undefined) {
         migratedVeggie.cropType = initialVeggie.cropType;

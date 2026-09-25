@@ -195,7 +195,8 @@ describe('useHarvestAndSell', () => {
         0, // almanacLevel
         1, // farmTier
         100, // knowledge
-        false // isAutoHarvest
+        false, // isAutoHarvest
+        undefined // guildState
       );
     });
 
