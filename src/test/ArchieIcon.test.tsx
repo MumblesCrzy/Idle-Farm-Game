@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
@@ -7,7 +8,7 @@ import { ArchieProvider } from '../context/ArchieContext'
 
 // Mock RandomIcon component
 vi.mock('../components/RandomIcon', () => ({
-  default: ({ imagePath, reward, onAppear }: any) => {
+  default: ({ imagePath, reward, onAppear }: { imagePath: string; reward: () => void; onAppear?: () => void }) => {
     return (
       <div data-testid="random-icon">
         <img src={imagePath} alt="Archie" />
@@ -20,7 +21,7 @@ vi.mock('../components/RandomIcon', () => ({
 
 // Mock Toast component
 vi.mock('../components/Toast', () => ({
-  default: ({ message, visible, onClose }: any) => {
+  default: ({ message, visible, onClose }: { message: string; visible: boolean; onClose: () => void }) => {
     return visible ? (
       <div data-testid="toast" onClick={onClose}>
         {message}
@@ -65,7 +66,7 @@ describe('ArchieIcon', () => {
   it('should not render RandomIcon when cooldown has not passed', () => {
     // Mock the useArchie hook to return a recent click time
     vi.doMock('../context/ArchieContext', () => ({
-      ArchieProvider: ({ children }: any) => children,
+      ArchieProvider: ({ children }: { children: ReactNode }) => children,
       useArchie: () => ({
         lastClickTime: Date.now() - 60000, // 1 minute ago (less than 5 minute cooldown)
         handleArchieClick: vi.fn(),
@@ -121,7 +122,7 @@ describe('ArchieIcon', () => {
   it('should show streak information in toast for multiple clicks', async () => {
     // Mock the ArchieContext to return a streak
     vi.doMock('../context/ArchieContext', () => ({
-      ArchieProvider: ({ children }: any) => children,
+      ArchieProvider: ({ children }: { children: ReactNode }) => children,
       useArchie: () => ({
         lastClickTime: 0,
         handleArchieClick: vi.fn(),

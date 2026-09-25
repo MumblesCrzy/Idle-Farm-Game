@@ -16,6 +16,7 @@ import {
   getMigrationLog,
   clearMigrationLog
 } from '../utils/migrations';
+import type { ExtendedGameState } from '../utils/saveSystem';
 import {
   CURRENT_SAVE_VERSION,
   MIGRATIONS,
@@ -201,11 +202,11 @@ describe('Migration System', () => {
       };
       
       const result = runMigrations(dataWithoutBees);
-      const migratedData = result.data as any;
+      const migratedData = result.data as ExtendedGameState;
       
       expect(result.success).toBe(true);
       expect(migratedData.beeState).toBeDefined();
-      expect(migratedData.beeState.unlocked).toBe(false);
+      expect(migratedData.beeState?.unlocked).toBe(false);
     });
 
     it('should add canningAutoPurchasers in migration v2', () => {
@@ -217,7 +218,7 @@ describe('Migration System', () => {
       };
       
       const result = runMigrations(dataV1);
-      const migratedData = result.data as any;
+      const migratedData = result.data as ExtendedGameState;
       
       expect(result.success).toBe(true);
       expect(migratedData.canningAutoPurchasers).toBeDefined();
@@ -235,12 +236,12 @@ describe('Migration System', () => {
       };
       
       const result = runMigrations(dataV2);
-      const migratedData = result.data as any;
+      const migratedData = result.data as ExtendedGameState;
       
       expect(result.success).toBe(true);
       expect(migratedData.canningState).toBeDefined();
-      expect(migratedData.canningState.upgrades).toBeDefined();
-      expect(migratedData.canningState.upgrades.some((u: any) => u.id === 'canner')).toBe(true);
+      expect(migratedData.canningState?.upgrades).toBeDefined();
+      expect(migratedData.canningState?.upgrades.some(u => u.id === 'canner')).toBe(true);
     });
 
     it('should preserve existing data during migration', () => {
@@ -265,7 +266,7 @@ describe('Migration System', () => {
       };
       
       const result = runMigrations(existingData);
-      const migratedData = result.data as any;
+      const migratedData = result.data as ExtendedGameState;
       
       expect(result.success).toBe(true);
       expect(migratedData.money).toBe(500);

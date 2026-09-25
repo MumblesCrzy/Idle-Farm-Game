@@ -98,7 +98,7 @@ describe('useOfflineProgress', () => {
     });
     
     // Mock setInterval/clearInterval
-    vi.spyOn(global, 'setInterval').mockImplementation((fn: () => void) => {
+    vi.spyOn(global, 'setInterval').mockImplementation((_fn: () => void) => {
       intervalId += 1;
       const id = intervalId;
       activeIntervals[id] = setTimeout(() => {}, 0) as unknown as NodeJS.Timeout;

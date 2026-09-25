@@ -104,7 +104,7 @@ export function getVeggieGrowthBonus(
     if (season === 'Summer') {
       growthAmount *= 0.7; // 30% penalty
     } else if (season === 'Spring' || season === 'Fall') {
-      veggieSeasonBonuses[v.name].includes('Summer') ? growthAmount *= 1.1 : growthAmount *= 0.7; // 10% bonus for summer veggies, else 30% penalty
+      growthAmount *= veggieSeasonBonuses[v.name].includes('Summer') ? 1.1 : 0.7; // 10% bonus for summer veggies, else 30% penalty
     } else {
       growthAmount *= 1.2; // 20% bonus in winter
     }
@@ -200,11 +200,12 @@ export const canMakePurchase = (
       return currency >= cost;
     case 'harvesterSpeed':
       return currency >= cost;
-    case 'additionalPlot':
+    case 'additionalPlot': {
       if (!veggies || maxPlots === undefined) return currency >= cost;
       // Check if we're already at max plots
       const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
       return currency >= cost && totalPlotsUsed < maxPlots;
+    }
 
     default:
       return false;

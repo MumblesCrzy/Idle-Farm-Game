@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
-import type { BeeUpgrade, BeeBox } from '../types/bees';
+import type { BeeUpgrade } from '../types/bees';
 
 // Bee system constants (mirrored from BeeContext)
 const BEE_CONSTANTS = {

@@ -56,11 +56,11 @@ describe('calculateWeatherChange', () => {
   });
 
   it('should return Snow in Winter instead of Rain', () => {
-    Math.random = vi.fn(() => 0.05); // Roll that would cause rain
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.05); // Roll that would cause rain
     const result = calculateWeatherChange('Winter', 'Clear');
     // Should be Snow or Clear (depending on exact chances)
     expect(['Clear', 'Snow', 'Drought', 'Storm', 'Heatwave']).toContain(result);
-    (Math.random as any).mockRestore();
+    randomSpy.mockRestore();
   });
 
   it('should handle all seasons', () => {

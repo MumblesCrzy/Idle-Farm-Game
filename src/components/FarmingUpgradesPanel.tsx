@@ -94,7 +94,7 @@ const FarmingUpgradesPanel: FC<FarmingUpgradesPanelProps> = memo(({
             : upgrade.cost;
           
           // Create effect text
-          let effectText = upgrade.effect || upgrade.description;
+          const effectText = upgrade.effect || upgrade.description;
           
           return (
             <div key={upgrade.id}>

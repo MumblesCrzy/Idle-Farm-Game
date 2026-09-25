@@ -200,21 +200,21 @@ export interface GameState {
   
   // Christmas Event (seasonal)
   christmasEvent?: {
-    eventState: any;
+    eventState: import('./christmasEvent').ChristmasEventState;
     isEventActive: boolean;
     holidayCheer: number;
     earnCheer: (amount: number) => void;
     spendCheer: (amount: number) => boolean;
-    treePlots: any[];
-    materials: any;
+    treePlots: import('./christmasEvent').TreePlot[];
+    materials: import('./christmasEvent').CraftingMaterials;
     plantTree: (plotIndex: number, treeType: 'pine' | 'spruce' | 'fir') => void;
     harvestTree: (plotIndex: number) => void;
     harvestAllTrees: () => void;
     craftItem: (recipeId: string, quantity: number) => boolean;
-    decorateTree: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => boolean;
-    addToDecorationQueue: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => void;
+    decorateTree: (treeType: 'pine' | 'spruce' | 'fir', decorations: import('./christmasEvent').DecorationType[]) => boolean;
+    addToDecorationQueue: (treeType: 'pine' | 'spruce' | 'fir', decorations: import('./christmasEvent').DecorationType[]) => void;
     removeFromQueue: (queueItemId: string) => void;
-    sellTrees: (variant: any, quantity: number) => void;
+    sellTrees: (treeKey: string, quantity: number) => void;
     sellAllTrees: () => void;
     sellGarland: (quantity: number) => void;
     sellCandle: (quantity: number) => void;
@@ -235,18 +235,18 @@ export interface GameState {
     regularHoney: number;
     goldenHoney: number;
     totalHoneyCollected: number;
-    boxes: any[];
-    upgrades: any[];
-    beekeeperAssistant: any;
+    boxes: import('./bees').BeeBox[];
+    upgrades: import('./bees').BeeUpgrade[];
+    beekeeperAssistant: import('./bees').BeekeeperAssistant;
     addBeeBox: () => boolean;
-    harvestHoney: (boxId: string) => any;
-    harvestAllHoney: () => any[];
+    harvestHoney: (boxId: string) => import('./bees').HoneyProduction | null;
+    harvestAllHoney: () => import('./bees').HoneyProduction[];
     purchaseUpgrade: (upgradeId: string) => boolean;
     unlockBeekeeperAssistant: () => boolean;
     upgradeBeekeeperAssistant: () => boolean;
     toggleBeekeeperAssistant: (active: boolean) => void;
     calculateYieldBonus: () => number;
-    getBeeStats: () => any;
+    getBeeStats: () => import('./bees').BeeStats;
   };
 }
 

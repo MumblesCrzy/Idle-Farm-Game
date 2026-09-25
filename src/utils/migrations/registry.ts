@@ -227,7 +227,7 @@ const migrationV3: MigrationDefinition = {
       // Migrate activeProcesses to include totalTime field
       if (state.canningState.activeProcesses) {
         state.canningState.activeProcesses = state.canningState.activeProcesses.map(process => {
-          if (typeof (process as any).totalTime !== 'number') {
+          if (typeof (process as Partial<typeof process>).totalTime !== 'number') {
             const recipe = state.canningState?.recipes.find(r => r.id === process.recipeId);
             const estimatedTotalTime = recipe ? recipe.baseProcessingTime : process.remainingTime;
             return { ...process, totalTime: estimatedTotalTime };

@@ -368,7 +368,7 @@ describe('useFarmManagement', () => {
       const deps = createDefaultDeps({
         globalBeeContext: {
           resetBeeSystem: mockResetBeeSystem
-        } as any
+        } as unknown as UseFarmManagementDeps['globalBeeContext']
       });
       
       const { result } = renderHook(() => useFarmManagement(deps));
@@ -385,7 +385,7 @@ describe('useFarmManagement', () => {
       const deps = createDefaultDeps({
         christmasEvent: {
           resetEvent: mockResetEvent
-        } as any
+        } as unknown as UseFarmManagementDeps['christmasEvent']
       });
       
       const { result } = renderHook(() => useFarmManagement(deps));

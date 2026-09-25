@@ -1,3 +1,22 @@
+import type { BeeState } from './bees';
+import type { CanningState } from './canning';
+
+/**
+ * Game values that achievement requirements are checked against
+ */
+export interface GameStateForAchievements {
+  money: number;
+  experience: number;
+  knowledge: number;
+  veggiesUnlocked: number;
+  canningItemsTotal: number;
+  farmTier: number;
+  totalHarvests?: number;
+  christmasTreesSold?: number;
+  beeState?: BeeState | null; // Bee system state for bee-related achievements
+  canningState?: CanningState | null; // Canning state for recipe-specific achievements
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -9,8 +28,8 @@ export interface Achievement {
   requirement: {
     type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'custom';
     value?: number;
-    customCheck?: (gameState: any) => boolean;
-    getProgress?: (gameState: any) => number; // For custom achievements that want progress tracking
+    customCheck?: (gameState: GameStateForAchievements) => boolean;
+    getProgress?: (gameState: GameStateForAchievements) => number; // For custom achievements that want progress tracking
   };
   
   // Rewards (optional - can be null or undefined)

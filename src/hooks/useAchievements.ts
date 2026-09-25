@@ -1,19 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { Achievement, AchievementState } from '../types/achievements';
+import type { Achievement, AchievementState, GameStateForAchievements } from '../types/achievements';
 import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
 
-interface GameStateForAchievements {
-  money: number;
-  experience: number;
-  knowledge: number;
-  veggiesUnlocked: number;
-  canningItemsTotal: number;
-  farmTier: number;
-  totalHarvests?: number;
-  christmasTreesSold?: number;
-  beeState?: any; // Bee system state for bee-related achievements
-  canningState?: any; // Canning state for recipe-specific achievements
-}
 
 interface UseAchievementsReturn {
   achievements: Achievement[];

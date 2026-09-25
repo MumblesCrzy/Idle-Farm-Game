@@ -1753,7 +1753,7 @@ function App() {
     });
 
     // Set up canning callbacks on window (still needed for canningSystem.ts)
-    (window as any).globalCanningStartCallback = (recipeName: string, ingredients: string, processingTime: number, isAuto: boolean) => {
+    window.globalCanningStartCallback = (recipeName: string, ingredients: string, processingTime: number, isAuto: boolean) => {
       const opts = buildCanningStartEvent(recipeName, ingredients, processingTime, isAuto, {
         automation: ICON_AUTOMATION,
         canning: ICON_CANNING
@@ -1761,14 +1761,14 @@ function App() {
       addEvent('canning', isAuto ? `Auto-canning started: ${recipeName}` : `Started canning: ${recipeName}`, opts);
     };
     
-    (window as any).globalCanningCompleteCallback = (recipeName: string, moneyEarned: number, knowledgeEarned: number, itemsProduced: number, isAuto: boolean) => {
+    window.globalCanningCompleteCallback = (recipeName: string, moneyEarned: number, knowledgeEarned: number, itemsProduced: number, isAuto: boolean) => {
       const opts = buildCanningCompleteEvent(recipeName, moneyEarned, knowledgeEarned, itemsProduced, isAuto);
       addEvent('canning', isAuto ? `Auto-canning completed: ${recipeName}` : `Completed canning: ${recipeName}`, opts);
     };
     
     return () => {
-      (window as any).globalCanningStartCallback = null;
-      (window as any).globalCanningCompleteCallback = null;
+      window.globalCanningStartCallback = null;
+      window.globalCanningCompleteCallback = null;
     };
   }, [eventLogCallbacks, addEvent]);
 
@@ -2868,12 +2868,9 @@ function App() {
             if (christmasEvent?.eventState) {
               // Add 100 of each material type
               const materials = christmasEvent.eventState.materials;
+              materials.wood += 100;
               materials.pinecones += 100;
-              materials.berries += 100;
-              materials.ribbons += 100;
-              materials.woodPlanks += 100;
-              materials.metalWire += 100;
-              materials.glassBeads += 100;
+              materials.branches += 100;
             }
           }}
           onAddHoney={(amount) => {
@@ -2921,7 +2918,7 @@ function App() {
     <ErrorBoundary 
       fallback={null}
       onError={(error, info) => {
-        // eslint-disable-next-line no-console
+         
         console.warn('[FeatureFlagsPanel] Error caught:', error.message, '\nComponent stack:', info.componentStack);
       }}
     >

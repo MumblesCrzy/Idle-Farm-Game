@@ -2,8 +2,11 @@ import { useState, useMemo } from 'react';
 import type { Veggie } from '../types/game';
 import { HEIRLOOM_COST_PER_VEGGIE, HEIRLOOM_KN_PER_VEGGIE } from '../config/gameConstants';
 
+/** A veggie from a save file; older saves may be missing newer fields */
+type SavedVeggie = Partial<Veggie> & Pick<Veggie, 'name'>;
+
 interface LoadedGameState {
-  veggies?: any[];
+  veggies?: SavedVeggie[];
   money?: number;
   experience?: number;
   knowledge?: number;
@@ -37,11 +40,11 @@ interface UseGameStateParams {
 export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams) => {
   // Migration function to add missing properties to saved veggie data
   // Also handles adding new crops (fruits) that weren't in older saves
-  const migrateVeggieData = (loadedVeggies: any[]): Veggie[] => {
+  const migrateVeggieData = (loadedVeggies: SavedVeggie[]): Veggie[] => {
     if (!loadedVeggies) return initialVeggies;
     
     // Create a map of saved veggies by name for efficient lookup
-    const savedByName = new Map<string, any>();
+    const savedByName = new Map<string, SavedVeggie>();
     loadedVeggies.forEach(v => savedByName.set(v.name, v));
     
     // Map over initialVeggies to ensure all crops exist (including new fruits)
@@ -54,7 +57,8 @@ export const useGameState = ({ loadedState, initialVeggies }: UseGameStateParams
       }
       
       // Add missing properties with defaults
-      const migratedVeggie: any = { ...savedVeggie };
+      // The checks below fill in the fields older saves lack
+      const migratedVeggie = { ...savedVeggie } as Veggie;
       
       // If autoPurchasers is missing, add it from the initial veggie data
       if (!savedVeggie.autoPurchasers) {

@@ -34,7 +34,7 @@ describe('featureFlags', () => {
   
   describe('FEATURE_FLAG_DEFINITIONS', () => {
     it('should have all required properties for each flag', () => {
-      for (const [key, def] of Object.entries(FEATURE_FLAG_DEFINITIONS)) {
+      for (const def of Object.values(FEATURE_FLAG_DEFINITIONS)) {
         expect(def.name).toBeDefined();
         expect(typeof def.name).toBe('string');
         expect(def.name.length).toBeGreaterThan(0);

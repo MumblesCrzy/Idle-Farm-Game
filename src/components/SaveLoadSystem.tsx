@@ -176,7 +176,7 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
         let data: unknown;
         try {
           data = JSON.parse(rawData);
-        } catch (parseError) {
+        } catch {
           setImportError('Invalid JSON format. The save file may be corrupted.');
           alert('Invalid JSON format. The save file may be corrupted.');
           setLoadingStates(prev => ({ ...prev, isImporting: false }));

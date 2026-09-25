@@ -11,7 +11,7 @@ const mockAudio = {
 }
 
 // Mock Audio constructor - use a proper constructor function
-const AudioMock = vi.fn(function (this: any, _src: string) {
+const AudioMock = vi.fn(function (this: Record<string, unknown>, _src: string) {
   this.play = mockAudio.play
   this.addEventListener = mockAudio.addEventListener  
   this.volume = mockAudio.volume

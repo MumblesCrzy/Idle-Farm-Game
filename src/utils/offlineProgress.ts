@@ -43,9 +43,9 @@ export function calculateOfflineProgress(
     almanacLevel: number;
     farmTier: number;
     knowledge: number;
-    canningProcesses: any[];
-    canningUpgrades: any;
-    autoCanning: any;
+    canningProcesses: Array<{ id: string; completed: boolean }>;
+    canningUpgrades: { canningSpeed?: number };
+    autoCanning: { enabled: boolean };
     guildState?: GuildState;
     christmasEvent?: {
       isEventActive: boolean;
@@ -150,7 +150,7 @@ export function calculateOfflineProgress(
   const progressPerTick = (100 / 300) * canningSpeedMultiplier; // 30 seconds base = 300 ticks at 100ms
   const progressGained = progressPerTick * ticks;
 
-  gameState.canningProcesses.forEach((process: any) => {
+  gameState.canningProcesses.forEach((process) => {
     if (!process.completed) {
       canningProgressUpdates.set(process.id, progressGained);
     }

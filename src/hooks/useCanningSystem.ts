@@ -349,7 +349,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }));
     
     // Call event logging callback if available
-    const globalCanningStartCallback = (window as any).globalCanningStartCallback;
+    const globalCanningStartCallback = window.globalCanningStartCallback;
     if (globalCanningStartCallback) {
       const ingredientsList = recipe.ingredients
         .map(ing => `${ing.quantity} ${ing.veggieName}`)
@@ -427,9 +427,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     setKnowledge(prev => prev + knowledgeReward);
     
     // Call event logging callback if available
-    const globalCanningCompleteCallback = (window as any).globalCanningCompleteCallback;
+    const globalCanningCompleteCallback = window.globalCanningCompleteCallback;
     if (globalCanningCompleteCallback) {
-      globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, process.automated);
+      globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, !!process.automated);
     }
     
     // Remove completed process

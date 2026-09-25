@@ -171,4 +171,3 @@ function calculateCanningUpgradeCost(
 }
 
 export default VeggieCanningUpgrades;
-export { calculateCanningUpgradeCost };

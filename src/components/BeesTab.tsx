@@ -20,6 +20,9 @@ const BeesTab: FC<BeesTabProps> = memo(({
   season,
   formatNumber
 }) => {
+  // Hooks must run before any early return below
+  const [activeUpgradeTab, setActiveUpgradeTab] = useState<'honey' | 'golden'>('honey');
+
   // Check if bees are unlocked (Tier 3+)
   const isUnlocked = farmTier >= 3;
 
@@ -238,7 +241,6 @@ const BeesTab: FC<BeesTabProps> = memo(({
   );
 
   // Sidebar content - Tabbed upgrade panels
-  const [activeUpgradeTab, setActiveUpgradeTab] = useState<'honey' | 'golden'>('honey');
   const regularHoneyUpgrades = beeContext.upgrades.filter(u => u.costCurrency === 'regularHoney');
   const goldenHoneyUpgrades = beeContext.upgrades.filter(u => u.costCurrency === 'goldenHoney');
   

@@ -26,7 +26,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     category: 'farming',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => gameState.totalHarvests >= 1
+      customCheck: (gameState) => (gameState.totalHarvests || 0) >= 1
     },
     reward: {
       money: 50,
@@ -473,7 +473,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       type: 'custom',
       customCheck: (gameState) => {
         // Check if the player has crafted at least one Beekeeper's Pride recipe
-        const recipe = gameState.canningState?.recipes?.find((r: any) => r.name === "Beekeeper's Pride");
+        const recipe = gameState.canningState?.recipes?.find(r => r.name === "Beekeeper's Pride");
         return recipe ? (recipe.timesCompleted || 0) >= 1 : false;
       }
     },
@@ -499,7 +499,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
         // There are 5 unique upgrades: Busy Bees, Royal Jelly, Hexcomb Engineering, Meadow Magic, Queen's Blessing
         const uniqueUpgrades = ['busy_bees', 'royal_jelly', 'hexcomb_engineering', 'meadow_magic', 'queens_blessing'];
         return uniqueUpgrades.every(upgradeId => {
-          const upgrade = upgrades.find((u: any) => u.id === upgradeId);
+          const upgrade = upgrades.find(u => u.id === upgradeId);
           return upgrade && upgrade.purchased;
         });
       }

@@ -430,7 +430,7 @@ export function useChristmasEvent({
       
       const treeDefinition = TREE_DEFINITIONS[plot.treeType];
       const qualityMultiplier = QUALITY_MULTIPLIERS[plot.quality];
-      let newMaterials = { ...prev.materials };
+      const newMaterials = { ...prev.materials };
       
       // Apply quality multiplier to yields (Perfect trees give 2x, Luxury 3x)
       const woodYield = Math.floor(treeDefinition.baseYield.wood * qualityMultiplier);
