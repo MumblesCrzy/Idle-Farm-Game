@@ -279,7 +279,9 @@ export function useOfflineProgress(
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(updateInterval);
     };
-  }, []); // Run only once on mount
+    // Run only once on mount; re-running would apply offline progress again
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }
 
 export default useOfflineProgress;

@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useRef } from 'react';
+import { createContext, useContext, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { AchievementOrMilestone } from '../types/achievements';
 
@@ -131,7 +131,8 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     []
   );
   
-  const value: EventLogCallbacks = {
+  // Memoized so consumers can list the callbacks as a stable hook dependency
+  const value = useMemo<EventLogCallbacks>(() => ({
     onHarvest,
     onAutoPurchase,
     onMerchantSale,
@@ -144,7 +145,20 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     onUpgradePurchased,
     onMilestoneClaimed,
     registerCallbacks,
-  };
+  }), [
+    onHarvest,
+    onAutoPurchase,
+    onMerchantSale,
+    onAchievementUnlock,
+    resetAchievements,
+    clearEventLog,
+    onTreeSold,
+    onTreeHarvested,
+    onItemCrafted,
+    onUpgradePurchased,
+    onMilestoneClaimed,
+    registerCallbacks,
+  ]);
   
   return (
     <EventLogContext.Provider value={value}>

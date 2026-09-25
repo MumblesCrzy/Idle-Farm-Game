@@ -85,7 +85,7 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
   });
 
   // Returns a serializable snapshot of the current game state
-  const getSerializableGameState = () => ({
+  const getSerializableGameState = useCallback(() => ({
     veggies,
     money,
     experience,
@@ -108,7 +108,12 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
     permanentBonuses,
     // Optionally add a version for future compatibility
     saveVersion: 2
-  });
+  }), [
+    veggies, money, experience, knowledge, activeVeggie, day,
+    globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned,
+    almanacLevel, almanacCost, maxPlots, farmTier, irrigationOwned,
+    currentWeather, canningState, beeState, christmasEventState, permanentBonuses
+  ]);
 
   // Export save handler
   const handleExportSave = useCallback(() => {
@@ -136,12 +141,7 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
         setLoadingStates(prev => ({ ...prev, isExporting: false }));
       }
     }, 50);
-  }, [
-    veggies, money, experience, knowledge, activeVeggie, day,
-    globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned,
-    almanacLevel, almanacCost, maxPlots, farmTier, irrigationOwned,
-    currentWeather, canningState, beeState, christmasEventState, permanentBonuses
-  ]);
+  }, [getSerializableGameState]);
 
   // Import save handler: triggers file input
   const handleImportSave = useCallback(() => {

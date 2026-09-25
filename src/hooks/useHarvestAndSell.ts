@@ -236,6 +236,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     maxPlots,
     highestUnlockedVeggie,
     day,
+    guildState,
     setVeggies,
     setKnowledge,
     setExperience,

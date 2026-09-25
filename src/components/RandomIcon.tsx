@@ -1,4 +1,5 @@
 import { useState, useEffect, type FC } from 'react';
+import { useLatestRef } from '../hooks/useLatestRef';
 
 interface RandomIconProps {
   imagePath: string;
@@ -51,6 +52,9 @@ const RandomIcon: FC<RandomIconProps> = ({
     reward();
   };
   
+  // Read onAppear through a ref so a new callback each render doesn't restart the timers
+  const onAppearRef = useLatestRef(onAppear);
+  
   useEffect(() => {
     let appearanceTimer: number | null = null;
     let hideTimer: number | null = null;
@@ -72,7 +76,7 @@ const RandomIcon: FC<RandomIconProps> = ({
         
         // Delay the onAppear callback slightly to ensure the icon is rendered
         setTimeout(() => {
-          onAppear(); // Call appearance callback
+          onAppearRef.current(); // Call appearance callback
         }, 100);
         // Schedule hiding after duration
         hideTimer = setTimeout(() => {
@@ -95,7 +99,7 @@ const RandomIcon: FC<RandomIconProps> = ({
       
       // Delay the onAppear callback slightly to ensure the icon is rendered
       setTimeout(() => {
-        onAppear(); // Call appearance callback
+        onAppearRef.current(); // Call appearance callback
       }, 100);
       
       hideTimer = setTimeout(() => {
@@ -111,7 +115,7 @@ const RandomIcon: FC<RandomIconProps> = ({
       if (appearanceTimer) clearTimeout(appearanceTimer);
       if (hideTimer) clearTimeout(hideTimer);
     };
-  }, [minInterval, maxInterval, duration]);
+  }, [minInterval, maxInterval, duration, onAppearRef]);
   
   // Only render when visible
   if (!visible) return null;

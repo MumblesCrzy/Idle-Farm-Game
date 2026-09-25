@@ -347,7 +347,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         category: 'milestone'
       });
     }
-  }, [irrigationOwned, money, irrigationCost, knowledge, irrigationKnCost]);
+  }, [irrigationOwned, money, irrigationCost, knowledge, irrigationKnCost, setMoney, setKnowledge, setIrrigationOwned, eventLogCallbacks]);
   
   // Farm purchase/reset logic
   const handleBuyLargerFarm = useCallback(() => {
@@ -407,7 +407,10 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     
     // Note: Canning state is preserved - auto-save will handle saving all state including canning
     // No manual save call needed here, the auto-save system will pick up these changes
-  }, [experience, money, farmTier, knowledge, maxPlots, farmCost]);
+    // setGlobalAutoPurchaseTimer is declared further down (useAutoPurchase), so it can't be
+    // listed here; it is a stable useState setter, so leaving it out is safe
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experience, maxPlots, money, farmCost, knowledge, farmTier, setActiveVeggie, setVeggies, setMoney, setExperience, setKnowledge, setDay, setGreenhouseOwned, setAlmanacLevel, setAlmanacCost, setAutoSellOwned, setHeirloomOwned, setMaxPlots, setFarmTier, setIrrigationOwned, setFarmCost, FARM_BASE_COST, eventLogCallbacks]);
   // Removed duplicate loaded declaration and invalid farmTier type usage
   // Farmer's Almanac purchase handler
   const handleBuyAlmanac = useCallback(() => {
@@ -416,7 +419,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       setAlmanacLevel((lvl: number) => lvl + 1);
       setAlmanacCost((cost: number) => Math.ceil(cost * 1.15 + 5));
     }
-  }, [money, almanacCost]);
+  }, [money, almanacCost, setMoney, setAlmanacLevel, setAlmanacCost]);
   // Auto Sell upgrade purchase handler
   const handleBuyAutoSell = useCallback(() => {
     if (!autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST) {
@@ -432,7 +435,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         category: 'milestone'
       });
     }
-  }, [autoSellOwned, money, knowledge]);
+  }, [autoSellOwned, money, knowledge, setMoney, setKnowledge, setAutoSellOwned, eventLogCallbacks]);
   // Reset game handler
   const resetGame = () => {
   // Block achievement checks during reset to prevent re-unlocking
@@ -512,7 +515,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return updated;
       });
     }
-  }, [veggies, money]);
+  }, [veggies, money, setMoney, setVeggies]);
   
   // Prestige: Better Seeds upgrade purchase
   const handleBuyBetterSeeds = useCallback((index: number) => {
@@ -531,7 +534,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return updated;
       });
     }
-  }, [veggies, knowledge, heirloomOwned]);
+  }, [veggies, knowledge, setKnowledge, setVeggies, heirloomOwned]);
   // Heirloom Seeds purchase handler
   const handleBuyHeirloom = useCallback(() => {
     if (!heirloomOwned && money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost) {
@@ -563,7 +566,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         });
       });
     }
-  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost]);
+  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost, setMoney, setKnowledge, setHeirloomOwned, eventLogCallbacks, setVeggies]);
 
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
@@ -823,7 +826,9 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(updateInterval);
     };
-  }, []); // Run only once on mount
+    // Run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
   useEffect(() => {
@@ -834,7 +839,9 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }, 0);
       setHighestUnlockedVeggie(currentHighest);
     }
-  }, []); // Run only once on mount with empty dependency array since loaded is stable    
+    // Run only once on mount; this backfills a field missing from older saves
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);    
  
   // Growth timer for all unlocked veggies - using requestAnimationFrame for Chrome compatibility
   // Performance monitoring ref to detect excessive rerenders
@@ -883,7 +890,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         category: 'milestone'
       });
     }
-  }, [greenhouseOwned, money, maxPlots, knowledge]);
+  }, [maxPlots, greenhouseOwned, money, knowledge, setMoney, setKnowledge, setGreenhouseOwned, eventLogCallbacks]);
 
   // Latest-value refs to avoid large dependency arrays and restart of loops
   // Only keep refs that are actually used in game loops
@@ -1052,7 +1059,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       console.error('❌ Error in harvestVeggie:', error);
       // Don't rethrow - prevent cascade failures
     }
-  }, [veggies, season, permanentBonuses, beeYieldBonus, almanacLevel, knowledge, experience, farmTier, maxPlots, highestUnlockedVeggie, day]);
+  }, [veggies, season, permanentBonuses, beeYieldBonus, almanacLevel, farmTier, knowledge, guildStateRef, experience, setVeggies, day, setTotalHarvests, maxPlots, highestUnlockedVeggie, setHighestUnlockedVeggie, setKnowledge, setExperience]);
 
   // Safe harvest logger to avoid setState during render
   const logHarvest = useCallback(
@@ -1098,7 +1105,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     readyIndices.forEach(index => {
       harvestVeggie(index, false, logHarvest);
     });
-  }, [veggies, harvestVeggie, logHarvest]);
+  }, [guildStateRef, veggies, harvestVeggie, logHarvest]);
 
   // Toggle sell enabled for a specific veggie
   const handleToggleSell = useCallback((index: number) => {
@@ -1107,7 +1114,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       updated[index] = { ...updated[index], sellEnabled: !updated[index].sellEnabled };
       return updated;
     });
-  }, []);
+  }, [setVeggies]);
 
   // Toggle auto-harvester enabled for a specific veggie
   const handleToggleAutoHarvester = useCallback((index: number) => {
@@ -1116,7 +1123,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       updated[index] = { ...updated[index], autoHarvesterEnabled: !updated[index].autoHarvesterEnabled };
       return updated;
     });
-  }, []);
+  }, [setVeggies]);
 
   // Fertilizer upgrade purchase
   // Additional Plot upgrade purchase
@@ -1135,7 +1142,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return updated;
       });
     }
-  }, [veggies, totalPlotsUsed, maxPlots, money]);
+  }, [veggies, totalPlotsUsed, maxPlots, money, setMoney, setVeggies]);
   const handleBuyFertilizer = useCallback((index: number) => {
     const v = veggies[index];
     if (money >= v.fertilizerCost) {
@@ -1149,12 +1156,12 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return updated;
       });
     }
-  }, [veggies, money]);
+  }, [veggies, money, setMoney, setVeggies]);
 
   // Generic auto-purchase handler using the new system
   const handleBuyAutoPurchaser = useCallback((autoPurchaseId: string) => {
     return createAutoPurchaseHandler(autoPurchaseId, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, maxPlots);
-  }, [veggies, money, knowledge, maxPlots]);
+  }, [veggies, setVeggies, money, setMoney, knowledge, setKnowledge, maxPlots]);
 
   // Harvester upgrade purchase
   const handleBuyHarvester = useCallback((index: number) => {
@@ -1169,7 +1176,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         return updated;
       });
     }
-  }, [veggies, money]);
+  }, [veggies, money, setMoney, setVeggies]);
 
   // Sell handler - memoized to prevent useEffect re-runs
   const handleSell = useCallback((isAutoSell: boolean = false) => {
@@ -1207,7 +1214,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (total > 0) {
       eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
-  }, [setVeggies, setMoney, guildState]);
+  }, [setVeggies, setMoney, guildState, eventLogCallbacks]);
 
   // Initialize auto-purchase system
   const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
@@ -1493,7 +1500,7 @@ function App() {
       // Clear guild tokens after conversion
       guildTokens: 0
     }));
-  }, [day]);
+  }, [day, setGuildState]);
 
   const handlePurchaseGuildUpgrade = useCallback((upgradeId: string) => {
     // Find the upgrade from guild data
@@ -1593,7 +1600,7 @@ function App() {
         upgradeLevels: newLevels
       };
     });
-  }, [money, knowledge, guildState]);
+  }, [guildState.upgradeLevels, guildState.purchasedUpgrades, guildState.guildCurrencies, guildState.guildTokens, setGuildState, money, knowledge, setMoney, setKnowledge]);
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1899,13 +1906,13 @@ function App() {
   }, []);
 
   // Force save on page unload (refresh/close)
+  // Read performSave through a ref so the listener saves current state, not the state from mount
+  const performSaveRef = useLatestRef(performSave);
   useEffect(() => {
     const handleBeforeUnload = () => {
       // Force immediate save if there are pending changes
       if (pendingSaveRef.current || Date.now() - lastSaveTimeRef.current >= 30000) {
-        // Get the current performSave function and call it
-        const currentPerformSave = performSave;
-        currentPerformSave();
+        performSaveRef.current();
       }
     };
 
@@ -1913,7 +1920,7 @@ function App() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []); // Remove performSave dependency
+  }, [performSaveRef]);
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
@@ -1998,7 +2005,7 @@ function App() {
       // Update the tracked growth value
       previousVeggieGrowthRef.current.set(veggie.name, veggie.growth);
     });
-  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog, harvestTutorialShown, activeTab]);
+  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, guildState, eventLog, harvestTutorialShown, activeTab]);
   
   // Track season changes
   useEffect(() => {
@@ -2216,6 +2223,8 @@ function App() {
     
     // Update previous weather ref at the end
     previousWeatherRef.current = currentWeather;
+    // Weather advances once per day; listing currentWeather would re-roll it as soon as it changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, season, eventLog, irrigationOwned, setCurrentWeather, setKnowledge, logWeatherChange]);
   const v = veggies[activeVeggie];
   const growthMultiplier = getVeggieGrowthBonus(

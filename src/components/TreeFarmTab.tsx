@@ -338,6 +338,8 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
     } else if (selectedTreeType === 'spruce' && firUnlocked) {
       setSelectedTreeType('fir');
     }
+    // Run only when a tier unlocks; listing selectedTreeType would override the player's own choice
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spruceUnlocked, firUnlocked]);
   
   // Count ready trees and empty plots

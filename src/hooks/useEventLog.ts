@@ -72,7 +72,6 @@ export interface UseEventLogReturn {
 export function useEventLog({
   maxEntries = 100,
   initialState,
-  farmTier,
   day,
   totalDaysElapsed
 }: UseEventLogOptions): UseEventLogReturn {
@@ -119,7 +118,7 @@ export function useEventLog({
         unreadCount: prev.unreadCount + 1
       };
     });
-  }, [farmTier, day, totalDaysElapsed]);
+  }, [day, totalDaysElapsed]);
 
   /**
    * Clear all events
