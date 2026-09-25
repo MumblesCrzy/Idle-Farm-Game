@@ -23,6 +23,7 @@ const createTestVeggie = (overrides: Partial<Veggie> = {}): Veggie => ({
   betterSeedsCost: 200,
   harvesterOwned: false,
   harvesterCost: 300,
+  autoHarvesterEnabled: true,
   harvesterTimer: 0,
   harvesterSpeedLevel: 0,
   harvesterSpeedCost: 500,
