@@ -26,7 +26,6 @@ import HarvestTutorial from './components/HarvestTutorial';
 import { LifespanIntro, ShopExplanation } from './components/LifespanTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useEventLog } from './context/EventLogContext';
-import { useGameFlags } from './context/GameFlagsContext';
 import { ICON_BEE, ICON_GUILDS, ICON_WISDOM } from './config/assetPaths';
 
 // Guild system imports
@@ -87,7 +86,7 @@ import { useGameTick } from './hooks/useGameClock';
 import { useDeferredEffects } from './hooks/useDeferredEffects';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
-import { loadGameStateWithCanning, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
+import { loadGameStateWithCanning, startNewGame, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
 import type { Veggie, GameState, EventCategory, EventPriority } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
@@ -138,9 +137,8 @@ const GameContext = createContext<GameState | undefined>(undefined);
 // Removed unused saveGameState function
 
 const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  // Get event log callback interface and game flags from context
+  // Get event log callback interface from context
   const eventLogCallbacks = useEventLog();
-  const { setJustReset, setBlockAchievementChecks } = useGameFlags();
   
   // Load the save once. (Imports reload the page, so a fresh parse is never needed.)
   const [loaded] = useState(() => loadGameStateWithCanning());
@@ -664,13 +662,11 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
-  // Full reset also clears the wisdom-deposited guard, which lives here
-  const handleGameReset = useCallback(() => {
-    wisdomDepositedRef.current = false;
-  }, []);
-
   // Farm tier upgrades and full game reset
-  const { handleBuyLargerFarm, resetGame } = useFarmManagement({
+  // A new game replaces the save and reloads, so nothing from the old game carries over
+  const resetGame = useCallback(() => startNewGame(), []);
+
+  const { handleBuyLargerFarm } = useFarmManagement({
     experience,
     money,
     farmTier,
@@ -684,8 +680,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setExperience,
     setKnowledge,
     setDay,
-    setTotalDaysElapsed,
-    setTotalHarvests,
     setGreenhouseOwned,
     setAlmanacLevel,
     setAlmanacCost,
@@ -696,17 +690,10 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
-    setHighestUnlockedVeggie,
-    setCurrentWeather,
-    setBlockAchievementChecks,
-    setJustReset,
     eventLogCallbacks,
     prestigeStartingExpBonus: (prestigeState.wisdomUpgrades.startingExperience || 0) * 50,
     plotEfficiencyLevel: prestigeState.wisdomUpgrades.plotEfficiency || 0,
-    onFarmTierReached: trackFarmTierReached,
-    onReset: handleGameReset,
-    globalBeeContext,
-    christmasEvent
+    onFarmTierReached: trackFarmTierReached
   });
 
   // Handler to start the next lifetime (prestige)
@@ -940,9 +927,8 @@ function App() {
   const archieCharacterEnabled = isDev ? archieCharacterFlag : true;
   const devToolsEnabled = isDev ? devToolsFlag : false;
   
-  // Get event log callback interface from context and game flags
+  // Get event log callback interface from context
   const eventLogCallbacks = useEventLog();
-  const { justReset, blockAchievementChecks } = useGameFlags();
   
   // Load game state once and memoize it for all initial state values
   // This prevents multiple localStorage reads during component initialization
@@ -1509,16 +1495,11 @@ function App() {
     };
   }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, lifespanIntroShown, shopExplanationShown, guildState, prestigeState, isPaused]);
 
-  // Saves at most every 30 seconds, and always on page unload.
-  // Skipped while a reset is still settling.
-  useAutoSave({ skipSave: justReset, getGameState: buildSaveState });
+  // Saves at most every 30 seconds, and always on page unload
+  useAutoSave({ getGameState: buildSaveState });
 
   // Check achievements periodically
   useEffect(() => {
-    if (blockAchievementChecks) {
-      return;
-    }
-
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
@@ -1536,7 +1517,7 @@ function App() {
       canningState,
       prestigeState
     });
-  }, [blockAchievementChecks, veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, prestigeState]);
+  }, [veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, prestigeState]);
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {

@@ -11,8 +11,10 @@ import {
   needsMigration,
   CURRENT_SAVE_VERSION,
   getMigrationLog,
-  getMigrationSummary
+  getMigrationSummary,
+  clearMigrationLog
 } from './migrations';
+import { LAST_ACTIVE_KEY, ARCHIE_LAST_CLICK_KEY, ARCHIE_STREAK_KEY } from '../config/gameConstants';
 
 /**
  * Saved bee state structure - doesn't include computed fields
@@ -356,7 +358,7 @@ const CANNING_VERSION = 3;
 /** Where the untouched save is kept before a migration, or when the save can't be read. */
 export const SAVE_BACKUP_KEY = `${GAME_STORAGE_KEY}_backup`;
 
-/** Set by importGameState. Stops the running game from overwriting an import before the reload. */
+/** Set by importGameState and startNewGame. Stops the running game from writing over the new save before the reload. */
 let savesBlocked = false;
 
 function backupRawSave(raw: string): void {
@@ -526,6 +528,34 @@ export function importGameState(data: ExtendedGameState): void {
     lastTotalDaysElapsed: data.totalDaysElapsed || 0
   }));
   savesBlocked = true;
+}
+
+/**
+ * Progress the browser keeps, the save file included. Settings are left alone:
+ * feature flags, and Archie's sound and appearance.
+ */
+const PROGRESS_KEYS = [GAME_STORAGE_KEY, LAST_ACTIVE_KEY, ARCHIE_STREAK_KEY, ARCHIE_LAST_CLICK_KEY];
+
+/**
+ * Starts a brand-new game. Erases the save and all other stored progress,
+ * lifetimes, Wisdom and achievements included, then reloads. The page loads with
+ * no save, exactly like a first visit, so nothing from the old game can carry over.
+ *
+ * Saves are blocked first, so the running game can't write itself back while the
+ * page unloads.
+ * @param reload - Reloads the page; tests pass their own
+ */
+export function startNewGame(reload: () => void = () => window.location.reload()): void {
+  savesBlocked = true;
+  for (const key of PROGRESS_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Storage unavailable: there is nothing stored to erase
+    }
+  }
+  clearMigrationLog();
+  reload();
 }
 
 /**

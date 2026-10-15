@@ -1,10 +1,6 @@
 import { useCallback } from 'react';
 import type { Veggie } from '../types/game';
-import type { BeeContextValue } from '../types/bees';
-import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { EventLogCallbacks } from '../context/EventLogContext';
-import type { WeatherType } from '../config/gameConstants';
-import { GAME_STORAGE_KEY } from '../config/gameConstants';
 import { createAllCrops, calculateExpRequirement } from '../utils/gameCalculations';
 
 /**
@@ -27,8 +23,6 @@ export interface UseFarmManagementDeps {
   setExperience: React.Dispatch<React.SetStateAction<number>>;
   setKnowledge: React.Dispatch<React.SetStateAction<number>>;
   setDay: React.Dispatch<React.SetStateAction<number>>;
-  setTotalDaysElapsed: React.Dispatch<React.SetStateAction<number>>;
-  setTotalHarvests: React.Dispatch<React.SetStateAction<number>>;
   setGreenhouseOwned: React.Dispatch<React.SetStateAction<boolean>>;
   setAlmanacLevel: React.Dispatch<React.SetStateAction<number>>;
   setAlmanacCost: React.Dispatch<React.SetStateAction<number>>;
@@ -39,10 +33,6 @@ export interface UseFarmManagementDeps {
   setIrrigationOwned: React.Dispatch<React.SetStateAction<boolean>>;
   setGlobalAutoPurchaseTimer: React.Dispatch<React.SetStateAction<number>>;
   setFarmCost: React.Dispatch<React.SetStateAction<number>>;
-  setHighestUnlockedVeggie: React.Dispatch<React.SetStateAction<number>>;
-  setCurrentWeather: React.Dispatch<React.SetStateAction<WeatherType>>;
-  setBlockAchievementChecks: (value: boolean) => void;
-  setJustReset: (value: boolean) => void;
   
   // Event callbacks
   eventLogCallbacks: EventLogCallbacks;
@@ -55,13 +45,6 @@ export interface UseFarmManagementDeps {
 
   // Called with the new tier after a farm upgrade (lifetime stats)
   onFarmTierReached?: (tier: number) => void;
-
-  // Called during a full reset, for state this hook doesn't own
-  onReset?: () => void;
-  
-  // External systems (optional)
-  globalBeeContext: BeeContextValue | null;
-  christmasEvent: UseChristmasEventReturn | null;
 }
 
 /**
@@ -75,26 +58,17 @@ export interface UseFarmManagementReturn {
    * - Increases farm tier and farm cost
    */
   handleBuyLargerFarm: () => void;
-  
-  /**
-   * Completely resets the game to initial state
-   * - Clears all localStorage data
-   * - Resets all state to initial values
-   * - Resets achievements, bee system, and events
-   */
-  resetGame: () => void;
 }
 
 /**
  * Custom hook for farm management operations.
  * 
- * This hook handles:
- * - Farm tier upgrades (buying larger farms)
- * - Complete game reset functionality
+ * This hook handles farm tier upgrades (buying larger farms). Starting a new
+ * game is startNewGame in saveSystem, which replaces the save outright.
  * 
  * @example
  * ```tsx
- * const { handleBuyLargerFarm, resetGame } = useFarmManagement({
+ * const { handleBuyLargerFarm } = useFarmManagement({
  *   experience,
  *   money,
  *   farmTier,
@@ -120,8 +94,6 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setExperience,
     setKnowledge,
     setDay,
-    setTotalDaysElapsed,
-    setTotalHarvests,
     setGreenhouseOwned,
     setAlmanacLevel,
     setAlmanacCost,
@@ -132,17 +104,10 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
-    setHighestUnlockedVeggie,
-    setCurrentWeather,
-    setBlockAchievementChecks,
-    setJustReset,
     eventLogCallbacks,
-    globalBeeContext,
-    christmasEvent,
     prestigeStartingExpBonus,
     plotEfficiencyLevel,
     onFarmTierReached,
-    onReset,
   } = deps;
 
   /**
@@ -236,105 +201,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     onFarmTierReached
   ]);
 
-  /**
-   * Completely resets the game to initial state.
-   * 
-   * This operation:
-   * 1. Blocks achievement checks during reset
-   * 2. Clears all localStorage game data
-   * 3. Resets all state to initial values
-   * 4. Resets achievements, bee system, and Christmas event
-   * 5. Re-enables features after state propagation
-   */
-  const resetGame = useCallback(() => {
-    // Block achievement checks during reset to prevent re-unlocking
-    setBlockAchievementChecks(true);
-    
-    // Remove all data from localStorage first
-    localStorage.removeItem(GAME_STORAGE_KEY);
-    
-    // Fresh crops (vegetables and fruits)
-    const resetVeggies = createAllCrops();
-    
-    setFarmTier(1);
-    setDay(1);
-    setTotalDaysElapsed(0);
-    setTotalHarvests(0);
-    setMaxPlots(4);
-    setMoney(0);
-    setExperience(0);
-    setKnowledge(0);
-    setActiveVeggie(0);
-    setVeggies(resetVeggies);
-    setAlmanacLevel(0);
-    setAlmanacCost(10);
-    setIrrigationOwned(false);
-    setAutoSellOwned(false);
-    setGreenhouseOwned(false);
-    setHeirloomOwned(false);
-    setCurrentWeather('Clear');
-    setFarmCost(FARM_BASE_COST);
-    setHighestUnlockedVeggie(0);
-    onReset?.();
-    
-    // Reset achievements FIRST, before resetting bee system
-    eventLogCallbacks.resetAchievements();
-    
-    // Reset bee system (this will trigger beeState update and achievement check)
-    if (globalBeeContext?.resetBeeSystem) {
-      globalBeeContext.resetBeeSystem();
-    }
-    
-    // Clear event log
-    eventLogCallbacks.clearEventLog();
-    
-    // Reset Christmas event
-    if (christmasEvent?.resetEvent) {
-      christmasEvent.resetEvent();
-    }
-    
-    // Wait for state updates to propagate, then re-enable features
-    setTimeout(() => {
-      setBlockAchievementChecks(false);
-      setJustReset(false);
-      
-      // Trigger a state change to ensure auto-save runs with reset values
-      setMoney(prev => prev);
-    }, 100);
-    
-    // Prevent auto-save from running until state updates propagate
-    setJustReset(true);
-  }, [
-    FARM_BASE_COST,
-    setBlockAchievementChecks,
-    setFarmTier,
-    setDay,
-    setTotalDaysElapsed,
-    setTotalHarvests,
-    setMaxPlots,
-    setMoney,
-    setExperience,
-    setKnowledge,
-    setActiveVeggie,
-    setVeggies,
-    setAlmanacLevel,
-    setAlmanacCost,
-    setIrrigationOwned,
-    setAutoSellOwned,
-    setGreenhouseOwned,
-    setHeirloomOwned,
-    setCurrentWeather,
-    setFarmCost,
-    setHighestUnlockedVeggie,
-    setJustReset,
-    eventLogCallbacks,
-    globalBeeContext,
-    christmasEvent,
-    onReset
-  ]);
-
   return {
     handleBuyLargerFarm,
-    resetGame,
   };
 }

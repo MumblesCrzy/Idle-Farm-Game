@@ -170,12 +170,12 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
 
   // Reset game handler for UI button or logic
   const handleResetGame = useCallback(() => {
-    if (window.confirm('Are you sure you want to reset your game? This will erase all progress!')) {
+    if (window.confirm('Start a new game? This erases all progress, including lifetimes, Wisdom and achievements. Settings are kept.')) {
       setLoadingStates(prev => ({ ...prev, isResetting: true }));
       // Small delay to show loading state before reset
       setTimeout(() => {
         resetGame();
-        // Note: isResetting stays true since resetGame typically causes page reload/state reset
+        // isResetting stays true: resetGame reloads the page
       }, 100);
     }
   }, [resetGame]);

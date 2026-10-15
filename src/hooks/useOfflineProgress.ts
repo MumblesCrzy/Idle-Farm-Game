@@ -6,9 +6,10 @@ import type { Veggie, WeatherType } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import { useLatestRef } from './useLatestRef';
+import { LAST_ACTIVE_KEY } from '../config/gameConstants';
 
 /** localStorage key holding the moment the tab was last hidden */
-export const LAST_ACTIVE_KEY = 'farmIdleLastActive';
+export { LAST_ACTIVE_KEY };
 
 /** Shorter gaps are ignored, so quick tab switches don't trigger a catch-up */
 const MIN_CATCH_UP_MS = 1000;

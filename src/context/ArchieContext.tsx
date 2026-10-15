@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useRef, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { ARCHIE_LAST_CLICK_KEY, ARCHIE_STREAK_KEY } from '../config/gameConstants';
 
 interface ArchieContextType {
   archieClicked: boolean;
@@ -140,8 +141,8 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
     
     // Save to localStorage to persist the timestamp
     try {
-      localStorage.setItem('archieLastClickTime', currentTime.toString());
-      localStorage.setItem('archieClickStreak', newStreak.toString());
+      localStorage.setItem(ARCHIE_LAST_CLICK_KEY, currentTime.toString());
+      localStorage.setItem(ARCHIE_STREAK_KEY, newStreak.toString());
     } catch (error) {
       console.error('Failed to save Archie click time:', error);
     }
@@ -150,7 +151,7 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // When component mounts, try to load last click time from localStorage
   useEffect(() => {
     try {
-      const savedTime = localStorage.getItem('archieLastClickTime');
+      const savedTime = localStorage.getItem(ARCHIE_LAST_CLICK_KEY);
       if (savedTime) {
         setLastClickTime(parseInt(savedTime, 10));
       }
@@ -162,13 +163,13 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // Load streak from localStorage when component mounts
   useEffect(() => {
     try {
-      const savedStreak = localStorage.getItem('archieClickStreak');
+      const savedStreak = localStorage.getItem(ARCHIE_STREAK_KEY);
       if (savedStreak) {
         setArchieClickStreak(parseInt(savedStreak, 10));
       }
       
       // Reset streak if it's been too long since last click
-      const savedTime = localStorage.getItem('archieLastClickTime');
+      const savedTime = localStorage.getItem(ARCHIE_LAST_CLICK_KEY);
       if (savedTime) {
         const lastTime = parseInt(savedTime, 10);
         if (Date.now() - lastTime > STREAK_TIMEOUT) {

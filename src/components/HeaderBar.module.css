@@ -104,27 +104,29 @@
   background: #5a32a3;
 }
 
+/* Paused: orange, unlike the green Info button beside it, with a pulsing glow */
 .pauseButtonActive {
   font-size: 0.85rem;
   padding: 2px 10px;
   margin-left: 0.5rem;
-  background: #28a745;
-  color: #fff;
+  background: #ff6f00;
+  color: #1a0f00;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   height: 28px;
   font-weight: bold;
-  animation: pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 12px 4px rgba(255, 94, 0, 0.85);
+  animation: pausedGlow 1.2s ease-in-out infinite;
 }
 
 .pauseButtonActive:hover {
-  background: #218838;
+  background: #ff8a2b;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+@keyframes pausedGlow {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(255, 94, 0, 0.45); }
+  50% { box-shadow: 0 0 20px 8px rgba(255, 94, 0, 1); }
 }
 
 .farmUpgradeContainer {
@@ -250,6 +252,7 @@
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  /* Keeps the steady glow from the base rule */
   .pauseButtonActive {
     animation: none;
   }

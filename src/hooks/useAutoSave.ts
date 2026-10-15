@@ -7,8 +7,8 @@ import { useLatestRef } from './useLatestRef';
  * Configuration for the auto-save hook
  */
 export interface UseAutoSaveConfig {
-  /** When true, saving is skipped (for example while a reset is settling) */
-  skipSave: boolean;
+  /** When true, saving is skipped */
+  skipSave?: boolean;
   /** Builds the full save, or returns null when there is nothing to save yet */
   getGameState: () => ExtendedGameState | null;
 }
@@ -37,7 +37,7 @@ export interface UseAutoSaveReturn {
  * @returns forceSave for an immediate save
  */
 export function useAutoSave(config: UseAutoSaveConfig): UseAutoSaveReturn {
-  const { skipSave, getGameState } = config;
+  const { skipSave = false, getGameState } = config;
 
   const saveTimeoutRef = useRef<number | null>(null);
   const lastSaveTimeRef = useRef<number>(Date.now());

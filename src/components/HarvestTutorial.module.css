@@ -1,58 +1,74 @@
 /* ============================================================================
    HARVEST TUTORIAL OVERLAY STYLES
-   One-time tutorial that points to the harvest button
+   One-time tutorial that points at the harvest button
    ============================================================================ */
 
-/* Backdrop */
+.visible {
+  opacity: 1;
+}
+
+.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Full-screen dim, used when the Harvest button isn't on screen */
 .backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
   z-index: 9998;
   transition: opacity 0.3s ease;
 }
 
-.backdrop.visible {
-  opacity: 1;
-}
-
-.backdrop.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Tutorial Container */
-.tutorialContainer {
+/* Message in the middle of the screen, used with the backdrop */
+.centered {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 9999;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
-.tutorialContainer.visible {
-  opacity: 1;
+/* Transparent areas around the lit window; a click there closes the tutorial */
+.clickArea {
+  position: fixed;
+  z-index: 9998;
 }
 
-.tutorialContainer.hidden {
-  opacity: 0;
-  transform: translate(-50%, -45%);
+/* Dims everything except a window around the Harvest button, and rings the button */
+.spotlight {
+  position: fixed;
+  z-index: 9998;
+  border-radius: 10px;
+  border: 3px solid #ffeb3b;
+  box-sizing: border-box;
+  box-shadow: 0 0 10px 3px rgba(255, 235, 59, 0.7), 0 0 0 9999px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+  transition: opacity 0.3s ease;
+  animation: ringGlow 1.5s ease-in-out infinite;
 }
 
-/* Tutorial Box */
-.tutorialBox {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+@keyframes ringGlow {
+  0%, 100% {
+    box-shadow: 0 0 6px 2px rgba(255, 235, 59, 0.5), 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 18px 7px rgba(255, 235, 59, 0.95), 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Message next to the button; position and width are set inline */
+.pointer {
+  position: fixed;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
 }
 
 .tutorialMessage {
+  box-sizing: border-box;
+  width: 100%;
   background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
   color: white;
   padding: 1.5rem;
@@ -106,30 +122,44 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Animated Arrow */
-.arrow {
+/* Arrows: left is set inline to line up with the button; they nudge toward it */
+.arrowUp,
+.arrowDown {
+  position: absolute;
   width: 0;
   height: 0;
+  margin-left: -20px;
   border-left: 20px solid transparent;
   border-right: 20px solid transparent;
-  border-top: 30px solid #66bb6a;
-  margin-top: -3px;
-  animation: bounce 1.5s ease-in-out infinite;
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+.arrowUp {
+  bottom: 100%;
+  margin-bottom: -3px;
+  border-bottom: 30px solid #66bb6a;
+  animation: nudgeUp 1.5s ease-in-out infinite;
+}
+
+.arrowDown {
+  top: 100%;
+  margin-top: -3px;
+  border-top: 30px solid #66bb6a;
+  animation: nudgeDown 1.5s ease-in-out infinite;
+}
+
+@keyframes nudgeUp {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes nudgeDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .tutorialMessage {
-    max-width: 90vw;
     padding: 1.25rem;
   }
 
@@ -149,15 +179,16 @@
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .tutorialIcon {
+  .spotlight,
+  .arrowUp,
+  .arrowDown {
     animation: none;
   }
 
   .backdrop,
-  .tutorialContainer {
-    transition: none;
-  }
-
+  .centered,
+  .spotlight,
+  .pointer,
   .dismissButton {
     transition: none;
   }

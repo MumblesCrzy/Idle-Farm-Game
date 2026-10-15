@@ -236,6 +236,24 @@ const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
           )}
           
           <div>
+            <h4 className={styles.sectionTitle}>Support the Game</h4>
+            <p className={styles.supportText}>
+              Enjoying the farm? You can support its development.
+            </p>
+            <div className={styles.buttonGroup}>
+              <a
+                href="https://buymeacoffee.com/MumblesCrzy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.coffeeLink}
+                aria-label="Buy me a coffee (opens in a new tab)"
+              >
+                ☕ Buy me a coffee
+              </a>
+            </div>
+          </div>
+
+          <div>
             <h4 className={styles.sectionTitle}>Game Actions</h4>
             <div className={styles.buttonGroup}>
               <button

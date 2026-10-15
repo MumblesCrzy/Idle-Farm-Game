@@ -316,6 +316,11 @@ export const FARM_TIER_KNOWLEDGE_BONUS = 1.25; // Additional knowledge per harve
 // ============================================================================
 
 export const GAME_STORAGE_KEY = 'farmIdleGameState';
+/** When the tab was last hidden, for the hidden-tab catch-up */
+export const LAST_ACTIVE_KEY = 'farmIdleLastActive';
+/** Archie's click streak, and the time of the last click that the streak counts from */
+export const ARCHIE_STREAK_KEY = 'archieClickStreak';
+export const ARCHIE_LAST_CLICK_KEY = 'archieLastClickTime';
 export const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
 // ============================================================================

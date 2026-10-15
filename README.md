@@ -200,7 +200,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - ✅ **Toast Notifications**: Visual feedback for bonuses and events
 
 ### 🔮 Future Seasonal Events
-- **Spring Farmer's Market**: Community garden and seed trading
+- **Spring Farmer's Market**: Flowers and Herbs
 - **Summer Watermelon Festival**: Competitive growing challenges
 - **Fall Pumpkin Rush**: Harvest competition with decorating
 

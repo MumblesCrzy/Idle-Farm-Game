@@ -1,17 +1,14 @@
 /**
  * Tests for useFarmManagement hook
  * 
- * Tests farm management functionality including:
- * - handleBuyLargerFarm for tier upgrades
- * - resetGame for complete game reset
+ * Tests handleBuyLargerFarm for tier upgrades. Starting a new game is
+ * covered in src/test/startNewGame.test.tsx.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFarmManagement, type UseFarmManagementDeps } from './useFarmManagement';
 import type { EventLogCallbacks } from '../context/EventLogContext';
-import type { BeeContextValue } from '../types/bees';
-import type { UseChristmasEventReturn } from './useChristmasEvent';
 
 // Mock gameCalculations
 vi.mock('../utils/gameCalculations', () => ({
@@ -71,8 +68,6 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     setExperience: vi.fn(),
     setKnowledge: vi.fn(),
     setDay: vi.fn(),
-    setTotalDaysElapsed: vi.fn(),
-    setTotalHarvests: vi.fn(),
     setGreenhouseOwned: vi.fn(),
     setAlmanacLevel: vi.fn(),
     setAlmanacCost: vi.fn(),
@@ -83,13 +78,7 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     setIrrigationOwned: vi.fn(),
     setGlobalAutoPurchaseTimer: vi.fn(),
     setFarmCost: vi.fn(),
-    setHighestUnlockedVeggie: vi.fn(),
-    setCurrentWeather: vi.fn(),
-    setBlockAchievementChecks: vi.fn(),
-    setJustReset: vi.fn(),
     eventLogCallbacks: createMockEventLogCallbacks(),
-    globalBeeContext: null,
-    christmasEvent: null,
     prestigeStartingExpBonus: 0,
     plotEfficiencyLevel: 0,
     ...overrides
@@ -324,221 +313,6 @@ describe('useFarmManagement', () => {
     });
   });
 
-  describe('resetGame', () => {
-    it('should block achievement checks', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setBlockAchievementChecks).toHaveBeenCalledWith(true);
-    });
-
-    it('should remove localStorage data', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(localStorage.removeItem).toHaveBeenCalledWith('farmIdleGameState');
-    });
-
-    it('should reset all state to initial values', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setFarmTier).toHaveBeenCalledWith(1);
-      expect(deps.setDay).toHaveBeenCalledWith(1);
-      expect(deps.setTotalDaysElapsed).toHaveBeenCalledWith(0);
-      expect(deps.setTotalHarvests).toHaveBeenCalledWith(0);
-      expect(deps.setMaxPlots).toHaveBeenCalledWith(4);
-      expect(deps.setMoney).toHaveBeenCalledWith(0);
-      expect(deps.setExperience).toHaveBeenCalledWith(0);
-      expect(deps.setKnowledge).toHaveBeenCalledWith(0);
-      expect(deps.setActiveVeggie).toHaveBeenCalledWith(0);
-    });
-
-    it('should reset all upgrades', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setAlmanacLevel).toHaveBeenCalledWith(0);
-      expect(deps.setAlmanacCost).toHaveBeenCalledWith(10);
-      expect(deps.setIrrigationOwned).toHaveBeenCalledWith(false);
-      expect(deps.setAutoSellOwned).toHaveBeenCalledWith(false);
-      expect(deps.setGreenhouseOwned).toHaveBeenCalledWith(false);
-      expect(deps.setHeirloomOwned).toHaveBeenCalledWith(false);
-    });
-
-    it('keeps fruits in the crop list after a reset', () => {
-      const deps = createDefaultDeps();
-
-      const { result } = renderHook(() => useFarmManagement(deps));
-      act(() => {
-        result.current.resetGame();
-      });
-
-      expect(deps.setVeggies).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ cropType: 'fruit' })])
-      );
-    });
-
-    it('runs the reset callback for state the hook does not own', () => {
-      const onReset = vi.fn();
-      const deps = createDefaultDeps({ onReset });
-
-      const { result } = renderHook(() => useFarmManagement(deps));
-      act(() => {
-        result.current.resetGame();
-      });
-
-      expect(onReset).toHaveBeenCalled();
-    });
-
-    it('should reset weather to Clear', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setCurrentWeather).toHaveBeenCalledWith('Clear');
-    });
-
-    it('should reset farm cost to base', () => {
-      const deps = createDefaultDeps({ FARM_BASE_COST: 500 });
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setFarmCost).toHaveBeenCalledWith(500);
-    });
-
-    it('should reset highest unlocked veggie', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setHighestUnlockedVeggie).toHaveBeenCalledWith(0);
-    });
-
-    it('should reset achievements', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.eventLogCallbacks.resetAchievements).toHaveBeenCalled();
-    });
-
-    it('should clear event log', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.eventLogCallbacks.clearEventLog).toHaveBeenCalled();
-    });
-
-    it('should reset bee system if available', () => {
-      const mockResetBeeSystem = vi.fn();
-      const deps = createDefaultDeps({
-        globalBeeContext: {
-          resetBeeSystem: mockResetBeeSystem
-        } as Partial<BeeContextValue> as BeeContextValue
-      });
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(mockResetBeeSystem).toHaveBeenCalled();
-    });
-
-    it('should reset Christmas event if available', () => {
-      const mockResetEvent = vi.fn();
-      const deps = createDefaultDeps({
-        christmasEvent: {
-          resetEvent: mockResetEvent
-        } as Partial<UseChristmasEventReturn> as UseChristmasEventReturn
-      });
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(mockResetEvent).toHaveBeenCalled();
-    });
-
-    it('should set justReset flag', () => {
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      expect(deps.setJustReset).toHaveBeenCalledWith(true);
-    });
-
-    it('should re-enable features after timeout', async () => {
-      vi.useFakeTimers();
-      const deps = createDefaultDeps();
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.resetGame();
-      });
-      
-      // Advance timers
-      await act(async () => {
-        vi.advanceTimersByTime(100);
-      });
-      
-      expect(deps.setBlockAchievementChecks).toHaveBeenCalledWith(false);
-      expect(deps.setJustReset).toHaveBeenCalledWith(false);
-      
-      vi.useRealTimers();
-    });
-  });
-
   describe('memoization', () => {
     it('should return stable function references when deps unchanged', () => {
       const deps = createDefaultDeps();
@@ -546,13 +320,12 @@ describe('useFarmManagement', () => {
       const { result, rerender } = renderHook(() => useFarmManagement(deps));
       
       const firstRender = {
-        handleBuyLargerFarm: result.current.handleBuyLargerFarm,
-        resetGame: result.current.resetGame
+        handleBuyLargerFarm: result.current.handleBuyLargerFarm
       };
       
       rerender();
       
-      // resetGame has many deps, but handleBuyLargerFarm should be stable if state hasn't changed
+      // handleBuyLargerFarm should be stable if state hasn't changed
       expect(result.current.handleBuyLargerFarm).toBe(firstRender.handleBuyLargerFarm);
     });
   });
