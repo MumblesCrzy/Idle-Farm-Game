@@ -115,7 +115,6 @@ function createDefaultDeps(overrides: Partial<UseHarvestAndSellDeps> = {}): UseH
     almanacLevel: 0,
     farmTier: 1,
     maxPlots: 10,
-    highestUnlockedVeggie: 1,
     setHighestUnlockedVeggie: vi.fn(),
     setTotalHarvests: vi.fn(),
     permanentBonuses: [],

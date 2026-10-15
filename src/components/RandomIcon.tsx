@@ -1,4 +1,5 @@
 import { useState, useEffect, type FC } from 'react';
+import { useLatestRef } from '../hooks/useLatestRef';
 
 interface RandomIconProps {
   imagePath: string;
@@ -26,6 +27,8 @@ const RandomIcon: FC<RandomIconProps> = ({
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(true); // Assume success initially
+  // The timers below run long after render, so they call the latest callback
+  const onAppearRef = useLatestRef(onAppear);
   
   // Function to get a random position on screen (with margins)
   const getRandomPosition = () => {
@@ -82,7 +85,7 @@ const RandomIcon: FC<RandomIconProps> = ({
         
         // Delay the onAppear callback slightly to ensure the icon is rendered
         setTimeout(() => {
-          onAppear(); // Call appearance callback
+          onAppearRef.current(); // Call the latest appearance callback
         }, 100);
         // Schedule hiding after duration
         hideTimer = setTimeout(() => {
@@ -105,7 +108,7 @@ const RandomIcon: FC<RandomIconProps> = ({
       
       // Delay the onAppear callback slightly to ensure the icon is rendered
       setTimeout(() => {
-        onAppear(); // Call appearance callback
+        onAppearRef.current(); // Call the latest appearance callback
       }, 100);
       
       hideTimer = setTimeout(() => {
@@ -121,7 +124,7 @@ const RandomIcon: FC<RandomIconProps> = ({
       if (appearanceTimer) clearTimeout(appearanceTimer);
       if (hideTimer) clearTimeout(hideTimer);
     };
-  }, [minInterval, maxInterval, duration, isPaused]);
+  }, [minInterval, maxInterval, duration, isPaused, onAppearRef]);
   
   // Only render when visible
   if (!visible) return null;

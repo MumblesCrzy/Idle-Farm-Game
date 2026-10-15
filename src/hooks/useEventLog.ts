@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import { useLatestRef } from './useLatestRef';
 import type { 
   EventLogEntry, 
   EventLogState, 
@@ -72,11 +73,15 @@ export interface UseEventLogReturn {
 export function useEventLog({
   maxEntries = 100,
   initialState,
-  farmTier,
   day,
   totalDaysElapsed
 }: UseEventLogOptions): UseEventLogReturn {
   
+  // Current day values, read when an event is logged, so the functions below
+  // stay stable instead of changing every in-game day
+  const dayRef = useLatestRef(day);
+  const totalDaysElapsedRef = useLatestRef(totalDaysElapsed);
+
   // Initialize state
   const [eventLogState, setEventLogState] = useState<EventLogState>(() => ({
     entries: initialState?.entries || [],
@@ -101,8 +106,8 @@ export function useEventLog({
     const newEvent = createEventLogEntry(
       category,
       message,
-      day,
-      totalDaysElapsed,
+      dayRef.current,
+      totalDaysElapsedRef.current,
       options
     );
 
@@ -119,7 +124,7 @@ export function useEventLog({
         unreadCount: prev.unreadCount + 1
       };
     });
-  }, [farmTier, day, totalDaysElapsed]);
+  }, [dayRef, totalDaysElapsedRef]);
 
   /**
    * Clear all events
@@ -138,7 +143,7 @@ export function useEventLog({
    */
   const clearOldEvents = useCallback((daysToKeep: number) => {
     setEventLogState(prev => {
-      const cutoffDay = totalDaysElapsed - daysToKeep;
+      const cutoffDay = totalDaysElapsedRef.current - daysToKeep;
       const filteredEntries = prev.entries.filter(
         entry => entry.timestamp.totalDays >= cutoffDay
       );
@@ -148,7 +153,7 @@ export function useEventLog({
         entries: filteredEntries
       };
     });
-  }, [totalDaysElapsed]);
+  }, [totalDaysElapsedRef]);
 
   /**
    * Mark all events as read
@@ -224,7 +229,7 @@ export function useEventLog({
     return eventLogState;
   }, [eventLogState]);
 
-  return {
+  return useMemo(() => ({
     entries: eventLogState.entries,
     unreadCount: eventLogState.unreadCount,
     addEvent,
@@ -235,7 +240,18 @@ export function useEventLog({
     getCategoryCounts,
     getUnreadCountForCategories,
     getState
-  };
+  }), [
+    eventLogState.entries,
+    eventLogState.unreadCount,
+    addEvent,
+    clearEvents,
+    clearOldEvents,
+    markAllAsRead,
+    getFilteredEvents,
+    getCategoryCounts,
+    getUnreadCountForCategories,
+    getState
+  ]);
 }
 
 /**

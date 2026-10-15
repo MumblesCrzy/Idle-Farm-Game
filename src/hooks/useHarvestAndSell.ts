@@ -7,6 +7,7 @@ import { applyGuildPriceBonuses, getUpgradeLevel, isCommittedTo } from '../utils
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { useLatestRef } from './useLatestRef';
+import { useDeferredEffects } from './useDeferredEffects';
 
 /** Sigils spent on one Ritual Circles harvest */
 const RITUAL_HARVEST_COST = 5;
@@ -39,8 +40,6 @@ export interface UseHarvestAndSellDeps {
   farmTier: number;
   /** Maximum plots available */
   maxPlots: number;
-  /** Highest unlocked veggie index */
-  highestUnlockedVeggie: number;
   /** Setter for highest unlocked veggie */
   setHighestUnlockedVeggie: Dispatch<SetStateAction<number>>;
   /** Setter for total harvests counter */
@@ -136,7 +135,6 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     almanacLevel,
     farmTier,
     maxPlots,
-    highestUnlockedVeggie,
     setHighestUnlockedVeggie,
     setTotalHarvests,
     permanentBonuses,
@@ -152,6 +150,9 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
   // Latest values for handlers that should not be recreated on every change
   const veggiesRef = useLatestRef(veggies);
   const guildStateRef = useLatestRef(guildState);
+
+  // Runs work recorded by state updaters once their result is committed
+  const scheduleAfterCommit = useDeferredEffects();
 
   /**
    * Unified harvest logic for both auto and manual harvest.
@@ -182,6 +183,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       );
 
       const newExperience = experience + experienceGain;
+      const unlockKey = {};
 
       // Award guild currency on harvest once guilds unlock:
       // - Manual harvests always earn 1 currency
@@ -231,14 +233,18 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
           .filter(vg => !vg.unlocked && newExperience >= vg.experienceToUnlock)
           .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);
 
+        let highestNewlyUnlocked = -1;
         for (let i = 0; i < unlockOrder.length && totalPlotsUsed < maxPlots; i++) {
-          updated[unlockOrder[i].idx].unlocked = true;
+          const unlockIndex = unlockOrder[i].idx;
+          updated[unlockIndex] = { ...updated[unlockIndex], unlocked: true };
           totalPlotsUsed++;
-          // Update highest unlocked veggie if this is higher
-          if (unlockOrder[i].idx > highestUnlockedVeggie) {
-            setHighestUnlockedVeggie(unlockOrder[i].idx);
-          }
+          highestNewlyUnlocked = Math.max(highestNewlyUnlocked, unlockIndex);
         }
+
+        // Record the highest unlock after the commit
+        scheduleAfterCommit(unlockKey, highestNewlyUnlocked >= 0
+          ? () => setHighestUnlockedVeggie(current => Math.max(current, highestNewlyUnlocked))
+          : undefined);
         return updated;
       });
 
@@ -271,7 +277,6 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     experience,
     farmTier,
     maxPlots,
-    highestUnlockedVeggie,
     day,
     setVeggies,
     setKnowledge,
@@ -280,7 +285,8 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     setHighestUnlockedVeggie,
     setGuildState,
     trackKnowledgeGained,
-    guildStateRef
+    guildStateRef,
+    scheduleAfterCommit
   ]);
 
   /**

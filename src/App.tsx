@@ -82,7 +82,8 @@ import { useDayLoop } from './hooks/useDayLoop';
 import { useOfflineProgress } from './hooks/useOfflineProgress';
 import { useWeatherRandomization } from './hooks/useWeatherRandomization';
 import { useAutoSave } from './hooks/useAutoSave';
-import { useGameLoop } from './hooks/useGameLoop';
+import { useGameTick } from './hooks/useGameClock';
+import { useDeferredEffects } from './hooks/useDeferredEffects';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { loadGameStateWithCanning, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
@@ -150,12 +151,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const eventLogCallbacks = useEventLog();
   const { setJustReset, setBlockAchievementChecks } = useGameFlags();
   
-  // Load game state fresh each time - this ensures imports work correctly
-  const getLoadedState = () => {
-    const result = loadGameStateWithCanning();
-    return result;
-  };
-  const loaded = getLoadedState();
+  // Load the save once. (Imports reload the page, so a fresh parse is never needed.)
+  const [loaded] = useState(() => loadGameStateWithCanning());
   
   // Initialize core game state with custom hook
   const gameState = useGameState({
@@ -229,13 +226,11 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Guild system state (moved to GameProvider for growth calculations)
   const [guildState, setGuildState] = useState<GuildState>(() => {
-    const loaded = getLoadedState();
     return loaded?.guildState || DEFAULT_GUILD_STATE;
   });
 
   // Prestige system state - tracks lifetime stats for Wisdom calculation
   const [prestigeState, setPrestigeState] = useState<PrestigeState>(() => {
-    const loaded = getLoadedState();
     return loaded?.prestigeState || {
       wisdom: 0,
       lifetimeCount: 1,
@@ -267,7 +262,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         totalMoneyEarned: (prev.totalMoneyEarned || 0) + amount + bonus
       }));
     }
-  }, [wisdomPotentialMultiplier]);
+  }, [setMoney, wisdomPotentialMultiplier]);
 
   // Scholarly Roots multiplier: +5% knowledge per level
   const knowledgeBoostMultiplier = useMemo(() => {
@@ -292,7 +287,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         totalKnowledgeGained: (prev.totalKnowledgeGained || 0) + amount + totalBonus
       }));
     }
-  }, [wisdomPotentialMultiplier, knowledgeBoostMultiplier]);
+  }, [knowledgeBoostMultiplier, wisdomPotentialMultiplier, setKnowledge]);
 
   // Helper to track max farm tier reached (both per-lifetime and all-time)
   const trackFarmTierReached = useCallback((tier: number) => {
@@ -342,11 +337,390 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, [prestigeState.wisdom, prestigeState.wisdomUpgrades, getWisdomUpgradeCost]);
 
+  // Initialize Christmas Tree Shop event
+  const [initialChristmasState] = useState(() => {
+    try {
+      return loaded?.christmasEventState || undefined;
+    } catch (error) {
+      console.error('Error loading Christmas event state:', error);
+      return undefined;
+    }
+  });
+
+  const christmasEvent: UseChristmasEventReturn = useChristmasEvent({
+    initialState: initialChristmasState,
+    farmTier,
+    onTreeSold: (treeType, quantity, cheerEarned) => {
+      eventLogCallbacks.onTreeSold(treeType, quantity, cheerEarned);
+    },
+    onTreeHarvested: (treeType, quality) => {
+      eventLogCallbacks.onTreeHarvested(treeType, quality);
+    },
+    onItemCrafted: (itemName, quantity) => {
+      eventLogCallbacks.onItemCrafted(itemName, quantity);
+    },
+    onUpgradePurchased: (upgradeName, cost) => {
+      eventLogCallbacks.onUpgradePurchased(upgradeName, cost);
+    },
+    onMilestoneClaimed: (milestoneName) => {
+      eventLogCallbacks.onMilestoneClaimed(milestoneName);
+    },
+  });
+
+  // Upgrade purchases: per-crop upgrades, auto-purchasers and global upgrades
+  const {
+    handleBuyFertilizer,
+    handleBuyHarvester,
+    handleBuyHarvesterSpeed,
+    handleBuyBetterSeeds,
+    handleBuyAdditionalPlot,
+    handleBuyAutoPurchaser,
+    handleBuyIrrigation,
+    handleBuyGreenhouse,
+    handleBuyHeirloom,
+    handleBuyAutoSell,
+    handleBuyAlmanac,
+    irrigationCost,
+    irrigationKnCost
+  } = usePurchaseHandlers({
+    veggies,
+    setVeggies,
+    money,
+    setMoney,
+    knowledge,
+    setKnowledge,
+    heirloomOwned,
+    setHeirloomOwned,
+    irrigationOwned,
+    setIrrigationOwned,
+    greenhouseOwned,
+    setGreenhouseOwned,
+    autoSellOwned,
+    setAutoSellOwned,
+    setAlmanacLevel,
+    almanacCost,
+    setAlmanacCost,
+    totalPlotsUsed,
+    maxPlots,
+    heirloomMoneyCost,
+    heirloomKnowledgeCost,
+    onMilestone: eventLogCallbacks.onAchievementUnlock
+  });
+
+  // Weather system hook
+  const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
+  
+  // Season system hook
+  const { season } = useSeasonSystem(day);
+  
+
+  // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
+  useEffect(() => {
+    if (loaded && loaded.highestUnlockedVeggie === undefined && loaded.veggies) {
+      // Find the highest index of unlocked veggies from the loaded save data
+      const currentHighest = loaded.veggies.reduce((highest: number, veggie: Veggie, index: number) => {
+        return veggie.unlocked && index > highest ? index : highest;
+      }, 0);
+      setHighestUnlockedVeggie(currentHighest);
+    }
+  }, [loaded, setHighestUnlockedVeggie]); // Runs once: loaded and the setter never change    
+ 
+  // Crop growth, first in each game step
+  useGameTick(() => {
+    // Skip all processing while game is paused
+    if (isPausedRef.current) return;
+    // Skip all processing if lifetime has ended (prestige pending)
+    if (offlinePrestigePendingRef.current) return;
+
+    setVeggies((prev) => {
+      const { veggies: newVeggies } = processVeggieGrowth(
+        prev,
+        season,
+        currentWeather,
+        greenhouseOwned,
+        irrigationOwned,
+        guildStateRef.current
+      );
+      return newVeggies;
+    });
+  }, { order: 10 });
+
+  // Latest-value refs to avoid large dependency arrays and restart of loops
+  // Only keep refs that are actually used in game loops
+  const knowledgeRef = useLatestRef(knowledge);
+  const dayRef = useLatestRef(day);
+  const almanacLevelRef = useLatestRef(almanacLevel);
+  const maxPlotsRef = useLatestRef(maxPlots);
+  const farmTierRef = useLatestRef(farmTier);
+  const beeYieldBonusRef = useLatestRef(beeYieldBonus);
+  const seasonRef = useLatestRef(season);
+  const permanentBonusesRef = useLatestRef(permanentBonuses);
+  const christmasEventRef = useLatestRef(christmasEvent);
+  const experienceRef = useLatestRef(experience);
+  const autoSellOwnedRef = useLatestRef(autoSellOwned);
+  const guildStateRef = useLatestRef(guildState);
+  const trackKnowledgeGainedRef = useLatestRef(trackKnowledgeGained);
+  const offlinePrestigePendingRef = useLatestRef(offlinePrestigePending);
+  const isPausedRef = useLatestRef(isPaused);
+  // Lifetime max days - recalculated only when extendedLifespan level changes
+  const extendedLifespanLevel = prestigeState.wisdomUpgrades.extendedLifespan || 0;
+  const lifetimeMaxDaysRef = useRef(getMaxLifetimeDaysForPlayer(prestigeState));
+  useEffect(() => {
+    lifetimeMaxDaysRef.current = getMaxLifetimeDaysForPlayer(prestigeState);
+  }, [extendedLifespanLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Progress for time away: once at startup, and whenever a hidden tab comes back
+  useOfflineProgress({
+    loaded,
+    state: {
+      veggies,
+      day,
+      totalDaysElapsed,
+      season,
+      currentWeather,
+      greenhouseOwned,
+      irrigationOwned,
+      almanacLevel,
+      farmTier,
+      knowledge,
+      guildState,
+      christmasEvent
+    },
+    isPaused,
+    lifetimeEnded: offlinePrestigePending,
+    lifetimeMaxDays: getMaxLifetimeDaysForPlayer(prestigeState),
+    trackKnowledgeGained,
+    setVeggies,
+    setExperience,
+    setKnowledge,
+    setDay,
+    setTotalDaysElapsed,
+    setOfflinePrestigePending
+  });
+
+  // Reliable lifetime-end detection: fires whenever totalDaysElapsed changes.
+  // The day-loop updater clamps totalDaysElapsed to the max, but setting the
+  // prestige flag via a closure variable inside setState is unreliable under
+  // React 18 batching.  This useEffect runs after the committed state,
+  // guaranteeing the check sees the real value.
+  //
+  // When the lifetime ends we also deposit the earned wisdom immediately so
+  // the player can spend it in the Wisdom Shop before clicking
+  // "Start Next Lifetime".
+  useEffect(() => {
+    if (wisdomDepositedRef.current) return; // wisdom already deposited this lifetime
+    const maxDays = lifetimeMaxDaysRef.current;
+    if (totalDaysElapsed < maxDays) return;
+
+    // ── Final stash sale: sell ALL veggies before computing wisdom ──
+    // Worked out from current state first, so the money and the wisdom always
+    // include it. A total read back out of a setState updater can still be 0,
+    // because React may run the updater later.
+    let stashSaleTotal = 0;
+    const soldByName = new Map<string, number>();
+    for (const v of veggies) {
+      if (v.stash > 0) {
+        for (let i = 0; i < v.stash; i++) {
+          stashSaleTotal += applyGuildPriceBonuses(v.salePrice, guildState, true);
+        }
+        soldByName.set(v.name, v.stash);
+      }
+    }
+    if (soldByName.size > 0) {
+      setVeggies(prev => prev.map(v => {
+        const sold = soldByName.get(v.name);
+        return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
+      }));
+    }
+
+    // Wisdom's Potential bonus also applies to the stash earnings
+    const potentialBonus = wisdomPotentialMultiplier > 1
+      ? Math.floor(stashSaleTotal * (wisdomPotentialMultiplier - 1))
+      : 0;
+    const stashContribution = stashSaleTotal + potentialBonus;
+    if (stashContribution > 0) {
+      setMoney(m => m + stashContribution);
+    }
+
+    // Calculate and deposit wisdom now so the shop works immediately,
+    // counting the stash money that hasn't reached prestigeState yet.
+    const moneyFactor = ((prestigeState.totalMoneyEarned || 0) + stashContribution) / 10_000;
+    const knowledgeFactor = (prestigeState.totalKnowledgeGained || 0) / 500;
+    const tierFactor = prestigeState.maxFarmTierReached || 1;
+    const wisdomBonus = Math.floor(Math.sqrt(prestigeState.wisdom || 0));
+    const earned = Math.floor((moneyFactor + knowledgeFactor) * tierFactor) + wisdomBonus;
+
+    setPrestigeState(prev => ({
+      ...prev,
+      totalMoneyEarned: (prev.totalMoneyEarned || 0) + stashContribution,
+      wisdom: prev.wisdom + earned,
+    }));
+    setWisdomEarnedThisLifetime(earned);
+    wisdomDepositedRef.current = true;
+    setOfflinePrestigePending(true);
+  }, [totalDaysElapsed, offlinePrestigePending, guildState, wisdomPotentialMultiplier, veggies, prestigeState, setVeggies, setMoney]);
+  
+  // Runs work recorded by state updaters once their result is committed
+  const scheduleAfterCommit = useDeferredEffects();
+
+  // Auto-harvest, after growth in each game step. The harvest is worked out inside
+  // the updater, because it must see this step's growth; logging, experience,
+  // knowledge and the unlock record are applied after the commit.
+  useGameTick(() => {
+    // Skip all processing while game is paused
+    if (isPausedRef.current) return;
+    // Skip all game processing if lifetime has ended (prestige pending)
+    if (offlinePrestigePendingRef.current) return;
+
+    const tick = {};
+    setVeggies((prev) => {
+      const {
+        veggies: newVeggies,
+        experienceGain: totalExperienceGain,
+        knowledgeGain: totalKnowledgeGain,
+        needsUpdate,
+        harvestedVeggies
+      } = processAutoHarvest(
+        prev,
+        almanacLevelRef.current,
+        farmTierRef.current,
+        knowledgeRef.current,
+        beeYieldBonusRef.current,
+        seasonRef.current,
+        permanentBonusesRef.current
+      );
+
+      if (!needsUpdate) {
+        scheduleAfterCommit(tick, undefined);
+        return newVeggies;
+      }
+
+      // Handle unlocks after all harvests are processed using projected experience
+      const projectedExperience = experienceRef.current + totalExperienceGain;
+      const { veggies: unlockedVeggies, highestUnlockedIndex } = processVeggieUnlocks(
+        newVeggies,
+        projectedExperience,
+        maxPlotsRef.current
+      );
+      const awardGains = totalExperienceGain > 0 && dayRef.current >= 1 && dayRef.current <= 365;
+
+      scheduleAfterCommit(tick, () => {
+        harvestedVeggies.forEach(({ veggie, amount, expGain, knGain }) => {
+          logHarvest(veggie.name, amount, expGain, knGain, true);
+        });
+        if (awardGains) {
+          setKnowledge((k: number) => k + totalKnowledgeGain);
+          setExperience((exp: number) => exp + totalExperienceGain);
+          // Track knowledge gained for lifetime stats (prestige system)
+          if (totalKnowledgeGain > 0) {
+            trackKnowledgeGainedRef.current(totalKnowledgeGain);
+          }
+        }
+        setHighestUnlockedVeggie(current => Math.max(current, highestUnlockedIndex));
+      });
+
+      return unlockedVeggies;
+    });
+  }, { order: 20 });
+
+  // Harvesting, selling, the ritual harvest, and the per-crop sell and auto-harvest toggles
+  const {
+    handleHarvest,
+    handleRitualHarvestAll,
+    handleToggleSell,
+    handleToggleAutoHarvester,
+    handleSell,
+    logHarvest
+  } = useHarvestAndSell({
+    veggies,
+    setVeggies,
+    experience,
+    setExperience,
+    knowledge,
+    setKnowledge,
+    setMoney,
+    season,
+    day,
+    almanacLevel,
+    farmTier,
+    maxPlots,
+    setHighestUnlockedVeggie,
+    setTotalHarvests,
+    permanentBonuses,
+    beeYieldBonus,
+    activeVeggie,
+    eventLogCallbacks,
+    guildState,
+    setGuildState,
+    trackKnowledgeGained,
+    trackMoneyEarned
+  });
+
+  // Initialize auto-purchase system
+  const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
+    veggies,
+    setVeggies,
+    money,
+    knowledge,
+    maxPlots,
+    handlers: {
+      handleBuyFertilizer,
+      handleBuyBetterSeeds,
+      handleBuyHarvesterSpeed,
+      handleBuyAdditionalPlot
+    },
+    initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
+    onPurchaseCallback: eventLogCallbacks.onAutoPurchase
+  });
+
+  // Full reset also clears the wisdom-deposited guard, which lives here
+  const handleGameReset = useCallback(() => {
+    wisdomDepositedRef.current = false;
+  }, []);
+
+  // Farm tier upgrades and full game reset
+  const { handleBuyLargerFarm, resetGame } = useFarmManagement({
+    experience,
+    money,
+    farmTier,
+    knowledge,
+    maxPlots,
+    farmCost,
+    FARM_BASE_COST,
+    setActiveVeggie,
+    setVeggies,
+    setMoney,
+    setExperience,
+    setKnowledge,
+    setDay,
+    setTotalDaysElapsed,
+    setTotalHarvests,
+    setGreenhouseOwned,
+    setAlmanacLevel,
+    setAlmanacCost,
+    setAutoSellOwned,
+    setHeirloomOwned,
+    setMaxPlots,
+    setFarmTier,
+    setIrrigationOwned,
+    setGlobalAutoPurchaseTimer,
+    setFarmCost,
+    setHighestUnlockedVeggie,
+    setCurrentWeather,
+    setBlockAchievementChecks,
+    setJustReset,
+    eventLogCallbacks,
+    prestigeStartingExpBonus: (prestigeState.wisdomUpgrades.startingExperience || 0) * 50,
+    plotEfficiencyLevel: prestigeState.wisdomUpgrades.plotEfficiency || 0,
+    onFarmTierReached: trackFarmTierReached,
+    onReset: handleGameReset,
+    globalBeeContext,
+    christmasEvent
+  });
+
   // Handler to start the next lifetime (prestige)
   // Note: Tab switching and event logging happen via separate handlers passed from component
-  // Note: State setters from hooks declared later (setCurrentWeather, setGlobalAutoPurchaseTimer)
-  // are safe to reference here because the callback body only executes on user action,
-  // after all hooks have initialised. Stable React setters don't need deps.
+  // Declared after the weather and auto-purchase hooks, so its dependency list can name their setters
   const handleStartNextLifetime = useCallback((onComplete?: () => void) => {
     // Wisdom was already deposited into prestigeState.wisdom when the
     // lifetime ended (in the lifetime-end useEffect).  Use the stored
@@ -456,406 +830,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     
     // Callback for additional cleanup (tab switching, canning reset, logging)
     if (onComplete) onComplete();
-  }, [wisdomEarnedThisLifetime, prestigeState.wisdomUpgrades, FARM_BASE_COST]);
-
-  // Initialize Christmas Tree Shop event
-  const [initialChristmasState] = useState(() => {
-    try {
-      const loaded = getLoadedState();
-      return loaded?.christmasEventState || undefined;
-    } catch (error) {
-      console.error('Error loading Christmas event state:', error);
-      return undefined;
-    }
-  });
-
-  const christmasEvent: UseChristmasEventReturn = useChristmasEvent({
-    initialState: initialChristmasState,
-    farmTier,
-    onTreeSold: (treeType, quantity, cheerEarned) => {
-      eventLogCallbacks.onTreeSold(treeType, quantity, cheerEarned);
-    },
-    onTreeHarvested: (treeType, quality) => {
-      eventLogCallbacks.onTreeHarvested(treeType, quality);
-    },
-    onItemCrafted: (itemName, quantity) => {
-      eventLogCallbacks.onItemCrafted(itemName, quantity);
-    },
-    onUpgradePurchased: (upgradeName, cost) => {
-      eventLogCallbacks.onUpgradePurchased(upgradeName, cost);
-    },
-    onMilestoneClaimed: (milestoneName) => {
-      eventLogCallbacks.onMilestoneClaimed(milestoneName);
-    },
-  });
-
-  // Upgrade purchases: per-crop upgrades, auto-purchasers and global upgrades
-  const {
-    handleBuyFertilizer,
-    handleBuyHarvester,
-    handleBuyHarvesterSpeed,
-    handleBuyBetterSeeds,
-    handleBuyAdditionalPlot,
-    handleBuyAutoPurchaser,
-    handleBuyIrrigation,
-    handleBuyGreenhouse,
-    handleBuyHeirloom,
-    handleBuyAutoSell,
-    handleBuyAlmanac,
-    irrigationCost,
-    irrigationKnCost
-  } = usePurchaseHandlers({
-    veggies,
-    setVeggies,
-    money,
-    setMoney,
-    knowledge,
-    setKnowledge,
-    heirloomOwned,
-    setHeirloomOwned,
-    irrigationOwned,
-    setIrrigationOwned,
-    greenhouseOwned,
-    setGreenhouseOwned,
-    autoSellOwned,
-    setAutoSellOwned,
-    setAlmanacLevel,
-    almanacCost,
-    setAlmanacCost,
-    totalPlotsUsed,
-    maxPlots,
-    heirloomMoneyCost,
-    heirloomKnowledgeCost,
-    onMilestone: eventLogCallbacks.onAchievementUnlock
-  });
-
-  // Weather system hook
-  const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
-  
-  // Season system hook
-  const { season } = useSeasonSystem(day);
-  
-
-  // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
-  useEffect(() => {
-    if (loaded && loaded.highestUnlockedVeggie === undefined && loaded.veggies) {
-      // Find the highest index of unlocked veggies from the loaded save data
-      const currentHighest = loaded.veggies.reduce((highest: number, veggie: Veggie, index: number) => {
-        return veggie.unlocked && index > highest ? index : highest;
-      }, 0);
-      setHighestUnlockedVeggie(currentHighest);
-    }
-  }, []); // Run only once on mount with empty dependency array since loaded is stable    
- 
-  // Growth timer for all unlocked veggies - using requestAnimationFrame for Chrome compatibility
-  // Performance monitoring ref to detect excessive rerenders
-  const growthLoopCountRef = useRef(0);
-  const lastGrowthLoopResetRef = useRef(Date.now());
-  
-  useGameLoop(() => {
-    // Skip all processing while game is paused
-    if (isPausedRef.current) return;
-    // Skip all processing if lifetime has ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
-
-    // Monitor for excessive loop executions (possible memory leak)
-    growthLoopCountRef.current++;
-    const now = Date.now();
-    if (now - lastGrowthLoopResetRef.current > 60000) { // Every minute
-      if (growthLoopCountRef.current > 100) {
-        console.warn('⚠️ Growth loop executed', growthLoopCountRef.current, 'times in last minute (expected ~60)');
-      }
-      growthLoopCountRef.current = 0;
-      lastGrowthLoopResetRef.current = now;
-    }
-    
-    setVeggies((prev) => {
-      const { veggies: newVeggies } = processVeggieGrowth(
-        prev,
-        season,
-        currentWeather,
-        greenhouseOwned,
-        irrigationOwned,
-        guildStateRef.current
-      );
-      return newVeggies;
-    });
-  }, 1000, [season, currentWeather, greenhouseOwned, irrigationOwned]);
-
-  // Latest-value refs to avoid large dependency arrays and restart of loops
-  // Only keep refs that are actually used in game loops
-  const knowledgeRef = useLatestRef(knowledge);
-  const dayRef = useLatestRef(day);
-  const almanacLevelRef = useLatestRef(almanacLevel);
-  const maxPlotsRef = useLatestRef(maxPlots);
-  const farmTierRef = useLatestRef(farmTier);
-  const highestUnlockedVeggieRef = useLatestRef(highestUnlockedVeggie);
-  const beeYieldBonusRef = useLatestRef(beeYieldBonus);
-  const seasonRef = useLatestRef(season);
-  const permanentBonusesRef = useLatestRef(permanentBonuses);
-  const christmasEventRef = useLatestRef(christmasEvent);
-  const experienceRef = useLatestRef(experience);
-  const autoSellOwnedRef = useLatestRef(autoSellOwned);
-  const guildStateRef = useLatestRef(guildState);
-  const trackKnowledgeGainedRef = useLatestRef(trackKnowledgeGained);
-  const offlinePrestigePendingRef = useLatestRef(offlinePrestigePending);
-  const isPausedRef = useLatestRef(isPaused);
-  // Lifetime max days - recalculated only when extendedLifespan level changes
-  const extendedLifespanLevel = prestigeState.wisdomUpgrades.extendedLifespan || 0;
-  const lifetimeMaxDaysRef = useRef(getMaxLifetimeDaysForPlayer(prestigeState));
-  useEffect(() => {
-    lifetimeMaxDaysRef.current = getMaxLifetimeDaysForPlayer(prestigeState);
-  }, [extendedLifespanLevel]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Progress for time away: once at startup, and whenever a hidden tab comes back
-  useOfflineProgress({
-    loaded,
-    state: {
-      veggies,
-      day,
-      totalDaysElapsed,
-      season,
-      currentWeather,
-      greenhouseOwned,
-      irrigationOwned,
-      almanacLevel,
-      farmTier,
-      knowledge,
-      guildState,
-      christmasEvent
-    },
-    isPaused,
-    lifetimeEnded: offlinePrestigePending,
-    lifetimeMaxDays: getMaxLifetimeDaysForPlayer(prestigeState),
-    trackKnowledgeGained,
-    setVeggies,
-    setExperience,
-    setKnowledge,
-    setDay,
-    setTotalDaysElapsed,
-    setOfflinePrestigePending
-  });
-
-  // Reliable lifetime-end detection: fires whenever totalDaysElapsed changes.
-  // The day-loop updater clamps totalDaysElapsed to the max, but setting the
-  // prestige flag via a closure variable inside setState is unreliable under
-  // React 18 batching.  This useEffect runs after the committed state,
-  // guaranteeing the check sees the real value.
-  //
-  // When the lifetime ends we also deposit the earned wisdom immediately so
-  // the player can spend it in the Wisdom Shop before clicking
-  // "Start Next Lifetime".
-  useEffect(() => {
-    if (wisdomDepositedRef.current) return; // wisdom already deposited this lifetime
-    const maxDays = lifetimeMaxDaysRef.current;
-    if (totalDaysElapsed < maxDays) return;
-
-    // ── Final stash sale: sell ALL veggies before computing wisdom ──
-    // Worked out from current state first, so the money and the wisdom always
-    // include it. A total read back out of a setState updater can still be 0,
-    // because React may run the updater later.
-    let stashSaleTotal = 0;
-    const soldByName = new Map<string, number>();
-    for (const v of veggies) {
-      if (v.stash > 0) {
-        for (let i = 0; i < v.stash; i++) {
-          stashSaleTotal += applyGuildPriceBonuses(v.salePrice, guildState, true);
-        }
-        soldByName.set(v.name, v.stash);
-      }
-    }
-    if (soldByName.size > 0) {
-      setVeggies(prev => prev.map(v => {
-        const sold = soldByName.get(v.name);
-        return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
-      }));
-    }
-
-    // Wisdom's Potential bonus also applies to the stash earnings
-    const potentialBonus = wisdomPotentialMultiplier > 1
-      ? Math.floor(stashSaleTotal * (wisdomPotentialMultiplier - 1))
-      : 0;
-    const stashContribution = stashSaleTotal + potentialBonus;
-    if (stashContribution > 0) {
-      setMoney(m => m + stashContribution);
-    }
-
-    // Calculate and deposit wisdom now so the shop works immediately,
-    // counting the stash money that hasn't reached prestigeState yet.
-    const moneyFactor = ((prestigeState.totalMoneyEarned || 0) + stashContribution) / 10_000;
-    const knowledgeFactor = (prestigeState.totalKnowledgeGained || 0) / 500;
-    const tierFactor = prestigeState.maxFarmTierReached || 1;
-    const wisdomBonus = Math.floor(Math.sqrt(prestigeState.wisdom || 0));
-    const earned = Math.floor((moneyFactor + knowledgeFactor) * tierFactor) + wisdomBonus;
-
-    setPrestigeState(prev => ({
-      ...prev,
-      totalMoneyEarned: (prev.totalMoneyEarned || 0) + stashContribution,
-      wisdom: prev.wisdom + earned,
-    }));
-    setWisdomEarnedThisLifetime(earned);
-    wisdomDepositedRef.current = true;
-    setOfflinePrestigePending(true);
-  }, [totalDaysElapsed, offlinePrestigePending, guildState, wisdomPotentialMultiplier, veggies, prestigeState]);
-  
-  useGameLoop(() => {
-    // Skip all processing while game is paused
-    if (isPausedRef.current) return;
-    // Skip all game processing if lifetime has ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
-    
-    setVeggies((prev) => {
-      const {
-        veggies: newVeggies,
-        experienceGain: totalExperienceGain,
-        knowledgeGain: totalKnowledgeGain,
-        needsUpdate,
-        harvestedVeggies
-      } = processAutoHarvest(
-        prev, 
-        almanacLevelRef.current, 
-        farmTierRef.current, 
-        knowledgeRef.current,
-        beeYieldBonusRef.current,
-        seasonRef.current,
-        permanentBonusesRef.current
-      );
-
-      // Log auto-harvests if there are any (deferred to avoid render-time setState)
-      if (harvestedVeggies.length > 0) {
-        harvestedVeggies.forEach(({ veggie, amount, expGain, knGain }) => {
-          logHarvest(veggie.name, amount, expGain, knGain, true);
-        });
-      }
-
-      // Update experience and knowledge for all harvests
-      if (totalExperienceGain > 0 && dayRef.current >= 1 && dayRef.current <= 365) {
-        setTimeout(() => {
-          setKnowledge((k: number) => k + totalKnowledgeGain);
-          setExperience((exp: number) => exp + totalExperienceGain);
-          // Track knowledge gained for lifetime stats (prestige system)
-          if (totalKnowledgeGain > 0) {
-            trackKnowledgeGainedRef.current(totalKnowledgeGain);
-          }
-        }, 0);
-      }
-
-      // Handle unlocks after all harvests are processed using projected experience
-      if (needsUpdate) {
-        const projectedExperience = experienceRef.current + totalExperienceGain;
-        const { veggies: unlockedVeggies, highestUnlockedIndex } = processVeggieUnlocks(
-          newVeggies,
-          projectedExperience,
-          maxPlotsRef.current
-        );
-        
-        // Update highest unlocked veggie if there were any unlocks
-        if (highestUnlockedIndex > highestUnlockedVeggieRef.current) {
-          setHighestUnlockedVeggie(highestUnlockedIndex);
-        }
-        
-        return unlockedVeggies;
-      }
-
-      return newVeggies;
-    });
-  }, 1000, []); // Empty deps - refs prevent loop restart
-
-  // Harvesting, selling, the ritual harvest, and the per-crop sell and auto-harvest toggles
-  const {
-    handleHarvest,
-    handleRitualHarvestAll,
-    handleToggleSell,
-    handleToggleAutoHarvester,
-    handleSell,
-    logHarvest
-  } = useHarvestAndSell({
-    veggies,
-    setVeggies,
-    experience,
-    setExperience,
-    knowledge,
-    setKnowledge,
-    setMoney,
-    season,
-    day,
-    almanacLevel,
-    farmTier,
-    maxPlots,
-    highestUnlockedVeggie,
-    setHighestUnlockedVeggie,
-    setTotalHarvests,
-    permanentBonuses,
-    beeYieldBonus,
-    activeVeggie,
-    eventLogCallbacks,
-    guildState,
-    setGuildState,
-    trackKnowledgeGained,
-    trackMoneyEarned
-  });
-
-  // Initialize auto-purchase system
-  const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
-    veggies,
-    setVeggies,
-    money,
-    knowledge,
-    maxPlots,
-    handlers: {
-      handleBuyFertilizer,
-      handleBuyBetterSeeds,
-      handleBuyHarvesterSpeed,
-      handleBuyAdditionalPlot
-    },
-    initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
-    onPurchaseCallback: eventLogCallbacks.onAutoPurchase
-  });
-
-  // Full reset also clears the wisdom-deposited guard, which lives here
-  const handleGameReset = useCallback(() => {
-    wisdomDepositedRef.current = false;
-  }, []);
-
-  // Farm tier upgrades and full game reset
-  const { handleBuyLargerFarm, resetGame } = useFarmManagement({
-    experience,
-    money,
-    farmTier,
-    knowledge,
-    maxPlots,
-    farmCost,
-    FARM_BASE_COST,
-    setActiveVeggie,
-    setVeggies,
-    setMoney,
-    setExperience,
-    setKnowledge,
-    setDay,
-    setTotalDaysElapsed,
-    setTotalHarvests,
-    setGreenhouseOwned,
-    setAlmanacLevel,
-    setAlmanacCost,
-    setAutoSellOwned,
-    setHeirloomOwned,
-    setMaxPlots,
-    setFarmTier,
-    setIrrigationOwned,
-    setGlobalAutoPurchaseTimer,
-    setFarmCost,
-    setHighestUnlockedVeggie,
-    setCurrentWeather,
-    setBlockAchievementChecks,
-    setJustReset,
-    eventLogCallbacks,
-    prestigeStartingExpBonus: (prestigeState.wisdomUpgrades.startingExperience || 0) * 50,
-    plotEfficiencyLevel: prestigeState.wisdomUpgrades.plotEfficiency || 0,
-    onFarmTierReached: trackFarmTierReached,
-    onReset: handleGameReset,
-    globalBeeContext,
-    christmasEvent
-  });
+  }, [wisdomEarnedThisLifetime, prestigeState.lifetimeCount, prestigeState.totalMoneyEarned, prestigeState.totalKnowledgeGained, prestigeState.maxFarmTierReached, prestigeState.wisdom, prestigeState.wisdomUpgrades.startingGold, prestigeState.wisdomUpgrades.startingKnowledge, prestigeState.wisdomUpgrades.startingExperience, prestigeState.wisdomUpgrades.startingFarmTier, totalDaysElapsed, FARM_BASE_COST, setMoney, setKnowledge, setExperience, setFarmTier, setFarmCost, setMaxPlots, setHighestUnlockedVeggie, setActiveVeggie, setVeggies, setDay, setTotalDaysElapsed, setTotalHarvests, setIrrigationOwned, setGreenhouseOwned, setHeirloomOwned, setAutoSellOwned, setAlmanacLevel, setAlmanacCost, setCurrentWeather, setGlobalAutoPurchaseTimer]);
 
   // Day counter, merchant auto-sell, auto-purchase timer and Christmas daily ticks
   useDayLoop({
@@ -870,8 +845,49 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     handleSell
   });
 
+  // Context value. Memoized so App re-renders only when something in it changes.
+  // The field list and the dependency list are the same names; the hooks lint rule
+  // checks that nothing read here is missing from the dependencies.
+  const gameContextValue = useMemo<GameState>(() => ({
+    veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge,
+    activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests,
+    setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie,
+    handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll,
+    handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned,
+    setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned,
+    setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell,
+    almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac,
+    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm,
+    farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
+    handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
+    setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
+    christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached,
+    prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime,
+    offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused,
+    setIsPaused
+  }), [
+    veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge,
+    activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests,
+    setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie,
+    handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll,
+    handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned,
+    setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned,
+    setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell,
+    almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac,
+    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm,
+    farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
+    handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
+    setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
+    christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached,
+    prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime,
+    offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused,
+    setIsPaused
+  ]);
+
   return (
-    <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached, prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime, offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused, setIsPaused }}>
+    <GameContext.Provider value={gameContextValue}>
       {children}
     </GameContext.Provider>
   );
@@ -1125,7 +1141,7 @@ function App() {
       // Clear guild tokens after conversion
       guildTokens: 0
     }));
-  }, [day]);
+  }, [day, setGuildState]);
 
   const handlePurchaseGuildUpgrade = useCallback((upgradeId: string) => {
     // Find the upgrade from guild data
@@ -1225,7 +1241,7 @@ function App() {
         upgradeLevels: newLevels
       };
     });
-  }, [money, knowledge, guildState]);
+  }, [guildState.upgradeLevels, guildState.purchasedUpgrades, guildState.guildCurrencies, guildState.guildTokens, setGuildState, money, knowledge, setMoney, setKnowledge]);
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1296,30 +1312,30 @@ function App() {
     [achievements]
   );
 
-  // Wrapped setters for canning system that also track prestige stats
+  // Runs work recorded by state updaters once their result is committed
+  const scheduleAfterCommit = useDeferredEffects();
+
+  // Wrapped setters for the canning system that also track prestige stats.
+  // The gain is only known inside the updater, so tracking runs after the commit.
   const setMoneyWithTracking = useCallback((value: number | ((prev: number) => number)) => {
+    const key = {};
     setMoney((prev: number) => {
       const newValue = typeof value === 'function' ? value(prev) : value;
       const gained = newValue - prev;
-      if (gained > 0) {
-        // Schedule separately to avoid nested setState
-        setTimeout(() => trackMoneyEarned(gained), 0);
-      }
+      scheduleAfterCommit(key, gained > 0 ? () => trackMoneyEarned(gained) : undefined);
       return newValue;
     });
-  }, [setMoney, trackMoneyEarned]);
+  }, [setMoney, trackMoneyEarned, scheduleAfterCommit]);
 
   const setKnowledgeWithTracking = useCallback((value: number | ((prev: number) => number)) => {
+    const key = {};
     setKnowledge((prev: number) => {
       const newValue = typeof value === 'function' ? value(prev) : value;
       const gained = newValue - prev;
-      if (gained > 0) {
-        // Schedule separately to avoid nested setState
-        setTimeout(() => trackKnowledgeGained(gained), 0);
-      }
+      scheduleAfterCommit(key, gained > 0 ? () => trackKnowledgeGained(gained) : undefined);
       return newValue;
     });
-  }, [setKnowledge, trackKnowledgeGained]);
+  }, [setKnowledge, trackKnowledgeGained, scheduleAfterCommit]);
 
   // Initialize canning system
   const {
@@ -1597,7 +1613,7 @@ function App() {
       // Update the tracked growth value
       previousVeggieGrowthRef.current.set(veggie.name, veggie.growth);
     });
-  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog, harvestTutorialShown, activeTab]);
+  }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog, harvestTutorialShown, activeTab, guildState]);
   
   // Lifespan tutorial triggers
   // Show intro at start of first lifetime (day 0-1)

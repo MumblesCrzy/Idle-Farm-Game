@@ -1,5 +1,6 @@
 import { useRef, useEffect, type Dispatch, type SetStateAction, type MutableRefObject } from 'react';
-import { useRobustInterval } from './useGameLoop';
+import { useGameTick } from './useGameClock';
+import { useDeferredEffects } from './useDeferredEffects';
 import { MERCHANT_DAYS } from '../config/gameConstants';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
@@ -59,8 +60,8 @@ export interface UseDayLoopDependencies {
  * - Grows Christmas trees and pays out passive Holiday Cheer
  * - Runs Elves' Bench crafting (separate loop)
  *
- * Both loops use `useRobustInterval`, which pauses while the tab is hidden;
- * the offline catch-up covers that time.
+ * Both run on the game clock (useGameTick), which pauses while the tab is
+ * hidden; the offline catch-up covers that time.
  */
 export function useDayLoop(deps: UseDayLoopDependencies): void {
   const {
@@ -75,6 +76,9 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     handleSell
   } = deps;
 
+  // Runs work recorded by state updaters once their result is committed
+  const scheduleAfterCommit = useDeferredEffects();
+
   // Keep a ref to handleSell to avoid restarting the interval when it changes
   const handleSellRef = useRef(handleSell);
 
@@ -82,8 +86,8 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     handleSellRef.current = handleSell;
   }, [handleSell]);
 
-  // Main day loop - runs every second (1000ms)
-  useRobustInterval(() => {
+  // Main day loop - one game step per second
+  useGameTick(() => {
     // Skip all processing while game is paused
     if (isPausedRef.current) return;
     // Skip all day progression if lifetime has already ended (prestige pending)
@@ -99,32 +103,30 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
       return next >= maxDays ? maxDays : next;
     });
 
+    const tick = {};
     setDay((d: number) => {
       const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
 
-      // Auto-sell logic for merchant (every MERCHANT_DAYS)
-      if (autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0) {
-        // Small delay to ensure state is updated before selling
-        setTimeout(() => {
-          handleSellRef.current(true); // true = auto-sell
-        }, 100);
-      }
-
-      // Increment auto-purchase timer each day
-      setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
+      // Merchant auto-sale every MERCHANT_DAYS, run after the new day is committed
+      scheduleAfterCommit(tick, autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0
+        ? () => handleSellRef.current(true) // true = auto-sell
+        : undefined);
 
       return newDay;
     });
+
+    // Increment auto-purchase timer each day
+    setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
 
     // Process Christmas tree growth each day
     if (christmasEventRef.current?.isEventActive) {
       christmasEventRef.current.processTreeGrowth();
       christmasEventRef.current.updatePassiveIncome(1000); // 1000ms = 1 second
     }
-  }, 1000, []); // Empty deps - refs prevent loop restart
+  }, { order: 30 });
 
   // Elves' Bench automation loop - runs every second
-  useRobustInterval(() => {
+  useGameTick(() => {
     if (isPausedRef.current) return;
     if (offlinePrestigePendingRef.current) return;
     if (christmasEventRef.current?.isEventActive) {
@@ -136,5 +138,5 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
         christmasEventRef.current.processDailyElvesCrafting();
       }
     }
-  }, 1000, []); // Empty deps - refs prevent loop restart
+  }, { order: 40 });
 }

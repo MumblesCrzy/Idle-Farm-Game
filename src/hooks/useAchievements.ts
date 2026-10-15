@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useLatestRef } from './useLatestRef';
 import type { Achievement, AchievementGameState, AchievementState } from '../types/achievements';
 import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
 
@@ -11,6 +12,139 @@ interface UseAchievementsReturn {
   checkAchievements: (gameState: GameStateForAchievements) => Achievement | null;
   clearLastUnlocked: () => void;
   resetAchievements: () => void;
+}
+
+/** Whether an achievement's requirement is met */
+function checkRequirement(achievement: Achievement, gameState: GameStateForAchievements): boolean {
+  const { requirement } = achievement;
+
+  switch (requirement.type) {
+    case 'money':
+      return gameState.money >= (requirement.value || 0);
+    case 'experience':
+      return gameState.experience >= (requirement.value || 0);
+    case 'knowledge':
+      return gameState.knowledge >= (requirement.value || 0);
+    case 'veggies_unlocked':
+      return gameState.veggiesUnlocked >= (requirement.value || 0);
+    case 'canning_items':
+      return gameState.canningItemsTotal >= (requirement.value || 0);
+    case 'farm_tier':
+      return gameState.farmTier >= (requirement.value || 0);
+    case 'christmas_trees_sold':
+      return (gameState.christmasTreesSold || 0) >= (requirement.value || 0);
+    case 'custom':
+      return requirement.customCheck ? requirement.customCheck(gameState) : false;
+    default:
+      return false;
+  }
+}
+
+/** Current progress toward an achievement, for numeric requirements */
+function getProgress(achievement: Achievement, gameState: GameStateForAchievements): { current: number; goal: number } | undefined {
+  const { requirement } = achievement;
+
+  // Only track progress for numeric requirements
+  if (!requirement.value) return undefined;
+
+  let current = 0;
+
+  switch (requirement.type) {
+    case 'money':
+      current = gameState.money;
+      break;
+    case 'experience':
+      current = gameState.experience;
+      break;
+    case 'knowledge':
+      current = gameState.knowledge;
+      break;
+    case 'veggies_unlocked':
+      current = gameState.veggiesUnlocked;
+      break;
+    case 'canning_items':
+      current = gameState.canningItemsTotal;
+      break;
+    case 'farm_tier':
+      current = gameState.farmTier;
+      break;
+    case 'christmas_trees_sold':
+      current = gameState.christmasTreesSold || 0;
+      break;
+    case 'total_harvests':
+      current = gameState.totalHarvests || 0;
+      break;
+    case 'custom':
+      // Use custom getProgress function if provided
+      if (requirement.getProgress) {
+        current = requirement.getProgress(gameState);
+      } else {
+        return undefined;
+      }
+      break;
+    default:
+      return undefined;
+  }
+
+  return {
+    current: Math.min(current, requirement.value),
+    goal: requirement.value
+  };
+}
+
+/**
+ * Updates progress and unlocks at most one achievement, without side effects.
+ * Returns null when nothing changed. One unlock per check, so each one gets its
+ * own notification.
+ */
+function evaluateAchievements(
+  state: AchievementState,
+  gameState: GameStateForAchievements,
+  now: number
+): { next: AchievementState; unlocked: Achievement | null } | null {
+  let achievements = state.achievements;
+  let changed = false;
+  let unlocked: Achievement | null = null;
+
+  for (let i = 0; i < achievements.length; i++) {
+    const achievement = achievements[i];
+
+    // Update progress for all achievements (even unlocked ones)
+    const progress = getProgress(achievement, gameState);
+    if (progress && (
+      !achievement.progress ||
+      achievement.progress.current !== progress.current ||
+      achievement.progress.goal !== progress.goal
+    )) {
+      if (!changed) {
+        achievements = [...achievements];
+        changed = true;
+      }
+      achievements[i] = { ...achievement, progress };
+    }
+
+    // Unlock a locked achievement whose requirement is met
+    if (!achievement.unlocked && checkRequirement(achievement, gameState)) {
+      if (!changed) {
+        achievements = [...achievements];
+        changed = true;
+      }
+      achievements[i] = { ...achievements[i], unlocked: true, unlockedAt: now };
+      unlocked = achievements[i];
+      break;
+    }
+  }
+
+  if (!changed) return null;
+  return {
+    next: {
+      ...state,
+      achievements,
+      totalUnlocked: unlocked ? state.totalUnlocked + 1 : state.totalUnlocked,
+      lastUnlockedId: unlocked ? unlocked.id : state.lastUnlockedId
+    },
+    unlocked
+  };
 }
 
 export function useAchievements(
@@ -91,149 +225,31 @@ export function useAchievements(
     };
   });
 
-  // Check if an achievement requirement is met
-  const checkRequirement = useCallback((achievement: Achievement, gameState: GameStateForAchievements): boolean => {
-    const { requirement } = achievement;
-    
-    switch (requirement.type) {
-      case 'money':
-        return gameState.money >= (requirement.value || 0);
-      case 'experience':
-        return gameState.experience >= (requirement.value || 0);
-      case 'knowledge':
-        return gameState.knowledge >= (requirement.value || 0);
-      case 'veggies_unlocked':
-        return gameState.veggiesUnlocked >= (requirement.value || 0);
-      case 'canning_items':
-        return gameState.canningItemsTotal >= (requirement.value || 0);
-      case 'farm_tier':
-        return gameState.farmTier >= (requirement.value || 0);
-      case 'christmas_trees_sold':
-        return (gameState.christmasTreesSold || 0) >= (requirement.value || 0);
-      case 'custom':
-        return requirement.customCheck ? requirement.customCheck(gameState) : false;
-      default:
-        return false;
-    }
-  }, []);
+  // Latest state, so a check can decide and report before its update is committed
+  const achievementStateRef = useLatestRef(achievementState);
 
-  // Get current progress for an achievement
-  const getProgress = useCallback((achievement: Achievement, gameState: GameStateForAchievements): { current: number; goal: number } | undefined => {
-    const { requirement } = achievement;
-    
-    // Only track progress for numeric requirements
-    if (!requirement.value) return undefined;
-    
-    let current = 0;
-    
-    switch (requirement.type) {
-      case 'money':
-        current = gameState.money;
-        break;
-      case 'experience':
-        current = gameState.experience;
-        break;
-      case 'knowledge':
-        current = gameState.knowledge;
-        break;
-      case 'veggies_unlocked':
-        current = gameState.veggiesUnlocked;
-        break;
-      case 'canning_items':
-        current = gameState.canningItemsTotal;
-        break;
-      case 'farm_tier':
-        current = gameState.farmTier;
-        break;
-      case 'christmas_trees_sold':
-        current = gameState.christmasTreesSold || 0;
-        break;
-      case 'total_harvests':
-        current = gameState.totalHarvests || 0;
-        break;
-      case 'custom':
-        // Use custom getProgress function if provided
-        if (requirement.getProgress) {
-          current = requirement.getProgress(gameState);
-        } else {
-          return undefined;
-        }
-        break;
-      default:
-        return undefined;
-    }
-    
-    return {
-      current: Math.min(current, requirement.value),
-      goal: requirement.value
-    };
-  }, []);
-
-  // Check all achievements and unlock any that are newly achieved
+  // Check all achievements and unlock any that are newly achieved.
+  // Decides from the latest state, applies the same evaluation in the updater so
+  // it composes with other queued updates, then fires callbacks outside it.
   const checkAchievements = useCallback((gameState: GameStateForAchievements): Achievement | null => {
-    let newlyUnlocked: Achievement | null = null;
+    const now = Date.now();
+    const outcome = evaluateAchievements(achievementStateRef.current, gameState, now);
+    if (!outcome) return null;
 
-    setAchievementState(prev => {
-      const updated = { ...prev };
-      let hasChanges = false;
+    // Let a second check before the commit see this one
+    achievementStateRef.current = outcome.next;
+    setAchievementState(prev => evaluateAchievements(prev, gameState, now)?.next ?? prev);
 
-      // Check each achievement and update progress
-      for (let i = 0; i < updated.achievements.length; i++) {
-        const achievement = updated.achievements[i];
-        
-        // Update progress for all achievements (even unlocked ones)
-        const progress = getProgress(achievement, gameState);
-        if (progress && (
-          !achievement.progress || 
-          achievement.progress.current !== progress.current ||
-          achievement.progress.goal !== progress.goal
-        )) {
-          updated.achievements = [...updated.achievements];
-          updated.achievements[i] = {
-            ...achievement,
-            progress
-          };
-          hasChanges = true;
-        }
-        
-        // Check if locked achievement should be unlocked
-        if (!achievement.unlocked && checkRequirement(achievement, gameState)) {
-          // Unlock the achievement
-          updated.achievements = [...updated.achievements];
-          updated.achievements[i] = {
-            ...updated.achievements[i],
-            unlocked: true,
-            unlockedAt: Date.now()
-          };
-          
-          updated.totalUnlocked++;
-          updated.lastUnlockedId = achievement.id;
-          hasChanges = true;
-          newlyUnlocked = updated.achievements[i];
-          
-          // Call achievement unlock callback if provided
-          if (onAchievementUnlock) {
-            onAchievementUnlock(updated.achievements[i]);
-          }
-          
-          // Grant rewards if they exist
-          if (achievement.reward && onReward) {
-            onReward(
-              achievement.reward.money || 0,
-              achievement.reward.knowledge || 0
-            );
-          }
-          
-          // Only unlock one achievement per check to show notifications properly
-          break;
-        }
+    const { unlocked } = outcome;
+    if (unlocked) {
+      onAchievementUnlock?.(unlocked);
+      // Grant rewards if they exist
+      if (unlocked.reward && onReward) {
+        onReward(unlocked.reward.money || 0, unlocked.reward.knowledge || 0);
       }
-
-      return hasChanges ? updated : prev;
-    });
-
-    return newlyUnlocked;
-  }, [checkRequirement, getProgress, onReward, onAchievementUnlock]);
+    }
+    return unlocked;
+  }, [achievementStateRef, onReward, onAchievementUnlock]);
 
   // Clear the last unlocked achievement (after showing notification)
   const clearLastUnlocked = useCallback(() => {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAchievements } from '../hooks/useAchievements';
 import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
@@ -51,5 +51,65 @@ describe('useAchievements after a reload', () => {
     expect(firstHarvest?.unlocked).toBe(true);
     expect(firstHarvest?.unlockedAt).toBe(123);
     expect(typeof firstHarvest?.requirement.customCheck).toBe('function');
+  });
+});
+
+describe('useAchievements checks', () => {
+  it('returns the unlock and fires each callback once, even in strict mode', () => {
+    const onReward = vi.fn();
+    const onUnlock = vi.fn();
+    const { result } = renderHook(
+      () => useAchievements(freshState(), onReward, onUnlock),
+      { reactStrictMode: true }
+    );
+
+    let unlocked: ReturnType<typeof result.current.checkAchievements> = null;
+    act(() => {
+      unlocked = result.current.checkAchievements(gameState({ totalHarvests: 1 }));
+    });
+
+    expect(unlocked).not.toBeNull();
+    expect(unlocked!.id).toBe('first_harvest');
+    expect(onUnlock).toHaveBeenCalledTimes(1);
+    expect(onReward).toHaveBeenCalledTimes(1);
+    expect(onReward).toHaveBeenCalledWith(50, 0);
+    expect(result.current.totalUnlocked).toBe(1);
+    expect(result.current.lastUnlockedId).toBe('first_harvest');
+  });
+
+  it('reports a different unlock for each check before a render', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+
+    const ids: (string | undefined)[] = [];
+    act(() => {
+      const state = gameState({ totalHarvests: 1, money: 1_000_000 });
+      ids.push(result.current.checkAchievements(state)?.id);
+      ids.push(result.current.checkAchievements(state)?.id);
+    });
+
+    expect(ids[0]).toBeDefined();
+    expect(ids[1]).toBeDefined();
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(onUnlock).toHaveBeenCalledTimes(2);
+    expect(result.current.totalUnlocked).toBe(2);
+    const unlockedIds = result.current.achievements.filter(a => a.unlocked).map(a => a.id);
+    expect(unlockedIds).toEqual(expect.arrayContaining(ids as string[]));
+  });
+
+  it('returns null and fires nothing when nothing changes', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    act(() => {
+      result.current.checkAchievements(gameState());
+    });
+
+    let second: ReturnType<typeof result.current.checkAchievements> = null;
+    act(() => {
+      second = result.current.checkAchievements(gameState());
+    });
+
+    expect(second).toBeNull();
+    expect(onUnlock).not.toHaveBeenCalled();
   });
 });

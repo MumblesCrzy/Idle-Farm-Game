@@ -5,7 +5,7 @@
  * upgrades, and the Beekeeper Assistant automation.
  */
 
-import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { 
   BeeBox, 
   BeeUpgrade,
@@ -19,7 +19,7 @@ import type {
 } from '../types/bees';
 import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
-import { useGameLoop } from '../hooks/useGameLoop';
+import { useGameTick } from '../hooks/useGameClock';
 
 // Import constants
 const BEE_CONSTANTS_IMPL = {
@@ -449,13 +449,16 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     ).length;
 
     setBoxes(prev => {
+      let changed = false;
       const updated = prev.map(box => {
-        if (!box.active) return box;
+        if (!box.active || box.harvestReady) return box;
 
-        const newTimer = box.productionTimer + deltaTime;
-        
+        const newTimer = Math.min(box.productionTimer + deltaTime, productionTime);
+        if (newTimer === box.productionTimer) return box;
+        changed = true;
+
         // Check if production is complete
-        if (newTimer >= productionTime && !box.harvestReady) {
+        if (newTimer >= productionTime) {
           return {
             ...box,
             productionTimer: productionTime,
@@ -465,11 +468,11 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
 
         return {
           ...box,
-          productionTimer: Math.min(newTimer, productionTime),
+          productionTimer: newTimer,
         };
       });
 
-      return updated;
+      return changed ? updated : prev;
     });
 
     // Log when boxes become ready for harvest
@@ -901,20 +904,22 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked, boxes.length, isPaused]); // Only run on mount or when unlocked/boxes change
 
-  // Set up production update loop using useGameLoop (runs every second)
-  useGameLoop(
-    () => {
-      if (!unlocked || boxes.length === 0 || isPaused) return;
+  // Production, one game step per second. It uses real elapsed time, so the first
+  // step after the tab was hidden credits the hidden time.
+  useGameTick(() => {
+    if (!unlocked || boxes.length === 0) return;
+    if (isPaused) {
+      // Paused time doesn't count toward production
+      lastUpdateTimeRef.current = Date.now();
+      return;
+    }
 
-      const now = Date.now();
-      const deltaTime = (now - lastUpdateTimeRef.current) / 1000; // Convert to seconds
-      lastUpdateTimeRef.current = now;
+    const now = Date.now();
+    const deltaTime = (now - lastUpdateTimeRef.current) / 1000; // Convert to seconds
+    lastUpdateTimeRef.current = now;
 
-      updateProduction(deltaTime, season);
-    },
-    1000, // Update every second
-    [unlocked, boxes.length, season, isPaused] // Restart loop when these change
-  );
+    updateProduction(deltaTime, season);
+  }, { order: 50 });
 
   // Update box active status based on season
   useEffect(() => {
@@ -984,8 +989,10 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     calculateProductionRate
   ]);
 
-  // Construct context value
-  const contextValue: BeeContextValue = {
+  // Construct context value. Memoized so consumers re-render only when something
+  // in it changes. Every value it reads is listed below; lastUpdateTime is a getter
+  // because it lives in a ref, so it can never be stale.
+  const contextValue = useMemo<BeeContextValue>(() => ({
     // State
     unlocked,
     firstTimeSetup,
@@ -995,7 +1002,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     goldenHoney,
     totalHoneyCollected,
     totalGoldenHoneyCollected,
-    lastUpdateTime: lastUpdateTimeRef.current,
+    get lastUpdateTime() {
+      return lastUpdateTimeRef.current;
+    },
     honeyPerSecond: calculateProductionRate(),
     upgrades,
     beekeeperAssistant,
@@ -1026,12 +1035,48 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     getBeeBoxPurchaseInfo,
     getUpgradeEffect,
     canAffordBeeBox,
-    
+
     // Dev tools (only available in development)
     devAddHoney,
     devAddGoldenHoney,
     devCompleteAllBoxes,
-  };
+  }), [
+    unlocked,
+    firstTimeSetup,
+    boxes,
+    regularHoney,
+    goldenHoney,
+    totalHoneyCollected,
+    totalGoldenHoneyCollected,
+    upgrades,
+    beekeeperAssistant,
+    totalBoxesPurchased,
+    honeySpent,
+    addBeeBox,
+    removeBeeBox,
+    harvestHoney,
+    harvestAllHoney,
+    applyOfflineProgress,
+    updateProduction,
+    checkReadyBoxes,
+    purchaseUpgrade,
+    canAffordUpgrade,
+    unlockBeekeeperAssistant,
+    upgradeBeekeeperAssistant,
+    toggleBeekeeperAssistant,
+    initializeBeeSystem,
+    calculateYieldBonus,
+    calculateProductionRate,
+    calculateHoneyProductionMultiplier,
+    resetBeeSystem,
+    getBeeStats,
+    getBeeBoxPurchaseInfo,
+    getUpgradeEffect,
+    canAffordBeeBox,
+    devAddHoney,
+    devAddGoldenHoney,
+    devCompleteAllBoxes,
+  ]);
 
   return (
     <BeeContext.Provider value={contextValue}>

@@ -331,13 +331,12 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
   
   // Update selected tree when a higher tier is unlocked
   useEffect(() => {
-    const highestUnlocked = getHighestUnlockedTree();
-    // Only update if the newly unlocked tree is higher tier than current selection
-    if (selectedTreeType === 'pine' && (spruceUnlocked || firUnlocked)) {
-      setSelectedTreeType(highestUnlocked);
-    } else if (selectedTreeType === 'spruce' && firUnlocked) {
-      setSelectedTreeType('fir');
-    }
+    // Only move up when a higher tier than the current selection unlocks
+    setSelectedTreeType(current => {
+      if (current === 'pine' && (spruceUnlocked || firUnlocked)) return firUnlocked ? 'fir' : 'spruce';
+      if (current === 'spruce' && firUnlocked) return 'fir';
+      return current;
+    });
   }, [spruceUnlocked, firUnlocked]);
   
   // Count ready trees and empty plots

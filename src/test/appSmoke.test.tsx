@@ -1,27 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import App, { GameProvider } from '../App';
-import { ArchieProvider } from '../context/ArchieContext';
-import { EventLogProvider } from '../context/EventLogContext';
-import { GameFlagsProvider } from '../context/GameFlagsContext';
-import { FeatureFlagsProvider } from '../context/FeatureFlagsContext';
+import App from '../App';
+import { GameProviders } from '../GameProviders';
 import { GAME_STORAGE_KEY } from '../config/gameConstants';
 import { CURRENT_SAVE_VERSION } from '../utils/migrations/registry';
 
 // Same provider tree as main.tsx
 const renderGame = () =>
   render(
-    <FeatureFlagsProvider>
-      <EventLogProvider>
-        <GameFlagsProvider>
-          <GameProvider>
-            <ArchieProvider>
-              <App />
-            </ArchieProvider>
-          </GameProvider>
-        </GameFlagsProvider>
-      </EventLogProvider>
-    </FeatureFlagsProvider>
+    <GameProviders>
+      <App />
+    </GameProviders>
   );
 
 describe('App smoke test', () => {

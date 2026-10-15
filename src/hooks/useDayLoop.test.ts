@@ -6,9 +6,9 @@ import type { UseChristmasEventReturn } from './useChristmasEvent';
 // Track registered callbacks
 let registeredCallbacks: Array<() => void> = [];
 
-// Mock the useRobustInterval hook
-vi.mock('./useGameLoop', () => ({
-  useRobustInterval: (callback: () => void, _interval: number, _deps: unknown[]) => {
+// Mock the game clock: capture each tick callback for manual triggering
+vi.mock('./useGameClock', () => ({
+  useGameTick: (callback: () => void) => {
     // Store callback for manual triggering in tests
     registeredCallbacks.push(callback);
   }
@@ -270,16 +270,13 @@ describe('useDayLoop', () => {
         })
       });
       
-      renderHook(() => useDayLoop(deps));
+      const { rerender } = renderHook(() => useDayLoop(deps));
       
       act(() => {
         triggerDayLoop();
       });
-      
-      // Advance timers to trigger the setTimeout
-      act(() => {
-        vi.advanceTimersByTime(200);
-      });
+      // Stand in for the commit after which a merchant sale would run
+      rerender();
       
       expect(deps.handleSell).not.toHaveBeenCalled();
       
@@ -287,8 +284,6 @@ describe('useDayLoop', () => {
     });
 
     it('should trigger auto-sell on merchant day when autoSellOwned is true', () => {
-      vi.useFakeTimers();
-      
       const handleSell = vi.fn();
       const deps = createMockDependencies({
         autoSellOwnedRef: { current: true },
@@ -300,20 +295,16 @@ describe('useDayLoop', () => {
         })
       });
       
-      renderHook(() => useDayLoop(deps));
+      const { rerender } = renderHook(() => useDayLoop(deps));
       
       act(() => {
         triggerDayLoop();
       });
-      
-      // Advance timers to trigger the setTimeout (100ms delay)
-      act(() => {
-        vi.advanceTimersByTime(200);
-      });
+      // The sale runs after the new day is committed; the mocked setDay never
+      // commits, so render once more to stand in for that commit
+      rerender();
       
       expect(handleSell).toHaveBeenCalledWith(true);
-      
-      vi.useRealTimers();
     });
 
     it('should not trigger auto-sell on non-merchant days', () => {
@@ -328,16 +319,13 @@ describe('useDayLoop', () => {
         })
       });
       
-      renderHook(() => useDayLoop(deps));
+      const { rerender } = renderHook(() => useDayLoop(deps));
       
       act(() => {
         triggerDayLoop();
       });
-      
-      // Advance timers
-      act(() => {
-        vi.advanceTimersByTime(200);
-      });
+      // Stand in for the commit after which a merchant sale would run
+      rerender();
       
       expect(deps.handleSell).not.toHaveBeenCalled();
       

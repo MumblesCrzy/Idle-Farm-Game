@@ -20,7 +20,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 
 ### Previous Major Update (v0.6.0)
 - **Chrome 142+ Fix**: Resolved game freezing with Memory Saver enabled
-- **requestAnimationFrame System**: Browser-optimized timing for all game loops
+- **Single Game Clock**: One clock steps every system once per second
 - **UI Polish**: Auto-collection for canning, smooth transitions, centered layout
 - **Professional Feel**: Cleaner, more polished user experience
 
@@ -234,7 +234,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 
 - **React + TypeScript**: Modern React 19 with full TypeScript support and strict mode
 - **Vite Build System**: Fast development and optimized production builds (337KB JS)
-- **Custom Game Loop**: requestAnimationFrame-based `useGameLoop` hook for reliable timing
+- **Game Clock**: one `GameClock` steps every system once per second, in a fixed order, so React renders once per step (`useGameTick` subscribes)
 - **State Management**: Centralized game state with localStorage persistence and ref-based access patterns
 - **Component Architecture**: Modular BaseTab system with reusable upgrade panels
 - **Test Suite**: Comprehensive tests with Vitest, Testing Library, and coverage reporting

@@ -39,6 +39,7 @@ export default defineConfig([
           'useFeatureFlag',
           'withFeatureFlag',
           'useGameFlags',
+          'useGameTick',
         ],
       }],
     },

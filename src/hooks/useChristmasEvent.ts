@@ -5,7 +5,7 @@
  * Handles Holiday Cheer currency, tree farming, decoration crafting, and sales.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLatestRef } from './useLatestRef';
 import type {
   ChristmasEventState,
@@ -150,6 +150,24 @@ function createInitialEventState(_farmTier: number): ChristmasEventState {
     permanentBonuses: [],
     unlockedRecipes: [],
   };
+}
+
+/** A pure state change plus what it did, for logging and return values */
+type Transition<R> = { next: ChristmasEventState; result: R };
+
+/**
+ * Pre-rolled random numbers for a transition. Transitions run twice (once to
+ * decide, once inside the updater), so randomness is rolled once beforehand and
+ * replayed. Rolls past the end return 1, which never triggers a bonus.
+ */
+function rollSource(rolls: number[]): () => number {
+  let index = 0;
+  return () => (index < rolls.length ? rolls[index++] : 1);
+}
+
+/** Total trees in an inventory */
+function countTrees(inventory: Record<string, number>): number {
+  return Object.values(inventory).reduce((sum, quantity) => sum + quantity, 0);
 }
 
 /**
@@ -403,6 +421,26 @@ export function useChristmasEvent({
 
   // Latest state for handlers that must decide before queueing an update
   const eventStateRef = useLatestRef(eventState);
+
+  /**
+   * Applies a pure state transition and returns its result.
+   *
+   * The transition decides from the state it is given and returns the next state
+   * with a result, or null when nothing should happen. It runs on the latest state
+   * to decide and report, then again inside the updater so it composes with any
+   * other queued update. Callers fire callbacks afterwards, outside the updater,
+   * so a result is never read back out of an updater that may not have run yet.
+   */
+  const transact = useCallback(<R>(
+    transition: (state: ChristmasEventState) => Transition<R> | null
+  ): R | null => {
+    const outcome = transition(eventStateRef.current);
+    if (!outcome) return null;
+    // Let a second action in the same frame see this one
+    eventStateRef.current = outcome.next;
+    setEventState(prev => transition(prev)?.next ?? prev);
+    return outcome.result;
+  }, [eventStateRef]);
   
   // Update event active state when date changes
   useEffect(() => {
@@ -452,22 +490,11 @@ export function useChristmasEvent({
   }, []);
   
   const spendCheer = useCallback((amount: number): boolean => {
-    // Use functional pattern with return value to avoid stale closure on holidayCheer
-    let success = false;
-    setEventState(prev => {
-      if (prev.holidayCheer < amount) {
-        success = false;
-        return prev;
-      }
-      success = true;
-      return {
-        ...prev,
-        holidayCheer: prev.holidayCheer - amount,
-      };
-    });
-    
-    return success;
-  }, []);
+    return transact(state => state.holidayCheer < amount ? null : {
+      next: { ...state, holidayCheer: state.holidayCheer - amount },
+      result: true
+    }) ?? false;
+  }, [transact]);
   
   // ============================================================================
   // TREE MANAGEMENT
@@ -506,68 +533,56 @@ export function useChristmasEvent({
   }, []);
   
   const harvestTree = useCallback((plotIndex: number) => {
-    setEventState(prev => {
-      const plot = prev.treePlots[plotIndex];
-      
-      if (!plot.harvestReady || !plot.treeType) {
-        return prev;
+    const harvested = transact(state => {
+      const plot = state.treePlots[plotIndex];
+
+      if (!plot || !plot.harvestReady || !plot.treeType) {
+        return null;
       }
-      
+
       const treeDefinition = TREE_DEFINITIONS[plot.treeType];
       const qualityMultiplier = QUALITY_MULTIPLIERS[plot.quality];
-      const newMaterials = { ...prev.materials };
-      
+      const newMaterials = { ...state.materials };
+
       // Apply quality multiplier to yields (Perfect trees give 2x, Luxury 3x)
-      const woodYield = Math.floor(treeDefinition.baseYield.wood * qualityMultiplier);
-      const pineconesYield = Math.floor(treeDefinition.baseYield.pinecones * qualityMultiplier);
-      const branchesYield = Math.floor(treeDefinition.baseYield.branches * qualityMultiplier);
-      
-      newMaterials.wood += woodYield;
-      newMaterials.pinecones += pineconesYield;
-      newMaterials.branches += branchesYield;
-      
+      newMaterials.wood += Math.floor(treeDefinition.baseYield.wood * qualityMultiplier);
+      newMaterials.pinecones += Math.floor(treeDefinition.baseYield.pinecones * qualityMultiplier);
+      newMaterials.branches += Math.floor(treeDefinition.baseYield.branches * qualityMultiplier);
+
       // Earn Holiday Cheer from harvesting (base 5, +5 for perfect, +10 for luxury)
       const cheerEarned = plot.quality === 'luxury' ? 15 : plot.quality === 'perfect' ? 10 : 5;
-      const newHolidayCheer = prev.holidayCheer + cheerEarned;
-      const newTotalCheerEarned = prev.totalCheerEarned + cheerEarned;
-      
-      // Check if Elves' Bench is enabled for auto-crafting and auto-decorating
-      const elvesBenchOwned = prev.upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
-      
+
+      // Check if Elves' Bench is enabled for auto-decorating
+      const elvesBenchOwned = state.upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
+
       // Include quality in the tree key: treeType_quality_decorationLevel
       let finalTreeKey = `${plot.treeType}_${plot.quality}_plain`;
-      const newInventory = { ...prev.treeInventory };
-      
-      // Elves' Bench Automation: Auto-decorate ONE tree when harvesting
+      const newInventory = { ...state.treeInventory };
+
+      // Elves' Bench Automation: auto-decorate the harvested tree with the most
+      // valuable decorations available. Priority: Luxury > Candled > Ornamented > Plain
       if (elvesBenchOwned) {
-        // Auto-decorate the harvested tree with the most valuable decorations possible
-        // Priority: Luxury (ornament + candle) > Candled > Ornamented > Plain
-        
         const hasOrnament = (newMaterials.ornaments || 0) > 0;
         const hasCandle = (newMaterials.candles || 0) > 0;
-        
+
         if (hasOrnament && hasCandle) {
-          // Make Luxury tree (both decorations)
           newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
           newMaterials.candles = (newMaterials.candles || 0) - 1;
           finalTreeKey = `${plot.treeType}_${plot.quality}_luxury`;
         } else if (hasCandle) {
-          // Make Candled tree (candles are more valuable)
           newMaterials.candles = (newMaterials.candles || 0) - 1;
           finalTreeKey = `${plot.treeType}_${plot.quality}_candled`;
         } else if (hasOrnament) {
-          // Make Ornamented tree
           newMaterials.ornaments = (newMaterials.ornaments || 0) - 1;
           finalTreeKey = `${plot.treeType}_${plot.quality}_ornamented`;
         }
-        // else: leave as plain tree
       }
-      
+
       // Add tree to inventory
       newInventory[finalTreeKey] = (newInventory[finalTreeKey] || 0) + 1;
-      
+
       // Reset plot
-      const newPlots = [...prev.treePlots];
+      const newPlots = [...state.treePlots];
       newPlots[plotIndex] = {
         ...plot,
         treeType: null,
@@ -581,37 +596,36 @@ export function useChristmasEvent({
         },
         harvestReady: false,
       };
-      
-      // Log the harvest event
-      if (callbacksRef.current.onTreeHarvested) {
-        const treeTypeName = plot.treeType.charAt(0).toUpperCase() + plot.treeType.slice(1);
-        const qualityName = plot.quality.charAt(0).toUpperCase() + plot.quality.slice(1);
-        callbacksRef.current.onTreeHarvested(treeTypeName, qualityName);
-      }
-      
+
       return {
-        ...prev,
-        treePlots: newPlots,
-        materials: newMaterials,
-        treeInventory: newInventory,
-        holidayCheer: newHolidayCheer,
-        totalCheerEarned: newTotalCheerEarned,
+        next: {
+          ...state,
+          treePlots: newPlots,
+          materials: newMaterials,
+          treeInventory: newInventory,
+          holidayCheer: state.holidayCheer + cheerEarned,
+          totalCheerEarned: state.totalCheerEarned + cheerEarned,
+        },
+        result: { treeType: plot.treeType, quality: plot.quality }
       };
     });
-  }, []);
+
+    // Log the harvest event
+    if (harvested) {
+      const treeTypeName = harvested.treeType.charAt(0).toUpperCase() + harvested.treeType.slice(1);
+      const qualityName = harvested.quality.charAt(0).toUpperCase() + harvested.quality.slice(1);
+      callbacksRef.current.onTreeHarvested?.(treeTypeName, qualityName);
+    }
+  }, [transact]);
   
   const harvestAllTrees = useCallback(() => {
-    // Use functional pattern to get current state and avoid stale closure
-    setEventState(prev => {
-      prev.treePlots.forEach((plot, index) => {
-        if (plot.harvestReady) {
-          // harvestTree will be called with current state
-          setTimeout(() => harvestTree(index), 0);
-        }
-      });
-      return prev; // No change needed, harvestTree handles updates
+    // Each harvest updates the latest-state ref, so the next one sees it
+    eventStateRef.current.treePlots.forEach((plot, index) => {
+      if (plot.harvestReady) {
+        harvestTree(index);
+      }
     });
-  }, [harvestTree]);
+  }, [harvestTree, eventStateRef]);
   
   // ============================================================================
   // CRAFTING
@@ -624,95 +638,73 @@ export function useChristmasEvent({
       return false;
     }
     
-    // Use functional pattern to avoid stale closure on eventState.materials
-    let success = false;
-    setEventState(prev => {
-      // Check if player has enough materials using current state
+    const crafted = transact(state => {
+      // Check if player has enough materials
       const hasEnoughMaterials = Object.entries(recipe.inputs).every(([material, amount]) => {
-        return prev.materials[material as keyof CraftingMaterials] >= amount * quantity;
+        return state.materials[material as keyof CraftingMaterials] >= amount * quantity;
       });
-      
-      if (!hasEnoughMaterials) {
-        success = false;
-        return prev;
-      }
-      
-      success = true;
-      const newMaterials = { ...prev.materials };
-      
+      if (!hasEnoughMaterials) return null;
+
+      const newMaterials = { ...state.materials };
+
       // Deduct inputs
       Object.entries(recipe.inputs).forEach(([material, amount]) => {
         newMaterials[material as keyof CraftingMaterials] -= amount * quantity;
       });
-      
+
       // Add outputs
       Object.entries(recipe.output).forEach(([item, amount]) => {
         newMaterials[item as keyof CraftingMaterials] += amount * quantity;
       });
-      
-      return {
-        ...prev,
-        materials: newMaterials,
-      };
+
+      return { next: { ...state, materials: newMaterials }, result: true };
     });
-    
+
     // Log the crafting event
-    if (success && callbacksRef.current.onItemCrafted) {
-      callbacksRef.current.onItemCrafted(recipe.name, quantity);
+    if (crafted) {
+      callbacksRef.current.onItemCrafted?.(recipe.name, quantity);
     }
-    
-    return success;
-  }, []);
+
+    return crafted ?? false;
+  }, [transact]);
   
   // ============================================================================
   // DECORATION
   // ============================================================================
   
   const decorateTree = useCallback((treeType: TreeType, decorations: DecorationType[]): boolean => {
-    // Use functional pattern to avoid stale closures on eventState
-    let success = false;
-    
-    setEventState(prev => {
-      // Check if player has a plain tree of this type (any quality)
-      // New format: treeType_quality_plain (e.g., pine_normal_plain, pine_perfect_plain)
-      const plainTreeKeys = Object.keys(prev.treeInventory).filter(key => 
+    return transact(state => {
+      // Find a plain tree of this type (any quality).
+      // Format: treeType_quality_plain (e.g., pine_normal_plain, pine_perfect_plain)
+      const plainTreeKeys = Object.keys(state.treeInventory).filter(key =>
         key.startsWith(`${treeType}_`) && key.endsWith('_plain')
       );
-      
-      if (plainTreeKeys.length === 0) {
-        success = false;
-        return prev;
-      }
-      
+      if (plainTreeKeys.length === 0) return null;
+
       // Use the first available plain tree (prioritize normal, then perfect, then luxury)
-      const sortedKeys = plainTreeKeys.sort((a, b) => {
-        const qualityOrder = { normal: 0, perfect: 1, luxury: 2 };
+      const qualityOrder = { normal: 0, perfect: 1, luxury: 2 };
+      const sortedKeys = [...plainTreeKeys].sort((a, b) => {
         const qualityA = a.split('_')[1] as 'normal' | 'perfect' | 'luxury';
         const qualityB = b.split('_')[1] as 'normal' | 'perfect' | 'luxury';
         return qualityOrder[qualityA] - qualityOrder[qualityB];
       });
       const plainTreeKey = sortedKeys[0];
       const quality = plainTreeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
-      
+
       // Check if player has the materials for the decorations
-      const hasOrnaments = !decorations.includes('ornament') || prev.materials.ornaments > 0;
-      const hasCandles = !decorations.includes('candle') || prev.materials.candles > 0;
-      
-      if (!hasOrnaments || !hasCandles) {
-        success = false;
-        return prev;
-      }
-      
-      success = true;
-      const newMaterials = { ...prev.materials };
-      const newInventory = { ...prev.treeInventory };
-      
+      const hasOrnaments = !decorations.includes('ornament') || state.materials.ornaments > 0;
+      const hasCandles = !decorations.includes('candle') || state.materials.candles > 0;
+      if (!hasOrnaments || !hasCandles) return null;
+
+      const newMaterials = { ...state.materials };
+      const newInventory = { ...state.treeInventory };
+
       // Consume plain tree
       newInventory[plainTreeKey] = (newInventory[plainTreeKey] || 0) - 1;
       if (newInventory[plainTreeKey] <= 0) {
         delete newInventory[plainTreeKey];
       }
-      
+
       // Consume decoration materials
       decorations.forEach(decoration => {
         if (decoration === 'ornament' && newMaterials.ornaments > 0) {
@@ -721,21 +713,15 @@ export function useChristmasEvent({
           newMaterials.candles--;
         }
       });
-      
+
       // Add decorated tree to inventory using serialized key with quality preserved
       const variant = getTreeVariantString(decorations);
       const inventoryKey = `${treeType}_${quality}_${variant}`;
       newInventory[inventoryKey] = (newInventory[inventoryKey] || 0) + 1;
-      
-      return {
-        ...prev,
-        materials: newMaterials,
-        treeInventory: newInventory,
-      };
-    });
-    
-    return success;
-  }, []);
+
+      return { next: { ...state, materials: newMaterials, treeInventory: newInventory }, result: true };
+    }) ?? false;
+  }, [transact]);
   
   const addToDecorationQueue = useCallback((treeType: TreeType, decorations: DecorationType[]) => {
     const newQueueItem = {
@@ -787,209 +773,188 @@ export function useChristmasEvent({
    * Sell trees from inventory
    */
   const sellTrees = useCallback((treeKey: string, quantity: number) => {
-    setEventState(prev => {
-      const currentQuantity = prev.treeInventory[treeKey] || 0;
-      
-      if (currentQuantity < quantity) {
-        console.warn('Not enough trees to sell');
-        return prev;
-      }
-      
+    // Two rolls per tree for the Magical Register bonus (chance, then size),
+    // rolled once and replayed each time the transition runs
+    const rolls = Array.from({ length: quantity * 2 }, () => Math.random());
+
+    const sale = transact(state => {
+      const random = rollSource(rolls);
+      const currentQuantity = state.treeInventory[treeKey] || 0;
+      if (currentQuantity < quantity) return null;
+
       // Calculate sale price
       // Base prices: Pine=10, Spruce=15, Fir=20
       let basePrice = 10;
       if (treeKey.startsWith('spruce')) basePrice = 15;
       else if (treeKey.startsWith('fir')) basePrice = 20;
-      
+
       // Extract quality from tree key (format: treeType_quality_decorationLevel)
       // Examples: pine_perfect_luxury, spruce_normal_plain
       const keyParts = treeKey.split('_');
       const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
       const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
-      
+
       // Decoration multipliers (check the decoration level part of the key)
       let decorationMultiplier = 1.0;
       if (treeKey.includes('ornamented')) decorationMultiplier = 1.05;
       else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
       else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
-      
+
       // Apply upgrade bonuses
-      const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
-      const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
-      const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
-      
+      const garlandStation = state.upgrades.find(u => u.id === 'garland_station');
+      const garlandBorders = state.upgrades.find(u => u.id === 'garland_borders');
+      const fireplaceDisplay = state.upgrades.find(u => u.id === 'fireplace_display');
+
       let upgradeMultiplier = 1.0;
       if (garlandStation?.owned) upgradeMultiplier += 0.10; // +10% tree value
-      
+
       // Star Forge already included in luxury multiplier (3x)
       // Fireplace Display: +50% for luxury trees
       if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
         upgradeMultiplier += 0.50;
       }
-      
-      const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
-      
+
+      const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * state.marketDemand.demandMultiplier * upgradeMultiplier);
+
       // Garland Borders: +10% Holiday Cheer from sales (applied after price calculation)
       let cheerMultiplier = 1.0;
       if (garlandBorders?.owned) cheerMultiplier += 0.10;
-      
+
       const totalCheer = Math.floor(finalPrice * quantity * cheerMultiplier);
-      
-      // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus on ONE tree)
-      const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
+
+      // Magical Register bonus (10% chance PER TREE for a 20-50% bonus on that tree)
+      const magicalRegister = state.upgrades.find(u => u.id === 'magical_register');
       let bonusCheer = 0;
       if (magicalRegister?.owned) {
-        // Roll once for each tree sold
         for (let i = 0; i < quantity; i++) {
-          if (Math.random() < 0.10) {
-            const bonusPercent = 0.20 + Math.random() * 0.30; // 20-50% bonus on one tree
+          const chance = random();
+          const size = random();
+          if (chance < 0.10) {
+            const bonusPercent = 0.20 + size * 0.30;
             bonusCheer += Math.floor(finalPrice * bonusPercent);
           }
         }
-        
-        // Apply Garland Borders bonus to Magical Register bonus
-        if (bonusCheer > 0) {
-          if (garlandBorders?.owned) {
-            bonusCheer = Math.floor(bonusCheer * cheerMultiplier);
-          }
-          // Update state to trigger toast with timestamp
-          setLastMagicalRegisterBonus({ amount: bonusCheer, timestamp: Date.now() });
+        // Apply Garland Borders bonus to the Magical Register bonus
+        if (bonusCheer > 0 && garlandBorders?.owned) {
+          bonusCheer = Math.floor(bonusCheer * cheerMultiplier);
         }
       }
-      
+
       // Update inventory and currency
-      const newInventory = { ...prev.treeInventory };
+      const newInventory = { ...state.treeInventory };
       newInventory[treeKey] = currentQuantity - quantity;
       if (newInventory[treeKey] === 0) {
         delete newInventory[treeKey];
       }
-      
-      // Log the sale event
-      if (callbacksRef.current.onTreeSold) {
-        // Parse tree name from key (e.g., "pine_perfect_luxury" -> "Pine")
-        const treeTypeName = keyParts[0].charAt(0).toUpperCase() + keyParts[0].slice(1);
-        callbacksRef.current.onTreeSold(treeTypeName, quantity, totalCheer + bonusCheer);
-      }
-      
+
       return {
-        ...prev,
-        treeInventory: newInventory,
-        holidayCheer: prev.holidayCheer + totalCheer + bonusCheer,
-        totalTreesSold: prev.totalTreesSold + quantity,
+        next: {
+          ...state,
+          treeInventory: newInventory,
+          holidayCheer: state.holidayCheer + totalCheer + bonusCheer,
+          totalTreesSold: state.totalTreesSold + quantity,
+        },
+        result: { treeType: keyParts[0], cheer: totalCheer + bonusCheer, bonusCheer }
       };
     });
-  }, []);
+
+    if (!sale) {
+      console.warn('Not enough trees to sell');
+      return;
+    }
+    if (sale.bonusCheer > 0) {
+      // Show the Magical Register toast
+      setLastMagicalRegisterBonus({ amount: sale.bonusCheer, timestamp: Date.now() });
+    }
+    // Log the sale event
+    const treeTypeName = sale.treeType.charAt(0).toUpperCase() + sale.treeType.slice(1);
+    callbacksRef.current.onTreeSold?.(treeTypeName, quantity, sale.cheer);
+  }, [transact]);
   
   const sellAllTrees = useCallback(() => {
-    setEventState(prev => {
+    // Two Magical Register rolls per tree, rolled once and replayed each run
+    const rolls = Array.from({ length: countTrees(eventStateRef.current.treeInventory) * 2 }, () => Math.random());
+
+    // Price of one tree of this key (same formula as above, kept as it was)
+    const treePrice = (state: ChristmasEventState, treeKey: string): number => {
+      let basePrice = 10;
+      if (treeKey.startsWith('spruce')) basePrice = 15;
+      else if (treeKey.startsWith('fir')) basePrice = 20;
+
+      const quality = treeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
+      const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
+
+      let decorationMultiplier = 1.0;
+      if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
+      else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
+      else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
+      else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
+
+      const garlandStation = state.upgrades.find(u => u.id === 'garland_station');
+      const fireplaceDisplay = state.upgrades.find(u => u.id === 'fireplace_display');
+
+      let upgradeMultiplier = 1.0;
+      if (garlandStation?.owned) upgradeMultiplier += 0.10;
+      if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
+        upgradeMultiplier += 0.50;
+      }
+
+      return Math.floor(basePrice * qualityMultiplier * decorationMultiplier * state.marketDemand.demandMultiplier * upgradeMultiplier);
+    };
+
+    const sale = transact(state => {
+      const random = rollSource(rolls);
       let totalCheer = 0;
       let totalSold = 0;
-      const newInventory = { ...prev.treeInventory };
-      
+
       // Sell all trees in inventory
-      Object.keys(newInventory).forEach(treeKey => {
-        const quantity = newInventory[treeKey];
-        
-        // Calculate sale price (same logic as sellTrees)
-        let basePrice = 10;
-        if (treeKey.startsWith('spruce')) basePrice = 15;
-        else if (treeKey.startsWith('fir')) basePrice = 20;
-        
-        // Extract quality from tree key (format: treeType_quality_decorationLevel)
-        const keyParts = treeKey.split('_');
-        const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
-        const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
-        
-        let decorationMultiplier = 1.0;
-        if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
-        else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
-        else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
-        else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
-        
-        const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
-        const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
-        
-        let upgradeMultiplier = 1.0;
-        if (garlandStation?.owned) upgradeMultiplier += 0.10;
-        if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
-          upgradeMultiplier += 0.50;
-        }
-        
-        const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
-        
-        // Garland Borders is applied later as a global multiplier to total cheer
-        totalCheer += finalPrice * quantity;
+      for (const [treeKey, quantity] of Object.entries(state.treeInventory)) {
+        totalCheer += treePrice(state, treeKey) * quantity;
         totalSold += quantity;
-      });
-      
+      }
+
       // Apply Garland Borders bonus to total cheer from sales
-      const garlandBorders = prev.upgrades.find(u => u.id === 'garland_borders');
+      const garlandBorders = state.upgrades.find(u => u.id === 'garland_borders');
       if (garlandBorders?.owned) {
         totalCheer = Math.floor(totalCheer * 1.10); // +10% Holiday Cheer from sales
       }
-      
-      // Check for Magical Register bonus (10% chance PER TREE for 20-50% bonus)
-      const magicalRegister = prev.upgrades.find(u => u.id === 'magical_register');
+
+      // Magical Register bonus (10% chance PER TREE for a 20-50% bonus)
+      const magicalRegister = state.upgrades.find(u => u.id === 'magical_register');
       let bonusCheer = 0;
       if (magicalRegister?.owned && totalSold > 0) {
-        // Need to roll for each individual tree across all types
-        Object.keys(prev.treeInventory).forEach(treeKey => {
-          const quantity = prev.treeInventory[treeKey];
-          
-          // Calculate the price for this tree type (same logic as above)
-          let basePrice = 10;
-          if (treeKey.startsWith('spruce')) basePrice = 15;
-          else if (treeKey.startsWith('fir')) basePrice = 20;
-          
-          const keyParts = treeKey.split('_');
-          const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
-          const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
-          
-          let decorationMultiplier = 1.0;
-          if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
-          else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
-          else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
-          else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
-          
-          const garlandStation = prev.upgrades.find(u => u.id === 'garland_station');
-          const fireplaceDisplay = prev.upgrades.find(u => u.id === 'fireplace_display');
-          
-          let upgradeMultiplier = 1.0;
-          if (garlandStation?.owned) upgradeMultiplier += 0.10;
-          if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
-            upgradeMultiplier += 0.50;
-          }
-          
-          const singleTreePrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * prev.marketDemand.demandMultiplier * upgradeMultiplier);
-          
-          // Roll once for each tree of this type
+        for (const [treeKey, quantity] of Object.entries(state.treeInventory)) {
+          const singleTreePrice = treePrice(state, treeKey);
           for (let i = 0; i < quantity; i++) {
-            if (Math.random() < 0.10) {
-              const bonusPercent = 0.20 + Math.random() * 0.30; // 20-50% bonus
-              bonusCheer += Math.floor(singleTreePrice * bonusPercent);
+            const chance = random();
+            const size = random();
+            if (chance < 0.10) {
+              bonusCheer += Math.floor(singleTreePrice * (0.20 + size * 0.30));
             }
           }
-        });
-        
-        // Apply Garland Borders bonus to Magical Register bonus as well
+        }
+        // Apply Garland Borders bonus to the Magical Register bonus as well
         if (bonusCheer > 0 && garlandBorders?.owned) {
           bonusCheer = Math.floor(bonusCheer * 1.10);
         }
-        
-        if (bonusCheer > 0) {
-          // Update state to trigger toast with timestamp
-          setLastMagicalRegisterBonus({ amount: bonusCheer, timestamp: Date.now() });
-        }
       }
-      
+
       return {
-        ...prev,
-        treeInventory: {},
-        holidayCheer: prev.holidayCheer + totalCheer + bonusCheer,
-        totalTreesSold: prev.totalTreesSold + totalSold,
+        next: {
+          ...state,
+          treeInventory: {},
+          holidayCheer: state.holidayCheer + totalCheer + bonusCheer,
+          totalTreesSold: state.totalTreesSold + totalSold,
+        },
+        result: { bonusCheer }
       };
     });
-  }, []);
+
+    if (sale && sale.bonusCheer > 0) {
+      // Show the Magical Register toast
+      setLastMagicalRegisterBonus({ amount: sale.bonusCheer, timestamp: Date.now() });
+    }
+  }, [transact, eventStateRef]);
   
   /**
    * Sell garland from materials
@@ -1075,95 +1040,64 @@ export function useChristmasEvent({
   const claimDailyBonus = useCallback((): boolean => {
     const today = new Date().toISOString().split('T')[0];
     
-    // Use functional pattern to avoid stale closure
-    let success = false;
-    setEventState(prev => {
-      if (prev.dailyBonus.lastClaimDate === today) {
-        success = false;
-        return prev; // Already claimed today
-      }
-      
-      success = true;
-      return {
-        ...prev,
-        holidayCheer: prev.holidayCheer + prev.dailyBonus.bonusAmount,
+    return transact(state => state.dailyBonus.lastClaimDate === today ? null : {
+      next: {
+        ...state,
+        holidayCheer: state.holidayCheer + state.dailyBonus.bonusAmount,
         dailyBonus: {
-          ...prev.dailyBonus,
+          ...state.dailyBonus,
           claimed: true,
           lastClaimDate: today,
         },
-      };
-    });
-    
-    return success;
-  }, []);
+      },
+      result: true
+    }) ?? false;
+  }, [transact]);
   
   // ============================================================================
   // UPGRADES & MILESTONES
   // ============================================================================
   
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
-    // Decide from current state so the result is reliable; the tree farm uses it to
-    // select a newly unlocked tree. A success flag set inside a setState updater
-    // can still be false when read, because React may run the updater later.
-    const purchase = applyUpgradePurchase(eventStateRef.current, upgradeId);
+    // The tree farm uses the result to select a newly unlocked tree
+    const purchase = transact(state => {
+      const applied = applyUpgradePurchase(state, upgradeId);
+      return applied && { next: applied.next, result: { name: applied.name, cost: applied.cost } };
+    });
     if (!purchase) return false;
-
-    // Let a second purchase in the same frame see this one
-    eventStateRef.current = purchase.next;
-    setEventState(prev => applyUpgradePurchase(prev, upgradeId)?.next ?? prev);
     callbacksRef.current.onUpgradePurchased?.(purchase.name, purchase.cost);
     return true;
-  }, [eventStateRef]);
+  }, [transact]);
   
   const claimMilestone = useCallback((milestoneId: string): boolean => {
-    // Use functional pattern to avoid stale closures
-    let success = false;
-    let milestoneName = '';
-    
-    setEventState(prev => {
-      const milestone = prev.milestones.find(m => m.id === milestoneId);
-      
-      if (!milestone || milestone.claimed) {
-        success = false;
-        return prev;
-      }
-      
-      if (prev.totalTreesSold < milestone.requirement) {
-        success = false;
-        return prev;
-      }
-      
-      success = true;
-      milestoneName = milestone.name;
-      
-      // Apply cheer reward directly in state update
-      const newHolidayCheer = milestone.reward.cheerAmount 
-        ? prev.holidayCheer + milestone.reward.cheerAmount 
-        : prev.holidayCheer;
-      
-      // Apply cosmetic reward if any
-      const newUnlockedCosmetics = milestone.reward.cosmeticId
-        ? [...prev.unlockedCosmetics, milestone.reward.cosmeticId]
-        : prev.unlockedCosmetics;
-      
+    const milestoneName = transact(state => {
+      const milestone = state.milestones.find(m => m.id === milestoneId);
+      if (!milestone || milestone.claimed) return null;
+      if (state.totalTreesSold < milestone.requirement) return null;
+
       return {
-        ...prev,
-        holidayCheer: newHolidayCheer,
-        unlockedCosmetics: newUnlockedCosmetics,
-        milestones: prev.milestones.map(m =>
-          m.id === milestoneId ? { ...m, claimed: true } : m
-        ),
+        next: {
+          ...state,
+          // Cheer and cosmetic rewards, if any
+          holidayCheer: milestone.reward.cheerAmount
+            ? state.holidayCheer + milestone.reward.cheerAmount
+            : state.holidayCheer,
+          unlockedCosmetics: milestone.reward.cosmeticId
+            ? [...state.unlockedCosmetics, milestone.reward.cosmeticId]
+            : state.unlockedCosmetics,
+          milestones: state.milestones.map(m =>
+            m.id === milestoneId ? { ...m, claimed: true } : m
+          ),
+        },
+        result: milestone.name
       };
     });
-    
-    // Log the milestone claim event (defer to avoid render-time setState)
-    if (success && callbacksRef.current.onMilestoneClaimed) {
-      setTimeout(() => callbacksRef.current.onMilestoneClaimed?.(milestoneName), 0);
-    }
-    
-    return success;
-  }, []);
+
+    // Log the milestone claim event
+    if (milestoneName === null) return false;
+    callbacksRef.current.onMilestoneClaimed?.(milestoneName);
+    return true;
+  }, [transact]);
   
   // ============================================================================
   // COSMETICS
@@ -1417,7 +1351,10 @@ export function useChristmasEvent({
     setLastMagicalRegisterBonus({ amount: 0, timestamp: 0 });
   }, [farmTier]);
   
-  return {
+  // Memoized so the game context stays stable between changes. Every value it
+  // reads is listed below. dailyBonusAvailable is a getter because it depends on
+  // today's date, which no dependency tracks.
+  return useMemo<UseChristmasEventReturn>(() => ({
     eventState,
     isEventActive,
     holidayCheer: eventState.holidayCheer,
@@ -1440,7 +1377,9 @@ export function useChristmasEvent({
     claimDailyBonus,
     totalTreesSold: eventState.totalTreesSold,
     demandMultiplier: eventState.marketDemand.demandMultiplier,
-    dailyBonusAvailable: eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0],
+    get dailyBonusAvailable() {
+      return eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0];
+    },
     passiveCheerPerSecond: eventState.passiveCheerPerSecond,
     purchaseUpgrade,
     claimMilestone,
@@ -1452,5 +1391,32 @@ export function useChristmasEvent({
     resetEvent,
     currentElvesAction: eventState.currentElvesAction,
     lastMagicalRegisterBonus,
-  };
+  }), [
+    eventState,
+    isEventActive,
+    lastMagicalRegisterBonus,
+    earnCheer,
+    spendCheer,
+    plantTree,
+    harvestTree,
+    harvestAllTrees,
+    craftItem,
+    decorateTree,
+    addToDecorationQueue,
+    removeFromQueue,
+    sellTrees,
+    sellAllTrees,
+    sellGarland,
+    sellCandle,
+    sellOrnament,
+    claimDailyBonus,
+    purchaseUpgrade,
+    claimMilestone,
+    toggleCosmetic,
+    updatePassiveIncome,
+    processTreeGrowth,
+    processDailyElvesCrafting,
+    checkEventActive,
+    resetEvent,
+  ]);
 }
