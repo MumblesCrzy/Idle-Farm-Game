@@ -1,133 +1,56 @@
-/**
- * useAutoSave Hook
- * 
- * Manages automatic game saving with throttling to prevent excessive writes.
- * Saves game state at most once every 30 seconds, and ensures data is saved
- * before the page unloads.
- * 
- * @module hooks/useAutoSave
- */
-
 import { useCallback, useEffect, useRef } from 'react';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
-
-/** Minimum time between saves in milliseconds */
-const SAVE_THROTTLE_MS = 30000;
+import { AUTO_SAVE_INTERVAL } from '../config/gameConstants';
+import { useLatestRef } from './useLatestRef';
 
 /**
- * Configuration for the auto-save hook.
+ * Configuration for the auto-save hook
  */
 export interface UseAutoSaveConfig {
-  /** Whether to skip saving (e.g., after import or reset) */
+  /** When true, saving is skipped (for example while a reset is settling) */
   skipSave: boolean;
-  /** Function to build the current game state for saving */
+  /** Builds the full save, or returns null when there is nothing to save yet */
   getGameState: () => ExtendedGameState | null;
 }
 
 /**
- * Return type for the useAutoSave hook.
+ * Return type for the auto-save hook
  */
 export interface UseAutoSaveReturn {
-  /** Manually trigger an immediate save */
+  /** Saves immediately and cancels any scheduled save */
   forceSave: () => void;
-  /** Mark that there are pending changes to save */
-  markPendingChanges: () => void;
 }
 
 /**
- * Hook that manages automatic game state persistence.
- * 
- * Features:
- * - Throttles saves to at most once every 30 seconds
- * - Saves immediately if 30+ seconds have passed since last save
- * - Schedules deferred saves when changes occur within throttle window
- * - Saves on page unload to prevent data loss
- * - Skips saving during import/reset operations
- * 
- * @param config - Configuration for the auto-save behavior
- * @returns Object with forceSave and markPendingChanges functions
- * 
- * @example
- * ```tsx
- * const { forceSave } = useAutoSave({
- *   skipSave: justReset || justImported,
- *   getGameState: () => ({
- *     veggies,
- *     money,
- *     experience,
- *     // ... other state
- *   }),
- * });
- * 
- * // Force save before navigating away
- * const handleExport = () => {
- *   forceSave();
- *   // ... export logic
- * };
- * ```
+ * Saves the game to localStorage.
+ *
+ * - Saves at most once every AUTO_SAVE_INTERVAL (30 seconds). Each state change
+ *   either saves right away, if that long has passed, or schedules a save for
+ *   when it has.
+ * - Always saves when the page unloads (refresh or close), so the last moments
+ *   of play aren't lost to the throttle.
+ *
+ * getGameState should change whenever the game state changes (a useCallback
+ * over that state); each change reschedules the save.
+ *
+ * @param config - Save configuration
+ * @returns forceSave for an immediate save
  */
 export function useAutoSave(config: UseAutoSaveConfig): UseAutoSaveReturn {
   const { skipSave, getGameState } = config;
 
-  // Refs for tracking save timing
   const saveTimeoutRef = useRef<number | null>(null);
   const lastSaveTimeRef = useRef<number>(Date.now());
-  const pendingSaveRef = useRef<boolean>(false);
 
-  /**
-   * Performs the actual save operation.
-   * Respects the skipSave flag and updates timing refs.
-   */
   const performSave = useCallback(() => {
-    if (skipSave) {
-      return;
-    }
-
+    if (skipSave) return;
     const gameState = getGameState();
-    if (gameState) {
-      saveGameStateWithCanning(gameState);
-      lastSaveTimeRef.current = Date.now();
-      pendingSaveRef.current = false;
-    }
+    if (!gameState) return;
+    saveGameStateWithCanning(gameState);
+    lastSaveTimeRef.current = Date.now();
   }, [skipSave, getGameState]);
 
-  /**
-   * Schedules or immediately executes a save based on throttle timing.
-   */
-  const scheduleSave = useCallback(() => {
-    const now = Date.now();
-    const timeSinceLastSave = now - lastSaveTimeRef.current;
-
-    // Clear any existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-
-    // If it's been more than SAVE_THROTTLE_MS since last save, save immediately
-    if (timeSinceLastSave >= SAVE_THROTTLE_MS) {
-      performSave();
-    } else {
-      // Otherwise, schedule a save for SAVE_THROTTLE_MS from last save
-      const timeUntilNextSave = SAVE_THROTTLE_MS - timeSinceLastSave;
-      saveTimeoutRef.current = window.setTimeout(() => {
-        performSave();
-      }, timeUntilNextSave);
-    }
-  }, [performSave]);
-
-  /**
-   * Mark that there are pending changes that need to be saved.
-   */
-  const markPendingChanges = useCallback(() => {
-    pendingSaveRef.current = true;
-  }, []);
-
-  /**
-   * Force an immediate save, bypassing throttle.
-   */
   const forceSave = useCallback(() => {
-    // Clear any scheduled save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
@@ -135,10 +58,21 @@ export function useAutoSave(config: UseAutoSaveConfig): UseAutoSaveReturn {
     performSave();
   }, [performSave]);
 
-  // Trigger save scheduling when performSave changes (which happens when dependencies change)
+  // Throttled save: runs whenever performSave changes, which is whenever state changes
   useEffect(() => {
-    scheduleSave();
-  }, [scheduleSave]);
+    const timeSinceLastSave = Date.now() - lastSaveTimeRef.current;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    if (timeSinceLastSave >= AUTO_SAVE_INTERVAL) {
+      performSave();
+    } else {
+      saveTimeoutRef.current = window.setTimeout(performSave, AUTO_SAVE_INTERVAL - timeSinceLastSave);
+    }
+  }, [performSave]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -149,25 +83,17 @@ export function useAutoSave(config: UseAutoSaveConfig): UseAutoSaveReturn {
     };
   }, []);
 
-  // Force save on page unload (refresh/close)
+  // Always save on page unload (refresh/close)
+  const performSaveRef = useLatestRef(performSave);
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Force immediate save if there are pending changes or enough time has passed
-      if (pendingSaveRef.current || Date.now() - lastSaveTimeRef.current >= SAVE_THROTTLE_MS) {
-        performSave();
-      }
-    };
-
+    const handleBeforeUnload = () => performSaveRef.current();
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [performSave]);
+  }, [performSaveRef]);
 
-  return {
-    forceSave,
-    markPendingChanges,
-  };
+  return { forceSave };
 }
 
 export default useAutoSave;

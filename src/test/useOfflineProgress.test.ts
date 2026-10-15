@@ -1,290 +1,257 @@
 /**
- * Tests for useOfflineProgress hook
- * 
- * @module test/useOfflineProgress.test
+ * Tests for useOfflineProgress
+ *
+ * Covers the startup catch-up (from the save's timestamp) and the hidden-tab
+ * catch-up (from the moment the tab was hidden), and that the two never
+ * count the same time twice.
  */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useOfflineProgress, type OfflineGameState, type OfflineProgressCallbacks } from '../hooks/useOfflineProgress';
+import { renderHook } from '@testing-library/react';
+import { useOfflineProgress, LAST_ACTIVE_KEY, type UseOfflineProgressDeps } from '../hooks/useOfflineProgress';
+import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/offlineProgress';
+import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
+import { DEFAULT_GUILD_STATE } from '../types/guilds';
 import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
-import type { Veggie } from '../types/game';
+
+vi.mock('../utils/offlineProgress', () => ({
+  calculateOfflineProgress: vi.fn()
+}));
+
+vi.mock('../utils/saveSystem', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../utils/saveSystem')>()),
+  saveGameStateWithCanning: vi.fn()
+}));
+
+const NOW = new Date(2026, 5, 1, 12, 0, 0).getTime();
+const TEN_MINUTES = 10 * 60 * 1000;
+
+const simulated = (overrides: Partial<OfflineProgressResult> = {}): OfflineProgressResult => ({
+  timeElapsed: TEN_MINUTES,
+  veggies: [],
+  experienceGain: 30,
+  knowledgeGain: 5,
+  day: 50,
+  totalDaysElapsed: 649,
+  canningProgressUpdates: new Map(),
+  autoCanningProcessed: 0,
+  christmasTreeGrowthTicks: 0,
+  christmasElvesCraftingTicks: 0,
+  christmasPassiveCheerGain: 0,
+  cappedToLifetime: false,
+  ...overrides
+});
+
+const christmasEvent = (overrides: Partial<UseChristmasEventReturn> = {}) => ({
+  isEventActive: false,
+  passiveCheerPerSecond: 0,
+  eventState: { upgrades: [] },
+  processTreeGrowth: vi.fn(),
+  processDailyElvesCrafting: vi.fn(),
+  updatePassiveIncome: vi.fn(),
+  ...overrides
+}) as unknown as UseChristmasEventReturn;
+
+const savedGame = (overrides: Partial<ExtendedGameState> = {}): ExtendedGameState => ({
+  veggies: [],
+  money: 0,
+  experience: 100,
+  knowledge: 20,
+  activeVeggie: 0,
+  day: 10,
+  totalDaysElapsed: 9,
+  greenhouseOwned: false,
+  heirloomOwned: false,
+  autoSellOwned: false,
+  almanacLevel: 0,
+  almanacCost: 10,
+  maxPlots: 4,
+  farmTier: 1,
+  farmCost: 500,
+  irrigationOwned: false,
+  currentWeather: 'Clear',
+  highestUnlockedVeggie: 0,
+  lastSavedAt: NOW - TEN_MINUTES,
+  ...overrides
+});
+
+const createDeps = (overrides: Partial<UseOfflineProgressDeps> = {}): UseOfflineProgressDeps => ({
+  loaded: null,
+  state: {
+    veggies: [],
+    day: 10,
+    totalDaysElapsed: 9,
+    season: 'Spring',
+    currentWeather: 'Clear',
+    greenhouseOwned: false,
+    irrigationOwned: false,
+    almanacLevel: 0,
+    farmTier: 1,
+    knowledge: 20,
+    guildState: DEFAULT_GUILD_STATE,
+    christmasEvent: christmasEvent()
+  },
+  isPaused: false,
+  lifetimeEnded: false,
+  lifetimeMaxDays: 29200,
+  trackKnowledgeGained: vi.fn(),
+  setVeggies: vi.fn(),
+  setExperience: vi.fn(),
+  setKnowledge: vi.fn(),
+  setDay: vi.fn(),
+  setTotalDaysElapsed: vi.fn(),
+  setOfflinePrestigePending: vi.fn(),
+  ...overrides
+});
+
+const setHidden = (hidden: boolean) => {
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+  document.dispatchEvent(new Event('visibilitychange'));
+};
 
 describe('useOfflineProgress', () => {
-  // Mock localStorage
-  const localStorageMock: Record<string, string> = {};
-  
-  // Mock document.hidden
-  let hiddenValue = false;
-  
-  // Store event listeners
-  const eventListeners: Record<string, (() => void)[]> = {};
-  
-  // Track intervals
-  let intervalId = 0;
-  const activeIntervals: Record<number, ReturnType<typeof setTimeout>> = {};
-  
-  // Mock game state ref
-  const createMockGameStateRef = (): React.MutableRefObject<OfflineGameState> => ({
-    current: {
-      veggies: [] as Veggie[],
-      day: 1,
-      totalDaysElapsed: 5,
-      season: 'Spring',
-      currentWeather: 'Clear',
-      greenhouseOwned: false,
-      irrigationOwned: false,
-      almanacLevel: 0,
-      farmTier: 0,
-      knowledge: 0,
-      christmasEvent: {
-        isEventActive: false,
-        passiveCheerPerSecond: 0,
-        eventState: { upgrades: [] },
-        processTreeGrowth: vi.fn(),
-        updatePassiveIncome: vi.fn(),
-        processDailyElvesCrafting: vi.fn(),
-      } as unknown as UseChristmasEventReturn,
-    },
-  });
-
-  // Mock callbacks
-  const createMockCallbacks = (): OfflineProgressCallbacks => ({
-    setVeggies: vi.fn(),
-    setExperience: vi.fn(),
-    setKnowledge: vi.fn(),
-    setDay: vi.fn(),
-    setTotalDaysElapsed: vi.fn(),
-    onOfflineProgressProcessed: vi.fn(),
-  });
-
   beforeEach(() => {
-    // Reset mocks
-    vi.clearAllMocks();
-    
-    // Reset localStorage mock
-    Object.keys(localStorageMock).forEach(key => delete localStorageMock[key]);
-    
-    // Mock localStorage
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => {
-      return localStorageMock[key] || null;
-    });
-    
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key: string, value: string) => {
-      localStorageMock[key] = value;
-    });
-    
-    // Mock document.hidden
-    hiddenValue = false;
-    Object.defineProperty(document, 'hidden', {
-      configurable: true,
-      get: () => hiddenValue,
-    });
-    
-    // Reset event listeners
-    Object.keys(eventListeners).forEach(key => delete eventListeners[key]);
-    
-    vi.spyOn(document, 'addEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
-      if (!eventListeners[event]) {
-        eventListeners[event] = [];
-      }
-      eventListeners[event].push(handler as () => void);
-    });
-    
-    vi.spyOn(document, 'removeEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
-      if (eventListeners[event]) {
-        eventListeners[event] = eventListeners[event].filter(h => h !== handler);
-      }
-    });
-    
-    // Mock setInterval/clearInterval
-    vi.spyOn(globalThis, 'setInterval').mockImplementation(() => {
-      intervalId += 1;
-      const id = intervalId;
-      activeIntervals[id] = setTimeout(() => {}, 0);
-      return id;
-    });
-
-    vi.spyOn(globalThis, 'clearInterval').mockImplementation((id) => {
-      delete activeIntervals[id as number];
-    });
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    vi.mocked(calculateOfflineProgress).mockReturnValue(simulated());
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
-    // Clear any remaining intervals
-    Object.keys(activeIntervals).forEach(id => {
-      clearTimeout(activeIntervals[Number(id)]);
-      delete activeIntervals[Number(id)];
-    });
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    vi.useRealTimers();
   });
 
-  describe('initialization', () => {
-    it('should set last active time on mount', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
+  describe('startup catch-up', () => {
+    it('applies the time since the save was written, once', () => {
+      const deps = createDeps({ loaded: savedGame() });
+      renderHook(() => useOfflineProgress(deps));
 
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
+      expect(calculateOfflineProgress).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(calculateOfflineProgress).mock.calls[0][0]).toBe(TEN_MINUTES);
+      expect(deps.setExperience).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(deps.setExperience).mock.calls[0][0]).toBeTypeOf('function');
+      expect(deps.setDay).toHaveBeenCalledWith(50);
+      expect(deps.trackKnowledgeGained).toHaveBeenCalledWith(5);
+    });
 
-      expect(localStorage.setItem).toHaveBeenCalledWith(
-        'farmIdleLastActive',
-        expect.any(String)
+    it('does not count time twice when an old hidden-tab timestamp is also stored', () => {
+      localStorage.setItem(LAST_ACTIVE_KEY, String(NOW - TEN_MINUTES));
+      const deps = createDeps({ loaded: savedGame() });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(calculateOfflineProgress).toHaveBeenCalledTimes(1);
+    });
+
+    it('saves right away so a reload cannot apply the same time again', () => {
+      const deps = createDeps({ loaded: savedGame() });
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(saveGameStateWithCanning).toHaveBeenCalledWith(
+        expect.objectContaining({ experience: 130, knowledge: 25, day: 50, totalDaysElapsed: 649 })
       );
     });
 
-    it('should add visibility change event listener', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
+    it('uses the saved weather', () => {
+      const deps = createDeps({ loaded: savedGame({ currentWeather: 'Drought' }) });
+      renderHook(() => useOfflineProgress(deps));
 
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-
-      expect(document.addEventListener).toHaveBeenCalledWith(
-        'visibilitychange',
-        expect.any(Function)
-      );
+      expect(vi.mocked(calculateOfflineProgress).mock.calls[0][1].currentWeather).toBe('Drought');
     });
 
-    it('should set up periodic update interval', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
+    it('does nothing for a new game', () => {
+      renderHook(() => useOfflineProgress(createDeps()));
 
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
+      expect(calculateOfflineProgress).not.toHaveBeenCalled();
+    });
 
-      expect(globalThis.setInterval).toHaveBeenCalledWith(expect.any(Function), 10000);
+    it('does nothing when the game was saved while paused', () => {
+      renderHook(() => useOfflineProgress(createDeps({ loaded: savedGame({ isPaused: true }) })));
+
+      expect(calculateOfflineProgress).not.toHaveBeenCalled();
     });
   });
 
-  describe('cleanup', () => {
-    it('should remove event listener on cleanup', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
+  describe('hidden-tab catch-up', () => {
+    it('applies the hidden time once when the tab comes back', () => {
+      const deps = createDeps();
+      renderHook(() => useOfflineProgress(deps));
 
-      const { unmount } = renderHook(() => useOfflineProgress(gameStateRef, callbacks));
+      setHidden(true);
+      vi.setSystemTime(NOW + TEN_MINUTES);
+      setHidden(false);
+
+      expect(calculateOfflineProgress).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(calculateOfflineProgress).mock.calls[0][0]).toBe(TEN_MINUTES);
+      expect(deps.setDay).toHaveBeenCalledWith(50);
+      expect(saveGameStateWithCanning).not.toHaveBeenCalled();
+    });
+
+    it('ignores quick tab switches', () => {
+      renderHook(() => useOfflineProgress(createDeps()));
+
+      setHidden(true);
+      vi.setSystemTime(NOW + 500);
+      setHidden(false);
+
+      expect(calculateOfflineProgress).not.toHaveBeenCalled();
+    });
+
+    it('does nothing while paused or after the lifetime has ended', () => {
+      const { rerender } = renderHook((deps: UseOfflineProgressDeps) => useOfflineProgress(deps), {
+        initialProps: createDeps({ isPaused: true })
+      });
+      setHidden(true);
+      vi.setSystemTime(NOW + TEN_MINUTES);
+      setHidden(false);
+
+      rerender(createDeps({ lifetimeEnded: true }));
+      setHidden(true);
+      vi.setSystemTime(NOW + 2 * TEN_MINUTES);
+      setHidden(false);
+
+      expect(calculateOfflineProgress).not.toHaveBeenCalled();
+    });
+
+    it('stops listening when unmounted', () => {
+      const { unmount } = renderHook(() => useOfflineProgress(createDeps()));
       unmount();
 
-      expect(document.removeEventListener).toHaveBeenCalledWith(
-        'visibilitychange',
-        expect.any(Function)
+      setHidden(true);
+      vi.setSystemTime(NOW + TEN_MINUTES);
+      setHidden(false);
+
+      expect(calculateOfflineProgress).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('results', () => {
+    it('ends the lifetime when the catch-up reaches it', () => {
+      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ cappedToLifetime: true }));
+      const deps = createDeps({ loaded: savedGame(), lifetimeMaxDays: 700 });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(deps.setOfflinePrestigePending).toHaveBeenCalledWith(true);
+      expect(deps.setTotalDaysElapsed).toHaveBeenLastCalledWith(700);
+    });
+
+    it('catches up the Christmas event in one pass', () => {
+      vi.mocked(calculateOfflineProgress).mockReturnValue(
+        simulated({ christmasTreeGrowthTicks: 600, christmasElvesCraftingTicks: 600 })
       );
-    });
+      const event = christmasEvent({
+        isEventActive: true,
+        passiveCheerPerSecond: 2,
+        eventState: { upgrades: [{ id: 'elves_bench', owned: true }] } as unknown as UseChristmasEventReturn['eventState']
+      });
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, christmasEvent: event } });
 
-    it('should clear interval on cleanup', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
+      renderHook(() => useOfflineProgress(deps));
 
-      const { unmount } = renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-      unmount();
-
-      expect(globalThis.clearInterval).toHaveBeenCalled();
-    });
-  });
-
-  describe('visibility changes', () => {
-    it('should save timestamp when tab becomes hidden', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
-
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-
-      // Clear previous calls
-      vi.mocked(localStorage.setItem).mockClear();
-
-      // Simulate tab becoming hidden
-      hiddenValue = true;
-      
-      // Trigger visibility change
-      if (eventListeners['visibilitychange']) {
-        act(() => {
-          eventListeners['visibilitychange'].forEach(handler => handler());
-        });
-      }
-
-      // Should have saved current time
-      expect(localStorage.setItem).toHaveBeenCalledWith(
-        'farmIdleLastActive',
-        expect.any(String)
-      );
-    });
-
-    it('should check for last active time when tab becomes visible', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
-
-      // Set a last active time
-      localStorageMock['farmIdleLastActive'] = Date.now().toString();
-
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-
-      // Clear previous calls
-      vi.mocked(localStorage.getItem).mockClear();
-
-      // Simulate tab becoming visible
-      hiddenValue = false;
-      
-      // Trigger visibility change
-      if (eventListeners['visibilitychange']) {
-        act(() => {
-          eventListeners['visibilitychange'].forEach(handler => handler());
-        });
-      }
-
-      // Should have checked last active time
-      expect(localStorage.getItem).toHaveBeenCalledWith('farmIdleLastActive');
-    });
-  });
-
-  describe('offline progress detection', () => {
-    it('should not process if no last active time exists', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
-
-      // Don't set any last active time
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-
-      // Callbacks should not be called because there's no previous session
-      expect(callbacks.setVeggies).not.toHaveBeenCalled();
-    });
-
-    it('should not process if elapsed time is too short', () => {
-      // Set last active time to 100ms ago (too short)
-      localStorageMock['farmIdleLastActive'] = (Date.now() - 100).toString();
-
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
-
-      renderHook(() => useOfflineProgress(gameStateRef, callbacks));
-
-      // Callbacks should not be called because time is too short
-      expect(callbacks.setVeggies).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('hook parameters', () => {
-    it('should accept null beeContext', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacks = createMockCallbacks();
-
-      // Should not throw
-      expect(() => {
-        renderHook(() => useOfflineProgress(gameStateRef, callbacks, null));
-      }).not.toThrow();
-    });
-
-    it('should handle optional onOfflineProgressProcessed callback', () => {
-      const gameStateRef = createMockGameStateRef();
-      const callbacksWithoutOnProgress: OfflineProgressCallbacks = {
-        setVeggies: vi.fn(),
-        setExperience: vi.fn(),
-        setKnowledge: vi.fn(),
-        setDay: vi.fn(),
-        setTotalDaysElapsed: vi.fn(),
-        // No onOfflineProgressProcessed
-      };
-
-      // Should not throw
-      expect(() => {
-        renderHook(() => useOfflineProgress(gameStateRef, callbacksWithoutOnProgress));
-      }).not.toThrow();
+      expect(event.processTreeGrowth).toHaveBeenCalledTimes(1);
+      expect(event.processTreeGrowth).toHaveBeenCalledWith(600);
+      expect(event.processDailyElvesCrafting).toHaveBeenCalledWith(600);
+      expect(event.updatePassiveIncome).toHaveBeenCalledWith(TEN_MINUTES);
     });
   });
 });

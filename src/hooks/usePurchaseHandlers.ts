@@ -3,7 +3,7 @@ import type { Veggie } from '../types/game';
 import {
   calculateUpgradeCost,
   calculateInitialCost,
-  createInitialVeggies
+  createAllCrops
 } from '../utils/gameCalculations';
 import {
   IRRIGATION_COST,
@@ -11,7 +11,8 @@ import {
   MERCHANT_COST,
   MERCHANT_KN_COST,
   GREENHOUSE_COST_PER_PLOT,
-  GREENHOUSE_KN_COST_PER_PLOT
+  GREENHOUSE_KN_COST_PER_PLOT,
+  MERCHANT_DAYS
 } from '../config/gameConstants';
 
 // ============================================================================
@@ -432,15 +433,15 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
         category: 'milestone'
       });
       
-      // Retroactively update all vegetable prices to reflect the heirloom bonus
+      // Retroactively update all crop prices to reflect the heirloom bonus.
+      // Base prices are looked up by name: the crop list holds fruits after the
+      // vegetables, so a vegetables-only list doesn't line up by position.
       setVeggies((prev) => {
-        const baseVeggies = createInitialVeggies();
-        return prev.map((v, index) => {
-          if (v.betterSeedsLevel > 0) {
-            // Recalculate the sale price with the heirloom multiplier
-            // First, calculate the base price (original price before any Better Seeds)
-            const baseSalePrice = baseVeggies[index].salePrice;
-            // Then apply the heirloom multiplier (1.5x per level instead of 1.25x)
+        const basePrices = new Map(createAllCrops().map(crop => [crop.name, crop.salePrice]));
+        return prev.map((v) => {
+          const baseSalePrice = basePrices.get(v.name);
+          if (v.betterSeedsLevel > 0 && baseSalePrice !== undefined) {
+            // Apply the heirloom multiplier (1.5x per level instead of 1.25x)
             const newSalePrice = +(baseSalePrice * Math.pow(1.5, v.betterSeedsLevel)).toFixed(2);
             return { ...v, salePrice: newSalePrice };
           }
@@ -452,7 +453,7 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
 
   /**
    * Purchase auto-sell (merchant partnership)
-   * Enables automatic selling every 7 days
+   * Enables automatic selling every MERCHANT_DAYS days
    */
   const handleBuyAutoSell = useCallback(() => {
     if (!autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST) {
@@ -463,7 +464,7 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
       // Log auto-sell purchase milestone
       onMilestone?.({
         name: 'Merchant Partnership',
-        description: 'Unlocked auto-sell (Merchant buys stashed veggies every 7 days)',
+        description: `Unlocked auto-sell (Merchant buys stashed veggies every ${MERCHANT_DAYS} days)`,
         reward: null,
         category: 'milestone'
       });

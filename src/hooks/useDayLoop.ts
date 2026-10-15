@@ -9,39 +9,32 @@ import type { EventUpgrade } from '../types/christmasEvent';
 // ============================================================================
 
 /**
- * Dependencies required by the useDayLoop hook
+ * Dependencies required by the useDayLoop hook.
+ * Values that change often come in as refs, so the loops never restart.
  */
 export interface UseDayLoopDependencies {
   // State setters for day management
   setDay: Dispatch<SetStateAction<number>>;
   setTotalDaysElapsed: Dispatch<SetStateAction<number>>;
   setGlobalAutoPurchaseTimer: Dispatch<SetStateAction<number>>;
-  
-  // Ref to latest auto-sell owned state (to avoid loop restart)
-  autoSellOwnedRef: MutableRefObject<boolean>;
-  
-  // Ref to latest Christmas event state (to avoid loop restart)
-  christmasEventRef: MutableRefObject<UseChristmasEventReturn | null | undefined>;
-  
-  // Ref to latest offline prestige pending state (to stop loop when lifetime ends)
-  offlinePrestigePendingRef: MutableRefObject<boolean>;
-  
-  // Ref to lifetime max days (to detect lifetime boundary)
-  lifetimeMaxDaysRef: MutableRefObject<number>;
-  
-  // Callback to set prestige pending flag when lifetime ends
-  setOfflinePrestigePending: Dispatch<SetStateAction<boolean>>;
-  
-  // Sell handler function
-  handleSell: (isAutoSell?: boolean) => void;
-}
 
-/**
- * Return type for the useDayLoop hook
- */
-export interface UseDayLoopReturn {
-  // Expose the handleSellRef for external access if needed
-  handleSellRef: MutableRefObject<(isAutoSell?: boolean) => void>;
+  // Latest auto-sell owned state
+  autoSellOwnedRef: MutableRefObject<boolean>;
+
+  // Latest Christmas event state
+  christmasEventRef: MutableRefObject<UseChristmasEventReturn | null | undefined>;
+
+  // Latest pause state; nothing advances while paused
+  isPausedRef: MutableRefObject<boolean>;
+
+  // Latest lifetime-ended state; nothing advances once the lifetime is over
+  offlinePrestigePendingRef: MutableRefObject<boolean>;
+
+  // Lifetime length in days; totalDaysElapsed never goes past it
+  lifetimeMaxDaysRef: MutableRefObject<number>;
+
+  // Sell handler, used for the merchant's automatic sale
+  handleSell: (isAutoSell?: boolean) => void;
 }
 
 // ============================================================================
@@ -49,115 +42,80 @@ export interface UseDayLoopReturn {
 // ============================================================================
 
 /**
- * Hook that manages the core game day loop
- * 
- * This hook handles the passage of time in the game, including:
- * 
+ * Hook that runs the core game day loop.
+ *
+ * Once per second, unless the game is paused or the lifetime has ended:
+ *
  * **Day Progression:**
- * - Increments the current day (1-365 cycle)
- * - Tracks total days elapsed across all time
- * - Updates the auto-purchase timer
- * 
+ * - Advances the current day (1-365 cycle) and the lifetime day count,
+ *   which stops at the lifetime length. GameProvider's lifetime-end effect
+ *   watches that count and ends the lifetime.
+ * - Advances the auto-purchase timer
+ *
  * **Auto-Sell System:**
- * - Triggers automatic merchant sales every MERCHANT_DAYS (30 days)
- * - Only active when auto-sell is owned
- * 
+ * - Triggers the merchant's sale every MERCHANT_DAYS days when auto-sell is owned
+ *
  * **Christmas Event Integration:**
- * - Processes Christmas tree growth
- * - Updates passive income from holiday decorations
- * - Processes Elves' Bench automated crafting
- * 
- * The hook uses `useRobustInterval` for better background tab support,
- * ensuring the game continues progressing even when the tab is inactive.
- * 
- * @example
- * ```tsx
- * // In GameProvider:
- * const autoSellOwnedRef = useLatestRef(autoSellOwned);
- * const christmasEventRef = useLatestRef(christmasEvent);
- * 
- * useDayLoop({
- *   setDay,
- *   setTotalDaysElapsed,
- *   setGlobalAutoPurchaseTimer,
- *   autoSellOwnedRef,
- *   christmasEventRef,
- *   handleSell
- * });
- * ```
+ * - Grows Christmas trees and pays out passive Holiday Cheer
+ * - Runs Elves' Bench crafting (separate loop)
+ *
+ * Both loops use `useRobustInterval`, which pauses while the tab is hidden;
+ * the offline catch-up covers that time.
  */
-export function useDayLoop(deps: UseDayLoopDependencies): UseDayLoopReturn {
+export function useDayLoop(deps: UseDayLoopDependencies): void {
   const {
     setDay,
     setTotalDaysElapsed,
     setGlobalAutoPurchaseTimer,
     autoSellOwnedRef,
     christmasEventRef,
+    isPausedRef,
     offlinePrestigePendingRef,
     lifetimeMaxDaysRef,
-    setOfflinePrestigePending,
     handleSell
   } = deps;
 
   // Keep a ref to handleSell to avoid restarting the interval when it changes
   const handleSellRef = useRef(handleSell);
 
-  // Update the ref when handleSell changes
   useEffect(() => {
     handleSellRef.current = handleSell;
   }, [handleSell]);
 
   // Main day loop - runs every second (1000ms)
   useRobustInterval(() => {
+    // Skip all processing while game is paused
+    if (isPausedRef.current) return;
     // Skip all day progression if lifetime has already ended (prestige pending)
     if (offlinePrestigePendingRef.current) return;
-    
-    // Check lifetime boundary inside the functional updater so we have the
-    // latest totalDaysElapsed value.  If the boundary is reached we cap it,
-    // trigger the prestige-pending flag, and skip all other side-effects.
-    let lifetimeJustEnded = false;
-    
+
+    // Clamp totalDaysElapsed to the lifetime boundary. The lifetime-end effect in
+    // GameProvider watches totalDaysElapsed and sets the prestige-pending flag;
+    // reading a flag back out of this updater would be unreliable under batching.
     setTotalDaysElapsed((total: number) => {
       const maxDays = lifetimeMaxDaysRef.current;
-      if (total >= maxDays) {
-        // Already at or past the boundary — don't increment
-        lifetimeJustEnded = true;
-        return maxDays;
-      }
+      if (total >= maxDays) return maxDays;
       const next = total + 1;
-      if (next >= maxDays) {
-        lifetimeJustEnded = true;
-        return maxDays;
-      }
-      return next;
+      return next >= maxDays ? maxDays : next;
     });
-    
-    // If the lifetime just ended, set the prestige pending flag and bail out
-    // before processing any further side-effects for this tick.
-    if (lifetimeJustEnded) {
-      setOfflinePrestigePending(true);
-      return;
-    }
-    
-    // Update current day with year cycle (1-365)
+
     setDay((d: number) => {
       const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
-      
+
       // Auto-sell logic for merchant (every MERCHANT_DAYS)
       if (autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0) {
-        // Trigger auto-sell using the handleSell function
         // Small delay to ensure state is updated before selling
         setTimeout(() => {
           handleSellRef.current(true); // true = auto-sell
         }, 100);
       }
-      
+
       // Increment auto-purchase timer each day
       setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
-      
+
       return newDay;
     });
-    
+
     // Process Christmas tree growth each day
     if (christmasEventRef.current?.isEventActive) {
       christmasEventRef.current.processTreeGrowth();
@@ -166,21 +124,17 @@ export function useDayLoop(deps: UseDayLoopDependencies): UseDayLoopReturn {
   }, 1000, []); // Empty deps - refs prevent loop restart
 
   // Elves' Bench automation loop - runs every second
-  // Separated from main loop to allow independent timing if needed in future
   useRobustInterval(() => {
+    if (isPausedRef.current) return;
     if (offlinePrestigePendingRef.current) return;
     if (christmasEventRef.current?.isEventActive) {
       const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find(
         (u: EventUpgrade) => u.id === 'elves_bench'
       )?.owned ?? false;
-      
+
       if (elvesBenchOwned) {
         christmasEventRef.current.processDailyElvesCrafting();
       }
     }
   }, 1000, []); // Empty deps - refs prevent loop restart
-
-  return {
-    handleSellRef
-  };
 }

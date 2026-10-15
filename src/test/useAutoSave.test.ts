@@ -184,28 +184,6 @@ describe('useAutoSave', () => {
     });
   });
 
-  describe('markPendingChanges', () => {
-    it('should return markPendingChanges function', () => {
-      const config = createConfig();
-      
-      const { result } = renderHook(() => useAutoSave(config));
-      
-      expect(typeof result.current.markPendingChanges).toBe('function');
-    });
-
-    it('should not throw when called', () => {
-      const config = createConfig();
-      
-      const { result } = renderHook(() => useAutoSave(config));
-      
-      expect(() => {
-        act(() => {
-          result.current.markPendingChanges();
-        });
-      }).not.toThrow();
-    });
-  });
-
   describe('beforeunload handler', () => {
     it('should register beforeunload handler', () => {
       const config = createConfig();
@@ -214,6 +192,42 @@ describe('useAutoSave', () => {
       
       expect(eventListeners['beforeunload']).toBeDefined();
       expect(eventListeners['beforeunload'].length).toBeGreaterThan(0);
+    });
+
+    it('always saves on unload, even right after a save', () => {
+      const config = createConfig();
+      const { result } = renderHook(() => useAutoSave(config));
+
+      act(() => {
+        result.current.forceSave();
+      });
+      vi.mocked(saveGameStateWithCanning).mockClear();
+
+      eventListeners['beforeunload'].forEach(handler => handler());
+
+      expect(saveGameStateWithCanning).toHaveBeenCalledTimes(1);
+    });
+
+    it('saves the latest state on unload', () => {
+      const first = createMockGameState();
+      const latest = { ...createMockGameState(), money: 999 };
+      const { rerender } = renderHook((config: UseAutoSaveConfig) => useAutoSave(config), {
+        initialProps: createConfig({ getGameState: () => first })
+      });
+      rerender(createConfig({ getGameState: () => latest }));
+      vi.mocked(saveGameStateWithCanning).mockClear();
+
+      eventListeners['beforeunload'].forEach(handler => handler());
+
+      expect(saveGameStateWithCanning).toHaveBeenCalledWith(latest);
+    });
+
+    it('does not save on unload while saving is skipped', () => {
+      renderHook(() => useAutoSave(createConfig({ skipSave: true })));
+
+      eventListeners['beforeunload'].forEach(handler => handler());
+
+      expect(saveGameStateWithCanning).not.toHaveBeenCalled();
     });
   });
 });

@@ -30,7 +30,7 @@ describe('useDayLoop', () => {
       christmasEventRef: { current: null as UseChristmasEventReturn | null },
       offlinePrestigePendingRef: { current: false },
       lifetimeMaxDaysRef: { current: 29200 },
-      setOfflinePrestigePending: vi.fn(),
+      isPausedRef: { current: false },
       handleSell: vi.fn(),
       ...overrides
     };
@@ -60,14 +60,6 @@ describe('useDayLoop', () => {
   };
 
   describe('initialization', () => {
-    it('should return handleSellRef', () => {
-      const deps = createMockDependencies();
-      const { result } = renderHook(() => useDayLoop(deps));
-      
-      expect(result.current.handleSellRef).toBeDefined();
-      expect(result.current.handleSellRef.current).toBe(deps.handleSell);
-    });
-
     it('should register two interval callbacks', () => {
       const deps = createMockDependencies();
       renderHook(() => useDayLoop(deps));
@@ -142,6 +134,41 @@ describe('useDayLoop', () => {
     });
   });
 
+  describe('pause', () => {
+    it('skips day progression while paused', () => {
+      const deps = createMockDependencies({ isPausedRef: { current: true } });
+
+      renderHook(() => useDayLoop(deps));
+      act(() => {
+        triggerDayLoop();
+      });
+
+      expect(deps.setDay).not.toHaveBeenCalled();
+      expect(deps.setTotalDaysElapsed).not.toHaveBeenCalled();
+    });
+
+    it('skips Elves\' Bench crafting while paused', () => {
+      const processDailyElvesCrafting = vi.fn();
+      const deps = createMockDependencies({
+        isPausedRef: { current: true },
+        christmasEventRef: {
+          current: {
+            isEventActive: true,
+            processDailyElvesCrafting,
+            eventState: { upgrades: [{ id: 'elves_bench', owned: true }] },
+          } as unknown as UseChristmasEventReturn,
+        },
+      });
+
+      renderHook(() => useDayLoop(deps));
+      act(() => {
+        triggerElvesBenchLoop();
+      });
+
+      expect(processDailyElvesCrafting).not.toHaveBeenCalled();
+    });
+  });
+
   describe('lifetime end detection', () => {
     it('should skip day progression when offlinePrestigePending is true', () => {
       const deps = createMockDependencies({
@@ -158,17 +185,15 @@ describe('useDayLoop', () => {
       expect(deps.setTotalDaysElapsed).not.toHaveBeenCalled();
     });
 
-    it('should set offlinePrestigePending when totalDaysElapsed reaches lifetime max', () => {
-      const setOfflinePrestigePending = vi.fn();
+    it('keeps totalDaysElapsed at the lifetime max once reached', () => {
+      let capturedTotal = 0;
       const deps = createMockDependencies({
         lifetimeMaxDaysRef: { current: 29200 },
-        setOfflinePrestigePending,
         setTotalDaysElapsed: vi.fn((updater) => {
           if (typeof updater === 'function') {
-            // Simulate current totalDaysElapsed already at the max
-            return updater(29200);
+            capturedTotal = updater(29200); // Already at the max
           }
-          return updater;
+          return capturedTotal;
         }),
       });
 
@@ -178,7 +203,8 @@ describe('useDayLoop', () => {
         triggerDayLoop();
       });
 
-      expect(setOfflinePrestigePending).toHaveBeenCalledWith(true);
+      // The lifetime-end effect in GameProvider ends the lifetime; the loop only clamps
+      expect(capturedTotal).toBe(29200);
     });
 
     it('should cap totalDaysElapsed at lifetime max days', () => {

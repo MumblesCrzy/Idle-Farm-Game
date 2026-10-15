@@ -1,8 +1,15 @@
-import { useCallback } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
+import { applyGuildPriceBonuses, getUpgradeLevel, isCommittedTo } from '../utils/guildCalculations';
+import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
+import { GUILDS_UNLOCK_TIER } from '../data/guildData';
+import { useLatestRef } from './useLatestRef';
+
+/** Sigils spent on one Ritual Circles harvest */
+const RITUAL_HARVEST_COST = 5;
 
 /**
  * Dependencies required for the harvest and sell hook
@@ -11,19 +18,17 @@ export interface UseHarvestAndSellDeps {
   /** Current veggies state */
   veggies: Veggie[];
   /** Setter for veggies state */
-  setVeggies: React.Dispatch<React.SetStateAction<Veggie[]>>;
+  setVeggies: Dispatch<SetStateAction<Veggie[]>>;
   /** Current experience */
   experience: number;
   /** Setter for experience */
-  setExperience: React.Dispatch<React.SetStateAction<number>>;
+  setExperience: Dispatch<SetStateAction<number>>;
   /** Current knowledge */
   knowledge: number;
   /** Setter for knowledge */
-  setKnowledge: React.Dispatch<React.SetStateAction<number>>;
-  /** Current money */
-  money: number;
+  setKnowledge: Dispatch<SetStateAction<number>>;
   /** Setter for money */
-  setMoney: React.Dispatch<React.SetStateAction<number>>;
+  setMoney: Dispatch<SetStateAction<number>>;
   /** Current season */
   season: string;
   /** Current day (1-365) */
@@ -37,9 +42,9 @@ export interface UseHarvestAndSellDeps {
   /** Highest unlocked veggie index */
   highestUnlockedVeggie: number;
   /** Setter for highest unlocked veggie */
-  setHighestUnlockedVeggie: React.Dispatch<React.SetStateAction<number>>;
+  setHighestUnlockedVeggie: Dispatch<SetStateAction<number>>;
   /** Setter for total harvests counter */
-  setTotalHarvests: React.Dispatch<React.SetStateAction<number>>;
+  setTotalHarvests: Dispatch<SetStateAction<number>>;
   /** Permanent bonuses array */
   permanentBonuses: string[];
   /** Bee yield bonus multiplier */
@@ -48,8 +53,14 @@ export interface UseHarvestAndSellDeps {
   activeVeggie: number;
   /** Event log callbacks for logging */
   eventLogCallbacks: EventLogCallbacks;
-  /** Guild state for guild bonuses */
-  guildState?: GuildState;
+  /** Guild state for guild bonuses and currency */
+  guildState: GuildState;
+  /** Setter for guild state (harvests award guild currency; rituals spend it) */
+  setGuildState: Dispatch<SetStateAction<GuildState>>;
+  /** Adds knowledge to the lifetime stats used for wisdom */
+  trackKnowledgeGained: (amount: number) => void;
+  /** Adds money to the lifetime stats used for wisdom */
+  trackMoneyEarned: (amount: number) => void;
 }
 
 /**
@@ -67,58 +78,47 @@ export interface UseHarvestAndSellReturn {
     isAutoHarvest?: boolean,
     onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void
   ) => void;
-  
-  /**
-   * Handles manual harvest of the active veggie
-   */
+
+  /** Handles manual harvest of the active veggie */
   handleHarvest: () => void;
-  
+
+  /** Growers Guild Ritual Circles: spend sigils to harvest every ready crop */
+  handleRitualHarvestAll: () => void;
+
   /**
    * Toggles sell enabled state for a specific veggie
    * @param index - The veggie index to toggle
    */
   handleToggleSell: (index: number) => void;
-  
+
+  /**
+   * Toggles the auto-harvester on or off for a specific veggie
+   * @param index - The veggie index to toggle
+   */
+  handleToggleAutoHarvester: (index: number) => void;
+
   /**
    * Sells all enabled veggies' stash
    * @param isAutoSell - Whether this is an auto-sell
    */
   handleSell: (isAutoSell?: boolean) => void;
-  
-  /**
-   * Safe harvest logger that defers logging to avoid setState during render
-   */
+
+  /** Safe harvest logger that defers logging to avoid setState during render */
   logHarvest: (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void;
 }
 
 /**
  * Custom hook for harvest and sell functionality.
- * 
+ *
  * This hook manages:
- * - Harvesting veggies (manual and auto)
+ * - Harvesting veggies (manual and auto), including guild currency rewards
  * - Calculating harvest rewards (amount, experience, knowledge)
  * - Unlocking new veggies when experience thresholds are met
- * - Toggling sell enabled state per veggie
- * - Selling veggies to merchant
- * - Event logging for harvests and sales
- * 
- * @example
- * ```tsx
- * const {
- *   harvestVeggie,
- *   handleHarvest,
- *   handleToggleSell,
- *   handleSell,
- *   logHarvest
- * } = useHarvestAndSell({
- *   veggies,
- *   setVeggies,
- *   experience,
- *   setExperience,
- *   // ... other deps
- * });
- * ```
- * 
+ * - The Growers Guild ritual harvest
+ * - Toggling sell and auto-harvest per veggie
+ * - Selling veggies to the merchant
+ * - Event logging and lifetime stat tracking for harvests and sales
+ *
  * @param deps - Dependencies for harvest and sell operations
  * @returns Harvest and sell handlers
  */
@@ -144,85 +144,122 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     activeVeggie,
     eventLogCallbacks,
     guildState,
+    setGuildState,
+    trackKnowledgeGained,
+    trackMoneyEarned,
   } = deps;
+
+  // Latest values for handlers that should not be recreated on every change
+  const veggiesRef = useLatestRef(veggies);
+  const guildStateRef = useLatestRef(guildState);
 
   /**
    * Unified harvest logic for both auto and manual harvest.
    * Calculates rewards, updates stash, handles experience/knowledge gain,
-   * and unlocks new veggies when thresholds are met.
+   * awards guild currency, and unlocks new veggies when thresholds are met.
    */
   const harvestVeggie = useCallback((
     index: number,
     isAutoHarvest: boolean = false,
     onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void
   ) => {
-    // Calculate harvest amount before the state update
-    const v = veggies[index];
-    if (v.growth < 100) return; // Early exit if not ready to harvest
-    
-    // Use centralized harvest calculations with guild bonuses
-    const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain } = calculateHarvestRewards(
-      v.additionalPlotLevel || 0,
-      season,
-      permanentBonuses,
-      beeYieldBonus,
-      almanacLevel,
-      farmTier,
-      knowledge,
-      isAutoHarvest,
-      guildState
-    );
-    
-    const newExperience = experience + experienceGain;
-    
-    setVeggies((prev) => {
-      const updated = [...prev];
-      const veggie = { ...updated[index] };
-      veggie.salePrice = updated[index].salePrice;
-      
-      // Perform the harvest
-      veggie.stash += harvestAmount;
-      veggie.growth = 0;
-      
-      // Reset harvester timer if this is an auto harvest
-      if (isAutoHarvest) {
-        veggie.harvesterTimer = 0;
-      }
-      
-      updated[index] = veggie;
+    try {
+      // Calculate harvest amount before the state update
+      const v = veggies[index];
+      if (!v || v.growth < 100) return; // Early exit if not ready to harvest or invalid index
 
-      // Unlock all eligible veggies after harvest using the NEW experience value
-      let totalPlotsUsed = updated.filter(vg => vg.unlocked).length + 
-        updated.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
-      
-      const unlockOrder = updated
-        .map((vg, idx) => ({ ...vg, idx }))
-        .filter(vg => !vg.unlocked && newExperience >= vg.experienceToUnlock)
-        .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);
-      
-      for (let i = 0; i < unlockOrder.length && totalPlotsUsed < maxPlots; i++) {
-        updated[unlockOrder[i].idx].unlocked = true;
-        totalPlotsUsed++;
-        // Update highest unlocked veggie if this is higher
-        if (unlockOrder[i].idx > highestUnlockedVeggie) {
-          setHighestUnlockedVeggie(unlockOrder[i].idx);
+      // Use centralized harvest calculations with guild bonuses (use ref for latest state)
+      const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain, blessedCropTriggered } = calculateHarvestRewards(
+        v.additionalPlotLevel || 0,
+        season,
+        permanentBonuses,
+        beeYieldBonus,
+        almanacLevel,
+        farmTier,
+        knowledge,
+        isAutoHarvest,
+        guildStateRef.current
+      );
+
+      const newExperience = experience + experienceGain;
+
+      // Award guild currency on harvest once guilds unlock:
+      // - Manual harvests always earn 1 currency
+      // - Blessed crop (Soilbound Pact) triggers earn 1 currency (even on auto-harvest)
+      const earnCurrency = !isAutoHarvest || blessedCropTriggered;
+      if (earnCurrency && farmTier >= GUILDS_UNLOCK_TIER) {
+        const committedGuild = guildStateRef.current.committedGuild;
+        if (committedGuild !== null) {
+          // After commitment: award guild-specific currency (sigils for Growers)
+          setGuildState(prev => ({
+            ...prev,
+            guildCurrencies: {
+              ...prev.guildCurrencies,
+              [committedGuild]: prev.guildCurrencies[committedGuild] + 1
+            }
+          }));
+        } else {
+          // Before commitment: award generic guild tokens
+          setGuildState(prev => ({
+            ...prev,
+            guildTokens: prev.guildTokens + 1
+          }));
         }
       }
-      return updated;
-    });
-    
-    // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
-    if (day >= 1 && day <= 365) {
-      setKnowledge((k: number) => k + totalKnowledgeGain);
-      setExperience((exp: number) => exp + experienceGain);
-    }
-    
-    // Increment total harvests counter
-    setTotalHarvests((prev: number) => prev + 1);
-    
-    // Call harvest callback if provided
-    if (onHarvestCallback) {
-      onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
+
+      setVeggies((prev) => {
+        const updated = [...prev];
+        const veggie = { ...updated[index] };
+
+        // Perform the harvest
+        veggie.stash += harvestAmount;
+        veggie.growth = 0;
+
+        // Reset harvester timer if this is an auto harvest
+        if (isAutoHarvest) {
+          veggie.harvesterTimer = 0;
+        }
+
+        updated[index] = veggie;
+
+        // Unlock all eligible veggies after harvest using the NEW experience value
+        let totalPlotsUsed = updated.filter(vg => vg.unlocked).length +
+          updated.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
+
+        const unlockOrder = updated
+          .map((vg, idx) => ({ ...vg, idx }))
+          .filter(vg => !vg.unlocked && newExperience >= vg.experienceToUnlock)
+          .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);
+
+        for (let i = 0; i < unlockOrder.length && totalPlotsUsed < maxPlots; i++) {
+          updated[unlockOrder[i].idx].unlocked = true;
+          totalPlotsUsed++;
+          // Update highest unlocked veggie if this is higher
+          if (unlockOrder[i].idx > highestUnlockedVeggie) {
+            setHighestUnlockedVeggie(unlockOrder[i].idx);
+          }
+        }
+        return updated;
+      });
+
+      // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
+      if (day >= 1 && day <= 365) {
+        setKnowledge((k: number) => k + totalKnowledgeGain);
+        setExperience((exp: number) => exp + experienceGain);
+        // Track knowledge gained for lifetime stats (prestige system)
+        trackKnowledgeGained(totalKnowledgeGain);
+      }
+
+      // Increment total harvests counter
+      setTotalHarvests((prev: number) => prev + 1);
+
+      // Call harvest callback if provided
+      if (onHarvestCallback) {
+        onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
+      }
+    } catch (error) {
+      console.error('❌ Error in harvestVeggie:', error);
+      // Don't rethrow - prevent cascade failures
     }
   }, [
     veggies,
@@ -240,7 +277,10 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     setKnowledge,
     setExperience,
     setTotalHarvests,
-    setHighestUnlockedVeggie
+    setHighestUnlockedVeggie,
+    setGuildState,
+    trackKnowledgeGained,
+    guildStateRef
   ]);
 
   /**
@@ -265,6 +305,38 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
   }, [harvestVeggie, activeVeggie, logHarvest]);
 
   /**
+   * Ritual harvest (Growers Guild, Ritual Circles): spend sigils to harvest all ready crops
+   */
+  const handleRitualHarvestAll = useCallback(() => {
+    const currentGuildState = guildStateRef.current;
+    if (!isCommittedTo(currentGuildState, 'growers')) return;
+    if (getUpgradeLevel(currentGuildState, 'growers_ritual_circles') <= 0) return;
+
+    const currentSigils = currentGuildState.guildCurrencies['growers'] ?? 0;
+    const readyIndices = veggies
+      .map((v, index) => (v.growth >= GROWTH_COMPLETE_THRESHOLD ? index : -1))
+      .filter(index => index >= 0);
+
+    if (currentSigils < RITUAL_HARVEST_COST || readyIndices.length === 0) return;
+
+    setGuildState(prev => {
+      const prevSigils = prev.guildCurrencies['growers'] ?? 0;
+      if (prevSigils < RITUAL_HARVEST_COST) return prev;
+      return {
+        ...prev,
+        guildCurrencies: {
+          ...prev.guildCurrencies,
+          growers: prevSigils - RITUAL_HARVEST_COST
+        }
+      };
+    });
+
+    readyIndices.forEach(index => {
+      harvestVeggie(index, false, logHarvest);
+    });
+  }, [veggies, harvestVeggie, logHarvest, setGuildState, guildStateRef]);
+
+  /**
    * Toggle sell enabled for a specific veggie.
    * When disabled, the veggie's stash won't be sold on merchant visits.
    */
@@ -277,45 +349,61 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
   }, [setVeggies]);
 
   /**
-   * Sell handler for merchant visits.
-   * Sells all enabled veggies' stash and logs the sale.
+   * Toggle the auto-harvester for a specific veggie.
+   */
+  const handleToggleAutoHarvester = useCallback((index: number) => {
+    setVeggies((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], autoHarvesterEnabled: !updated[index].autoHarvesterEnabled };
+      return updated;
+    });
+  }, [setVeggies]);
+
+  /**
+   * Sell handler for merchant visits. The sale is worked out from current state
+   * before any update is queued, so the money, the lifetime stats and the event
+   * log always match it.
    */
   const handleSell = useCallback((isAutoSell: boolean = false) => {
     let total = 0;
     const soldVeggies: Array<{ name: string; quantity: number; earnings: number }> = [];
-    
-    setVeggies((prev) => {
-      total = prev.reduce((sum, v) => {
-        // Only include vegetables that are enabled for selling
-        if (v.sellEnabled && v.stash > 0) {
-          const earnings = v.stash * v.salePrice;
-          soldVeggies.push({
-            name: v.name,
-            quantity: v.stash,
-            earnings: earnings
-          });
-          return sum + earnings;
+
+    for (const v of veggiesRef.current) {
+      // Only include vegetables that are enabled for selling
+      if (v.sellEnabled && v.stash > 0) {
+        // Apply guild price bonuses to each item individually (for Quality Grading)
+        let veggieEarnings = 0;
+        for (let i = 0; i < v.stash; i++) {
+          // Pass true to apply quality grading bonus chance per item
+          veggieEarnings += applyGuildPriceBonuses(v.salePrice, guildState, true);
         }
-        return sum;
-      }, 0);
-      return prev.map((v) => ({
-        ...v,
-        // Only clear stash for vegetables that are enabled for selling
-        stash: v.sellEnabled ? 0 : v.stash
-      }));
-    });
+        soldVeggies.push({ name: v.name, quantity: v.stash, earnings: veggieEarnings });
+        total += veggieEarnings;
+      }
+    }
+    if (soldVeggies.length === 0) return;
+
+    // Remove only what was sold, so a harvest that lands meanwhile is kept
+    const soldByName = new Map(soldVeggies.map(s => [s.name, s.quantity]));
+    setVeggies((prev) => prev.map((v) => {
+      const sold = soldByName.get(v.name);
+      return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
+    }));
     setMoney((m: number) => m + total);
-    
-    // Log the sale if something was sold
+
+    // Track money earned for lifetime stats (prestige system)
     if (total > 0) {
+      trackMoneyEarned(total);
       eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
-  }, [setVeggies, setMoney, eventLogCallbacks]);
+  }, [setVeggies, setMoney, guildState, trackMoneyEarned, eventLogCallbacks, veggiesRef]);
 
   return {
     harvestVeggie,
     handleHarvest,
+    handleRitualHarvestAll,
     handleToggleSell,
+    handleToggleAutoHarvester,
     handleSell,
     logHarvest,
   };

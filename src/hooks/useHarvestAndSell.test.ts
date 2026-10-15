@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useHarvestAndSell, type UseHarvestAndSellDeps } from './useHarvestAndSell';
 import type { Veggie } from '../types/game';
 import type { EventLogCallbacks } from '../context/EventLogContext';
+import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
 
 // Mock calculateHarvestRewards
 vi.mock('../utils/harvestCalculations', () => ({
@@ -108,7 +109,6 @@ function createDefaultDeps(overrides: Partial<UseHarvestAndSellDeps> = {}): UseH
     setExperience: vi.fn(),
     knowledge: 100,
     setKnowledge: vi.fn(),
-    money: 500,
     setMoney: vi.fn(),
     season: 'Spring',
     day: 10,
@@ -122,6 +122,10 @@ function createDefaultDeps(overrides: Partial<UseHarvestAndSellDeps> = {}): UseH
     beeYieldBonus: 0,
     activeVeggie: 0,
     eventLogCallbacks: createMockEventLogCallbacks(),
+    guildState: DEFAULT_GUILD_STATE,
+    setGuildState: vi.fn(),
+    trackKnowledgeGained: vi.fn(),
+    trackMoneyEarned: vi.fn(),
     ...overrides
   };
 }
@@ -191,7 +195,7 @@ describe('useHarvestAndSell', () => {
         1, // farmTier
         100, // knowledge
         false, // isAutoHarvest
-        undefined // guildState
+        DEFAULT_GUILD_STATE // guildState
       );
     });
 
@@ -232,6 +236,107 @@ describe('useHarvestAndSell', () => {
       
       expect(deps.setExperience).toHaveBeenCalled();
       expect(deps.setKnowledge).toHaveBeenCalled();
+    });
+  });
+
+  describe('guild currency and lifetime stats', () => {
+    it('awards a guild token for a manual harvest once guilds unlock', () => {
+      const deps = createDefaultDeps({ farmTier: 5 });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.harvestVeggie(0, false);
+      });
+
+      const update = (deps.setGuildState as ReturnType<typeof vi.fn>).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      expect(update(DEFAULT_GUILD_STATE).guildTokens).toBe(1);
+    });
+
+    it('awards no guild currency before guilds unlock', () => {
+      const deps = createDefaultDeps({ farmTier: 4 });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.harvestVeggie(0, false);
+      });
+
+      expect(deps.setGuildState).not.toHaveBeenCalled();
+    });
+
+    it('tracks harvest knowledge for lifetime stats', () => {
+      const deps = createDefaultDeps();
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.harvestVeggie(0, false);
+      });
+
+      expect(deps.trackKnowledgeGained).toHaveBeenCalledWith(2);
+    });
+
+    it('tracks sale money for lifetime stats', () => {
+      const deps = createDefaultDeps();
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleSell(false);
+      });
+
+      // Carrot 5 x 10 + Potato 3 x 15
+      expect(deps.trackMoneyEarned).toHaveBeenCalledWith(95);
+    });
+  });
+
+  describe('handleRitualHarvestAll', () => {
+    const ritualGuildState: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      committedGuild: 'growers',
+      status: 'committed',
+      purchasedUpgrades: ['growers_ritual_circles'],
+      guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, growers: 10 }
+    };
+
+    it('spends sigils and harvests every ready crop', () => {
+      const deps = createDefaultDeps({ guildState: ritualGuildState });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleRitualHarvestAll();
+      });
+
+      const spend = (deps.setGuildState as ReturnType<typeof vi.fn>).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      expect(spend(ritualGuildState).guildCurrencies.growers).toBe(5);
+      // Only Carrot is fully grown in the fixtures
+      expect(deps.setTotalHarvests).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing without the Ritual Circles upgrade', () => {
+      const deps = createDefaultDeps({ guildState: { ...ritualGuildState, purchasedUpgrades: [] } });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleRitualHarvestAll();
+      });
+
+      expect(deps.setGuildState).not.toHaveBeenCalled();
+      expect(deps.setTotalHarvests).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleToggleAutoHarvester', () => {
+    it('toggles the auto-harvester for one crop', () => {
+      const mockSetVeggies = vi.fn();
+      const deps = createDefaultDeps({ setVeggies: mockSetVeggies });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleToggleAutoHarvester(1);
+      });
+
+      const update = mockSetVeggies.mock.calls[0][0] as (prev: typeof deps.veggies) => typeof deps.veggies;
+      const updated = update(deps.veggies.map(v => ({ ...v, autoHarvesterEnabled: true })));
+      expect(updated[1].autoHarvesterEnabled).toBe(false);
+      expect(updated[0].autoHarvesterEnabled).toBe(true);
     });
   });
 

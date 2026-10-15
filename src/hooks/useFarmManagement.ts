@@ -5,7 +5,7 @@ import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import type { WeatherType } from '../config/gameConstants';
 import { GAME_STORAGE_KEY } from '../config/gameConstants';
-import { createInitialVeggies, createAutoPurchaserConfigs, calculateExpRequirement } from '../utils/gameCalculations';
+import { createAllCrops, calculateExpRequirement } from '../utils/gameCalculations';
 
 /**
  * Dependencies required for the farm management hook
@@ -49,6 +49,15 @@ export interface UseFarmManagementDeps {
   
   // Prestige bonus: extra starting experience per farm tier upgrade
   prestigeStartingExpBonus: number;
+
+  // Wisdom upgrade: each Plot Efficiency level lowers the experience needed per extra plot
+  plotEfficiencyLevel: number;
+
+  // Called with the new tier after a farm upgrade (lifetime stats)
+  onFarmTierReached?: (tier: number) => void;
+
+  // Called during a full reset, for state this hook doesn't own
+  onReset?: () => void;
   
   // External systems (optional)
   globalBeeContext: BeeContextValue | null;
@@ -131,6 +140,9 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     globalBeeContext,
     christmasEvent,
     prestigeStartingExpBonus,
+    plotEfficiencyLevel,
+    onFarmTierReached,
+    onReset,
   } = deps;
 
   /**
@@ -144,8 +156,10 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
    * 5. Sets starting experience based on new tier
    */
   const handleBuyLargerFarm = useCallback(() => {
-    // Calculate new maxPlots (capped at twice the current max)
-    const experienceBonus = Math.floor(experience / 100);
+    // Calculate new maxPlots (capped at twice the current max).
+    // Plot Efficiency lowers the experience divisor: 100 base, -10 per level, min 50.
+    const expDivisor = Math.max(50, 100 - plotEfficiencyLevel * 10);
+    const experienceBonus = Math.floor(experience / expDivisor);
     const uncappedMaxPlots = maxPlots + experienceBonus;
     const newMaxPlots = Math.min(uncappedMaxPlots, maxPlots * 2);
     
@@ -163,16 +177,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     // Also add the prestige startingExperience bonus to unlock extra crops
     const startingExperience = (newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0) + prestigeStartingExpBonus;
     
-    // Reset veggies with fresh auto-purchaser configs
-    const resetVeggies = createInitialVeggies().map(v => ({
-      ...v,
-      autoPurchasers: createAutoPurchaserConfigs(
-        v.autoPurchasers[0].cost,
-        v.autoPurchasers[1].cost,
-        v.autoPurchasers[2].cost,
-        v.autoPurchasers[3].cost
-      )
-    }));
+    // Fresh crops (vegetables and fruits), including fresh auto-purchasers
+    const resetVeggies = createAllCrops();
     
     // Set activeVeggie to 0 FIRST to prevent rendering issues
     setActiveVeggie(0);
@@ -188,6 +194,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setHeirloomOwned(false);
     setMaxPlots(newMaxPlots);
     setFarmTier(newFarmTier);
+    onFarmTierReached?.(newFarmTier);
     setIrrigationOwned(false);
     setGlobalAutoPurchaseTimer(0);
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)));
@@ -224,7 +231,9 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setGlobalAutoPurchaseTimer,
     setFarmCost,
     eventLogCallbacks,
-    prestigeStartingExpBonus
+    prestigeStartingExpBonus,
+    plotEfficiencyLevel,
+    onFarmTierReached
   ]);
 
   /**
@@ -244,8 +253,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     // Remove all data from localStorage first
     localStorage.removeItem(GAME_STORAGE_KEY);
     
-    // Create fresh veggies using the factory function
-    const resetVeggies = createInitialVeggies();
+    // Fresh crops (vegetables and fruits)
+    const resetVeggies = createAllCrops();
     
     setFarmTier(1);
     setDay(1);
@@ -266,6 +275,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setCurrentWeather('Clear');
     setFarmCost(FARM_BASE_COST);
     setHighestUnlockedVeggie(0);
+    onReset?.();
     
     // Reset achievements FIRST, before resetting bee system
     eventLogCallbacks.resetAchievements();
@@ -319,7 +329,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setJustReset,
     eventLogCallbacks,
     globalBeeContext,
-    christmasEvent
+    christmasEvent,
+    onReset
   ]);
 
   return {

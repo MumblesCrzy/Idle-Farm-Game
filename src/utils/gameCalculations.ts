@@ -389,3 +389,10 @@ export const createFruitFromConfig = (config: FruitConfig): Veggie => {
 export const createInitialFruits = (): Veggie[] => {
   return FRUIT_CONFIGS.map(config => createFruitFromConfig(config));
 };
+
+/**
+ * Creates the full starting crop list: vegetables followed by fruits.
+ * Use this whenever crops are reset, so fruits stay in the list.
+ * @returns Array of initialized Veggie objects for every crop
+ */
+export const createAllCrops = (): Veggie[] => [...createInitialVeggies(), ...createInitialFruits()];

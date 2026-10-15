@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePurchaseHandlers, createAutoPurchaseHandler } from './usePurchaseHandlers';
-import { createInitialVeggies } from '../utils/gameCalculations';
+import { createInitialVeggies, createAllCrops } from '../utils/gameCalculations';
+import type { Veggie } from '../types/game';
 import {
   IRRIGATION_COST,
   IRRIGATION_KN_COST,
@@ -179,6 +180,24 @@ describe('usePurchaseHandlers', () => {
       });
       
       expect(deps.setHeirloomOwned).not.toHaveBeenCalled();
+    });
+
+    it('recalculates fruit prices from their own base price', () => {
+      const crops = createAllCrops();
+      const fruitIndex = crops.findIndex(c => c.cropType === 'fruit');
+      const baseFruitPrice = crops[fruitIndex].salePrice;
+      crops[fruitIndex] = { ...crops[fruitIndex], betterSeedsLevel: 1 };
+
+      const deps = createMockDependencies({ veggies: crops });
+      const { result } = renderHook(() => usePurchaseHandlers(deps));
+      act(() => {
+        result.current.handleBuyHeirloom();
+      });
+
+      // Run the queued crop update the way React would
+      const update = deps.setVeggies.mock.calls[0][0] as (prev: Veggie[]) => Veggie[];
+      const updated = update(crops);
+      expect(updated[fruitIndex].salePrice).toBe(+(baseFruitPrice * 1.5).toFixed(2));
     });
   });
 

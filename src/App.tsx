@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode } from 'react';
 import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
@@ -32,7 +32,7 @@ import { ICON_BEE, ICON_GUILDS, ICON_WISDOM } from './config/assetPaths';
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
-import { applyGuildPriceBonuses, getUpgradeLevel, isCommittedTo } from './utils/guildCalculations';
+import { applyGuildPriceBonuses } from './utils/guildCalculations';
 
 // Module-level bee context reference for dev tools
 let globalBeeContext: BeeContextValue | null = null;
@@ -74,22 +74,24 @@ import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
-import { useGameLoop, useRobustInterval } from './hooks/useGameLoop';
+import { useLatestRef } from './hooks/useLatestRef';
+import { usePurchaseHandlers } from './hooks/usePurchaseHandlers';
+import { useFarmManagement } from './hooks/useFarmManagement';
+import { useHarvestAndSell } from './hooks/useHarvestAndSell';
+import { useDayLoop } from './hooks/useDayLoop';
+import { useOfflineProgress } from './hooks/useOfflineProgress';
+import { useWeatherRandomization } from './hooks/useWeatherRandomization';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useGameLoop } from './hooks/useGameLoop';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
-import { loadGameStateWithCanning, saveGameStateWithCanning, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
-import { calculateOfflineProgress } from './utils/offlineProgress';
+import { loadGameStateWithCanning, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
-import type { Veggie, GameState, EventCategory, EventPriority, WeatherType } from './types/game';
+import type { Veggie, GameState, EventCategory, EventPriority } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
 import {
-  RAIN_CHANCES,
-  DROUGHT_CHANCES,
-  STORM_CHANCES,
-  IRRIGATION_COST,
-  IRRIGATION_KN_COST,
   MERCHANT_DAYS,
   MERCHANT_COST,
   MERCHANT_KN_COST,
@@ -98,31 +100,21 @@ import {
   HEIRLOOM_COST_PER_VEGGIE,
   HEIRLOOM_KN_PER_VEGGIE,
   veggieSeasonBonuses,
-  GAME_STORAGE_KEY,
-  RAIN_DURATION_DAYS,
-  DROUGHT_DURATION_DAYS,
-  STORM_DURATION_DAYS,
-  HEATWAVE_DURATION_DAYS,
   GROWTH_COMPLETE_THRESHOLD
 } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, WEATHER_RAIN, WEATHER_SNOW, WEATHER_CLEAR, WEATHER_DROUGHT, WEATHER_HEATWAVE, WEATHER_STORM, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
   getVeggieGrowthBonus,
   calculateExpRequirement,
-  calculateInitialCost,
-  calculateUpgradeCost,
-  createAutoPurchaserConfigs,
-  createInitialVeggies,
-  createInitialFruits
+  createAllCrops
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
   processAutoHarvest,
   processVeggieUnlocks
 } from './utils/gameLoopProcessors';
-import { calculateHarvestRewards } from './utils/harvestCalculations';
 import {
   buildHarvestEvent,
   buildAutoPurchaseEvent,
@@ -137,7 +129,7 @@ import {
   buildMilestoneClaimedEvent
 } from './utils/eventLogUtils';
 
-const initialVeggies: Veggie[] = [...createInitialVeggies(), ...createInitialFruits()];
+const initialVeggies: Veggie[] = createAllCrops();
 
 /**
  * Check if the Christmas Tree Shop tab should be visible
@@ -148,82 +140,6 @@ function isChristmasTabVisible(): boolean {
   const month = now.getMonth(); // 0-indexed (0 = January, 10 = November, 11 = December)
   return month === 10 || month === 11; // November or December
 }
-
-// Small helper to keep the latest value in a ref without large dependency arrays
-const useLatestRef = <T,>(value: T) => {
-  const ref = useRef(value);
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref;
-};
-
-const createAutoPurchaseHandler = (
-  autoPurchaseId: string,
-  veggies: Veggie[],
-  setVeggies: Dispatch<SetStateAction<Veggie[]>>,
-  money: number,
-  setMoney: Dispatch<SetStateAction<number>>,
-  knowledge: number,
-  setKnowledge: Dispatch<SetStateAction<number>>,
-  maxPlots?: number
-) => {
-  return (index: number) => {
-    const veggie = veggies[index];
-    const autoPurchaser = veggie.autoPurchasers.find(ap => ap.id === autoPurchaseId);
-    
-    if (!autoPurchaser) return;
-
-    const currency = autoPurchaser.currencyType === 'money' ? money : knowledge;
-    const canAfford = !autoPurchaser.owned && currency >= autoPurchaser.cost;
-
-    if (canAfford) {
-      // Purchase the auto-purchaser
-      if (autoPurchaser.currencyType === 'money') {
-        setMoney((m: number) => Math.max(0, m - autoPurchaser.cost));
-      } else {
-        setKnowledge((k: number) => Math.max(0, k - autoPurchaser.cost));
-      }
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        const apIndex = v2.autoPurchasers.findIndex(ap => ap.id === autoPurchaseId);
-        if (apIndex >= 0) {
-          v2.autoPurchasers[apIndex] = {
-            ...v2.autoPurchasers[apIndex],
-            owned: true,
-            active: true,
-            timer: 0
-          };
-        }
-        updated[index] = v2;
-        return updated;
-      });
-    } else if (autoPurchaser.owned) {
-      // Toggle activation - but prevent Surveyor from being turned on at max plots
-      if (autoPurchaseId === 'surveyor' && !autoPurchaser.active && maxPlots !== undefined) {
-        const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
-        if (totalPlotsUsed >= maxPlots) {
-          return; // Don't allow turning Surveyor on when at max plots
-        }
-      }
-      
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        const apIndex = v2.autoPurchasers.findIndex(ap => ap.id === autoPurchaseId);
-        if (apIndex >= 0) {
-          v2.autoPurchasers[apIndex] = {
-            ...v2.autoPurchasers[apIndex],
-            active: !v2.autoPurchasers[apIndex].active
-          };
-        }
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  };
-};
 
 const GameContext = createContext<GameState | undefined>(undefined);
 
@@ -307,113 +223,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Pause state — freezes all game loops when true (persisted so offline progress is skipped)
   const [isPaused, setIsPaused] = useState(() => !!loaded?.isPaused);
-
-  // Apply offline progress on first load and cap to lifetime end when appropriate
-  useEffect(() => {
-    try {
-      if (!loaded) return;
-
-      const lastSaved = loaded.lastSavedAt || loaded._saveVersion ? loaded.lastSavedAt : null;
-      const now = Date.now();
-      const offlineMs = lastSaved ? Math.max(0, now - lastSaved) : 0;
-
-      if (offlineMs <= 1000) return; // nothing to do
-
-      // Skip offline progress if the game was paused when saved
-      if (loaded.isPaused) return;
-
-      // Build a minimal gameState snapshot for calculateOfflineProgress
-      // Build a snapshot that reflects full save data where possible so offline
-      // processing is accurate for canning, bees, and seasonal events.
-      // The loader always fills canningState and autoCanningConfig, so no fallbacks are needed.
-      const canningState = loaded.canningState ?? null;
-      const canningProcesses = canningState?.activeProcesses ?? [];
-      const canningUpgrades: Record<string, number> = {};
-      (canningState?.upgrades ?? []).forEach(u => { canningUpgrades[u.id] = u.level; });
-
-      const snapshot: Parameters<typeof calculateOfflineProgress>[1] = {
-        // Start from the migrated veggies in state, not the raw save, so crops and
-        // fields added by migrateVeggieData survive the catch-up
-        veggies,
-        day: loaded.day ?? day,
-        totalDaysElapsed: loaded.totalDaysElapsed ?? totalDaysElapsed,
-        // dayLength is the real ms per in-game day used by offlineProgress; keep default 1000 unless configured elsewhere
-        dayLength: 1000,
-        season,
-        currentWeather: loaded.currentWeather || currentWeather || 'Clear',
-        greenhouseOwned: typeof loaded.greenhouseOwned === 'boolean' ? loaded.greenhouseOwned : greenhouseOwned,
-        irrigationOwned: typeof loaded.irrigationOwned === 'boolean' ? loaded.irrigationOwned : irrigationOwned,
-        almanacLevel: loaded.almanacLevel ?? almanacLevel,
-        farmTier: loaded.farmTier ?? farmTier,
-        knowledge: loaded.knowledge ?? knowledge,
-        canningProcesses,
-        canningUpgrades,
-        autoCanning: loaded.autoCanningConfig ?? { enabled: false },
-        guildState: loaded.guildState || guildState,
-        // This path applies only crop, experience, knowledge and day results,
-        // so the event and bee inputs do not affect what it changes.
-        christmasEvent,
-        beeState: loaded.beeState
-      };
-
-      const lifetimeMaxDays = getMaxLifetimeDaysForPlayer(loaded.prestigeState);
-
-      const result = calculateOfflineProgress(offlineMs, snapshot, { maxTotalDays: lifetimeMaxDays });
-
-      // Apply results to state
-      if (result.veggies) setVeggies(result.veggies);
-      if (result.experienceGain) setExperience((e: number) => e + result.experienceGain);
-      if (result.knowledgeGain) {
-        setKnowledge((k: number) => k + result.knowledgeGain);
-        // Track knowledge gained for lifetime stats (prestige system)
-        trackKnowledgeGained(result.knowledgeGain);
-      }
-      if (typeof result.day === 'number') setDay(result.day);
-      if (typeof result.totalDaysElapsed === 'number') setTotalDaysElapsed(result.totalDaysElapsed);
-
-      // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out
-      if (christmasEvent.isEventActive) {
-        if (result.christmasTreeGrowthTicks > 0) {
-          christmasEvent.processTreeGrowth(result.christmasTreeGrowthTicks);
-        }
-        if (result.christmasElvesCraftingTicks > 0 &&
-            christmasEvent.eventState.upgrades.some(u => u.id === 'elves_bench' && u.owned)) {
-          christmasEvent.processDailyElvesCrafting(result.christmasElvesCraftingTicks);
-        }
-        if (christmasEvent.passiveCheerPerSecond > 0) {
-          christmasEvent.updatePassiveIncome(result.timeElapsed);
-        }
-      }
-
-      // Persist updated state so lastSavedAt / lastTotalDaysElapsed are set consistently
-      saveGameStateWithCanning({
-        ...loaded,
-        veggies: result.veggies,
-        experience: (loaded.experience || 0) + result.experienceGain,
-        knowledge: (loaded.knowledge || 0) + result.knowledgeGain,
-        day: result.day,
-        totalDaysElapsed: result.totalDaysElapsed
-      });
-
-      // ── Telemetry: offline_catchup (mount) ──
-      devTelemetry.emit('offline_catchup', {
-        offlineMsRequested: offlineMs,
-        offlineMsApplied: result.timeElapsed ?? offlineMs,
-        cappedToLifetime: result.cappedToLifetime ?? false
-      });
-
-      if (result.cappedToLifetime) {
-        console.log('Offline progress was capped to lifetime end; pending prestige.');
-        setOfflinePrestigePending(true);
-        // Defensive: set totalDaysElapsed to lifetimeMaxDays so UI reflects the boundary
-        setTotalDaysElapsed(lifetimeMaxDays);
-      }
-    } catch (error) {
-      console.error('Error applying offline progress:', error);
-    }
-    // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Bee yield bonus tracking (from bee boxes and Meadow Magic upgrades)
   const [beeYieldBonus, setBeeYieldBonus] = useState(0); // Decimal format (e.g., 0.05 = 5%)
@@ -604,8 +413,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setMaxPlots(startMaxPlots);
     setHighestUnlockedVeggie(0);
     
-    // Reset vegetables to initial state
-    const resetVeggies = createInitialVeggies();
+    // Reset crops to initial state (vegetables and fruits)
+    const resetVeggies = createAllCrops();
     setActiveVeggie(0);
     setVeggies(resetVeggies);
     
@@ -680,248 +489,45 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     },
   });
 
-  // Irrigation upgrade handler
-  const irrigationCost = IRRIGATION_COST;
-  const irrigationKnCost = IRRIGATION_KN_COST;
-  const handleBuyIrrigation = useCallback(() => {
-    if (!irrigationOwned && money >= irrigationCost && knowledge >= irrigationKnCost) {
-      setMoney((m: number) => m - irrigationCost);
-      setKnowledge((k: number) => k - irrigationKnCost);
-      setIrrigationOwned(true);
-      
-      // Log irrigation purchase milestone
-      eventLogCallbacks.onAchievementUnlock({
-        name: 'Irrigation System',
-        description: 'Installed irrigation system (Drought no longer affects crops)',
-        reward: null,
-        category: 'milestone'
-      });
-    }
-  }, [irrigationOwned, money, irrigationCost, knowledge, irrigationKnCost]);
-  
-  // Farm purchase/reset logic
-  const handleBuyLargerFarm = useCallback(() => {
-    // Calculate new maxPlots (capped at twice the current max)
-    // plotEfficiency upgrade lowers the experience divisor (100 base, -10 per level, min 50)
-    const plotEfficiencyLevel = prestigeState.wisdomUpgrades.plotEfficiency || 0;
-    const expDivisor = Math.max(50, 100 - plotEfficiencyLevel * 10);
-    const experienceBonus = Math.floor(experience / expDivisor);
-    const uncappedMaxPlots = maxPlots + experienceBonus;
-    const newMaxPlots = Math.min(uncappedMaxPlots, maxPlots * 2);
-    // Calculate money to keep
-    const moneyKept = money - farmCost;
-    // Calculate knowledge to keep (third of current)
-    const knowledgeKept = knowledge;
-    // Calculate new farm tier
-    const newFarmTier = farmTier + 1;
-    // Calculate starting experience based on farm tier to unlock appropriate vegetables
-    // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
-    // Also add the prestige startingExperience bonus to unlock extra crops
-    const prestigeExpBonus = (prestigeState.wisdomUpgrades.startingExperience || 0) * 50;
-    const startingExperience = (newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0) + prestigeExpBonus;
-    
-    // Reset veggies with fresh auto-purchaser configs
-    const resetVeggies = createInitialVeggies().map(v => ({
-      ...v,
-      autoPurchasers: createAutoPurchaserConfigs(
-        v.autoPurchasers[0].cost,
-        v.autoPurchasers[1].cost,
-        v.autoPurchasers[2].cost,
-        v.autoPurchasers[3].cost
-      )
-    }));
-    
-    // Save current state of irrigation
-    // Static knowledge multiplier bonus per farm tier is applied globally in knowledge gain
-    // Reset game state, but keep moneyKept, newMaxPlots, and newFarmTier
-    // Set activeVeggie to 0 FIRST to prevent rendering issues
-    setActiveVeggie(0);
-    setVeggies(resetVeggies);
-    setMoney(moneyKept > 0 ? moneyKept : 0);
-    setExperience(startingExperience);
-    setKnowledge(knowledgeKept);
-    setDay(1);
-    setGreenhouseOwned(false);
-    setAlmanacLevel(0);
-    setAlmanacCost(10);
-    setAutoSellOwned(false);
-    setHeirloomOwned(false);
-    setMaxPlots(newMaxPlots);
-    setFarmTier(newFarmTier);
-    // Track max farm tier reached for lifetime stats (prestige system)
-    trackFarmTierReached(newFarmTier);
-    setIrrigationOwned(false); // Preserve irrigation state
-    setGlobalAutoPurchaseTimer(0); // Reset auto-purchaser timer
-    setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1))); // Increase cost for next farm, exponential scaling
-    
-    // Log farm tier upgrade milestone
-    eventLogCallbacks.onAchievementUnlock({
-      name: `Farm Tier ${newFarmTier}`,
-      description: `Upgraded to Farm Tier ${newFarmTier} with ${newMaxPlots} max plots`,
-      reward: null,
-      category: 'milestone'
-    });
-    
-    // Note: Canning state is preserved - auto-save will handle saving all state including canning
-    // No manual save call needed here, the auto-save system will pick up these changes
-  }, [experience, money, farmTier, knowledge, maxPlots, farmCost, trackFarmTierReached, prestigeState.wisdomUpgrades.startingExperience, prestigeState.wisdomUpgrades.plotEfficiency]);
-  // Removed duplicate loaded declaration and invalid farmTier type usage
-  // Farmer's Almanac purchase handler
-  const handleBuyAlmanac = useCallback(() => {
-    if (money >= almanacCost) {
-      setMoney((m: number) => Math.max(0, m - almanacCost));
-      setAlmanacLevel((lvl: number) => lvl + 1);
-      setAlmanacCost((cost: number) => Math.ceil(cost * 1.15 + 5));
-    }
-  }, [money, almanacCost]);
-  // Auto Sell upgrade purchase handler
-  const handleBuyAutoSell = useCallback(() => {
-    if (!autoSellOwned && money >= MERCHANT_COST && knowledge >= MERCHANT_KN_COST) {
-      setMoney((m: number) => m - MERCHANT_COST);
-      setKnowledge((k: number) => k - MERCHANT_KN_COST);
-      setAutoSellOwned(true);
-      
-      // Log auto-sell purchase milestone
-      eventLogCallbacks.onAchievementUnlock({
-        name: 'Merchant Partnership',
-        description: 'Unlocked auto-sell (Merchant buys stashed veggies every 7 days)',
-        reward: null,
-        category: 'milestone'
-      });
-    }
-  }, [autoSellOwned, money, knowledge]);
-  // Reset game handler
-  const resetGame = () => {
-  // Block achievement checks during reset to prevent re-unlocking
-  setBlockAchievementChecks(true);
-  
-  // Remove all data from localStorage first
-  localStorage.removeItem(GAME_STORAGE_KEY);
-  
-  // Create fresh veggies using the factory function
-  const resetVeggies = createInitialVeggies();
-  
-  setFarmTier(1);
-  setDay(1);
-  setTotalDaysElapsed(0);
-  setTotalHarvests(0);
-  setMaxPlots(4);
-  setMoney(0);
-  setExperience(0);
-  setKnowledge(0);
-  setActiveVeggie(0);
-  setVeggies(resetVeggies);
-  setAlmanacLevel(0);
-  setAlmanacCost(10);
-  setIrrigationOwned(false);
-  setAutoSellOwned(false);
-  setGreenhouseOwned(false);
-  setHeirloomOwned(false);
-  setCurrentWeather('Clear');
-  setFarmCost(FARM_BASE_COST);
-  setHighestUnlockedVeggie(0); // Reset highest unlocked veggie for complete reset
-  wisdomDepositedRef.current = false;
-  
-  // Reset achievements FIRST, before resetting bee system
-  // This prevents achievements from being re-unlocked when bee state changes
-  eventLogCallbacks.resetAchievements();
-  
-  // Reset bee system (this will trigger beeState update and achievement check)
-  if (globalBeeContext?.resetBeeSystem) {
-    globalBeeContext.resetBeeSystem();
-  }
-  
-  // Clear event log
-  eventLogCallbacks.clearEventLog();
-  
-  // Reset Christmas event
-  if (christmasEvent?.resetEvent) {
-    christmasEvent.resetEvent();
-  }
-  
-  // Wait for state updates to propagate, then re-enable features
-  // The auto-save system will save the reset state once justReset becomes false
-  setTimeout(() => {
-    // Re-enable achievement checks and auto-save after state updates propagate
-    setBlockAchievementChecks(false);
-    setJustReset(false);
-    
-    // Trigger a state change to ensure auto-save runs with reset values
-    // This dummy state change forces the save effect to run
-    setMoney(prev => prev);
-  }, 100);
-  
-  // Prevent auto-save from running until state updates propagate
-  setJustReset(true);
-  };
-
-  
-  // Auto Harvester Speed upgrade purchase
-  const handleBuyHarvesterSpeed = useCallback((index: number) => {
-    const v = veggies[index];
-    if (v.harvesterOwned && money >= v.harvesterSpeedCost!) {
-      setMoney((m: number) => Math.max(0, m - v.harvesterSpeedCost!));
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        v2.harvesterSpeedLevel = (v2.harvesterSpeedLevel ?? 0) + 1;
-        v2.harvesterSpeedCost = calculateUpgradeCost('harvesterSpeed', v2.harvesterSpeedLevel, calculateInitialCost('harvesterSpeed', index));
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  }, [veggies, money]);
-  
-  // Prestige: Better Seeds upgrade purchase
-  const handleBuyBetterSeeds = useCallback((index: number) => {
-    const v = veggies[index];
-    if (knowledge >= v.betterSeedsCost) {
-      const cost = v.betterSeedsCost;
-      setKnowledge((k: number) => Math.max(0, k - cost));
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        v2.betterSeedsLevel += 1;
-        const multiplier = heirloomOwned ? 1.5 : 1.25;
-        v2.salePrice = +(v2.salePrice * multiplier).toFixed(2);
-        v2.betterSeedsCost = calculateUpgradeCost('betterSeeds', v2.betterSeedsLevel, calculateInitialCost('betterSeeds', index));
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  }, [veggies, knowledge, heirloomOwned]);
-  // Heirloom Seeds purchase handler
-  const handleBuyHeirloom = useCallback(() => {
-    if (!heirloomOwned && money >= heirloomMoneyCost && knowledge >= heirloomKnowledgeCost) {
-      setMoney((m: number) => m - heirloomMoneyCost);
-      setKnowledge((k: number) => k - heirloomKnowledgeCost);
-      setHeirloomOwned(true);
-      
-      // Log heirloom purchase milestone
-      eventLogCallbacks.onAchievementUnlock({
-        name: 'Heirloom Seeds Unlocked',
-        description: 'Unlocked Heirloom Seeds (Better Seeds now 1.5x more effective)',
-        reward: null,
-        category: 'milestone'
-      });
-      
-      // Retroactively update all vegetable prices to reflect the heirloom bonus
-      setVeggies((prev) => {
-        const baseVeggies = createInitialVeggies();
-        return prev.map((v, index) => {
-          if (v.betterSeedsLevel > 0) {
-            // Recalculate the sale price with the heirloom multiplier
-            // First, calculate the base price (original price before any Better Seeds)
-            const baseSalePrice = baseVeggies[index].salePrice;
-            // Then apply the heirloom multiplier (1.5x per level instead of 1.25x)
-            const newSalePrice = +(baseSalePrice * Math.pow(1.5, v.betterSeedsLevel)).toFixed(2);
-            return { ...v, salePrice: newSalePrice };
-          }
-          return v;
-        });
-      });
-    }
-  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost]);
+  // Upgrade purchases: per-crop upgrades, auto-purchasers and global upgrades
+  const {
+    handleBuyFertilizer,
+    handleBuyHarvester,
+    handleBuyHarvesterSpeed,
+    handleBuyBetterSeeds,
+    handleBuyAdditionalPlot,
+    handleBuyAutoPurchaser,
+    handleBuyIrrigation,
+    handleBuyGreenhouse,
+    handleBuyHeirloom,
+    handleBuyAutoSell,
+    handleBuyAlmanac,
+    irrigationCost,
+    irrigationKnCost
+  } = usePurchaseHandlers({
+    veggies,
+    setVeggies,
+    money,
+    setMoney,
+    knowledge,
+    setKnowledge,
+    heirloomOwned,
+    setHeirloomOwned,
+    irrigationOwned,
+    setIrrigationOwned,
+    greenhouseOwned,
+    setGreenhouseOwned,
+    autoSellOwned,
+    setAutoSellOwned,
+    setAlmanacLevel,
+    almanacCost,
+    setAlmanacCost,
+    totalPlotsUsed,
+    maxPlots,
+    heirloomMoneyCost,
+    heirloomKnowledgeCost,
+    onMilestone: eventLogCallbacks.onAchievementUnlock
+  });
 
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
@@ -930,131 +536,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const { season } = useSeasonSystem(day);
   
 
-  // Store current game state in a ref so offline progress can access latest values
-  const gameStateRef = useRef({
-    veggies,
-    day,
-    totalDaysElapsed,
-    season,
-    currentWeather,
-    greenhouseOwned,
-    irrigationOwned,
-    almanacLevel,
-    farmTier,
-    knowledge,
-    christmasEvent
-  });
-  
-  // Update ref when state changes
-  useEffect(() => {
-    gameStateRef.current = {
-      veggies,
-      day,
-      totalDaysElapsed,
-      season,
-      currentWeather,
-      greenhouseOwned,
-      irrigationOwned,
-      almanacLevel,
-      farmTier,
-      knowledge,
-      christmasEvent
-    };
-  }, [veggies, day, totalDaysElapsed, season, currentWeather, greenhouseOwned, irrigationOwned, almanacLevel, farmTier, knowledge, christmasEvent]);
-  
-  // Catch-up for time the tab spent hidden. Every game loop pauses while the tab is
-  // hidden, so this simulates that time once when the player returns. Time away from
-  // a closed page is handled by the startup catch-up above, from the save's timestamp.
-  useEffect(() => {
-    const LAST_ACTIVE_KEY = 'farmIdleLastActive';
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-        return;
-      }
-
-      const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
-      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-      if (!lastActiveTime) return;
-
-      const timeElapsed = Date.now() - parseInt(lastActiveTime, 10);
-      if (timeElapsed <= 1000) return;
-      // No catch-up while paused or once the lifetime has ended
-      if (isPausedRef.current || offlinePrestigePendingRef.current) return;
-
-      // Read current values through refs; this handler is registered once on mount
-      const state = gameStateRef.current;
-      const lifetimeMaxDays = lifetimeMaxDaysRef.current;
-
-      const offlineResult = calculateOfflineProgress(timeElapsed, {
-        veggies: state.veggies,
-        day: state.day,
-        totalDaysElapsed: state.totalDaysElapsed,
-        dayLength: 1000, // 1 second per day
-        season: state.season,
-        currentWeather: state.currentWeather,
-        greenhouseOwned: state.greenhouseOwned,
-        irrigationOwned: state.irrigationOwned,
-        almanacLevel: state.almanacLevel,
-        farmTier: state.farmTier,
-        knowledge: state.knowledge,
-        canningProcesses: [],
-        canningUpgrades: {},
-        autoCanning: { enabled: false },
-        guildState: guildStateRef.current,
-        christmasEvent: state.christmasEvent
-      }, { maxTotalDays: lifetimeMaxDays });
-
-      if (offlineResult.timeElapsed < 1000) return;
-
-      setVeggies(offlineResult.veggies);
-      setExperience((prev: number) => prev + offlineResult.experienceGain);
-      setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
-      if (offlineResult.knowledgeGain > 0) {
-        // Track knowledge gained for lifetime stats (prestige system)
-        trackKnowledgeGainedRef.current(offlineResult.knowledgeGain);
-      }
-      setDay(offlineResult.day);
-      setTotalDaysElapsed(offlineResult.totalDaysElapsed);
-
-      // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out
-      const event = state.christmasEvent;
-      if (event.isEventActive) {
-        if (offlineResult.christmasTreeGrowthTicks > 0) {
-          event.processTreeGrowth(offlineResult.christmasTreeGrowthTicks);
-        }
-        if (offlineResult.christmasElvesCraftingTicks > 0 &&
-            event.eventState.upgrades.some(u => u.id === 'elves_bench' && u.owned)) {
-          event.processDailyElvesCrafting(offlineResult.christmasElvesCraftingTicks);
-        }
-        if (event.passiveCheerPerSecond > 0) {
-          event.updatePassiveIncome(offlineResult.timeElapsed);
-        }
-      }
-
-      // ── Telemetry: offline_catchup (tab returned) ──
-      devTelemetry.emit('offline_catchup', {
-        offlineMsRequested: timeElapsed,
-        offlineMsApplied: offlineResult.timeElapsed,
-        cappedToLifetime: offlineResult.cappedToLifetime ?? false
-      });
-
-      if (offlineResult.cappedToLifetime) {
-        setOfflinePrestigePending(true);
-        setTotalDaysElapsed(lifetimeMaxDays);
-      }
-    };
-
-    // Start the hidden-time clock from page load
-    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []); // Run only once on mount
-  
   // Initialize highestUnlockedVeggie for existing players who don't have it in their save data
   useEffect(() => {
     if (loaded && loaded.highestUnlockedVeggie === undefined && loaded.veggies) {
@@ -1101,29 +582,9 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   }, 1000, [season, currentWeather, greenhouseOwned, irrigationOwned]);
 
-  // Greenhouse upgrade purchase handler
-  const handleBuyGreenhouse = useCallback(() => {
-    const greenhouseCost = GREENHOUSE_COST_PER_PLOT * maxPlots;
-    const greenhouseKnCost = GREENHOUSE_KN_COST_PER_PLOT * maxPlots;
-    if (!greenhouseOwned && money >= greenhouseCost && knowledge >= greenhouseKnCost) {
-      setMoney((m: number) => m - greenhouseCost);
-      setKnowledge((k: number) => k - greenhouseKnCost);
-      setGreenhouseOwned(true);
-      
-      // Log greenhouse purchase milestone
-      eventLogCallbacks.onAchievementUnlock({
-        name: 'Greenhouse Purchased',
-        description: `Built a greenhouse for ${maxPlots} plots (All plots grow year-round)`,
-        reward: null,
-        category: 'milestone'
-      });
-    }
-  }, [greenhouseOwned, money, maxPlots, knowledge]);
-
   // Latest-value refs to avoid large dependency arrays and restart of loops
   // Only keep refs that are actually used in game loops
   const knowledgeRef = useLatestRef(knowledge);
-  const veggiesRef = useLatestRef(veggies);
   const dayRef = useLatestRef(day);
   const almanacLevelRef = useLatestRef(almanacLevel);
   const maxPlotsRef = useLatestRef(maxPlots);
@@ -1145,6 +606,35 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   useEffect(() => {
     lifetimeMaxDaysRef.current = getMaxLifetimeDaysForPlayer(prestigeState);
   }, [extendedLifespanLevel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Progress for time away: once at startup, and whenever a hidden tab comes back
+  useOfflineProgress({
+    loaded,
+    state: {
+      veggies,
+      day,
+      totalDaysElapsed,
+      season,
+      currentWeather,
+      greenhouseOwned,
+      irrigationOwned,
+      almanacLevel,
+      farmTier,
+      knowledge,
+      guildState,
+      christmasEvent
+    },
+    isPaused,
+    lifetimeEnded: offlinePrestigePending,
+    lifetimeMaxDays: getMaxLifetimeDaysForPlayer(prestigeState),
+    trackKnowledgeGained,
+    setVeggies,
+    setExperience,
+    setKnowledge,
+    setDay,
+    setTotalDaysElapsed,
+    setOfflinePrestigePending
+  });
 
   // Reliable lifetime-end detection: fires whenever totalDaysElapsed changes.
   // The day-loop updater clamps totalDaysElapsed to the max, but setting the
@@ -1271,259 +761,39 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   }, 1000, []); // Empty deps - refs prevent loop restart
 
-  // Unified harvest logic for both auto and manual harvest
-  const harvestVeggie = useCallback((index: number, isAutoHarvest: boolean = false, onHarvestCallback?: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void) => {
-    try {
-      // Calculate harvest amount before the state update
-      const v = veggies[index];
-      if (!v || v.growth < 100) return; // Early exit if not ready to harvest or invalid index
-    
-    // Use centralized harvest calculations with guild bonuses (use ref for latest state)
-    const { harvestAmount, experienceGain, knowledgeGain: totalKnowledgeGain, blessedCropTriggered } = calculateHarvestRewards(
-      v.additionalPlotLevel || 0,
-      season,
-      permanentBonuses,
-      beeYieldBonus,
-      almanacLevel,
-      farmTier,
-      knowledge,
-      isAutoHarvest,
-      guildStateRef.current
-    );
-    
-    const newExperience = experience + experienceGain;
-    
-    // Award guild currency on harvest:
-    // - Manual harvests always earn 1 currency
-    // - Blessed crop (Soilbound Pact) triggers earn 1 currency (even on auto-harvest)
-    const earnCurrency = !isAutoHarvest || blessedCropTriggered;
-    if (earnCurrency && farmTier >= 5) { // Only after guilds unlock at tier 5
-      const currentGuildState = guildStateRef.current;
-      if (currentGuildState.committedGuild !== null) {
-        // After commitment: award guild-specific currency (sigils for Growers)
-        setGuildState(prev => ({
-          ...prev,
-          guildCurrencies: {
-            ...prev.guildCurrencies,
-            [currentGuildState.committedGuild!]: prev.guildCurrencies[currentGuildState.committedGuild!] + 1
-          }
-        }));
-      } else {
-        // Before commitment: award generic guild tokens
-        setGuildState(prev => ({
-          ...prev,
-          guildTokens: prev.guildTokens + 1
-        }));
-      }
-    }
-    
-    setVeggies((prev) => {
-      const updated = [...prev];
-      const veggie = { ...updated[index] };
-      veggie.salePrice = updated[index].salePrice;
-      
-      // Perform the harvest
-      veggie.stash += harvestAmount;
-      veggie.growth = 0;
-      
-      // Reset harvester timer if this is an auto harvest
-      if (isAutoHarvest) {
-        veggie.harvesterTimer = 0;
-      }
-      
-      updated[index] = veggie;
-
-      // Unlock all eligible veggies after harvest using the NEW experience value
-      let totalPlotsUsed = updated.filter(vg => vg.unlocked).length + updated.reduce((sum, vg) => sum + (vg.additionalPlotLevel || 0), 0);
-      const unlockOrder = updated
-        .map((vg, idx) => ({ ...vg, idx }))
-        .filter(vg => !vg.unlocked && newExperience >= vg.experienceToUnlock)
-        .sort((a, b) => a.experienceToUnlock - b.experienceToUnlock);     
-      
-      for (let i = 0; i < unlockOrder.length && totalPlotsUsed < maxPlots; i++) {
-        updated[unlockOrder[i].idx].unlocked = true;
-        totalPlotsUsed++;
-        // Update highest unlocked veggie if this is higher
-        if (unlockOrder[i].idx > highestUnlockedVeggie) {
-          setHighestUnlockedVeggie(unlockOrder[i].idx);
-        }
-      }
-      return updated;
-    });
-    
-    // Update knowledge and experience (we know harvest succeeded since we checked growth >= 100)
-    if (day >= 1 && day <= 365) {
-      setKnowledge((k: number) => k + totalKnowledgeGain);
-      setExperience((exp: number) => exp + experienceGain);
-      // Track knowledge gained for lifetime stats (prestige system)
-      trackKnowledgeGained(totalKnowledgeGain);
-    }
-    
-    // Increment total harvests counter
-    setTotalHarvests((prev: number) => prev + 1);
-    
-    // Call harvest callback if provided
-    if (onHarvestCallback) {
-      onHarvestCallback(v.name, harvestAmount, experienceGain, totalKnowledgeGain, isAutoHarvest);
-    }
-    } catch (error) {
-      console.error('❌ Error in harvestVeggie:', error);
-      // Don't rethrow - prevent cascade failures
-    }
-  }, [veggies, season, permanentBonuses, beeYieldBonus, almanacLevel, knowledge, experience, farmTier, maxPlots, highestUnlockedVeggie, day, trackKnowledgeGained]);
-
-  // Safe harvest logger to avoid setState during render
-  const logHarvest = useCallback(
-    (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
-      setTimeout(() => {
-        eventLogCallbacks.onHarvest(name, amount, expGain, knGain, isAuto);
-      }, 0);
-    },
-    [eventLogCallbacks]
-  );
-
-  // Manual harvest button uses unified logic
-  const handleHarvest = useCallback(() => {
-    harvestVeggie(activeVeggie, false, logHarvest);
-  }, [harvestVeggie, activeVeggie, logHarvest]);
-
-  // Ritual harvest: spend sigils to harvest all ready crops
-  const handleRitualHarvestAll = useCallback(() => {
-    const currentGuildState = guildStateRef.current;
-    if (!currentGuildState || !isCommittedTo(currentGuildState, 'growers')) return;
-    if (getUpgradeLevel(currentGuildState, 'growers_ritual_circles') <= 0) return;
-
-    const ritualCost = 5;
-    const currentSigils = currentGuildState.guildCurrencies['growers'] ?? 0;
-    const readyIndices = veggies
-      .map((v, index) => (v.growth >= GROWTH_COMPLETE_THRESHOLD ? index : -1))
-      .filter(index => index >= 0);
-
-    if (currentSigils < ritualCost || readyIndices.length === 0) return;
-
-    setGuildState(prev => {
-      const prevSigils = prev.guildCurrencies['growers'] ?? 0;
-      if (prevSigils < ritualCost) return prev;
-      return {
-        ...prev,
-        guildCurrencies: {
-          ...prev.guildCurrencies,
-          growers: prevSigils - ritualCost
-        }
-      };
-    });
-
-    readyIndices.forEach(index => {
-      harvestVeggie(index, false, logHarvest);
-    });
-  }, [veggies, harvestVeggie, logHarvest]);
-
-  // Toggle sell enabled for a specific veggie
-  const handleToggleSell = useCallback((index: number) => {
-    setVeggies((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], sellEnabled: !updated[index].sellEnabled };
-      return updated;
-    });
-  }, []);
-
-  // Toggle auto-harvester enabled for a specific veggie
-  const handleToggleAutoHarvester = useCallback((index: number) => {
-    setVeggies((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], autoHarvesterEnabled: !updated[index].autoHarvesterEnabled };
-      return updated;
-    });
-  }, []);
-
-  // Fertilizer upgrade purchase
-  // Additional Plot upgrade purchase
-  const handleBuyAdditionalPlot = useCallback((index: number) => {
-    const v = veggies[index];
-    // Block purchase if maxPlots reached
-    if (totalPlotsUsed >= maxPlots) return;
-    if (money >= v.additionalPlotCost) {
-      setMoney((m: number) => Math.max(0, m - v.additionalPlotCost));
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        v2.additionalPlotLevel += 1;
-        v2.additionalPlotCost = calculateUpgradeCost('additionalPlot', v2.additionalPlotLevel, calculateInitialCost('additionalPlot', index));
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  }, [veggies, totalPlotsUsed, maxPlots, money]);
-  const handleBuyFertilizer = useCallback((index: number) => {
-    const v = veggies[index];
-    if (money >= v.fertilizerCost) {
-      setMoney((m: number) => Math.max(0, m - v.fertilizerCost));
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        v2.fertilizerLevel += 1;
-        v2.fertilizerCost = calculateUpgradeCost('fertilizer', v2.fertilizerLevel, calculateInitialCost('fertilizer', index));
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  }, [veggies, money]);
-
-  // Generic auto-purchase handler using the new system
-  const handleBuyAutoPurchaser = useCallback((autoPurchaseId: string) => {
-    return createAutoPurchaseHandler(autoPurchaseId, veggies, setVeggies, money, setMoney, knowledge, setKnowledge, maxPlots);
-  }, [veggies, money, knowledge, maxPlots]);
-
-  // Harvester upgrade purchase
-  const handleBuyHarvester = useCallback((index: number) => {
-    const v = veggies[index];
-    if (!v.harvesterOwned && money >= v.harvesterCost) {
-      setMoney((m: number) => Math.max(0, m - v.harvesterCost));
-      setVeggies((prev) => {
-        const updated = [...prev];
-        const v2 = { ...updated[index] };
-        v2.harvesterOwned = true;
-        updated[index] = v2;
-        return updated;
-      });
-    }
-  }, [veggies, money]);
-
-  // Sell handler. The sale is worked out from current state before any update is
-  // queued, so the money, the lifetime stats and the event log always match it.
-  const handleSell = useCallback((isAutoSell: boolean = false) => {
-    let total = 0;
-    const soldVeggies: Array<{ name: string; quantity: number; earnings: number }> = [];
-
-    for (const v of veggiesRef.current) {
-      // Only include vegetables that are enabled for selling
-      if (v.sellEnabled && v.stash > 0) {
-        // Apply guild price bonuses to each item individually (for Quality Grading)
-        let veggieEarnings = 0;
-        for (let i = 0; i < v.stash; i++) {
-          // Pass true to apply quality grading bonus chance per item
-          veggieEarnings += applyGuildPriceBonuses(v.salePrice, guildState, true);
-        }
-        soldVeggies.push({ name: v.name, quantity: v.stash, earnings: veggieEarnings });
-        total += veggieEarnings;
-      }
-    }
-    if (soldVeggies.length === 0) return;
-
-    // Remove only what was sold, so a harvest that lands meanwhile is kept
-    const soldByName = new Map(soldVeggies.map(s => [s.name, s.quantity]));
-    setVeggies((prev) => prev.map((v) => {
-      const sold = soldByName.get(v.name);
-      return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
-    }));
-    setMoney((m: number) => m + total);
-
-    // Track money earned for lifetime stats (prestige system)
-    if (total > 0) {
-      trackMoneyEarned(total);
-      eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
-    }
-  }, [setVeggies, setMoney, guildState, trackMoneyEarned, eventLogCallbacks, veggiesRef]);
+  // Harvesting, selling, the ritual harvest, and the per-crop sell and auto-harvest toggles
+  const {
+    handleHarvest,
+    handleRitualHarvestAll,
+    handleToggleSell,
+    handleToggleAutoHarvester,
+    handleSell,
+    logHarvest
+  } = useHarvestAndSell({
+    veggies,
+    setVeggies,
+    experience,
+    setExperience,
+    knowledge,
+    setKnowledge,
+    setMoney,
+    season,
+    day,
+    almanacLevel,
+    farmTier,
+    maxPlots,
+    highestUnlockedVeggie,
+    setHighestUnlockedVeggie,
+    setTotalHarvests,
+    permanentBonuses,
+    beeYieldBonus,
+    activeVeggie,
+    eventLogCallbacks,
+    guildState,
+    setGuildState,
+    trackKnowledgeGained,
+    trackMoneyEarned
+  });
 
   // Initialize auto-purchase system
   const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
@@ -1542,67 +812,63 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
-  // Day counter timer with auto-sell and auto-purchase logic (pauses while the tab is hidden)
-  const handleSellRef = useRef(handleSell);
+  // Full reset also clears the wisdom-deposited guard, which lives here
+  const handleGameReset = useCallback(() => {
+    wisdomDepositedRef.current = false;
+  }, []);
 
-  useEffect(() => {
-    handleSellRef.current = handleSell;
-  }, [handleSell]);
-  
-  useRobustInterval(() => {
-    // Skip all processing while game is paused
-    if (isPausedRef.current) return;
-    // Skip all day progression if lifetime has already ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
-    
-    // Clamp totalDaysElapsed to the lifetime boundary.
-    // The actual prestige-pending flag is set by a useEffect watching
-    // totalDaysElapsed — the closure trick (setting a let inside the updater
-    // and reading it outside) is unreliable under React 18 batching.
-    setTotalDaysElapsed((total: number) => {
-      const maxDays = lifetimeMaxDaysRef.current;
-      if (total >= maxDays) return maxDays;
-      const next = total + 1;
-      return next >= maxDays ? maxDays : next;
-    });
-    
-    setDay((d: number) => {
-      const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
-      
-      // Auto-sell logic for merchant (every MERCHANT_DAYS)
-      if (autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0) {
-        // Trigger auto-sell using the existing handleSell function
-        setTimeout(() => {
-          handleSellRef.current(true); // true = auto-sell
-        }, 100); // Small delay to ensure state is updated
-      }
-      
-      // Increment auto-purchase timer each day
-      setGlobalAutoPurchaseTimer((prevTimer: number) => prevTimer + 1);
-      
-      return newDay;
-    });
-    
-    // Process Christmas tree growth each day
-    if (christmasEventRef.current?.isEventActive) {
-      christmasEventRef.current.processTreeGrowth();
-      christmasEventRef.current.updatePassiveIncome(1000); // 1000ms = 1 second
-    }
-  }, 1000, []); // Empty deps - refs prevent loop restart
+  // Farm tier upgrades and full game reset
+  const { handleBuyLargerFarm, resetGame } = useFarmManagement({
+    experience,
+    money,
+    farmTier,
+    knowledge,
+    maxPlots,
+    farmCost,
+    FARM_BASE_COST,
+    setActiveVeggie,
+    setVeggies,
+    setMoney,
+    setExperience,
+    setKnowledge,
+    setDay,
+    setTotalDaysElapsed,
+    setTotalHarvests,
+    setGreenhouseOwned,
+    setAlmanacLevel,
+    setAlmanacCost,
+    setAutoSellOwned,
+    setHeirloomOwned,
+    setMaxPlots,
+    setFarmTier,
+    setIrrigationOwned,
+    setGlobalAutoPurchaseTimer,
+    setFarmCost,
+    setHighestUnlockedVeggie,
+    setCurrentWeather,
+    setBlockAchievementChecks,
+    setJustReset,
+    eventLogCallbacks,
+    prestigeStartingExpBonus: (prestigeState.wisdomUpgrades.startingExperience || 0) * 50,
+    plotEfficiencyLevel: prestigeState.wisdomUpgrades.plotEfficiency || 0,
+    onFarmTierReached: trackFarmTierReached,
+    onReset: handleGameReset,
+    globalBeeContext,
+    christmasEvent
+  });
 
-  // Elves' Bench automation loop - runs every second (pauses while the tab is hidden)
-  useRobustInterval(() => {
-    if (isPausedRef.current) return;
-    if (offlinePrestigePendingRef.current) return;
-    if (christmasEventRef.current?.isEventActive) {
-      const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
-      if (elvesBenchOwned) {
-        christmasEventRef.current.processDailyElvesCrafting();
-      }
-    }
-  }, 1000, []); // Empty deps - refs prevent loop restart
-
-
+  // Day counter, merchant auto-sell, auto-purchase timer and Christmas daily ticks
+  useDayLoop({
+    setDay,
+    setTotalDaysElapsed,
+    setGlobalAutoPurchaseTimer,
+    autoSellOwnedRef,
+    christmasEventRef,
+    isPausedRef,
+    offlinePrestigePendingRef,
+    lifetimeMaxDaysRef,
+    handleSell
+  });
 
   return (
     <GameContext.Provider value={{ veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests, setTotalHarvests, globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned, setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell, almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached, prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime, offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused, setIsPaused }}>
@@ -2190,10 +1456,6 @@ function App() {
     };
   }, [eventLogCallbacks, addEvent]);
 
-  // Throttled save system - save at most once every 30 seconds
-  const saveTimeoutRef = useRef<number | null>(null);
-  const lastSaveTimeRef = useRef<number>(Date.now());
-
   // Everything that goes into a save. Autosave and export both use this, so an
   // exported file holds the full game, including prestige, guilds and achievements.
   const buildSaveState = useCallback((): ExtendedGameState | null => {
@@ -2240,14 +1502,9 @@ function App() {
     };
   }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, lifespanIntroShown, shopExplanationShown, guildState, prestigeState, isPaused]);
 
-  const performSave = useCallback(() => {
-    // Don't save while a reset is still settling
-    if (justReset) return;
-    const state = buildSaveState();
-    if (!state) return;
-    saveGameStateWithCanning(state);
-    lastSaveTimeRef.current = Date.now();
-  }, [justReset, buildSaveState]);
+  // Saves at most every 30 seconds, and always on page unload.
+  // Skipped while a reset is still settling.
+  useAutoSave({ skipSave: justReset, getGameState: buildSaveState });
 
   // Check achievements periodically
   useEffect(() => {
@@ -2274,49 +1531,6 @@ function App() {
     });
   }, [blockAchievementChecks, veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, prestigeState]);
 
-  // Debounced save effect - only trigger save if state has actually changed
-  // and enough time has passed
-  useEffect(() => {
-    const now = Date.now();
-    const timeSinceLastSave = now - lastSaveTimeRef.current;
-    
-    // Clear any existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // If it's been more than 30 seconds since last save, save immediately
-    if (timeSinceLastSave >= 30000) {
-      performSave();
-    } else {
-      // Otherwise, schedule a save for 30 seconds from last save
-      const timeUntilNextSave = 30000 - timeSinceLastSave;
-      saveTimeoutRef.current = setTimeout(() => {
-        performSave();
-      }, timeUntilNextSave);
-    }
-  }, [performSave]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Always save on page unload (refresh/close). Autosave runs at most every
-  // 30 seconds, so without this the last moments of play would be lost.
-  const performSaveRef = useLatestRef(performSave);
-  useEffect(() => {
-    const handleBeforeUnload = () => performSaveRef.current();
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [performSaveRef]);
-
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
     if (activeTab === 'canning' && !canningUnlocked) {
@@ -2331,38 +1545,21 @@ function App() {
     [veggies]
   );
   
-  // Weather event logic: Rain and Drought, based on seasonal chance
-  const rainDaysRef = useRef(0);
-  const droughtDaysRef = useRef(0);
-  const stormDaysRef = useRef(0);
-  const heatwaveDaysRef = useRef(0);
-  const previousWeatherRef = useRef(currentWeather);
-  const lastDayProcessedRef = useRef(day);
+  // Refs for the growth-completion and season-change trackers below
   const previousSeasonRef = useRef(season);
   const previousVeggieGrowthRef = useRef<Map<string, number>>(new Map());
 
-  const logWeatherChange = useCallback(
-    (
-      weatherType: WeatherType | string,
-      message: string,
-      details: string,
-      icon: string,
-      previousWeather?: WeatherType | string,
-      priority: EventPriority = 'normal'
-    ) => {
-      eventLog.addEvent('weather', message, {
-        priority,
-        details,
-        icon,
-        metadata: {
-          weatherType: weatherType as WeatherType,
-          previousWeather: previousWeather as WeatherType | undefined,
-        },
-      });
-    },
-    [eventLog]
-  );
-  
+  // Daily weather rolls, durations and weather log entries
+  useWeatherRandomization({
+    day,
+    season,
+    currentWeather,
+    setCurrentWeather,
+    irrigationOwned,
+    setKnowledge,
+    eventLog
+  });
+
   // Track growth completions
   useEffect(() => {
     veggies.forEach((veggie) => {
@@ -2449,191 +1646,6 @@ function App() {
     }
   }, [season, currentWeather, eventLog]);
   
-  useEffect(() => {
-    // Only process weather changes once per day
-    if (lastDayProcessedRef.current === day) {
-      return;
-    }
-    lastDayProcessedRef.current = day;
-    
-    const rainChance = RAIN_CHANCES[season] ?? 0.2;
-    const droughtChance = DROUGHT_CHANCES[season] ?? 0.03;
-    const stormChance = STORM_CHANCES[season] ?? 0.03;
-    const heatwaveChance = 0.01; // Example: 1% chance per day
-    
-    const prevWeather = previousWeatherRef.current;
-    
-    // Only roll for events if weather is clear
-    if (currentWeather === 'Clear') {
-      const roll = Math.random();
-      if (roll < rainChance) {
-        if(season === 'Winter') {
-          setCurrentWeather('Snow');
-          logWeatherChange(
-            'Snow',
-            'Snow begins to fall',
-            'All vegetables stop growing unless you have a Greenhouse',
-            WEATHER_SNOW,
-            prevWeather,
-            'important'
-          );
-        } else {
-          setCurrentWeather('Rain');
-          logWeatherChange(
-            'Rain',
-            'Rain begins to fall',
-            'All vegetables receive +20% growth bonus',
-            WEATHER_RAIN,
-            prevWeather,
-            'important'
-          );
-        }
-        rainDaysRef.current = 1;
-        droughtDaysRef.current = 0;
-        stormDaysRef.current = 0;
-        heatwaveDaysRef.current = 0;
-      } else if (roll < rainChance + droughtChance) {
-        setCurrentWeather('Drought');
-        logWeatherChange(
-          'Drought',
-          'Drought has begun',
-          irrigationOwned 
-            ? 'Irrigation system protecting crops from drought' 
-            : '-50% growth penalty. Consider purchasing Irrigation',
-          WEATHER_DROUGHT,
-          prevWeather,
-          'critical'
-        );
-        droughtDaysRef.current = 1;
-        rainDaysRef.current = 0;
-        stormDaysRef.current = 0;
-        heatwaveDaysRef.current = 0;
-      } else if (roll < rainChance + droughtChance + stormChance) {
-        setCurrentWeather('Storm');
-        logWeatherChange(
-          'Storm',
-          'Severe storm approaching',
-          'All vegetables receive +10% growth bonus',
-          WEATHER_STORM,
-          prevWeather,
-          'important'
-        );
-        stormDaysRef.current = 1;
-        rainDaysRef.current = 0;
-        droughtDaysRef.current = 0;
-        heatwaveDaysRef.current = 0;
-      } else if (roll < rainChance + droughtChance + stormChance + heatwaveChance) {
-        setCurrentWeather('Heatwave');
-        logWeatherChange(
-          'Heatwave',
-          'Heatwave has begun',
-          season === 'Summer' 
-            ? '-30% growth penalty in Summer'
-            : season === 'Winter'
-            ? '+20% growth bonus in Winter'
-            : '+20% bonus to summer vegetables',
-          WEATHER_HEATWAVE,
-          prevWeather,
-          'critical'
-        );
-        heatwaveDaysRef.current = 1;
-        rainDaysRef.current = 0;
-        droughtDaysRef.current = 0;
-        stormDaysRef.current = 0;
-      } else {
-        rainDaysRef.current = 0;
-        droughtDaysRef.current = 0;
-        stormDaysRef.current = 0;
-        heatwaveDaysRef.current = 0;
-      }
-    }
-    // If it's rain, after N days revert to clear
-    if (currentWeather === 'Rain' || currentWeather === 'Snow') {
-      rainDaysRef.current++;
-      if (rainDaysRef.current > RAIN_DURATION_DAYS) {
-        const weatherThatCleared = currentWeather; // Capture before state change
-        setCurrentWeather('Clear');
-        logWeatherChange(
-          'Clear',
-          `${weatherThatCleared === 'Snow' ? 'Snow' : 'Rain'} has cleared`,
-          'Weather returns to normal',
-          WEATHER_CLEAR,
-          weatherThatCleared,
-          'normal'
-        );
-        rainDaysRef.current = 0;
-      }
-    }
-    // If it's drought, add knowledge and revert after N days
-    if (currentWeather === 'Drought') {
-      setKnowledge((k: number) => k + 1);
-      droughtDaysRef.current++;
-      if (droughtDaysRef.current > DROUGHT_DURATION_DAYS) {
-        setCurrentWeather('Clear');
-        logWeatherChange(
-          'Clear',
-          'Drought has ended',
-          'Weather returns to normal',
-          WEATHER_CLEAR,
-          'Drought',
-          'normal'
-        );
-        droughtDaysRef.current = 0;
-      }
-    }
-    // If it's storm, after N days revert to clear
-    if (currentWeather === 'Storm') {
-      stormDaysRef.current++;
-      if (stormDaysRef.current > STORM_DURATION_DAYS) {
-        setCurrentWeather('Clear');
-        logWeatherChange(
-          'Clear',
-          'Storm has passed',
-          'Weather returns to normal',
-          WEATHER_CLEAR,
-          'Storm',
-          'normal'
-        );
-        stormDaysRef.current = 0;
-      }
-    }
-    // If it's heatwave, after N days revert to clear
-    if (currentWeather === 'Heatwave') {
-      heatwaveDaysRef.current++;
-      if (heatwaveDaysRef.current > HEATWAVE_DURATION_DAYS) {
-        // If heatwave was in summer, trigger drought next
-        if (season === 'Summer') {
-          setCurrentWeather('Drought');
-          logWeatherChange(
-            'Drought',
-            'Heatwave causes drought',
-            'The intense heat has dried out the soil',
-            WEATHER_HEATWAVE,
-            'Heatwave',
-            'critical'
-          );
-          droughtDaysRef.current = 1;
-          rainDaysRef.current = 0;
-          stormDaysRef.current = 0;
-          heatwaveDaysRef.current = 0;
-        } else {
-          setCurrentWeather('Clear');
-          logWeatherChange(
-            'Clear',
-            'Heatwave has ended',
-            'Weather returns to normal',
-            WEATHER_CLEAR,
-            'Heatwave',
-            'normal'
-          );
-          heatwaveDaysRef.current = 0;
-        }
-      }
-    }
-    
-    // Update previous weather ref at the end
-    previousWeatherRef.current = currentWeather;
-  }, [day, season, eventLog, irrigationOwned, setCurrentWeather, setKnowledge, logWeatherChange]);
   const v = veggies[activeVeggie];
   const growthMultiplier = getVeggieGrowthBonus(
     v,

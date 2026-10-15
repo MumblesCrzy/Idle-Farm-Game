@@ -19,6 +19,11 @@ vi.mock('../utils/gameCalculations', () => ({
     { name: 'Carrot', unlocked: true, stash: 0, growth: 0, autoPurchasers: [{cost: 10}, {cost: 20}, {cost: 30}, {cost: 40}] },
     { name: 'Potato', unlocked: false, stash: 0, growth: 0, autoPurchasers: [{cost: 15}, {cost: 25}, {cost: 35}, {cost: 45}] }
   ]),
+  createAllCrops: vi.fn(() => [
+    { name: 'Carrot', unlocked: true, stash: 0, growth: 0, cropType: 'vegetable' },
+    { name: 'Potato', unlocked: false, stash: 0, growth: 0, cropType: 'vegetable' },
+    { name: 'Apple', unlocked: false, stash: 0, growth: 0, cropType: 'fruit' }
+  ]),
   createAutoPurchaserConfigs: vi.fn((c1, c2, c3, c4) => [
     { cost: c1, level: 0, enabled: false },
     { cost: c2, level: 0, enabled: false },
@@ -86,6 +91,7 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     globalBeeContext: null,
     christmasEvent: null,
     prestigeStartingExpBonus: 0,
+    plotEfficiencyLevel: 0,
     ...overrides
   };
 }
@@ -124,6 +130,46 @@ describe('useFarmManagement', () => {
       
       // 4 + 5 = 9, capped at 4 * 2 = 8
       expect(deps.setMaxPlots).toHaveBeenCalledWith(8);
+    });
+
+    it('lowers the experience needed per plot with Plot Efficiency', () => {
+      const deps = createDefaultDeps({
+        experience: 300,
+        maxPlots: 8,
+        plotEfficiencyLevel: 5 // divisor 100 - 50 = 50, so 300 experience adds 6 plots
+      });
+
+      const { result } = renderHook(() => useFarmManagement(deps));
+      act(() => {
+        result.current.handleBuyLargerFarm();
+      });
+
+      expect(deps.setMaxPlots).toHaveBeenCalledWith(14);
+    });
+
+    it('reports the new tier for lifetime stats', () => {
+      const onFarmTierReached = vi.fn();
+      const deps = createDefaultDeps({ farmTier: 2, onFarmTierReached });
+
+      const { result } = renderHook(() => useFarmManagement(deps));
+      act(() => {
+        result.current.handleBuyLargerFarm();
+      });
+
+      expect(onFarmTierReached).toHaveBeenCalledWith(3);
+    });
+
+    it('keeps fruits in the crop list after a farm upgrade', () => {
+      const deps = createDefaultDeps();
+
+      const { result } = renderHook(() => useFarmManagement(deps));
+      act(() => {
+        result.current.handleBuyLargerFarm();
+      });
+
+      expect(deps.setVeggies).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ cropType: 'fruit' })])
+      );
     });
 
     it('should keep money above farm cost', () => {
@@ -338,6 +384,31 @@ describe('useFarmManagement', () => {
       expect(deps.setAutoSellOwned).toHaveBeenCalledWith(false);
       expect(deps.setGreenhouseOwned).toHaveBeenCalledWith(false);
       expect(deps.setHeirloomOwned).toHaveBeenCalledWith(false);
+    });
+
+    it('keeps fruits in the crop list after a reset', () => {
+      const deps = createDefaultDeps();
+
+      const { result } = renderHook(() => useFarmManagement(deps));
+      act(() => {
+        result.current.resetGame();
+      });
+
+      expect(deps.setVeggies).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ cropType: 'fruit' })])
+      );
+    });
+
+    it('runs the reset callback for state the hook does not own', () => {
+      const onReset = vi.fn();
+      const deps = createDefaultDeps({ onReset });
+
+      const { result } = renderHook(() => useFarmManagement(deps));
+      act(() => {
+        result.current.resetGame();
+      });
+
+      expect(onReset).toHaveBeenCalled();
     });
 
     it('should reset weather to Clear', () => {

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import App, { GameProvider } from '../App';
 import { ArchieProvider } from '../context/ArchieContext';
 import { EventLogProvider } from '../context/EventLogContext';
@@ -26,6 +26,22 @@ const renderGame = () =>
 
 describe('App smoke test', () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.useRealTimers());
+
+  it('runs several game days without hitting an error boundary', () => {
+    vi.useFakeTimers();
+    renderGame();
+    const dayText = () => screen.getByText(/Day: \d+/).textContent ?? '';
+    const dayOf = () => Number(/Day: (\d+)/.exec(dayText())?.[1]);
+    const startDay = dayOf();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(dayOf()).toBeGreaterThan(startDay);
+    expect(screen.queryByText(/encountered an error/i)).not.toBeInTheDocument();
+  });
 
   it('renders a new game without hitting an error boundary', () => {
     renderGame();

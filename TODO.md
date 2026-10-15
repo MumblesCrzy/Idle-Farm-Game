@@ -2,9 +2,9 @@
 
 ## Current State
 - **File**: `src/App.tsx`
-- **Lines**: ~1,693 lines (down from ~2,500)
+- **Lines**: 2,427 lines (October 15, 2026), down from 3,415 before the Phase 1-5 hooks were wired in
 - **Problem**: Single file contains game logic, UI rendering, state management, and event handlers
-- **Progress**: ~800 lines extracted through Phases 1-5
+- **Progress**: Phases 1-5 are wired in. Until October 2026 the hooks existed with tests but App.tsx still ran older inline copies; those copies are now deleted and each hook matches what App ran
 
 ## 📊 Code Analysis
 
@@ -206,7 +206,7 @@ GameProvider is now well-organized with hooks:
 - ✅ `useOfflineProgress` - Tab focus detection
 - ✅ `useChristmasEvent` - Seasonal event
 
-**Current GameProvider size**: ~520 lines (down from ~950)
+**Current GameProvider size**: 732 lines. The App component is 1,511 lines; Phases 6 and 7 target it
 
 ---
 
@@ -320,7 +320,7 @@ src/
 - [ ] App.tsx is under 600 lines
 - [ ] All extracted hooks have JSDoc documentation
 - [ ] All extracted hooks have corresponding test files
-- [ ] No functionality regression (all 474+ tests pass)
+- [x] No functionality regression (all 721 tests pass)
 - [ ] Build succeeds without warnings
 - [ ] Code review completed
 
