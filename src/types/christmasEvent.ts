@@ -169,6 +169,10 @@ export interface EventUpgrade {
   level?: number;           // Current level (for repeatable upgrades)
   maxLevel?: number;        // Maximum level (for repeatable upgrades)
   costScaling?: number;     // Cost multiplier per level (e.g., 1.5x)
+
+  // Prerequisite
+  requires?: string;             // Id of an upgrade that must be owned first
+  hiddenUntilRequired?: boolean; // Hide this upgrade, rather than show it locked, until then
 }
 
 // ============================================================================

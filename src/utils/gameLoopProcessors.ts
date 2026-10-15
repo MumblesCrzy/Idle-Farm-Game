@@ -86,6 +86,21 @@ export function processVeggieGrowth(
 }
 
 /**
+ * Seconds between auto-harvest attempts for a crop. Harvester Speed shortens it,
+ * and committed Growers get a slower harvester when guild state is given.
+ */
+export function getHarvesterInterval(
+  veggie: Pick<Veggie, 'harvesterSpeedLevel'>,
+  guildState?: GuildState
+): number {
+  let speedMultiplier = 1 + (veggie.harvesterSpeedLevel ?? 0) * 0.05;
+  if (guildState) {
+    speedMultiplier *= getGrowersHarvesterSpeedMultiplier(guildState);
+  }
+  return Math.max(1, Math.round(HARVESTER_BASE_TIMER / speedMultiplier));
+}
+
+/**
  * Processes auto-harvester timers and performs harvests when ready
  * @param veggies - Current array of vegetables
  * @param almanacLevel - Current almanac upgrade level
@@ -119,15 +134,7 @@ export function processAutoHarvest(
     // Skip if harvester not owned or auto-harvester is disabled
     if (!v.harvesterOwned || !v.autoHarvesterEnabled) return v;
     
-    // Calculate speed multiplier from harvester speed level
-    let speedMultiplier = 1 + (v.harvesterSpeedLevel ?? 0) * 0.05;
-    
-    // Apply Growers Guild harvester speed penalty (25% slower for committed Growers)
-    if (guildState) {
-      speedMultiplier *= getGrowersHarvesterSpeedMultiplier(guildState);
-    }
-    
-    const timerMax = Math.max(1, Math.round(HARVESTER_BASE_TIMER / speedMultiplier));
+    const timerMax = getHarvesterInterval(v, guildState);
     let newV = v;
 
     // If timer is primed and veggie is ready, harvest immediately

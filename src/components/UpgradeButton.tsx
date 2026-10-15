@@ -1,5 +1,6 @@
 import { memo, type FC } from 'react';
 import { ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
+import InlineIcon from './InlineIcon';
 import styles from './UpgradeButton.module.css';
 
 export interface UpgradeButtonProps {
@@ -7,11 +8,10 @@ export interface UpgradeButtonProps {
   imageSrc: string;
   imageAlt?: string;
   buttonText: string;
-  money: number;
-  knowledge: number;
+  money?: number;
+  knowledge?: number;
   cost: number;
-  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney';
-  currencyLabel?: string; // Optional custom label (e.g., "Cheer" instead of "Kn")
+  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney' | 'cheer';
   onClick: () => void;
   disabled?: boolean;
   isOwned?: boolean;
@@ -23,6 +23,7 @@ export interface UpgradeButtonProps {
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
   regularHoney?: number; // Honey currency for bee upgrades
   goldenHoney?: number; // Golden honey currency for bee upgrades
+  holidayCheer?: number; // Holiday Cheer for Christmas event upgrades
   formatNumber: (num: number, decimalPlaces?: number) => string;
   // Togglable support - for items that become on/off toggles after purchase
   isTogglable?: boolean;
@@ -34,11 +35,10 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   title, 
   imageSrc, 
   buttonText, 
-  money, 
-  knowledge, 
-  cost, 
+  money = 0,
+  knowledge = 0,
+  cost,
   currencyType,
-  currencyLabel,
   onClick, 
   disabled = false, 
   isOwned = false, 
@@ -50,6 +50,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   knowledgeCost,
   regularHoney = 0,
   goldenHoney = 0,
+  holidayCheer = 0,
   formatNumber,
   isTogglable = false,
   isActive = true,
@@ -66,6 +67,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
         return regularHoney >= cost;
       case 'goldenHoney':
         return goldenHoney >= cost;
+      case 'cheer':
+        return holidayCheer >= cost;
       default:
         return false;
     }
@@ -73,16 +76,17 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   
   // Render the currency display (can be text or JSX)
   const renderCurrencyIcon = () => {
-    if (currencyLabel) return currencyLabel;
     switch (currencyType) {
       case 'money':
         return '$';
       case 'knowledge':
         return 'Kn';
       case 'regularHoney':
-        return <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />;
+        return <InlineIcon src={ICON_HONEY} alt="Honey" size={14} />;
       case 'goldenHoney':
-        return <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} />;
+        return <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={14} />;
+      case 'cheer':
+        return 'Cheer';
       default:
         return '';
     }
@@ -190,7 +194,9 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
             ? `Costs ${formatNumber(cost, 1)} honey`
             : currencyType === 'goldenHoney'
               ? `Costs ${formatNumber(cost, 1)} golden honey`
-              : `Costs ${formatNumber(cost, 1)} ${currencyLabel || 'knowledge'}`;
+              : currencyType === 'cheer'
+                ? `Costs ${formatNumber(cost, 1)} Holiday Cheer`
+                : `Costs ${formatNumber(cost, 1)} knowledge`;
       label += `. ${costText}`;
       if (!canAfford) {
         label += '. Cannot afford';

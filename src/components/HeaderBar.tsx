@@ -1,3 +1,4 @@
+import InlineIcon from './InlineIcon';
 import { memo, type FC } from 'react';
 import { ICON_TROPHY, ICON_SCROLL } from '../config/assetPaths';
 import styles from './HeaderBar.module.css';
@@ -54,7 +55,7 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
           title={`Achievements: ${unlockedAchievements}/${totalAchievements} unlocked`}
           aria-label={`View achievements. ${unlockedAchievements} of ${totalAchievements} unlocked`}
         >
-          <img src={ICON_TROPHY} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} />
+          <InlineIcon src={ICON_TROPHY} size={18} gap={4} />
           {unlockedAchievements}/{totalAchievements}
         </button>
         <button
@@ -63,7 +64,7 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
           title={unreadEventCount > 0 ? `Event Log (${unreadEventCount} new)` : "Event Log"}
           aria-label={unreadEventCount > 0 ? `Open event log. ${unreadEventCount} unread events` : "Open event log"}
         >
-          <img src={ICON_SCROLL} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} />
+          <InlineIcon src={ICON_SCROLL} size={18} gap={4} />
           Log{unreadEventCount > 0 && <span className={styles.badge}>{unreadEventCount}</span>}
         </button>
         <button

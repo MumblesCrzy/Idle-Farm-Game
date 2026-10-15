@@ -1,6 +1,7 @@
-import type { FC } from 'react';
+import { memo, type FC, type ReactNode } from 'react';
 import type { Recipe } from '../types/canning';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import styles from './RecipeDetailsModal.module.css';
 
 interface RecipeDetailsModalProps {
   recipe: Recipe | null;
@@ -17,7 +18,39 @@ interface RecipeDetailsModalProps {
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
+interface RequirementRowProps {
+  label: ReactNode;
+  /** How much the player has. Leave undefined to hide the count and the check mark. */
+  have?: ReactNode;
+  met: boolean;
+  golden?: boolean;
+}
+
+/** One line of the ingredient or honey list: what is needed, how much the player has, and a check or cross */
+const RequirementRow: FC<RequirementRowProps> = ({ label, have, met, golden = false }) => {
+  const metClass = met ? styles.met : styles.unmet;
+  return (
+    <div className={`${styles.requirementRow} ${metClass}`}>
+      <span className={golden ? `${styles.requirementLabel} ${styles.golden}` : styles.requirementLabel}>
+        {label}
+      </span>
+      <div className={styles.requirementStatus}>
+        {have !== undefined && (
+          <>
+            <span className={styles.haveCount}>
+              (Have: {have})
+            </span>
+            <span className={`${styles.statusIcon} ${metClass}`}>
+              {met ? '✓' : '✗'}
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
   recipe,
   isVisible,
   onClose,
@@ -32,408 +65,184 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
   formatNumber
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(isVisible, onClose);
-  
+
   if (!isVisible || !recipe) return null;
 
-  // Calculate better seeds multiplier based on ingredient better seeds levels
-  const getBetterSeedsMultiplier = () => {
-    if (recipe.ingredients.length === 0) return 1;
-    
-    // Calculate average better seeds level of all ingredients
-    const totalBetterSeedsLevel = recipe.ingredients.reduce((sum, ingredient) => {
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      return sum + (veggie?.betterSeedsLevel || 0);
-    }, 0);
-    
-    const averageBetterSeedsLevel = totalBetterSeedsLevel / recipe.ingredients.length;
-    
-    // Apply a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
-    // This keeps canning competitive but not overpowered
-    return Math.pow(heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
-  };
+  // Look up each ingredient's veggie once; every figure below reuses these rows
+  const ingredientRows = recipe.ingredients.map(ingredient => {
+    const veggie = veggies.find(v => v.name === ingredient.veggieName);
+    return {
+      ingredient,
+      veggie,
+      available: veggie?.stash || 0,
+      hasEnough: !!veggie && veggie.stash >= ingredient.quantity,
+    };
+  });
+  const ingredientCount = ingredientRows.length;
 
-  const getRawValue = () => {
-    return recipe.ingredients.reduce((total, ingredient) => {
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      return total + (veggie?.salePrice || 0) * ingredient.quantity;
-    }, 0);
-  };
+  // Better Seeds bonus from the average Better Seeds level of the ingredients.
+  // Canning gets a more moderate bonus than raw veggies (1.25x per level instead of 1.5x)
+  // so it stays competitive but not overpowered.
+  const betterSeedsMultiplier = ingredientCount === 0
+    ? 1
+    : Math.pow(
+        heirloomOwned ? 1.5 : 1.25,
+        ingredientRows.reduce((sum, row) => sum + (row.veggie?.betterSeedsLevel || 0), 0) / ingredientCount
+      );
 
-  const getEffectiveSalePrice = () => {
-    return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier();
-  };
+  const rawValue = ingredientRows.reduce(
+    (total, row) => total + (row.veggie?.salePrice || 0) * row.ingredient.quantity,
+    0
+  );
+  const effectiveSalePrice = recipe.salePrice * efficiencyMultiplier * betterSeedsMultiplier;
+  const effectiveProcessingTime = Math.ceil(recipe.baseProcessingTime * speedMultiplier);
+  const profit = effectiveSalePrice - rawValue;
+  const profitMargin = rawValue === 0 ? 0 : (profit / rawValue) * 100;
 
-  const getEffectiveProcessingTime = () => {
-    return Math.ceil(recipe.baseProcessingTime * speedMultiplier);
-  };
+  // Rewards for manual canning; automatic canning earns a tenth, rounded up
+  const knowledgeReward = ingredientCount * 2;
+  const canningExperienceReward = ingredientCount * 10;
 
-  const getProfit = () => {
-    const rawValue = getRawValue();
-    const effectiveSalePrice = getEffectiveSalePrice();
-    return effectiveSalePrice - rawValue;
-  };
+  const missingIngredientNames = ingredientRows
+    .filter(row => !row.hasEnough)
+    .map(row => row.ingredient.veggieName);
+  const missingIngredientList = missingIngredientNames.join(', ');
 
-  const getProfitMargin = () => {
-    const rawValue = getRawValue();
-    if (rawValue === 0) return 0;
-    const effectiveSalePrice = getEffectiveSalePrice();
-    return ((effectiveSalePrice - rawValue) / rawValue) * 100;
-  };
-
-  // Calculate reward amounts (assuming manual canning)
-  const getKnowledgeReward = () => {
-    return recipe.ingredients.length * 2;
-  };
-
-  const getCanningExperienceReward = () => {
-    return recipe.ingredients.length * 10;
-  };
-
-  const getMissingIngredients = () => {
-    return recipe.ingredients.filter(ingredient => {
-      const veggie = veggies.find(v => v.name === ingredient.veggieName);
-      return !veggie || veggie.stash < ingredient.quantity;
-    });
-  };
+  // The honey section only shows when the recipe needs some honey
+  const honey = recipe.honeyRequirement && (recipe.honeyRequirement.regular > 0 || recipe.honeyRequirement.golden > 0)
+    ? recipe.honeyRequirement
+    : undefined;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }}
-    onClick={onClose}
-    >
-      <div 
+    <div className={styles.overlay} onClick={onClose}>
+      <div
         ref={containerRef}
         onKeyDown={handleTabKey}
         role="dialog"
         aria-modal="true"
         aria-labelledby="recipe-modal-title"
         onClick={(e) => e.stopPropagation()}
-        style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '24px',
-        maxWidth: '500px',
-        width: '90%',
-        maxHeight: '80vh',
-        overflow: 'auto',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
-      }}>
+        className={styles.dialog}
+      >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-          borderBottom: '2px solid #f0f0f0',
-          paddingBottom: '12px'
-        }}>
-          <h2 id="recipe-modal-title" style={{
-            margin: 0,
-            fontSize: '20px',
-            color: '#333'
-          }}>
+        <div className={styles.header}>
+          <h2 id="recipe-modal-title" className={styles.title}>
             {recipe.name}
           </h2>
           <button
             onClick={onClose}
             aria-label={`Close ${recipe.name} details. Press Escape to close`}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#999',
-              padding: '0',
-              width: '30px',
-              height: '30px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.color = '#666';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#999';
-            }}
+            className={styles.closeButton}
           >
             ×
           </button>
         </div>
 
         {/* Description */}
-        <p style={{
-          color: '#666',
-          lineHeight: '1.4',
-          marginBottom: '20px',
-          fontStyle: 'italic'
-        }}>
+        <p className={styles.description}>
           {recipe.description}
         </p>
 
         {/* Ingredients */}
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '16px',
-            color: '#333',
-            marginBottom: '12px',
-            borderBottom: '1px solid #e0e0e0',
-            paddingBottom: '4px'
-          }}>
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>
             Ingredients Required:
           </h3>
-          <div style={{ gap: '8px' }}>
-            {recipe.ingredients.map((ingredient, index) => {
-              const veggie = veggies.find(v => v.name === ingredient.veggieName);
-              const hasEnough = veggie && veggie.stash >= ingredient.quantity;
-              const available = veggie?.stash || 0;
-              
-              return (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    backgroundColor: hasEnough ? '#f8fff8' : '#fff8f8',
-                    border: `1px solid ${hasEnough ? '#d4edda' : '#f5c6cb'}`,
-                    borderRadius: '6px',
-                    marginBottom: '6px'
-                  }}
-                >
-                  <span style={{
-                    fontWeight: 'bold',
-                    color: '#333'
-                  }}>
-                    {ingredient.veggieName} × {ingredient.quantity}
-                  </span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#666'
-                    }}>
-                      (Have: {available})
-                    </span>
-                    <span style={{
-                      fontSize: '18px',
-                      color: hasEnough ? '#28a745' : '#dc3545'
-                    }}>
-                      {hasEnough ? '✓' : '✗'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+          <div>
+            {ingredientRows.map(({ ingredient, available, hasEnough }, index) => (
+              <RequirementRow
+                key={index}
+                label={<>{ingredient.veggieName} × {ingredient.quantity}</>}
+                have={available}
+                met={hasEnough}
+              />
+            ))}
           </div>
         </div>
 
         {/* Honey Requirements */}
-        {recipe.honeyRequirement && (recipe.honeyRequirement.regular > 0 || recipe.honeyRequirement.golden > 0) && (
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{
-              fontSize: '16px',
-              color: '#333',
-              marginBottom: '12px',
-              borderBottom: '1px solid #e0e0e0',
-              paddingBottom: '4px'
-            }}>
+        {honey && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>
               Honey Required:
             </h3>
-            <div style={{ gap: '8px' }}>
-              {recipe.honeyRequirement.regular > 0 && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  backgroundColor: regularHoney !== undefined && regularHoney >= recipe.honeyRequirement.regular ? '#f8fff8' : '#fff8f8',
-                  border: `1px solid ${regularHoney !== undefined && regularHoney >= recipe.honeyRequirement.regular ? '#d4edda' : '#f5c6cb'}`,
-                  borderRadius: '6px',
-                  marginBottom: '6px'
-                }}>
-                  <span style={{
-                    fontWeight: 'bold',
-                    color: '#333'
-                  }}>
-                    🍯 Regular Honey × {formatNumber(recipe.honeyRequirement.regular, 3)}
-                  </span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    {regularHoney !== undefined && (
-                      <>
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#666'
-                        }}>
-                          (Have: {formatNumber(regularHoney, 3)})
-                        </span>
-                        <span style={{
-                          fontSize: '18px',
-                          color: regularHoney >= recipe.honeyRequirement.regular ? '#28a745' : '#dc3545'
-                        }}>
-                          {regularHoney >= recipe.honeyRequirement.regular ? '✓' : '✗'}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+            <div>
+              {honey.regular > 0 && (
+                <RequirementRow
+                  label={<>🍯 Regular Honey × {formatNumber(honey.regular, 3)}</>}
+                  have={regularHoney !== undefined ? formatNumber(regularHoney, 3) : undefined}
+                  met={regularHoney !== undefined && regularHoney >= honey.regular}
+                />
               )}
-              {recipe.honeyRequirement.golden > 0 && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 12px',
-                  backgroundColor: goldenHoney !== undefined && goldenHoney >= recipe.honeyRequirement.golden ? '#f8fff8' : '#fff8f8',
-                  border: `1px solid ${goldenHoney !== undefined && goldenHoney >= recipe.honeyRequirement.golden ? '#d4edda' : '#f5c6cb'}`,
-                  borderRadius: '6px',
-                  marginBottom: '6px'
-                }}>
-                  <span style={{
-                    fontWeight: 'bold',
-                    color: '#FFD700'
-                  }}>
-                    Golden Honey × {formatNumber(recipe.honeyRequirement.golden, 3)}
-                  </span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    {goldenHoney !== undefined && (
-                      <>
-                        <span style={{
-                          fontSize: '12px',
-                          color: '#666'
-                        }}>
-                          (Have: {formatNumber(goldenHoney, 3)})
-                        </span>
-                        <span style={{
-                          fontSize: '18px',
-                          color: goldenHoney >= recipe.honeyRequirement.golden ? '#28a745' : '#dc3545'
-                        }}>
-                          {goldenHoney >= recipe.honeyRequirement.golden ? '✓' : '✗'}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+              {honey.golden > 0 && (
+                <RequirementRow
+                  label={<>Golden Honey × {formatNumber(honey.golden, 3)}</>}
+                  have={goldenHoney !== undefined ? formatNumber(goldenHoney, 3) : undefined}
+                  met={goldenHoney !== undefined && goldenHoney >= honey.golden}
+                  golden
+                />
               )}
             </div>
           </div>
         )}
 
         {/* Production Info */}
-        <div style={{
-          backgroundColor: '#f8f9fa',
-          padding: '16px',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
-            fontSize: '14px'
-          }}>
+        <div className={styles.productionInfo}>
+          <div className={styles.statsGrid}>
             <div>
-              <span style={{ color: '#666' }}>Processing Time:</span>
-              <div style={{ fontWeight: 'bold', color: '#333' }}>
-                {getEffectiveProcessingTime()}s
+              <span className={styles.statLabel}>Processing Time:</span>
+              <div className={styles.statValue}>
+                {effectiveProcessingTime}s
                 {speedMultiplier !== 1 && (
-                  <span style={{ 
-                    fontSize: '10px', 
-                    color: '#666', 
-                    marginLeft: '4px' 
-                  }}>
+                  <span className={styles.baseNote}>
                     (base: {recipe.baseProcessingTime}s)
                   </span>
                 )}
               </div>
             </div>
             <div>
-              <span style={{ color: '#666' }}>Sale Price:</span>
-              <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                ${formatNumber(getEffectiveSalePrice(), 2)}
-                {(efficiencyMultiplier !== 1 || getBetterSeedsMultiplier() !== 1) && (
-                  <span style={{ 
-                    fontSize: '10px', 
-                    color: '#666', 
-                    marginLeft: '4px' 
-                  }}>
+              <span className={styles.statLabel}>Sale Price:</span>
+              <div className={`${styles.statValue} ${styles.salePrice}`}>
+                ${formatNumber(effectiveSalePrice, 2)}
+                {(efficiencyMultiplier !== 1 || betterSeedsMultiplier !== 1) && (
+                  <span className={styles.baseNote}>
                     (base: ${formatNumber(recipe.salePrice, 2)})
                   </span>
                 )}
-                {getBetterSeedsMultiplier() > 1 && (
-                  <div style={{ 
-                    fontSize: '9px', 
-                    color: '#8BC34A', 
-                    fontWeight: 'normal'
-                  }}>
-                    Better Seeds: +{formatNumber((getBetterSeedsMultiplier() - 1) * 100, 2)}%
+                {betterSeedsMultiplier > 1 && (
+                  <div className={styles.betterSeedsNote}>
+                    Better Seeds: +{formatNumber((betterSeedsMultiplier - 1) * 100, 2)}%
                   </div>
                 )}
               </div>
             </div>
             <div>
-              <span style={{ color: '#666' }}>Raw Value:</span>
-              <div style={{ fontWeight: 'bold', color: '#666' }}>
-                ${formatNumber(getRawValue(), 2)}
+              <span className={styles.statLabel}>Raw Value:</span>
+              <div className={`${styles.statValue} ${styles.rawValue}`}>
+                ${formatNumber(rawValue, 2)}
               </div>
             </div>
             <div>
-              <span style={{ color: '#666' }}>Profit:</span>
-              <div style={{ 
-                fontWeight: 'bold', 
-                color: getProfit() > 0 ? '#28a745' : '#dc3545' 
-              }}>
-                ${formatNumber(getProfit(), 2)} ({getProfitMargin().toFixed(0)}%)
+              <span className={styles.statLabel}>Profit:</span>
+              <div className={`${styles.statValue} ${profit > 0 ? styles.profit : styles.loss}`}>
+                ${formatNumber(profit, 2)} ({profitMargin.toFixed(0)}%)
               </div>
             </div>
             <div>
-              <span style={{ color: '#666' }}>Knowledge Reward:</span>
-              <div style={{ fontWeight: 'bold', color: '#2196F3' }}>
-                +{getKnowledgeReward()}
-                <div style={{ 
-                  fontSize: '10px', 
-                  color: '#666', 
-                  fontWeight: 'normal'
-                }}>
-                  (Auto: +{Math.ceil(getKnowledgeReward() / 10)})
+              <span className={styles.statLabel}>Knowledge Reward:</span>
+              <div className={`${styles.statValue} ${styles.knowledge}`}>
+                +{knowledgeReward}
+                <div className={styles.autoNote}>
+                  (Auto: +{Math.ceil(knowledgeReward / 10)})
                 </div>
               </div>
             </div>
             <div>
-              <span style={{ color: '#666' }}>Canning Experience:</span>
-              <div style={{ fontWeight: 'bold', color: '#9C27B0' }}>
-                +{getCanningExperienceReward()}
-                <div style={{ 
-                  fontSize: '10px', 
-                  color: '#666', 
-                  fontWeight: 'normal'
-                }}>
-                  (Auto: +{Math.ceil(getCanningExperienceReward() / 10)})
+              <span className={styles.statLabel}>Canning Experience:</span>
+              <div className={`${styles.statValue} ${styles.experience}`}>
+                +{canningExperienceReward}
+                <div className={styles.autoNote}>
+                  (Auto: +{Math.ceil(canningExperienceReward / 10)})
                 </div>
               </div>
             </div>
@@ -442,21 +251,13 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
 
         {/* Stats */}
         {recipe.timesCompleted > 0 && (
-          <div style={{
-            textAlign: 'center',
-            padding: '8px',
-            backgroundColor: '#e3f2fd',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            fontSize: '12px',
-            color: '#1565c0'
-          }}>
+          <div className={styles.timesCompleted}>
             Times Completed: {recipe.timesCompleted}
           </div>
         )}
 
         {/* Action Button */}
-        <div style={{ textAlign: 'center' }}>
+        <div className={styles.actions}>
           {canMake ? (
             <button
               onClick={() => {
@@ -464,24 +265,7 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
                 onClose();
               }}
               aria-label={`Start canning ${recipe.name}`}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-                minWidth: '150px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#218838';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#28a745';
-              }}
+              className={`${styles.actionButton} ${styles.startButton}`}
             >
               Start Canning
             </button>
@@ -489,29 +273,14 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
             <div>
               <button
                 disabled
-                aria-label={`Cannot start canning ${recipe.name}. Missing ingredients: ${getMissingIngredients().map(ing => ing.veggieName).join(', ')}`}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#ccc',
-                  color: '#666',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  cursor: 'not-allowed',
-                  minWidth: '150px',
-                  marginBottom: '8px'
-                }}
+                aria-label={`Cannot start canning ${recipe.name}. Missing ingredients: ${missingIngredientList}`}
+                className={`${styles.actionButton} ${styles.cannotStartButton}`}
               >
                 Cannot Start
               </button>
-              <div style={{
-                fontSize: '12px',
-                color: '#dc3545',
-                fontWeight: 'bold'
-              }}>
-                {getMissingIngredients().length > 0 ? (
-                  `Missing: ${getMissingIngredients().map(ing => ing.veggieName).join(', ')}`
+              <div className={styles.missingText}>
+                {missingIngredientNames.length > 0 ? (
+                  `Missing: ${missingIngredientList}`
                 ) : (
                   'Check ingredients'
                 )}
@@ -522,6 +291,8 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = ({
       </div>
     </div>
   );
-};
+});
+
+RecipeDetailsModal.displayName = 'RecipeDetailsModal';
 
 export default RecipeDetailsModal;

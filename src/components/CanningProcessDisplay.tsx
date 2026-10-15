@@ -14,6 +14,16 @@ const CanningProcessDisplay: FC<CanningProcessDisplayProps> = ({
   recipes,
   maxSimultaneousProcesses
 }) => {
+  // Processes have no id. Recipe and start time identify one, with a counter
+  // for the rare pair started in the same millisecond.
+  const seen = new Map<string, number>();
+  const processKey = (process: CanningProcess) => {
+    const base = `${process.recipeId}-${process.startTime}`;
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  };
+
   return (
     <div className={styles.container}>
       <h3 className={styles.header}>
@@ -27,7 +37,7 @@ const CanningProcessDisplay: FC<CanningProcessDisplayProps> = ({
         <div className={styles.processesList}>
           {processes
             .filter(process => !process.completed && process.remainingTime > 0)
-            .map((process, index) => {
+            .map(process => {
             const recipe = recipes.find(r => r.id === process.recipeId);
             if (!recipe) return null;
 
@@ -37,7 +47,7 @@ const CanningProcessDisplay: FC<CanningProcessDisplayProps> = ({
 
             return (
               <div
-                key={index}
+                key={processKey(process)}
                 className={styles.process}
               >
                 {/* Recipe name - truncated */}

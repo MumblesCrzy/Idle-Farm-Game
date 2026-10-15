@@ -3,7 +3,7 @@ import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
 import type { Veggie } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import './AdvancedStashDisplay.css';
+import styles from './AdvancedStashDisplay.module.css';
 
 // Calculate base growth rate with fertilizer bonus (no weather/season effects)
 const calculateBaseGrowthRate = (veggie: Veggie): number => {
@@ -107,19 +107,19 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
   const totalValue = unlockedVeggies.reduce((sum, veggie) => sum + (veggie.stash * veggie.salePrice), 0);
 
   return (
-    <div className="advanced-stash-overlay" onClick={handleBackdropClick}>
+    <div className={styles.overlay} onClick={handleBackdropClick}>
       <div 
-        className="advanced-stash-content"
+        className={styles.content}
         ref={containerRef}
         onKeyDown={handleTabKey}
         role="dialog"
         aria-modal="true"
         aria-labelledby="stash-modal-title"
       >
-        <div className="advanced-stash-header">
+        <div className={styles.header}>
           <h2 id="stash-modal-title">Advanced Stash Details</h2>
           <button 
-            className="close-button" 
+            className={styles.closeButton} 
             onClick={onClose}
             aria-label="Close stash details (press Escape)"
           >
@@ -127,19 +127,19 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
           </button>
         </div>
         
-        <div className="stash-summary">
-          <div className="summary-item">
-            <span className="summary-label">Total Stash:</span>
-            <span className="summary-value">{formatNumber(totalStash, 2)}</span>
+        <div className={styles.summary}>
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Total Stash:</span>
+            <span className={styles.summaryValue}>{formatNumber(totalStash, 2)}</span>
           </div>
-          <div className="summary-item">
-            <span className="summary-label">Total Value:</span>
-            <span className="summary-value">${formatNumber(totalValue, 2)}</span>
+          <div className={styles.summaryItem}>
+            <span className={styles.summaryLabel}>Total Value:</span>
+            <span className={styles.summaryValue}>${formatNumber(totalValue, 2)}</span>
           </div>
         </div>
 
-        <div className="stash-table-container">
-          <table className="stash-table">
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
             <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8f9fa', zIndex: 1, textAlign: 'center' }}>
               <tr>
                 <th>Vegetable</th>
@@ -174,8 +174,8 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                 
                 return (
                   <tr key={veggie.name}>
-                    <td className="veggie-name">{veggie.name}</td>
-                    <td className="stash-count">
+                    <td className={styles.veggieName}>{veggie.name}</td>
+                    <td className={styles.stashCount}>
                       {formatNumber(veggie.stash, 2)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
@@ -210,7 +210,7 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                         {veggie.sellEnabled ? '💰 Auto-sell' : '🚫 Stockpile'}
                       </button>
                     </td>
-                    <td className="growth-rate">
+                    <td className={styles.growthRate}>
                       {baseGrowthRate.toFixed(2)}%/day
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
@@ -225,7 +225,7 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                         </>
                       )}
                     </td>
-                    <td className="yearly-growth">
+                    <td className={styles.yearlyGrowth}>
                       {formatNumber(totalYearlyProductionWithBees, 2)}
                       <br />
                       <small style={{ color: '#6c757d', fontSize: '0.8em' }}>
@@ -240,7 +240,7 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                         </>
                       )}
                     </td>
-                    <td className="annual-revenue">${formatNumber(annualRevenue, 1)}</td>
+                    <td className={styles.annualRevenue}>${formatNumber(annualRevenue, 1)}</td>
                   </tr>
                 );
               })}
@@ -248,11 +248,11 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
           </table>
         </div>
 
-        <div className="stash-footer">
-          <p className="note">
+        <div className={styles.footer}>
+          <p className={styles.note}>
             * Growth calculations are estimates based on current conditions and assume optimal growing conditions
           </p>
-          <button className="close-footer-button" onClick={onClose}>
+          <button className={styles.closeFooterButton} onClick={onClose}>
             Close
           </button>
         </div>

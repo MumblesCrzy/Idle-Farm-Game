@@ -7,6 +7,8 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLatestRef } from './useLatestRef';
+import { getEventUpgradeCost } from '../utils/christmasUpgrades';
+import { floorCheer, getTreePrice, getSaleCheerMultiplier, parseTreeKey, rollRegisterTips } from '../utils/christmasTreePricing';
 import type {
   ChristmasEventState,
   TreePlot,
@@ -187,9 +189,7 @@ function applyUpgradePurchase(
     const maxLevel = upgrade.maxLevel ?? Infinity;
     if (currentLevel >= maxLevel) return null;
 
-    // Calculate cost for next level
-    const costScaling = upgrade.costScaling ?? 1.5;
-    const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
+    const nextLevelCost = getEventUpgradeCost(upgrade);
     if (state.holidayCheer < nextLevelCost) return null;
 
     const next: ChristmasEventState = {
@@ -396,6 +396,8 @@ export function useChristmasEvent({
           effect: baseUpgrade.effect,
           maxLevel: baseUpgrade.maxLevel, // Update max level from base
           costScaling: baseUpgrade.costScaling, // Update cost scaling from base
+          requires: baseUpgrade.requires,
+          hiddenUntilRequired: baseUpgrade.hiddenUntilRequired,
         };
       }
       // New upgrade not in saved state
@@ -782,63 +784,15 @@ export function useChristmasEvent({
       const currentQuantity = state.treeInventory[treeKey] || 0;
       if (currentQuantity < quantity) return null;
 
-      // Calculate sale price
-      // Base prices: Pine=10, Spruce=15, Fir=20
-      let basePrice = 10;
-      if (treeKey.startsWith('spruce')) basePrice = 15;
-      else if (treeKey.startsWith('fir')) basePrice = 20;
+      const treePrice = getTreePrice(treeKey, state.upgrades, state.marketDemand.demandMultiplier);
+      // Garland Borders raises all cheer from sales, tips included
+      const cheerMultiplier = getSaleCheerMultiplier(state.upgrades);
+      const totalCheer = floorCheer(treePrice * quantity * cheerMultiplier);
 
-      // Extract quality from tree key (format: treeType_quality_decorationLevel)
-      // Examples: pine_perfect_luxury, spruce_normal_plain
-      const keyParts = treeKey.split('_');
-      const quality = keyParts[1] as 'normal' | 'perfect' | 'luxury';
-      const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
-
-      // Decoration multipliers (check the decoration level part of the key)
-      let decorationMultiplier = 1.0;
-      if (treeKey.includes('ornamented')) decorationMultiplier = 1.05;
-      else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
-      else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
-
-      // Apply upgrade bonuses
-      const garlandStation = state.upgrades.find(u => u.id === 'garland_station');
-      const garlandBorders = state.upgrades.find(u => u.id === 'garland_borders');
-      const fireplaceDisplay = state.upgrades.find(u => u.id === 'fireplace_display');
-
-      let upgradeMultiplier = 1.0;
-      if (garlandStation?.owned) upgradeMultiplier += 0.10; // +10% tree value
-
-      // Star Forge already included in luxury multiplier (3x)
-      // Fireplace Display: +50% for luxury trees
-      if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
-        upgradeMultiplier += 0.50;
-      }
-
-      const finalPrice = Math.floor(basePrice * qualityMultiplier * decorationMultiplier * state.marketDemand.demandMultiplier * upgradeMultiplier);
-
-      // Garland Borders: +10% Holiday Cheer from sales (applied after price calculation)
-      let cheerMultiplier = 1.0;
-      if (garlandBorders?.owned) cheerMultiplier += 0.10;
-
-      const totalCheer = Math.floor(finalPrice * quantity * cheerMultiplier);
-
-      // Magical Register bonus (10% chance PER TREE for a 20-50% bonus on that tree)
-      const magicalRegister = state.upgrades.find(u => u.id === 'magical_register');
-      let bonusCheer = 0;
-      if (magicalRegister?.owned) {
-        for (let i = 0; i < quantity; i++) {
-          const chance = random();
-          const size = random();
-          if (chance < 0.10) {
-            const bonusPercent = 0.20 + size * 0.30;
-            bonusCheer += Math.floor(finalPrice * bonusPercent);
-          }
-        }
-        // Apply Garland Borders bonus to the Magical Register bonus
-        if (bonusCheer > 0 && garlandBorders?.owned) {
-          bonusCheer = Math.floor(bonusCheer * cheerMultiplier);
-        }
-      }
+      // Magical Register tips
+      const registerOwned = state.upgrades.some(u => u.id === 'magical_register' && u.owned);
+      const tips = registerOwned ? rollRegisterTips(treePrice, quantity, random) : 0;
+      const bonusCheer = floorCheer(tips * cheerMultiplier);
 
       // Update inventory and currency
       const newInventory = { ...state.treeInventory };
@@ -854,7 +808,7 @@ export function useChristmasEvent({
           holidayCheer: state.holidayCheer + totalCheer + bonusCheer,
           totalTreesSold: state.totalTreesSold + quantity,
         },
-        result: { treeType: keyParts[0], cheer: totalCheer + bonusCheer, bonusCheer }
+        result: { treeType: parseTreeKey(treeKey).treeType, cheer: totalCheer + bonusCheer, bonusCheer }
       };
     });
 
@@ -875,69 +829,26 @@ export function useChristmasEvent({
     // Two Magical Register rolls per tree, rolled once and replayed each run
     const rolls = Array.from({ length: countTrees(eventStateRef.current.treeInventory) * 2 }, () => Math.random());
 
-    // Price of one tree of this key (same formula as above, kept as it was)
-    const treePrice = (state: ChristmasEventState, treeKey: string): number => {
-      let basePrice = 10;
-      if (treeKey.startsWith('spruce')) basePrice = 15;
-      else if (treeKey.startsWith('fir')) basePrice = 20;
-
-      const quality = treeKey.split('_')[1] as 'normal' | 'perfect' | 'luxury';
-      const qualityMultiplier = QUALITY_MULTIPLIERS[quality] || 1.0;
-
-      let decorationMultiplier = 1.0;
-      if (treeKey.includes('ornamented')) decorationMultiplier = 1.1;
-      else if (treeKey.includes('garlanded')) decorationMultiplier = 1.1;
-      else if (treeKey.includes('candled')) decorationMultiplier = 1.15;
-      else if (treeKey.includes('luxury')) decorationMultiplier = 3.0;
-
-      const garlandStation = state.upgrades.find(u => u.id === 'garland_station');
-      const fireplaceDisplay = state.upgrades.find(u => u.id === 'fireplace_display');
-
-      let upgradeMultiplier = 1.0;
-      if (garlandStation?.owned) upgradeMultiplier += 0.10;
-      if (fireplaceDisplay?.owned && treeKey.includes('luxury')) {
-        upgradeMultiplier += 0.50;
-      }
-
-      return Math.floor(basePrice * qualityMultiplier * decorationMultiplier * state.marketDemand.demandMultiplier * upgradeMultiplier);
-    };
-
     const sale = transact(state => {
       const random = rollSource(rolls);
-      let totalCheer = 0;
+      const demand = state.marketDemand.demandMultiplier;
+      const registerOwned = state.upgrades.some(u => u.id === 'magical_register' && u.owned);
+      let treeCheer = 0;
+      let tips = 0;
       let totalSold = 0;
 
       // Sell all trees in inventory
       for (const [treeKey, quantity] of Object.entries(state.treeInventory)) {
-        totalCheer += treePrice(state, treeKey) * quantity;
+        const treePrice = getTreePrice(treeKey, state.upgrades, demand);
+        treeCheer += treePrice * quantity;
         totalSold += quantity;
+        if (registerOwned) tips += rollRegisterTips(treePrice, quantity, random);
       }
 
-      // Apply Garland Borders bonus to total cheer from sales
-      const garlandBorders = state.upgrades.find(u => u.id === 'garland_borders');
-      if (garlandBorders?.owned) {
-        totalCheer = Math.floor(totalCheer * 1.10); // +10% Holiday Cheer from sales
-      }
-
-      // Magical Register bonus (10% chance PER TREE for a 20-50% bonus)
-      const magicalRegister = state.upgrades.find(u => u.id === 'magical_register');
-      let bonusCheer = 0;
-      if (magicalRegister?.owned && totalSold > 0) {
-        for (const [treeKey, quantity] of Object.entries(state.treeInventory)) {
-          const singleTreePrice = treePrice(state, treeKey);
-          for (let i = 0; i < quantity; i++) {
-            const chance = random();
-            const size = random();
-            if (chance < 0.10) {
-              bonusCheer += Math.floor(singleTreePrice * (0.20 + size * 0.30));
-            }
-          }
-        }
-        // Apply Garland Borders bonus to the Magical Register bonus as well
-        if (bonusCheer > 0 && garlandBorders?.owned) {
-          bonusCheer = Math.floor(bonusCheer * 1.10);
-        }
-      }
+      // Garland Borders raises all cheer from sales, tips included
+      const cheerMultiplier = getSaleCheerMultiplier(state.upgrades);
+      const totalCheer = floorCheer(treeCheer * cheerMultiplier);
+      const bonusCheer = floorCheer(tips * cheerMultiplier);
 
       return {
         next: {

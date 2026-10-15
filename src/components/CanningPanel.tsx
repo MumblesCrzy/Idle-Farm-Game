@@ -70,14 +70,12 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
   const setRecipeSort = onRecipeSortChange ?? setLocalRecipeSort;
   const setCanMakeOnly = onCanMakeOnlyChange ?? setLocalCanMakeOnly;
 
-  const getFilteredRecipes = useCallback(() => (
-    filterRecipesByCategory(canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly)
-  ), [canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly]);
-
-  const getSortedRecipes = useCallback(() => {
-    const filtered = getFilteredRecipes();
-    return sortRecipesByPreference(filtered, recipeSort, recipeValueContext);
-  }, [getFilteredRecipes, recipeSort, recipeValueContext]);
+  // Filtered and sorted once per change of recipes, filters or values
+  const sortedRecipes = useMemo(() => sortRecipesByPreference(
+    filterRecipesByCategory(canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly),
+    recipeSort,
+    recipeValueContext
+  ), [canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly, recipeSort, recipeValueContext]);
 
   const handleShowDetails = useCallback((recipe: Recipe) => {
     setSelectedRecipe(recipe);
@@ -100,7 +98,6 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
     return success;
   }, [onStartCanning, showModal, handleCloseModal]);
 
-  const sortedRecipes = getSortedRecipes();
   const unlockedCount = canningState.recipes.filter(r => r.unlocked).length;
   
   // Find the next locked recipe (the one with the lowest experienceRequired above current experience)

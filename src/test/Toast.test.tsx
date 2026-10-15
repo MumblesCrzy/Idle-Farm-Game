@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import styles from '../components/Toast.module.css'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { act } from '@testing-library/react'
 import Toast from '../components/Toast'
@@ -146,7 +147,7 @@ describe('Toast', () => {
       />
     )
 
-    const toastElement = screen.getByText('Click to close').closest('.toast')
+    const toastElement = screen.getByText('Click to close').closest(`.${styles.toast}`)
     expect(toastElement).toBeInTheDocument()
     
     if (toastElement) {
@@ -247,8 +248,8 @@ describe('Toast', () => {
       />
     )
 
-    const toastElement = container.querySelector('.toast')
-    expect(toastElement).toHaveClass('toast', 'toast-success', 'show')
+    const toastElement = container.querySelector(`.${styles.toast}`)
+    expect(toastElement).toHaveClass(styles.toast, styles.success, styles.show)
   })
 
   it('should render progress bar with correct animation duration', () => {
@@ -261,7 +262,7 @@ describe('Toast', () => {
       />
     )
 
-    const progressBar = container.querySelector('.toast-progress-bar')
+    const progressBar = container.querySelector(`.${styles.progressBar}`)
     expect(progressBar).toBeInTheDocument()
     expect(progressBar).toHaveStyle('animation-duration: 2000ms')
   })
@@ -276,11 +277,11 @@ describe('Toast', () => {
     )
 
     // Should still render the toast structure even with empty message
-    const toastElement = screen.getByText('✓').closest('.toast')
+    const toastElement = screen.getByText('✓').closest(`.${styles.toast}`)
     expect(toastElement).toBeInTheDocument()
     
     // Check that message span exists even if empty
-    const messageSpan = toastElement?.querySelector('.toast-message')
+    const messageSpan = toastElement?.querySelector(`.${styles.message}`)
     expect(messageSpan).toBeInTheDocument()
   })
 

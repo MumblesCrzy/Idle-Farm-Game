@@ -1,21 +1,19 @@
+import InlineIcon from './InlineIcon';
 import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
 import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER } from '../config/assetPaths';
+import { GREENHOUSE_COST_PER_PLOT, GREENHOUSE_KN_COST_PER_PLOT } from '../config/gameConstants';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './InfoOverlay.module.css';
 
 interface InfoOverlayProps {
   visible: boolean;
   onClose: () => void;
-  GREENHOUSE_COST_PER_PLOT: number;
-  GREENHOUSE_KN_COST_PER_PLOT: number;
 }
 
 const InfoOverlay: FC<InfoOverlayProps> = memo(({
-  visible, 
-  onClose, 
-  GREENHOUSE_COST_PER_PLOT, 
-  GREENHOUSE_KN_COST_PER_PLOT 
+  visible,
+  onClose
 }) => {
   const [selectedInfoCategory, setSelectedInfoCategory] = useState<InfoCategory>('seasons');
   const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
@@ -270,7 +268,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Example:</strong> Level 10 = +50% growth (1.5× speed)</li>
                 </ul>
                 
-                <h5><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto Harvester</h5>
+                <h5><InlineIcon src={ICON_AUTOMATION} alt="Auto" size={20} gap={4} /> Auto Harvester</h5>
                 <ul>
                   <li><strong>Function:</strong> Automatically harvests when vegetables reach 100% growth</li>
                   <li><strong>Base Timer:</strong> 50 seconds between harvest attempts</li>
@@ -411,10 +409,10 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
 
             {selectedInfoCategory === 'autopurchase' && (
               <div>
-                <h4><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '24px', height: '24px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto-Purchaser System</h4>
+                <h4><InlineIcon src={ICON_AUTOMATION} alt="Auto" size={24} gap={4} /> Auto-Purchaser System</h4>
                 <p>Auto-Purchasers automatically buy upgrades for you every 7 days when active and affordable. Each vegetable has its own set of auto-purchasers that operate independently.</p>
                 
-                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> How Auto-Purchasers Work:</h5>
+                <h5><InlineIcon src={ICON_MILESTONE} size={18} gap={4} /> How Auto-Purchasers Work:</h5>
                 <ul>
                   <li><strong>Timer:</strong> All auto-purchasers share a unified 7-day cycle timer</li>
                   <li><strong>Purchase Check:</strong> When timer reaches 0, each active auto-purchaser attempts to buy its upgrade</li>
@@ -424,7 +422,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Manual Control:</strong> You can toggle each auto-purchaser ON/OFF at any time after purchase</li>
                 </ul>
                 
-                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Purchase Priority System:</h5>
+                <h5><InlineIcon src={ICON_MILESTONE} size={18} gap={4} /> Purchase Priority System:</h5>
                 <ul>
                   <li><strong>Vegetable Order:</strong> Radish → Lettuce → Green Beans → Zucchini → Cucumbers → Tomatoes → Peppers → Carrots → Broccoli → Onions</li>
                   <li><strong>Auto-Purchaser Order:</strong> Assistant → Cultivator → Surveyor → Mechanic</li>
@@ -510,7 +508,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 </h4>
                 <p>The Canning System unlocks at Farm Tier 3 and allows you to process vegetables into preserved recipes for profit and rewards. Canning provides both money and valuable knowledge/experience bonuses.</p>
                 
-                <h5><img src={ICON_MILESTONE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> How Canning Works:</h5>
+                <h5><InlineIcon src={ICON_MILESTONE} size={18} gap={4} /> How Canning Works:</h5>
                 <ul>
                   <li><strong>Unlock Requirement:</strong> Reach Farm Tier 3 to access canning</li>
                   <li><strong>Recipe Requirements:</strong> Each recipe needs specific vegetables in specific quantities</li>
@@ -520,7 +518,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Knowledge Rewards:</strong> Earn knowledge points based on recipe complexity</li>
                 </ul>
 
-                <h5><img src={ICON_RECIPE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> 📋 Recipe Information:</h5>
+                <h5><InlineIcon src={ICON_RECIPE} size={18} gap={4} /> 📋 Recipe Information:</h5>
                 <ul>
                   <li><strong>Small Cards:</strong> Show ingredients, profit, processing time, and reward amounts</li>
                   <li><strong>Knowledge Reward:</strong> 2 knowledge per ingredient (reduced for auto-canning)</li>
@@ -530,7 +528,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Recipe Sorting:</strong> Sort by name, profit, time, or difficulty</li>
                 </ul>
 
-                <h5><img src={ICON_UPGRADE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Canning Upgrades:</h5>
+                <h5><InlineIcon src={ICON_UPGRADE} size={18} gap={4} /> Canning Upgrades:</h5>
                 <ul>
                   <li><strong>Quick Hands:</strong> Reduces processing time for faster production</li>
                   <li><strong>Family Recipe:</strong> Increases sale price of canned goods</li>
@@ -539,7 +537,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Canner (Auto-Canning):</strong> Automatically starts recipes every 10 seconds</li>
                 </ul>
 
-                <h5><img src={ICON_AUTOMATION} alt="Auto" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Auto-Canning System:</h5>
+                <h5><InlineIcon src={ICON_AUTOMATION} alt="Auto" size={20} gap={4} /> Auto-Canning System:</h5>
                 <ul>
                   <li><strong>How it Works:</strong> Automatically selects and starts recipes every 10 seconds</li>
                   <li><strong>Recipe Selection:</strong> Picks the first available recipe in your selected sort order</li>
@@ -571,7 +569,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 </h4>
                 <p>The Bee System unlocks at <strong>Farm Tier 3</strong> and allows you to raise bees that produce honey and boost your crop yields. Bees provide passive income and valuable bonuses to your farming operation.</p>
 
-                <h5><img src={ICON_BEE_HIVE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Getting Started:</h5>
+                <h5><InlineIcon src={ICON_BEE_HIVE} size={18} gap={4} /> Getting Started:</h5>
                 <ul>
                   <li><strong>Unlock Requirement:</strong> Reach Farm Tier 3 to access the bee system</li>
                   <li><strong>Bee Boxes:</strong> Purchase bee boxes to start producing honey</li>
@@ -579,16 +577,16 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Box Cost:</strong> First box costs $1,000, increasing by 1.15× per box owned</li>
                 </ul>
 
-                <h5><img src={ICON_HONEY} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Honey Production:</h5>
+                <h5><InlineIcon src={ICON_HONEY} size={18} gap={4} /> Honey Production:</h5>
                 <ul>
                   <li><strong>Production Time:</strong> Each box produces honey every 182 in-game days (~6 months)</li>
                   <li><strong>Regular Honey:</strong> Standard honey used in canning recipes</li>
-                  <li><strong>Golden Honey:</strong> <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Rare honey with 1% base chance (upgradeable)</li>
+                  <li><strong>Golden Honey:</strong> <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={16} /> Rare honey with 1% base chance (upgradeable)</li>
                   <li><strong>Harvesting:</strong> Click "Collect All Honey" to harvest from all ready boxes</li>
                   <li><strong>Winter Dormancy:</strong> Bees hibernate in Winter and don't produce (unless upgraded)</li>
                 </ul>
 
-                <h5><img src={ICON_GROWING} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Crop Yield Bonus:</h5>
+                <h5><InlineIcon src={ICON_GROWING} size={18} gap={4} /> Crop Yield Bonus:</h5>
                 <ul>
                   <li><strong>Base Bonus:</strong> +0.5% crop yield per bee box owned</li>
                   <li><strong>Meadow Magic:</strong> Upgrade doubles yield bonus to +1% per box</li>
@@ -596,7 +594,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Application:</strong> Applies to all vegetable harvests automatically</li>
                 </ul>
 
-                <h5><img src={ICON_UPGRADE} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Bee Upgrades:</h5>
+                <h5><InlineIcon src={ICON_UPGRADE} size={18} gap={4} /> Bee Upgrades:</h5>
                 <ul>
                   <li><strong>Busy Bees:</strong> +1% production speed per level (max 50 levels)</li>
                   <li><strong>Royal Jelly:</strong> +1% Golden Honey chance (one-time purchase)</li>
@@ -607,7 +605,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Golden Touch:</strong> +5% Golden Honey chance (one-time purchase)</li>
                 </ul>
 
-                <h5><img src={BEE_BEEKEEPER} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Beekeeper Assistant:</h5>
+                <h5><InlineIcon src={BEE_BEEKEEPER} size={18} gap={4} /> Beekeeper Assistant:</h5>
                 <ul>
                   <li><strong>Function:</strong> Automatically collects honey when boxes are ready</li>
                   <li><strong>Cost:</strong> $10,000 + 100 Knowledge</li>
@@ -615,7 +613,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Toggle:</strong> Can be turned on/off after purchase</li>
                 </ul>
 
-                <h5><img src={ICON_CANNING} alt="" style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '4px' }} /> Honey in Canning:</h5>
+                <h5><InlineIcon src={ICON_CANNING} size={18} gap={4} /> Honey in Canning:</h5>
                 <ul>
                   <li><strong>Honey Recipes:</strong> Several canning recipes require Regular Honey</li>
                   <li><strong>Golden Honey Recipes:</strong> Premium recipes require rare Golden Honey</li>
@@ -644,7 +642,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 </h4>
                 <p>The Christmas Tree Shop is a seasonal event available from <strong>November 1st - December 25th</strong>. Grow Christmas trees, craft decorations, and sell decorated trees to earn Holiday Cheer!</p>
                 
-                <h5><img src={TREE_PINE} alt="Tree" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Tree Farming:</h5>
+                <h5><InlineIcon src={TREE_PINE} alt="Tree" size={20} gap={4} /> Tree Farming:</h5>
                 <ul>
                   <li><strong>Growth Time:</strong> Trees take 5-7 in-game years to grow (varies by type)</li>
                   <li><strong>Tree Types:</strong> Pine (7 years), Spruce (6 years), Fir (5 years)</li>
@@ -654,14 +652,14 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Plot Expansion:</strong> Start with 6 plots, upgrade to unlock up to 12 plots</li>
                 </ul>
 
-                <h5><img src={ICON_TREE_WORKSHOP} alt="Workshop" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Workshop:</h5>
+                <h5><InlineIcon src={ICON_TREE_WORKSHOP} alt="Workshop" size={20} gap={4} /> Workshop:</h5>
                 <ul>
                   <li><strong>Craft Decorations:</strong> Use materials to craft ornaments, garland, and candles</li>
                   <li><strong>Decorate Trees:</strong> Add decorations to trees before selling for bonus value</li>
                   <li><strong>Elves' Bench:</strong> Once unlocked, automates crafting and decoration</li>
                 </ul>
 
-                <h5><img src={ICON_ELVES} alt="Elves" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Elves' Bench Automation:</h5>
+                <h5><InlineIcon src={ICON_ELVES} alt="Elves" size={20} gap={4} /> Elves' Bench Automation:</h5>
                 <ul>
                   <li><strong>Daily Crafting:</strong> Elves automatically craft 1 decoration per in-game day</li>
                   <li><strong>Crafting Priority:</strong>
@@ -683,10 +681,10 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   </li>
                 </ul>
 
-                <h5><img src={ICON_TREE_STOREFRONT} alt="Shopfront" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '4px' }} /> Shopfront:</h5>                <ul>
+                <h5><InlineIcon src={ICON_TREE_STOREFRONT} alt="Shopfront" size={20} gap={4} /> Shopfront:</h5>                <ul>
                   <li><strong>Sell Trees:</strong> Sell decorated trees for Holiday Cheer</li>
                   <li><strong>Sell Decorations:</strong> Sell excess ornaments (1 cheer), candles (2 cheer), or garland (4 cheer)</li>
-                  <li><strong>Price Bonuses:</strong> Decorations add value (+10% ornaments, +20% candles, +200% luxury)</li>
+                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +15% candles, +200% luxury)</li>
                   <li><strong>Demand Multiplier:</strong> Prices increase as Christmas approaches</li>
                   <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day (requires Wreath Sign upgrade)</li>
                   <li><strong>Passive Income:</strong> Golden Bell Counter provides idle Holiday Cheer generation</li>

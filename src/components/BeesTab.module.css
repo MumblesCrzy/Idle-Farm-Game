@@ -38,83 +38,6 @@
 }
 
 /* ============================================================================
-   UNLOCK MESSAGE STYLES
-   ============================================================================ */
-
-.unlockMessage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 600px;
-  padding: 2rem;
-}
-
-.unlockCard {
-  background: linear-gradient(135deg, #fff9e6 0%, #F7B434 20%, #F7C91F 100%);
-  border: 3px solid #AA7942;
-  border-radius: 16px;
-  padding: 2.5rem;
-  max-width: 600px;
-  box-shadow: 0 8px 24px rgba(170, 121, 66, 0.4);
-  text-align: center;
-}
-
-.unlockTitle {
-  font-size: 2rem;
-  color: #D36300;
-  margin: 0 0 1rem 0;
-  font-weight: bold;
-}
-
-.unlockDescription {
-  font-size: 1.2rem;
-  color: #2F2F2F;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.unlockDetails {
-  font-size: 1.1rem;
-  color: #52514E;
-  margin: 0.5rem 0;
-  font-weight: 500;
-}
-
-.unlockDetails strong {
-  color: #D36300;
-}
-
-.unlockFeatures {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 1.5rem 0;
-  text-align: left;
-  border: 1px solid #AA7942;
-}
-
-.unlockFeatures h3 {
-  color: #D36300;
-  margin: 0 0 1rem 0;
-  font-size: 1.3rem;
-  text-align: center;
-}
-
-.unlockFeatures li {
-  padding: 0.5rem 0;
-  font-size: 1rem;
-  color: #2F2F2F;
-  line-height: 1.6;
-}
-
-.unlockHint {
-  font-size: 1rem;
-  color: #52514E;
-  margin-top: 1.5rem;
-  font-style: italic;
-}
-
-/* ============================================================================
    STATS OVERVIEW
    ============================================================================ */
 
@@ -148,8 +71,8 @@
 }
 
 .statIconImage {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
@@ -277,14 +200,6 @@
 }
 
 @media (max-width: 768px) {
-  .unlockCard {
-    padding: 1.5rem;
-  }
-
-  .unlockTitle {
-    font-size: 1.5rem;
-  }
-
   .statsOverview {
     grid-template-columns: 1fr;
   }

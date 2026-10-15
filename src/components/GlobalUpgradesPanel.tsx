@@ -9,6 +9,20 @@ import {
   UPGRADE_GREENHOUSE, 
   UPGRADE_HEIRLOOM_SEEDS 
 } from '../config/assetPaths';
+import {
+  MERCHANT_DAYS,
+  MERCHANT_COST,
+  MERCHANT_KN_COST,
+  GREENHOUSE_COST_PER_PLOT,
+  GREENHOUSE_KN_COST_PER_PLOT,
+  HEIRLOOM_COST_PER_VEGGIE,
+  HEIRLOOM_KN_PER_VEGGIE
+} from '../config/gameConstants';
+import { VEGGIE_CONFIGS } from '../data/veggieConfigs';
+import { FRUIT_CONFIGS } from '../data/fruitConfigs';
+
+/** Crop names in game order: vegetables, then fruits */
+const CROP_NAMES = [...VEGGIE_CONFIGS, ...FRUIT_CONFIGS].map(config => config.name);
 
 interface GlobalUpgradesPanelProps {
   money: number;
@@ -26,14 +40,6 @@ interface GlobalUpgradesPanelProps {
   heirloomOwned: boolean;
   heirloomMoneyCost: number;
   heirloomKnowledgeCost: number;
-  MERCHANT_DAYS: number;
-  MERCHANT_COST: number;
-  MERCHANT_KN_COST: number;
-  GREENHOUSE_COST_PER_PLOT: number;
-  GREENHOUSE_KN_COST_PER_PLOT: number;
-  HEIRLOOM_COST_PER_VEGGIE: number;
-  HEIRLOOM_KN_PER_VEGGIE: number;
-  initialVeggies: Array<{ name: string }>;
   handleBuyAlmanac: () => void;
   handleBuyIrrigation: () => void;
   handleBuyAutoSell: () => void;
@@ -58,14 +64,6 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   heirloomOwned,
   heirloomMoneyCost,
   heirloomKnowledgeCost,
-  MERCHANT_DAYS,
-  MERCHANT_COST,
-  MERCHANT_KN_COST,
-  GREENHOUSE_COST_PER_PLOT,
-  GREENHOUSE_KN_COST_PER_PLOT,
-  HEIRLOOM_COST_PER_VEGGIE,
-  HEIRLOOM_KN_PER_VEGGIE,
-  initialVeggies,
   handleBuyAlmanac,
   handleBuyIrrigation,
   handleBuyAutoSell,
@@ -81,7 +79,7 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         {/* Farmer's Almanac */}
         <div>
           <UpgradeButton
-            title="Each level increases all veggie sale prices by 10%"
+            title="Each level increases knowledge gained by 10%"
             imageSrc={UPGRADE_FARMERS_ALMANAC}
             imageAlt="Farmer's Almanac"
             buttonText="Almanac"
@@ -160,7 +158,7 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         {/* Heirloom Seeds */}
         <div>
           <UpgradeButton
-            title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${initialVeggies[highestUnlockedVeggie]?.name || 'Radish'} (${highestUnlockedVeggie + 1} × $${formatNumber(HEIRLOOM_COST_PER_VEGGIE, 1)} & ${highestUnlockedVeggie + 1} × ${formatNumber(HEIRLOOM_KN_PER_VEGGIE, 1)} Kn).`}
+            title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${CROP_NAMES[highestUnlockedVeggie] ?? 'Radish'} (${highestUnlockedVeggie + 1} × $${formatNumber(HEIRLOOM_COST_PER_VEGGIE, 1)} & ${highestUnlockedVeggie + 1} × ${formatNumber(HEIRLOOM_KN_PER_VEGGIE, 1)} Kn).`}
             imageSrc={UPGRADE_HEIRLOOM_SEEDS}
             imageAlt="Heirloom Seeds"
             buttonText="Heirloom Seeds"

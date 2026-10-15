@@ -1,3 +1,4 @@
+import InlineIcon from './InlineIcon';
 import { useState, useCallback, type FC } from 'react';
 import styles from './DevTools.module.css';
 import { ICON_CANNING, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
@@ -17,7 +18,7 @@ interface DevToolsProps {
   onAddHolidayCheer?: (amount: number) => void;
   onHarvestAllTrees?: () => void;
   onAddTreeMaterials?: () => void;
-  onProcessTreeGrowth?: () => void;
+  onProcessTreeGrowth?: (ticks?: number) => void;
   // Bees
   onAddHoney?: (amount: number) => void;
   onAddGoldenHoney?: (amount: number) => void;
@@ -113,16 +114,8 @@ const DevTools: FC<DevToolsProps> = ({
     
     onSkipDays(sanitizedDays);
     
-    // Process tree growth for each day (86400 seconds per day)
-    if (onProcessTreeGrowth) {
-      const ticksPerDay = 86400; // 1 tick per second
-      const totalTicks = sanitizedDays * ticksPerDay;
-      
-      // Process all ticks
-      for (let i = 0; i < totalTicks; i++) {
-        onProcessTreeGrowth();
-      }
-    }
+    // Grow trees by the skipped time (one tick per second) in a single update
+    onProcessTreeGrowth?.(sanitizedDays * 86400);
   }, [onSkipDays, onProcessTreeGrowth]);
 
   // Handles custom days input with validation
@@ -335,7 +328,7 @@ const DevTools: FC<DevToolsProps> = ({
                   onClick={onUnlockAllRecipes}
                   className={styles.actionButton}
                 >
-                  <img src={ICON_CANNING} alt="" style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <InlineIcon src={ICON_CANNING} size={16} gap={4} />
                   Unlock All Recipes
                 </button>
               )}
@@ -394,7 +387,7 @@ const DevTools: FC<DevToolsProps> = ({
           {/* Bees Section */}
           {(onAddHoney || onAddGoldenHoney || onHarvestAllHoney || onCompleteAllBoxes || onAddBeeBox) && (
             <div className={styles.section}>
-              <h4 className={styles.sectionTitle}><img src={ICON_BEE} alt="Bee" style={{ width: '18px', height: '18px', verticalAlign: 'middle' }} /> Bee System</h4>
+              <h4 className={styles.sectionTitle}><InlineIcon src={ICON_BEE} alt="Bee" size={18} /> Bee System</h4>
               <div className={styles.actionButtons}>
                 {onAddHoney && (
                   <>
@@ -402,13 +395,13 @@ const DevTools: FC<DevToolsProps> = ({
                       onClick={() => onAddHoney(100)}
                       className={styles.actionButton}
                     >
-                      +100 <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Honey
+                      +100 <InlineIcon src={ICON_HONEY} alt="Honey" size={14} /> Honey
                     </button>
                     <button 
                       onClick={() => onAddHoney(1000)}
                       className={styles.actionButton}
                     >
-                      +1K <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Honey
+                      +1K <InlineIcon src={ICON_HONEY} alt="Honey" size={14} /> Honey
                     </button>
                   </>
                 )}
@@ -418,13 +411,13 @@ const DevTools: FC<DevToolsProps> = ({
                       onClick={() => onAddGoldenHoney(10)}
                       className={styles.actionButton}
                     >
-                      +10 <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Golden Honey
+                      +10 <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={14} /> Golden Honey
                     </button>
                     <button 
                       onClick={() => onAddGoldenHoney(100)}
                       className={styles.actionButton}
                     >
-                      +100 <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Golden Honey
+                      +100 <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={14} /> Golden Honey
                     </button>
                   </>
                 )}
@@ -441,7 +434,7 @@ const DevTools: FC<DevToolsProps> = ({
                     onClick={onHarvestAllHoney}
                     className={styles.actionButton}
                   >
-                    <img src={ICON_HONEY} alt="Honey" style={{ width: '14px', height: '14px', verticalAlign: 'middle' }} /> Harvest All Honey
+                    <InlineIcon src={ICON_HONEY} alt="Honey" size={14} /> Harvest All Honey
                   </button>
                 )}
                 {onAddBeeBox && (

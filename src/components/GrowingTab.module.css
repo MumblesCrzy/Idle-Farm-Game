@@ -175,6 +175,18 @@
   font-size: 1.1rem;
 }
 
+/* Bee yield bonus next to the sale price */
+.beeBonus {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.35rem;
+  background-color: #fffbf0;
+  border: 1px solid #FFD700;
+  border-radius: 3px;
+  color: #B8860B;
+  margin-left: 0.25rem;
+  font-weight: bold;
+}
+
 .daysToGrow {
   font-size: 1rem;
   font-weight: normal;
@@ -205,6 +217,10 @@
   cursor: not-allowed;
 }
 
+.ritualHarvestButton:not(:disabled) {
+  cursor: pointer;
+}
+
 .ritualHarvestButton {
   margin-left: 0.5rem;
   font-size: 0.9rem;
@@ -222,6 +238,7 @@
 
 .ritualHarvestButton:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sellButton {

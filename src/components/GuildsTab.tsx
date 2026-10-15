@@ -8,8 +8,9 @@
  * - Access guild-specific upgrades post-commitment
  */
 
-import { memo, useState, type FC } from 'react';
+import { memo, useCallback, useId, useState, type FC, type ReactNode } from 'react';
 import BaseTab from './BaseTab';
+import LockedFeatureCard from './LockedFeatureCard';
 import type { GuildType, GuildState, Guild, GuildUpgrade } from '../types/guilds';
 import { GUILDS, GUILDS_UNLOCK_TIER, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
 import { GUILD_GROWERS } from '../config/assetPaths';
@@ -25,9 +26,15 @@ import {
   getFertilizerEffectivenessMultiplier,
   hasWhispersOfSeed,
 } from '../utils/guildCalculations';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './GuildsTab.module.css';
 
 interface GuildsTabProps {
+  /**
+   * Whether the Guilds tab is showing. App keeps hidden tabs mounted, so dialogs
+   * only take focus and answer Escape while this is true. Defaults to true.
+   */
+  isActive?: boolean;
   /** Current farm tier */
   farmTier: number;
   /** Current guild state */
@@ -58,7 +65,7 @@ interface GuildCardProps {
   isSelected: boolean;
   sampledCount: number;
   maxSamples: number;
-  onSelect: () => void;
+  onSelect: (guildId: GuildType) => void;
   onCommit: () => void;
   canCommit: boolean;
 }
@@ -70,93 +77,104 @@ const GuildCard: FC<GuildCardProps> = memo(({
   maxSamples, 
   onSelect,
   onCommit,
-  canCommit 
+  canCommit
 }) => {
+  // Commit button only for Growers guild (others not yet implemented)
+  const showCommitButton = isSelected && guild.id === 'growers';
+
   return (
-    <div 
+    <div
       className={`${styles.guildCard} ${isSelected ? styles.guildCardSelected : ''}`}
-      style={{ 
+      style={{
         '--guild-primary': guild.colors.primary,
         '--guild-secondary': guild.colors.secondary,
         '--guild-accent': guild.colors.accent,
         '--guild-background': guild.colors.background,
         '--guild-border': guild.colors.border
       } as React.CSSProperties}
-      onClick={onSelect}
-      role="button"
-      tabIndex={0}
-      aria-selected={isSelected}
     >
-      <div className={styles.guildEmblem}>
-        {guild.id === 'growers' ? (
-          <img 
-            src={GUILD_GROWERS} 
-            alt={`${guild.displayName} Emblem`}
-            className={styles.guildEmblemImage}
-          />
-        ) : (
-          <div 
-            className={styles.guildEmblemPlaceholder}
-            style={{ backgroundColor: guild.colors.primary }}
-          >
-            {guild.displayName.charAt(0)}
+      {/* A button can't contain the commit button, so that one sits after it */}
+      <button
+        type="button"
+        className={styles.guildCardSelect}
+        onClick={() => onSelect(guild.id)}
+        aria-pressed={isSelected}
+      >
+        <div className={styles.guildCardBody}>
+          <div className={styles.guildEmblem}>
+            {guild.id === 'growers' ? (
+              <img
+                src={GUILD_GROWERS}
+                alt={`${guild.displayName} Emblem`}
+                className={styles.guildEmblemImage}
+              />
+            ) : (
+              <div
+                className={styles.guildEmblemPlaceholder}
+                style={{ backgroundColor: guild.colors.primary }}
+              >
+                {guild.displayName.charAt(0)}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <h3 className={styles.guildName}>{guild.displayName}</h3>
-      <p className={styles.guildPhilosophy}>{guild.philosophy}</p>
-      <div className={styles.guildFocuses}>
-        {guild.focuses.map(focus => (
-          <span key={focus} className={styles.guildFocus}>{focus}</span>
-        ))}
-      </div>
-      
-      {/* Sampling Progress */}
-      {sampledCount > 0 && (
-        <div className={styles.samplingProgress}>
-          Sampled: {sampledCount}/{maxSamples} upgrades
-        </div>
-      )}
-      
-      {/* Show details when selected */}
-      {isSelected && (
-        <>
-          {/* Key Benefits */}
-          <div className={styles.cardBenefits}>
-            <h4 className={styles.cardBenefitsTitle}>✨ Benefits</h4>
-            <ul className={styles.cardBenefitsList}>
-              {guild.passiveBonuses.slice(0, 3).map(bonus => (
-                <li key={bonus.id} className={styles.cardBenefitItem}>
-                  {bonus.description}
-                </li>
-              ))}
-            </ul>
+          <h3 className={styles.guildName}>{guild.displayName}</h3>
+          <p className={styles.guildPhilosophy}>{guild.philosophy}</p>
+          <div className={styles.guildFocuses}>
+            {guild.focuses.map(focus => (
+              <span key={focus} className={styles.guildFocus}>{focus}</span>
+            ))}
           </div>
-          
-          {/* Trade-offs */}
-          <div className={styles.cardTradeoffs}>
-            <h4 className={styles.cardTradeoffsTitle}>⚠️ Trade-offs</h4>
-            <ul className={styles.cardTradeoffsList}>
-              {guild.tradeOffs.slice(0, 2).map(tradeoff => (
-                <li key={tradeoff.id} className={styles.cardTradeoffItem}>
-                  {tradeoff.description}
-                </li>
-              ))}
-            </ul>
-          </div>
-          
-          {/* Commit button only for Growers guild (others not yet implemented) */}
-          {guild.id === 'growers' && (
-            <button 
-              className={styles.commitButton}
-              onClick={(e) => { e.stopPropagation(); onCommit(); }}
-              disabled={!canCommit}
-              title={canCommit ? `Commit to ${guild.displayName}` : 'Sample at least one upgrade before committing'}
-            >
-              Commit to Guild
-            </button>
+
+          {/* Sampling Progress */}
+          {sampledCount > 0 && (
+            <div className={styles.samplingProgress}>
+              Sampled: {sampledCount}/{maxSamples} upgrades
+            </div>
           )}
-        </>
+
+          {/* Show details when selected */}
+          {isSelected && (
+            <>
+              {/* Key Benefits */}
+              <div className={styles.cardBenefits}>
+                <h4 className={styles.cardBenefitsTitle}>✨ Benefits</h4>
+                <ul className={styles.cardBenefitsList}>
+                  {guild.passiveBonuses.slice(0, 3).map(bonus => (
+                    <li key={bonus.id} className={styles.cardBenefitItem}>
+                      {bonus.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Trade-offs */}
+              <div className={styles.cardTradeoffs}>
+                <h4 className={styles.cardTradeoffsTitle}>⚠️ Trade-offs</h4>
+                <ul className={styles.cardTradeoffsList}>
+                  {guild.tradeOffs.slice(0, 2).map(tradeoff => (
+                    <li key={tradeoff.id} className={styles.cardTradeoffItem}>
+                      {tradeoff.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      </button>
+
+      {showCommitButton && (
+        <div className={styles.guildCardActions}>
+          <button
+            type="button"
+            className={styles.commitButton}
+            onClick={onCommit}
+            disabled={!canCommit}
+            title={canCommit ? `Commit to ${guild.displayName}` : 'Sample at least one upgrade before committing'}
+          >
+            Commit to Guild
+          </button>
+        </div>
       )}
     </div>
   );
@@ -176,7 +194,7 @@ interface GuildUpgradeRowProps {
   sigils: number;
   guildTokens: number;
   guildColors: Guild['colors'];
-  onPurchase: () => void;
+  onPurchase: (upgradeId: string) => void;
   canPurchase: boolean;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
@@ -260,7 +278,7 @@ const GuildUpgradeRow: FC<GuildUpgradeRowProps> = memo(({
         )}
         <button
           className={`${styles.upgradeBuyButton} ${!canAfford || isMaxed ? styles.upgradeBuyButtonDisabled : ''}`}
-          onClick={onPurchase}
+          onClick={() => onPurchase(upgrade.id)}
           disabled={!canAfford || isMaxed || !canPurchase}
           style={{ 
             backgroundColor: canAfford && !isMaxed && canPurchase ? guildColors.primary : undefined 
@@ -475,7 +493,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 sigils={sigils}
                 guildTokens={guildState.guildTokens}
                 guildColors={guild.colors}
-                onPurchase={() => onPurchaseUpgrade(upgrade.id)}
+                onPurchase={onPurchaseUpgrade}
                 canPurchase={true}
                 formatNumber={formatNumber}
               />
@@ -490,9 +508,52 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
 CommittedGuildPanel.displayName = 'CommittedGuildPanel';
 
 /**
+ * Modal shell for the guild dialogs: Escape and backdrop clicks close it,
+ * and Tab keeps focus inside it
+ */
+interface GuildDialogProps {
+  /** Take focus and answer Escape; false while the tab is hidden */
+  active: boolean;
+  overlayClassName: string;
+  dialogClassName: string;
+  /** id of the heading that names the dialog */
+  labelledBy: string;
+  onClose: () => void;
+  children: ReactNode;
+}
+
+const GuildDialog: FC<GuildDialogProps> = ({
+  active,
+  overlayClassName,
+  dialogClassName,
+  labelledBy,
+  onClose,
+  children
+}) => {
+  const { containerRef, handleTabKey } = useFocusTrap(active, onClose);
+
+  return (
+    <div className={overlayClassName} onClick={onClose}>
+      <div
+        ref={containerRef}
+        className={dialogClassName}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={handleTabKey}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/**
  * Main GuildsTab Component
  */
 const GuildsTab: FC<GuildsTabProps> = memo(({
+  isActive = true,
   farmTier,
   guildState,
   money,
@@ -507,41 +568,39 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
   const [selectedGuild, setSelectedGuild] = useState<GuildType | null>(null);
   const [showCommitConfirm, setShowCommitConfirm] = useState(false);
   const [showIntroOverlay, setShowIntroOverlay] = useState(!introShown);
-  
+  const introTitleId = useId();
+  const confirmTitleId = useId();
+
+  // Stable handlers keep the memoized guild cards from re-rendering on every tick
+  const openCommitConfirm = useCallback(() => setShowCommitConfirm(true), []);
+  const closeCommitConfirm = useCallback(() => setShowCommitConfirm(false), []);
+
+  // Handler to dismiss intro overlay
+  const handleDismissIntro = useCallback(() => {
+    setShowIntroOverlay(false);
+    onDismissIntro();
+  }, [onDismissIntro]);
+
   const isUnlocked = farmTier >= GUILDS_UNLOCK_TIER;
   const isCommitted = guildState.status === 'committed' && guildState.committedGuild !== null;
-  
+
   // Unlock message for locked state
   if (!isUnlocked) {
     const mainContent = (
-      <div className={styles.unlockMessage}>
-        <div className={styles.unlockCard}>
-          <h2 className={styles.unlockTitle}>
-            🏛️ Guilds System Locked 🏛️
-          </h2>
-          <p className={styles.unlockDescription}>
-            The Guilds System becomes available when you reach <strong>Farm Tier {GUILDS_UNLOCK_TIER}</strong>.
-          </p>
-          <p className={styles.unlockDetails}>
-            <strong>Current Tier:</strong> {farmTier}
-          </p>
-          <p className={styles.unlockDetails}>
-            <strong>Required Tier:</strong> {GUILDS_UNLOCK_TIER}
-          </p>
-          <div className={styles.unlockFeatures}>
-            <h3>What Guilds Offer:</h3>
-            <ul>
-              <li>🌱 <strong>Growers Guild:</strong> Enhanced crop growth and manual harvest bonuses</li>
-              <li>🥫 <strong>Preservers Guild:</strong> Superior canning and preservation abilities</li>
-              <li>⚙️ <strong>Engineers Guild:</strong> Advanced automation and efficiency</li>
-              <li>💰 <strong>Merchants Guild:</strong> Better trading and profit margins</li>
-            </ul>
-          </div>
-          <p className={styles.unlockHint}>
-            Keep expanding your farm to unlock this feature!
-          </p>
-        </div>
-      </div>
+      <LockedFeatureCard
+        theme="dark"
+        icon="🏛️"
+        featureName="Guilds System"
+        currentTier={farmTier}
+        requiredTier={GUILDS_UNLOCK_TIER}
+        featuresTitle="What Guilds Offer:"
+        hint="Keep expanding your farm to unlock this feature!"
+      >
+        <li>🌱 <strong>Growers Guild:</strong> Enhanced crop growth and manual harvest bonuses</li>
+        <li>🥫 <strong>Preservers Guild:</strong> Superior canning and preservation abilities</li>
+        <li>⚙️ <strong>Engineers Guild:</strong> Advanced automation and efficiency</li>
+        <li>💰 <strong>Merchants Guild:</strong> Better trading and profit margins</li>
+      </LockedFeatureCard>
     );
     
     return (
@@ -604,31 +663,31 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
     );
   }
   
-  // Handler to dismiss intro overlay
-  const handleDismissIntro = () => {
-    setShowIntroOverlay(false);
-    onDismissIntro();
-  };
-
   // Uncommitted state - show guild selection
+  const selectedGuildData = selectedGuild ? GUILDS.find(g => g.id === selectedGuild) : undefined;
+
   const mainContent = (
     <div className={styles.selectionContainer}>
       {/* First-time intro overlay */}
       {showIntroOverlay && (
-        <div className={styles.introOverlay} onClick={handleDismissIntro}>
-          <div className={styles.introDialog} onClick={e => e.stopPropagation()}>
-            <h2 className={styles.introTitle}>Choose Your Path</h2>
-            <p className={styles.introDescription}>
-              Sample upgrades from different guilds, then commit to one for exclusive benefits.
-            </p>
-            <p className={styles.introWarning}>
-              <strong>⚠️ Warning:</strong> Once committed, you cannot change guilds or access other guild upgrades!
-            </p>
-            <button className={styles.introButton} onClick={handleDismissIntro}>
-              I Understand
-            </button>
-          </div>
-        </div>
+        <GuildDialog
+          active={isActive}
+          overlayClassName={styles.introOverlay}
+          dialogClassName={styles.introDialog}
+          labelledBy={introTitleId}
+          onClose={handleDismissIntro}
+        >
+          <h2 id={introTitleId} className={styles.introTitle}>Choose Your Path</h2>
+          <p className={styles.introDescription}>
+            Sample upgrades from different guilds, then commit to one for exclusive benefits.
+          </p>
+          <p className={styles.introWarning}>
+            <strong>⚠️ Warning:</strong> Once committed, you cannot change guilds or access other guild upgrades!
+          </p>
+          <button type="button" className={styles.introButton} onClick={handleDismissIntro}>
+            I Understand
+          </button>
+        </GuildDialog>
       )}
       
       <div className={styles.guildGrid}>
@@ -639,8 +698,8 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
             isSelected={selectedGuild === guild.id}
             sampledCount={guildState.sampledUpgrades[guild.id]?.length ?? 0}
             maxSamples={MAX_SAMPLED_UPGRADES_PER_GUILD}
-            onSelect={() => setSelectedGuild(guild.id)}
-            onCommit={() => setShowCommitConfirm(true)}
+            onSelect={setSelectedGuild}
+            onCommit={openCommitConfirm}
             canCommit={(guildState.sampledUpgrades[guild.id]?.length ?? 0) > 0}
           />
         ))}
@@ -695,7 +754,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
                   sigils={guildState.guildCurrencies[selectedGuild] ?? 0}
                   guildTokens={guildState.guildTokens}
                   guildColors={guild.colors}
-                  onPurchase={() => onPurchaseUpgrade(upgrade.id)}
+                  onPurchase={onPurchaseUpgrade}
                   canPurchase={canSample}
                   formatNumber={formatNumber}
                 />
@@ -706,41 +765,47 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
       )}
       
       {/* Commitment Confirmation Dialog */}
-      {showCommitConfirm && selectedGuild && (
-        <div className={styles.confirmOverlay} onClick={() => setShowCommitConfirm(false)}>
-          <div className={styles.confirmDialog} onClick={e => e.stopPropagation()}>
-            <h3>Commit to {GUILDS.find(g => g.id === selectedGuild)?.displayName}?</h3>
-            <p className={styles.confirmWarning}>
-              ⚠️ This action is <strong>permanent</strong>! You will:
-            </p>
-            <ul className={styles.confirmList}>
-              <li>Gain access to exclusive guild upgrades</li>
-              <li>Receive guild-specific passive bonuses</li>
-              <li>Lose access to other guild upgrades</li>
-              <li>Accept guild trade-offs and penalties</li>
-            </ul>
-            <div className={styles.confirmButtons}>
-              <button 
-                className={styles.confirmCancel}
-                onClick={() => setShowCommitConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className={styles.confirmCommit}
-                style={{ 
-                  backgroundColor: GUILDS.find(g => g.id === selectedGuild)?.colors.primary 
-                }}
-                onClick={() => {
-                  onCommitToGuild(selectedGuild);
-                  setShowCommitConfirm(false);
-                }}
-              >
-                Commit Forever
-              </button>
-            </div>
+      {showCommitConfirm && selectedGuildData && (
+        <GuildDialog
+          active={isActive}
+          overlayClassName={styles.confirmOverlay}
+          dialogClassName={styles.confirmDialog}
+          labelledBy={confirmTitleId}
+          onClose={closeCommitConfirm}
+        >
+          <h3 id={confirmTitleId}>Commit to {selectedGuildData.displayName}?</h3>
+          <p className={styles.confirmWarning}>
+            ⚠️ This action is <strong>permanent</strong>! You will:
+          </p>
+          <ul className={styles.confirmList}>
+            <li>Gain access to exclusive guild upgrades</li>
+            <li>Receive guild-specific passive bonuses</li>
+            <li>Lose access to other guild upgrades</li>
+            <li>Accept guild trade-offs and penalties</li>
+          </ul>
+          <div className={styles.confirmButtons}>
+            <button
+              type="button"
+              className={styles.confirmCancel}
+              onClick={closeCommitConfirm}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={styles.confirmCommit}
+              style={{
+                backgroundColor: selectedGuildData.colors.primary
+              }}
+              onClick={() => {
+                onCommitToGuild(selectedGuildData.id);
+                setShowCommitConfirm(false);
+              }}
+            >
+              Commit Forever
+            </button>
           </div>
-        </div>
+        </GuildDialog>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import InlineIcon from './InlineIcon';
 import { memo, type FC } from 'react';
 import type { Achievement } from '../types/achievements';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -56,7 +57,7 @@ const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
         <div className={styles.header}>
           <div className={styles.titleContainer}>
             <h2 id="achievements-modal-title" className={styles.title}>
-              <img src={ICON_TROPHY} alt="" style={{ width: '24px', height: '24px', verticalAlign: 'middle', marginRight: '6px' }} />
+              <InlineIcon src={ICON_TROPHY} size={24} gap={6} />
               Achievements
             </h2>
             <p className={styles.stats} aria-live="polite">

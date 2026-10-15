@@ -1,5 +1,5 @@
 import { useEffect, memo, type FC } from 'react';
-import './Toast.css';
+import styles from './Toast.module.css';
 
 interface ToastProps {
   message: string;
@@ -29,17 +29,17 @@ const Toast: FC<ToastProps> = memo(({
   if (!visible) return null;
   
   return (
-    <div className={`toast toast-${type} ${visible ? 'show' : ''}`} onClick={onClose}>
-      <div className="toast-content">
-        <span className="toast-icon">
+    <div className={`${styles.toast} ${styles[type]} ${styles.show}`} onClick={onClose}>
+      <div className={styles.content}>
+        <span className={styles.icon}>
           {type === 'success' && '✓'}
           {type === 'error' && '✗'}
           {type === 'info' && 'ℹ️'}
         </span>
-        <span className="toast-message">{message}</span>
+        <span className={styles.message}>{message}</span>
       </div>
-      <div className="toast-progress">
-        <div className="toast-progress-bar" style={{ animationDuration: `${duration}ms` }} />
+      <div className={styles.progress}>
+        <div className={styles.progressBar} style={{ animationDuration: `${duration}ms` }} />
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ import type { CraftingRecipe, CraftingMaterials, TreeType, DecorationType, Event
 import { CRAFTING_RECIPES } from '../data/christmasEventData';
 import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR } from '../config/assetPaths';
 import BaseTab from './BaseTab';
-import WorkshopUpgradesPanel from './WorkshopUpgradesPanel';
+import EventUpgradesPanel from './EventUpgradesPanel';
 import styles from './WorkshopTab.module.css';
 
 /**
@@ -365,7 +365,9 @@ const WorkshopTab: FC<WorkshopTabProps> = ({
       
       {/* Right Column: Upgrades */}
       <div className={styles.rightColumn}>
-        <WorkshopUpgradesPanel
+        <EventUpgradesPanel
+          title="Workshop Upgrades"
+          category="workshop"
           upgrades={upgrades}
           holidayCheer={holidayCheer}
           purchaseUpgrade={purchaseUpgrade}

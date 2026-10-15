@@ -9,6 +9,7 @@ import { useFeatureFlag } from './context/FeatureFlagsContext';
 
 // Tab components - loaded eagerly to avoid per-tab loading delays
 import GrowingTab from './components/GrowingTab';
+import GlobalUpgradesPanel from './components/GlobalUpgradesPanel';
 import CanningTab from './components/CanningTab';
 import BeesTab from './components/BeesTab';
 import TreeFarmTab from './components/TreeFarmTab';
@@ -92,17 +93,7 @@ import type { Veggie, GameState, EventCategory, EventPriority } from './types/ga
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
-import {
-  MERCHANT_DAYS,
-  MERCHANT_COST,
-  MERCHANT_KN_COST,
-  GREENHOUSE_COST_PER_PLOT,
-  GREENHOUSE_KN_COST_PER_PLOT,
-  HEIRLOOM_COST_PER_VEGGIE,
-  HEIRLOOM_KN_PER_VEGGIE,
-  veggieSeasonBonuses,
-  GROWTH_COMPLETE_THRESHOLD
-} from './config/gameConstants';
+import { BEE_CONSTANTS, GROWTH_COMPLETE_THRESHOLD } from './config/gameConstants';
 import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
@@ -1829,7 +1820,7 @@ function App() {
                 aria-selected={activeTab === 'bees'}
                 aria-controls="panel-bees"
                 aria-disabled={farmTier < 4}
-                onClick={() => farmTier >= 4 ? setActiveTab('bees') : null}
+                onClick={() => farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER ? setActiveTab('bees') : null}
                 disabled={farmTier < 4}
                 className={
                   farmTier < 4
@@ -1838,10 +1829,10 @@ function App() {
                       ? styles.tabButtonBeesActive
                       : styles.tabButtonBees
                 }
-                title={farmTier >= 4 ? 'Bee System' : `Bees unlock at Farm Tier 4`}
+                title={farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER ? 'Bee System' : `Bees unlock at Farm Tier ${BEE_CONSTANTS.UNLOCK_FARM_TIER}`}
               >
                 <div className={styles.tabButtonContent}>
-                  <img src={ICON_BEE} alt="" aria-hidden="true" className={farmTier >= 4 ? styles.tabIcon : styles.tabIconFaded} />
+                  <img src={ICON_BEE} alt="" aria-hidden="true" className={farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER ? styles.tabIcon : styles.tabIconFaded} />
                   Bees
                 </div>
                 {farmTier < 4 && (
@@ -1946,32 +1937,9 @@ function App() {
                 money={money}
                 knowledge={knowledge}
                 experience={experience}
-                day={day}
                 globalAutoPurchaseTimer={globalAutoPurchaseTimer}
-                autoSellOwned={autoSellOwned}
-                season={season}
-                currentWeather={currentWeather}
-                greenhouseOwned={greenhouseOwned}
-                irrigationOwned={irrigationOwned}
                 heirloomOwned={heirloomOwned}
-                almanacLevel={almanacLevel}
-                almanacCost={almanacCost}
-                irrigationCost={irrigationCost}
-                irrigationKnCost={irrigationKnCost}
-                heirloomMoneyCost={heirloomMoneyCost}
-                heirloomKnowledgeCost={heirloomKnowledgeCost}
-                highestUnlockedVeggie={highestUnlockedVeggie}
-                farmTier={farmTier}
                 beeYieldBonus={beeYieldBonus}
-                MERCHANT_DAYS={MERCHANT_DAYS}
-                MERCHANT_COST={MERCHANT_COST}
-                MERCHANT_KN_COST={MERCHANT_KN_COST}
-                GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
-                GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
-                HEIRLOOM_COST_PER_VEGGIE={HEIRLOOM_COST_PER_VEGGIE}
-                HEIRLOOM_KN_PER_VEGGIE={HEIRLOOM_KN_PER_VEGGIE}
-                initialVeggies={initialVeggies}
-                veggieSeasonBonuses={veggieSeasonBonuses}
                 daysToGrow={daysToGrow}
                 growthMultiplier={growthMultiplier}
                 setActiveVeggie={setActiveVeggie}
@@ -1986,13 +1954,33 @@ function App() {
                 handleBuyAdditionalPlot={handleBuyAdditionalPlot}
                 handleBuyHarvesterSpeed={handleBuyHarvesterSpeed}
                 handleBuyAutoPurchaser={handleBuyAutoPurchaser}
-                handleBuyAlmanac={handleBuyAlmanac}
-                handleBuyIrrigation={handleBuyIrrigation}
-                handleBuyAutoSell={handleBuyAutoSell}
-                handleBuyGreenhouse={handleBuyGreenhouse}
-                handleBuyHeirloom={handleBuyHeirloom}
                 formatNumber={formatNumber}
                 guildState={guildState}
+                upgradesSidebar={
+                  <GlobalUpgradesPanel
+                    money={money}
+                    knowledge={knowledge}
+                    day={day}
+                    maxPlots={maxPlots}
+                    highestUnlockedVeggie={highestUnlockedVeggie}
+                    almanacLevel={almanacLevel}
+                    almanacCost={almanacCost}
+                    irrigationOwned={irrigationOwned}
+                    irrigationCost={irrigationCost}
+                    irrigationKnCost={irrigationKnCost}
+                    autoSellOwned={autoSellOwned}
+                    greenhouseOwned={greenhouseOwned}
+                    heirloomOwned={heirloomOwned}
+                    heirloomMoneyCost={heirloomMoneyCost}
+                    heirloomKnowledgeCost={heirloomKnowledgeCost}
+                    handleBuyAlmanac={handleBuyAlmanac}
+                    handleBuyIrrigation={handleBuyIrrigation}
+                    handleBuyAutoSell={handleBuyAutoSell}
+                    handleBuyGreenhouse={handleBuyGreenhouse}
+                    handleBuyHeirloom={handleBuyHeirloom}
+                    formatNumber={formatNumber}
+                  />
+                }
               />
             </PerformanceWrapper>
             </div>
@@ -2053,6 +2041,7 @@ function App() {
       >
         <PerformanceWrapper id="GuildsTab">
           <GuildsTab
+            isActive={activeTab === 'guilds'}
             farmTier={farmTier}
             guildState={guildState}
             money={money}
@@ -2201,7 +2190,6 @@ function App() {
               demandMultiplier={christmasEvent.eventState.marketDemand.demandMultiplier}
               holidayCheer={christmasEvent.holidayCheer}
               upgrades={christmasEvent.eventState.upgrades}
-              passiveCheerPerSecond={christmasEvent.eventState.passiveCheerPerSecond}
               formatNumber={formatNumber}
               purchaseUpgrade={christmasEvent.purchaseUpgrade}
             />
@@ -2255,8 +2243,6 @@ function App() {
       <InfoOverlay
         visible={showInfoOverlay}
         onClose={() => setShowInfoOverlay(false)}
-        GREENHOUSE_COST_PER_PLOT={GREENHOUSE_COST_PER_PLOT}
-        GREENHOUSE_KN_COST_PER_PLOT={GREENHOUSE_KN_COST_PER_PLOT}
       />
     </ErrorBoundary>
     

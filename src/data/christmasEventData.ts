@@ -8,7 +8,6 @@
 import { DECORATION_GARLAND, DECORATION_WREATH, ICON_ELVES_BENCH, ICON_EVERGREEN_ESSENCE, ICON_FERTILIZED_SOIL, ICON_FIREPLACE, ICON_GREENHOUSE_EXTENSION, ICON_AXE, ICON_HOLIDAY_BELL, ICON_HOLIDAY_REGISTER, ICON_ORNAMENT_WORKBENCH, ICON_STAR_FORGE, ICON_TRADITIONAL_ORNAMENT, TREE_FIR, TREE_PINE, TREE_SAPLING, TREE_SPRUCE, ICON_CHEERFUL_CRAFTING } from '../config/assetPaths';
 import type {
   TreeQuality,
-  DecorationType,
   CraftingRecipe,
   EventUpgrade,
   EventMilestone,
@@ -55,7 +54,7 @@ export const TREE_DEFINITIONS = {
       pinecones: 8,
       branches: 6,
     },
-    baseValue: 25,
+    baseValue: 20,
     unlockCost: 1250,
   },
 } as const;
@@ -70,12 +69,16 @@ export const QUALITY_MULTIPLIERS: Record<TreeQuality, number> = {
 };
 
 /**
- * Decoration value bonuses (additive)
- * Note: Garland removed - now sold as standalone item
+ * Sale value multipliers by decoration, keyed by the last part of a tree
+ * inventory key (treeType_quality_decoration). Luxury trees carry both
+ * ornaments and candles.
  */
-export const DECORATION_BONUSES: Record<DecorationType, number> = {
-  ornament: 0.05,  // +5% value
-  candle: 0.15,    // +15% value
+export const DECORATION_MULTIPLIERS: Record<string, number> = {
+  plain: 1.0,
+  ornamented: 1.05, // +5% value
+  candled: 1.15,    // +15% value
+  luxury: 3.0,      // triple value
+  garlanded: 1.1,   // older saves only; garland is now sold on its own
 };
 
 // ============================================================================
@@ -296,6 +299,8 @@ export const WORKSHOP_UPGRADES: EventUpgrade[] = [
     cost: 500,
     owned: false,
     effect: '+1 item crafted per second',
+    requires: 'elves_bench',
+    hiddenUntilRequired: true,
     repeatable: true,
     level: 0,
     maxLevel: 20,
@@ -337,6 +342,7 @@ export const SHOPFRONT_UPGRADES: EventUpgrade[] = [
     cost: 1800,
     owned: false,
     effect: 'Passive Holiday Cheer income',
+    requires: 'wreath_sign',
     passiveIncome: 0.1, // 1 Cheer per 10 seconds
   },
   {
@@ -348,6 +354,7 @@ export const SHOPFRONT_UPGRADES: EventUpgrade[] = [
     cost: 2500,
     owned: false,
     effect: 'Random holiday tips from customers',
+    requires: 'golden_bell_counter',
   },
   {
     id: 'fireplace_display',
@@ -358,6 +365,7 @@ export const SHOPFRONT_UPGRADES: EventUpgrade[] = [
     cost: 3500,
     owned: false,
     effect: '+50% sale value for Luxury Trees',
+    requires: 'golden_bell_counter',
     valueBonus: 0.50,
   },
 ];

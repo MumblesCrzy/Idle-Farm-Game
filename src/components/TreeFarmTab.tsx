@@ -5,10 +5,10 @@
  * Displays tree plots, seed selector, growth progress, and harvest controls.
  */
 
-import { memo, useState, useEffect, type FC } from 'react';
+import { memo, useCallback, useState, useEffect, type FC } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
-import FarmingUpgradesPanel from './FarmingUpgradesPanel';
+import EventUpgradesPanel from './EventUpgradesPanel';
 import type { TreePlot, TreeType, CraftingMaterials, TreeInventory } from '../types/christmasEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 import { TREE_DEFINITIONS } from '../data/christmasEventData';
@@ -64,8 +64,8 @@ interface TreeSelectorProps {
   unlocked: boolean;
   cost: number;
   holidayCheer: number;
-  onSelect: () => void;
-  onUnlock?: () => void;
+  onSelect: (treeType: TreeType) => void;
+  onUnlock?: (treeType: TreeType) => void;
 }
 
 const TreeSelector: FC<TreeSelectorProps> = memo(({ 
@@ -84,11 +84,11 @@ const TreeSelector: FC<TreeSelectorProps> = memo(({
     if (!unlocked && onUnlock) {
       // Try to unlock the tree
       if (canAfford) {
-        onUnlock();
+        onUnlock(treeType);
       }
     } else if (unlocked) {
       // Select the tree type
-      onSelect();
+      onSelect(treeType);
     }
   };
   
@@ -128,14 +128,16 @@ interface TreePlotDisplayProps {
   plot: TreePlot;
   selectedTreeType: TreeType | null;
   upgrades: EventUpgrade[];
-  onPlant: () => void;
-  onHarvest: () => void;
+  index: number;
+  onPlant: (index: number) => void;
+  onHarvest: (index: number) => void;
 }
 
 const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
   plot,
   selectedTreeType,
   upgrades,
+  index,
   onPlant,
   onHarvest
 }) => {
@@ -173,7 +175,7 @@ const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
             </div>
             <button
               className={styles.plantButton}
-              onClick={onPlant}
+              onClick={() => onPlant(index)}
               disabled={!canPlant}
               title={canPlant ? `Plant ${TREE_DEFINITIONS[selectedTreeType!].displayName}` : 'Select a tree type'}
             >
@@ -210,7 +212,7 @@ const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
             ) : (
               <button
                 className={styles.harvestButton}
-                onClick={onHarvest}
+                onClick={() => onHarvest(index)}
                 title={`Harvest ${definition?.displayName}`}
               >
                 <img src={ICON_AXE} alt="" className={styles.harvestIcon} />
@@ -345,6 +347,17 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
   const emptyPlotsCount = treePlots.filter(p => p.treeType === null).length;
   const hasEmptyPlots = emptyPlotsCount > 0 && selectedTreeType !== null;
   
+  // Unlocking a tree type also selects it
+  const unlockTree = useCallback((treeType: TreeType) => {
+    if (purchaseUpgrade(`unlock_${treeType}`)) {
+      setSelectedTreeType(treeType);
+    }
+  }, [purchaseUpgrade]);
+
+  const plantPlot = useCallback((index: number) => {
+    if (selectedTreeType) plantTree(index, selectedTreeType);
+  }, [plantTree, selectedTreeType]);
+
   // Plant All function
   const handlePlantAll = () => {
     if (!selectedTreeType) return;
@@ -435,8 +448,8 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
                   unlocked={pineUnlocked}
                   cost={TREE_DEFINITIONS.pine.unlockCost}
                   holidayCheer={holidayCheer}
-                  onSelect={() => setSelectedTreeType('pine')}
-                  onUnlock={() => purchaseUpgrade('unlock_pine')}
+                  onSelect={setSelectedTreeType}
+                  onUnlock={unlockTree}
                 />
                 <TreeSelector
                   treeType="spruce"
@@ -444,12 +457,8 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
                   unlocked={spruceUnlocked}
                   cost={TREE_DEFINITIONS.spruce.unlockCost}
                   holidayCheer={holidayCheer}
-                  onSelect={() => setSelectedTreeType('spruce')}
-                  onUnlock={() => {
-                    if (purchaseUpgrade('unlock_spruce')) {
-                      setSelectedTreeType('spruce');
-                    }
-                  }}
+                  onSelect={setSelectedTreeType}
+                  onUnlock={unlockTree}
                 />
                 <TreeSelector
                   treeType="fir"
@@ -457,12 +466,8 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
                   unlocked={firUnlocked}
                   cost={TREE_DEFINITIONS.fir.unlockCost}
                   holidayCheer={holidayCheer}
-                  onSelect={() => setSelectedTreeType('fir')}
-                  onUnlock={() => {
-                    if (purchaseUpgrade('unlock_fir')) {
-                      setSelectedTreeType('fir');
-                    }
-                  }}
+                  onSelect={setSelectedTreeType}
+                  onUnlock={unlockTree}
                 />
               </div>
             </div>
@@ -476,8 +481,9 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
                 plot={plot}
                 selectedTreeType={selectedTreeType}
                 upgrades={upgrades}
-                onPlant={() => selectedTreeType && plantTree(index, selectedTreeType)}
-                onHarvest={() => harvestTree(index)}
+                index={index}
+                onPlant={plantPlot}
+                onHarvest={harvestTree}
               />
             ))}
           </div>
@@ -485,7 +491,9 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
         
         {/* Right Column: Upgrades */}
         <div className={styles.rightColumn}>
-          <FarmingUpgradesPanel
+          <EventUpgradesPanel
+            title="Farming Upgrades"
+            category="farming"
             upgrades={upgrades}
             holidayCheer={holidayCheer}
             purchaseUpgrade={purchaseUpgrade}

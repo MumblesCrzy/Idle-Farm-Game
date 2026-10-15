@@ -1,3 +1,4 @@
+import InlineIcon from './InlineIcon';
 import { memo, type FC } from 'react';
 import ProgressBar from './ProgressBar';
 import type { BeeBox } from '../types/bees';
@@ -46,7 +47,7 @@ const BeeBoxDisplay: FC<BeeBoxDisplayProps> = memo(({
       <div className={styles.progressSection}>
         <div className={styles.progressLabel}>
           {box.harvestReady ? (
-            <span className={styles.readyText}><img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Honey Ready!</span>
+            <span className={styles.readyText}><InlineIcon src={ICON_HONEY} alt="Honey" size={16} /> Honey Ready!</span>
           ) : (
             <span className={styles.timerText}>Days until harvest: </span>
           )}

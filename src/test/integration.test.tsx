@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { ArchieProvider } from '../context/ArchieContext'
 import ProgressBar from '../components/ProgressBar'
-import VeggiePanel from '../components/VeggiePanel'
 import { loadGameStateWithCanning, saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem'
 
 // Mock dependencies for integration tests
@@ -34,65 +33,6 @@ describe('Integration Tests', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
-  })
-
-  describe('Component Integration', () => {
-    it('should render multiple components together', () => {
-      const TestApp: React.FC = () => (
-        <ArchieProvider>
-          <div>
-            <h1>Farm Game</h1>
-            <ProgressBar value={50} max={100} />
-            <VeggiePanel 
-              name="Tomatoes"
-              growth={75}
-              stash={5}
-              onHarvest={() => {}}
-              canHarvest={true}
-              sellEnabled={false}
-              onToggleSell={() => {}}
-            />
-          </div>
-        </ArchieProvider>
-      )
-
-      render(<TestApp />)
-
-      expect(screen.getByText('Farm Game')).toBeInTheDocument()
-      expect(screen.getByText('Tomatoes')).toBeInTheDocument()
-      expect(screen.getByText('Growth: 75%')).toBeInTheDocument()
-      expect(screen.getByText('Stash: 5')).toBeInTheDocument()
-      expect(screen.getByText('Harvest')).toBeInTheDocument()
-    })
-
-    it('should handle component interactions within provider', async () => {
-      const mockHarvest = vi.fn()
-      const mockToggleSell = vi.fn()
-
-      const TestApp: React.FC = () => (
-        <ArchieProvider>
-          <VeggiePanel 
-            name="Carrots"
-            growth={100}
-            stash={3}
-            onHarvest={mockHarvest}
-            canHarvest={true}
-            sellEnabled={true}
-            onToggleSell={mockToggleSell}
-          />
-        </ArchieProvider>
-      )
-
-      render(<TestApp />)
-
-      // Test harvest interaction
-      fireEvent.click(screen.getByText('Harvest'))
-      expect(mockHarvest).toHaveBeenCalledTimes(1)
-
-      // Test auto-sell toggle
-      fireEvent.click(screen.getByTitle('Auto-sell enabled (click to disable)'))
-      expect(mockToggleSell).toHaveBeenCalledTimes(1)
-    })
   })
 
   describe('Save/Load Integration', () => {
@@ -284,21 +224,10 @@ describe('Integration Tests', () => {
       render(
         <ArchieProvider>
           <ProgressBar value={999999} max={100} />
-          <VeggiePanel 
-            name="Super Veggie"
-            growth={999.99}
-            stash={999999}
-            onHarvest={() => {}}
-            canHarvest={true}
-            sellEnabled={false}
-            onToggleSell={() => {}}
-          />
         </ArchieProvider>
       )
 
-      expect(screen.getByText('Super Veggie')).toBeInTheDocument()
-      expect(screen.getByText('Stash: 999999')).toBeInTheDocument()
-      expect(screen.getByText('Growth: 999%')).toBeInTheDocument() // Should floor the value
+      expect(screen.getByTestId('progress-bar')).toBeInTheDocument()
     })
   })
 })

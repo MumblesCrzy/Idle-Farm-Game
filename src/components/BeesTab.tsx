@@ -3,9 +3,15 @@ import BaseTab from './BaseTab';
 import BeeBoxDisplay from './BeeBoxDisplay';
 import BeeBoxPurchase from './BeeBoxPurchase';
 import BeeUpgradesPanel from './BeeUpgradesPanel';
+import InlineIcon from './InlineIcon';
+import LockedFeatureCard from './LockedFeatureCard';
 import type { BeeContextValue } from '../types/bees';
 import { ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, BEE_BEEKEEPER } from '../config/assetPaths';
+import { BEE_CONSTANTS } from '../config/gameConstants';
 import styles from './BeesTab.module.css';
+
+/** Farm tier that unlocks the bee system, the same one BeeContext checks */
+const BEES_UNLOCK_TIER = BEE_CONSTANTS.UNLOCK_FARM_TIER;
 
 interface BeesTabProps {
   beeContext: BeeContextValue | null;
@@ -23,41 +29,27 @@ const BeesTab: FC<BeesTabProps> = memo(({
   // Hooks must run before the early returns below so the hook order never changes
   const [activeUpgradeTab, setActiveUpgradeTab] = useState<'honey' | 'golden'>('honey');
 
-  // Check if bees are unlocked (Tier 3+)
-  const isUnlocked = farmTier >= 3;
+  // Check if bees are unlocked
+  const isUnlocked = farmTier >= BEES_UNLOCK_TIER;
 
   // If not unlocked, show unlock message
   if (!isUnlocked) {
     const mainContent = (
-      <div className={styles.unlockMessage}>
-        <div className={styles.unlockCard}>
-          <h2 className={styles.unlockTitle}>
-            <img src={ICON_BEE} alt="Bee" style={{ width: '24px', height: '24px', verticalAlign: 'middle' }} /> Bee System Locked <img src={ICON_BEE} alt="Bee" style={{ width: '24px', height: '24px', verticalAlign: 'middle' }} />
-          </h2>
-          <p className={styles.unlockDescription}>
-            The Bee System becomes available when you reach <strong>Farm Tier 3</strong>.
-          </p>
-          <p className={styles.unlockDetails}>
-            <strong>Current Tier:</strong> {farmTier}
-          </p>
-          <p className={styles.unlockDetails}>
-            <strong>Required Tier:</strong> 3
-          </p>
-          <div className={styles.unlockFeatures}>
-            <h3>What Bees Offer:</h3>
-            <ul>
-              <li><img src={ICON_HONEY} alt="Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Produce Honey every 6 months (182 seconds)</li>
-              <li>📈 Boost crop yields (+0.5% per bee box)</li>
-              <li>🥫 Unlock unique honey-based canning recipes</li>
-              <li><img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Chance to produce rare Golden Honey</li>
-              <li><img src={BEE_BEEKEEPER} alt="Beekeeper Assistant" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} /> Automate with the Beekeeper Assistant</li>
-            </ul>
-          </div>
-          <p className={styles.unlockHint}>
-            Keep farming and expanding to unlock this feature!
-          </p>
-        </div>
-      </div>
+      <LockedFeatureCard
+        theme="honey"
+        icon={<InlineIcon src={ICON_BEE} alt="Bee" size={24} />}
+        featureName="Bee System"
+        currentTier={farmTier}
+        requiredTier={BEES_UNLOCK_TIER}
+        featuresTitle="What Bees Offer:"
+        hint="Keep farming and expanding to unlock this feature!"
+      >
+        <li><InlineIcon src={ICON_HONEY} alt="Honey" /> Produce Honey every 6 months (182 seconds)</li>
+        <li>📈 Boost crop yields (+0.5% per bee box)</li>
+        <li>🥫 Unlock unique honey-based canning recipes</li>
+        <li><InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" /> Chance to produce rare Golden Honey</li>
+        <li><InlineIcon src={BEE_BEEKEEPER} alt="Beekeeper Assistant" /> Automate with the Beekeeper Assistant</li>
+      </LockedFeatureCard>
     );
 
     return (
@@ -124,7 +116,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
         {/* Regular Honey */}
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
-            <img src={ICON_HONEY} alt="Honey" style={{ width: '32px', height: '32px' }} />
+            <img src={ICON_HONEY} alt="Honey" className={styles.statIconImage} />
           </div>
           <div className={styles.statContent}>
             <div className={styles.statLabel}>Honey</div>
@@ -140,7 +132,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
         {/* Golden Honey */}
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
-            <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '32px', height: '32px' }} />
+            <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" className={styles.statIconImage} />
           </div>
           <div className={styles.statContent}>
             <div className={styles.statLabel}>Golden Honey</div>
@@ -231,7 +223,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
             onClick={() => beeContext.harvestAllHoney()}
           >
             <span className={styles.harvestAllIcon}>
-              <img src={ICON_HONEY} alt="Honey" style={{ width: '20px', height: '20px', verticalAlign: 'middle' }} />
+              <InlineIcon src={ICON_HONEY} alt="Honey" size={20} />
             </span>
             Harvest All ({readyToHarvest})
           </button>
@@ -270,7 +262,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
             fontSize: '0.95rem'
           }}
         >
-          <img src={ICON_HONEY} alt="Honey" style={{ width: '18px', height: '18px' }} /> Honey
+          <InlineIcon src={ICON_HONEY} alt="Honey" size={18} /> Honey
         </button>
         <button
           onClick={() => setActiveUpgradeTab('golden')}
@@ -294,7 +286,7 @@ const BeesTab: FC<BeesTabProps> = memo(({
             fontSize: '0.95rem'
           }}
         >
-          <img src={ICON_GOLDEN_HONEY} alt="Golden Honey" style={{ width: '18px', height: '18px' }} /> Golden
+          <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={18} /> Golden
         </button>
       </div>
 

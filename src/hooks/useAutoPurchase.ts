@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Veggie } from '../types/game';
 import { canMakePurchase } from '../utils/gameCalculations';
+import { AUTO_PURCHASER_CYCLE_DAYS } from '../config/gameConstants';
 
 interface AutoPurchaseHandlers {
   handleBuyFertilizer: (veggieIndex: number) => void;
@@ -22,7 +23,7 @@ interface AutoPurchaseParams {
 
 /**
  * Custom hook for managing automatic purchase system.
- * Processes auto-purchasers every 7 days for enabled veggies.
+ * Processes auto-purchasers every AUTO_PURCHASER_CYCLE_DAYS days for enabled veggies.
  * 
  * @param params - Configuration and dependencies for auto-purchase system
  * @returns globalAutoPurchaseTimer - Current timer value (0-6 days)
@@ -39,9 +40,9 @@ export const useAutoPurchase = ({
 }: AutoPurchaseParams) => {
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(initialTimer);
 
-  // Process auto-purchases when timer reaches 7 days
+  // Process auto-purchases when the timer completes a cycle
   useEffect(() => {
-    if (globalAutoPurchaseTimer >= 7) {
+    if (globalAutoPurchaseTimer >= AUTO_PURCHASER_CYCLE_DAYS) {
       setGlobalAutoPurchaseTimer(0);
 
       veggies.forEach((v, veggieIndex) => {

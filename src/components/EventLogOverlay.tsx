@@ -5,6 +5,7 @@
  * Semi-transparent to allow interaction with the main game area.
  */
 
+import InlineIcon from './InlineIcon';
 import { useState, useEffect, useRef, useCallback, memo, type FC } from 'react';
 import type { EventLogEntry, EventCategory } from '../types/game';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -124,7 +125,7 @@ const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
         {/* Header */}
         <div className={styles.header}>
           <h3 id="event-log-title" className={styles.title}>
-            <img src={ICON_SCROLL} alt="" style={{ width: '20px', height: '20px', verticalAlign: 'middle', marginRight: '6px' }} />
+            <InlineIcon src={ICON_SCROLL} size={20} gap={6} />
             Event Log
           </h3>
           <div className={styles.headerControls}>
@@ -134,7 +135,7 @@ const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
               title={compactMode ? "Detailed view" : "Compact view"}
               aria-label={compactMode ? "Switch to detailed view" : "Switch to compact view"}
             >
-              <img src={ICON_DETAIL} alt="" style={{ width: '16px', height: '16px', verticalAlign: 'middle' }} />
+              <InlineIcon src={ICON_DETAIL} size={16} />
             </button>
             <button
               onClick={onClose}
