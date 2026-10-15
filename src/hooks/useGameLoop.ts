@@ -54,17 +54,18 @@ export function useGameLoop(
 }
 
 /**
- * Alternative: Hybrid approach that uses setInterval with Page Visibility API
- * to prevent Chrome throttling. Falls back to keeping tab "active".
+ * setInterval-based loop for timers that should tick at a steady rate.
+ *
+ * Ticks are skipped while the tab is hidden, the same as the requestAnimationFrame
+ * loops. GameProvider simulates the hidden time once when the player returns, so
+ * nothing is counted twice.
  */
 export function useRobustInterval(
   callback: () => void,
   intervalMs: number,
   dependencies: React.DependencyList = []
 ): void {
-  const intervalRef = useRef<number | undefined>(undefined);
   const callbackRef = useRef(callback);
-  const isVisible = useRef(true);
 
   // Keep callback ref updated
   useEffect(() => {
@@ -72,32 +73,16 @@ export function useRobustInterval(
   }, [callback]);
 
   useEffect(() => {
-    // Track visibility
-    const handleVisibilityChange = () => {
-      isVisible.current = !document.hidden;
-      
-      // If tab becomes visible again, force a tick immediately
-      if (isVisible.current) {
-        callbackRef.current();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Start the interval
-    intervalRef.current = window.setInterval(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.hidden) return;
       callbackRef.current();
     }, intervalMs);
 
     // Force immediate tick
     callbackRef.current();
 
-    // Cleanup
     return () => {
-      if (intervalRef.current !== undefined) {
-        clearInterval(intervalRef.current);
-      }
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
     };
   }, [intervalMs, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 }

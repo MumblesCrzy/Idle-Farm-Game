@@ -31,8 +31,15 @@ export function useAchievements(
       const mergedAchievements = INITIAL_ACHIEVEMENTS.map(templateAch => {
         const savedAch = savedAchievementMap.get(templateAch.id);
         if (savedAch) {
-          // Keep the saved achievement data (unlocked status, etc.)
-          return savedAch;
+          // Take only progress from the save. Everything else, including the
+          // customCheck and getProgress functions that JSON can't store, comes
+          // from the template; otherwise custom achievements never unlock after a reload.
+          return {
+            ...templateAch,
+            unlocked: savedAch.unlocked,
+            unlockedAt: savedAch.unlockedAt,
+            progress: savedAch.progress
+          };
         } else if (persistedUnlocks && persistedUnlocks[templateAch.id]) {
           // Achievement is new to the save but was unlocked in a previous lifetime
           // (e.g. after a hard reset that wiped achievementState but kept prestige data)

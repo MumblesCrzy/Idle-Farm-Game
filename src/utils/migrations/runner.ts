@@ -119,17 +119,18 @@ export function updateMetadata(versionedData: VersionedSaveData): VersionedSaveD
 }
 
 /**
- * Runs a single migration with timing and error handling
+ * Runs a single migration with timing and error handling.
+ * Returns the migrated data with the result, so each migration runs exactly once.
  */
 function runSingleMigration(
   migration: MigrationDefinition,
   data: unknown,
   config: MigrationConfig
-): MigrationResult {
+): { result: MigrationResult; data: unknown } {
   const startTime = performance.now();
   const warnings: string[] = [];
   let snapshot: string | undefined;
-  
+
   // Create snapshot if enabled
   if (config.enableSnapshots) {
     try {
@@ -138,43 +139,49 @@ function runSingleMigration(
       warnings.push('Failed to create snapshot - data may not be serializable');
     }
   }
-  
+
   try {
     if (config.verbose) {
       console.log(`🔄 Running migration v${migration.version}: ${migration.description}`);
     }
-    
-    migration.migrate(data);
+
+    const migrated = migration.migrate(data);
     const duration = performance.now() - startTime;
-    
+
     if (config.verbose) {
       console.log(`✅ Migration v${migration.version} completed in ${duration.toFixed(2)}ms`);
     }
-    
+
     return {
-      success: true,
-      version: migration.version,
-      description: migration.description,
-      warnings,
-      duration,
-      snapshot
+      result: {
+        success: true,
+        version: migration.version,
+        description: migration.description,
+        warnings,
+        duration,
+        snapshot
+      },
+      data: migrated
     };
   } catch (error) {
     const duration = performance.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     if (config.verbose) {
       console.error(`❌ Migration v${migration.version} failed: ${errorMessage}`);
     }
-    
+
     return {
-      success: false,
-      version: migration.version,
-      description: migration.description,
-      warnings,
-      error: errorMessage,
-      duration,
-      snapshot
+      result: {
+        success: false,
+        version: migration.version,
+        description: migration.description,
+        warnings,
+        error: errorMessage,
+        duration,
+        snapshot
+      },
+      data
     };
   }
 }
@@ -234,7 +241,7 @@ export function runMigrations(
   
   // Run each migration in sequence
   for (const migration of limitedMigrations) {
-    const result = runSingleMigration(migration, currentData, fullConfig);
+    const { result, data: migratedData } = runSingleMigration(migration, currentData, fullConfig);
     results.push(result);
     
     // Report progress
@@ -248,6 +255,12 @@ export function runMigrations(
     }
     
     if (!result.success) {
+      // A failed migration may have partly changed the data in place. Restore the copy
+      // taken before it ran, so the returned data matches lastSuccessfulVersion.
+      if (result.snapshot) {
+        currentData = JSON.parse(result.snapshot);
+      }
+
       // Migration failed - return with partial progress
       const totalDuration = performance.now() - startTime;
       
@@ -271,8 +284,8 @@ export function runMigrations(
       };
     }
     
-    // Update current data with migration result
-    currentData = migration.migrate(currentData);
+    // Use the result of the single run above
+    currentData = migratedData;
     lastSuccessfulVersion = migration.version;
   }
   

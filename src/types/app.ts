@@ -22,9 +22,9 @@ export interface ChristmasEventRef {
   isEventActive: boolean;
   passiveCheerPerSecond: number;
   eventState: ChristmasEventState;
-  processTreeGrowth: () => void;
+  processTreeGrowth: (ticks?: number) => void;
   updatePassiveIncome: (deltaTime: number) => void;
-  processDailyElvesCrafting: () => void;
+  processDailyElvesCrafting: (ticks?: number) => void;
 }
 
 /**

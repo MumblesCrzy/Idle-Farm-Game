@@ -5,7 +5,8 @@
  * Handles Holiday Cheer currency, tree farming, decoration crafting, and sales.
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLatestRef } from './useLatestRef';
 import type {
   ChristmasEventState,
   TreePlot,
@@ -80,8 +81,8 @@ export interface UseChristmasEventReturn {
   
   // Utility
   updatePassiveIncome: (deltaTime: number) => void;
-  processTreeGrowth: () => void;
-  processDailyElvesCrafting: () => void;
+  processTreeGrowth: (ticks?: number) => void;
+  processDailyElvesCrafting: (ticks?: number) => void;
   checkEventActive: () => boolean;
   resetEvent: () => void;
   
@@ -148,6 +149,85 @@ function createInitialEventState(_farmTier: number): ChristmasEventState {
     activeCosmetics: [],
     permanentBonuses: [],
     unlockedRecipes: [],
+  };
+}
+
+/**
+ * Works out an upgrade purchase without side effects.
+ * Returns the next state plus the name and price for logging, or null when the
+ * purchase isn't possible (unknown id, already owned, at max level, or not enough cheer).
+ */
+function applyUpgradePurchase(
+  state: ChristmasEventState,
+  upgradeId: string
+): { next: ChristmasEventState; name: string; cost: number } | null {
+  const upgrade = state.upgrades.find(u => u.id === upgradeId);
+  if (!upgrade) return null;
+
+  if (upgrade.repeatable) {
+    const currentLevel = upgrade.level ?? 0;
+    const maxLevel = upgrade.maxLevel ?? Infinity;
+    if (currentLevel >= maxLevel) return null;
+
+    // Calculate cost for next level
+    const costScaling = upgrade.costScaling ?? 1.5;
+    const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
+    if (state.holidayCheer < nextLevelCost) return null;
+
+    const next: ChristmasEventState = {
+      ...state,
+      holidayCheer: state.holidayCheer - nextLevelCost,
+      upgrades: state.upgrades.map(u =>
+        u.id === upgradeId ? { ...u, level: currentLevel + 1, owned: true } : u
+      ),
+    };
+
+    // Greenhouse Extension adds a tree plot
+    if (upgradeId === 'greenhouse_extension') {
+      next.treePlots = [...state.treePlots, {
+        id: `plot_${state.treePlots.length}`,
+        treeType: null,
+        growth: 0,
+        growthTime: 0,
+        quality: 'normal' as const,
+        decorations: {
+          ornaments: false,
+          garland: false,
+          candles: false,
+        },
+        harvestReady: false,
+      }];
+      next.maxPlots = state.maxPlots + 1;
+    }
+
+    return { next, name: upgrade.name, cost: nextLevelCost };
+  }
+
+  // Non-repeatable upgrade
+  if (upgrade.owned || state.holidayCheer < upgrade.cost) return null;
+
+  const newUpgrades = state.upgrades.map(u =>
+    u.id === upgradeId ? { ...u, owned: true } : u
+  );
+
+  // Golden Bell Counter sets the passive income rate
+  let passiveCheerPerSecond = state.passiveCheerPerSecond;
+  if (upgradeId === 'golden_bell_counter') {
+    const goldenBell = newUpgrades.find(u => u.id === 'golden_bell_counter');
+    if (goldenBell && goldenBell.passiveIncome) {
+      passiveCheerPerSecond = goldenBell.passiveIncome;
+    }
+  }
+
+  return {
+    next: {
+      ...state,
+      holidayCheer: state.holidayCheer - upgrade.cost,
+      upgrades: newUpgrades,
+      passiveCheerPerSecond,
+    },
+    name: upgrade.name,
+    cost: upgrade.cost,
   };
 }
 
@@ -318,7 +398,11 @@ export function useChristmasEvent({
     return isWithinEventPeriod();
   }, []);
   
-  const isEventActive = useMemo(() => checkEventActive(), [checkEventActive]);
+  // Re-checked by the hourly timer below, so a tab left open starts and ends the event on time
+  const [isEventActive, setIsEventActive] = useState(() => isWithinEventPeriod());
+
+  // Latest state for handlers that must decide before queueing an update
+  const eventStateRef = useLatestRef(eventState);
   
   // Update event active state when date changes
   useEffect(() => {
@@ -328,6 +412,7 @@ export function useChristmasEvent({
   // Update market demand multiplier based on proximity to Christmas
   useEffect(() => {
     const updateDemand = () => {
+      setIsEventActive(isWithinEventPeriod());
       const newMultiplier = calculateDemandMultiplier();
       setEventState(prev => {
         // Only update if multiplier has changed to avoid unnecessary re-renders
@@ -1018,133 +1103,18 @@ export function useChristmasEvent({
   // ============================================================================
   
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
-    // Use functional pattern to avoid stale closures
-    let success = false;
-    
-    setEventState(prev => {
-      const upgrade = prev.upgrades.find(u => u.id === upgradeId);
-      
-      if (!upgrade) {
-        success = false;
-        return prev;
-      }
-      
-      // Check if upgrade is repeatable and at max level
-      if (upgrade.repeatable) {
-        const currentLevel = upgrade.level ?? 0;
-        const maxLevel = upgrade.maxLevel ?? Infinity;
-        
-        if (currentLevel >= maxLevel) {
-          success = false;
-          return prev; // Already at max level
-        }
-        
-        // Calculate cost for next level
-        const costScaling = upgrade.costScaling ?? 1.5;
-        const nextLevelCost = Math.floor(upgrade.cost * Math.pow(costScaling, currentLevel));
-        
-        // Check if can afford
-        if (prev.holidayCheer < nextLevelCost) {
-          success = false;
-          return prev;
-        }
-        
-        success = true;
-        
-        const newUpgrades = prev.upgrades.map(u => {
-          if (u.id === upgradeId) {
-            return {
-              ...u,
-              level: currentLevel + 1,
-              owned: true,
-            };
-          }
-          return u;
-        });
-        
-        // Special handling for greenhouse_extension: add a tree plot
-        if (upgradeId === 'greenhouse_extension') {
-          const newPlots = [...prev.treePlots, {
-            id: `plot_${prev.treePlots.length}`,
-            treeType: null,
-            growth: 0,
-            growthTime: 0,
-            quality: 'normal' as const,
-            decorations: {
-              ornaments: false,
-              garland: false,
-              candles: false,
-            },
-            harvestReady: false,
-          }];
-          
-          // Log the upgrade purchase event (defer to avoid render-time setState)
-          if (callbacksRef.current.onUpgradePurchased) {
-            setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, nextLevelCost), 0);
-          }
-          
-          return {
-            ...prev,
-            holidayCheer: prev.holidayCheer - nextLevelCost,
-            upgrades: newUpgrades,
-            treePlots: newPlots,
-            maxPlots: prev.maxPlots + 1,
-          };
-        }
-        
-        // Log the upgrade purchase event (defer to avoid render-time setState)
-        if (callbacksRef.current.onUpgradePurchased) {
-          setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, nextLevelCost), 0);
-        }
-        
-        return {
-          ...prev,
-          holidayCheer: prev.holidayCheer - nextLevelCost,
-          upgrades: newUpgrades,
-        };
-      }
-      
-      // Non-repeatable upgrade logic
-      if (upgrade.owned) {
-        success = false;
-        return prev;
-      }
-      
-      if (prev.holidayCheer < upgrade.cost) {
-        success = false;
-        return prev;
-      }
-      
-      success = true;
-      
-      const newUpgrades = prev.upgrades.map(u =>
-        u.id === upgradeId ? { ...u, owned: true } : u
-      );
-      
-      // Calculate new passive income if Golden Bell Counter was purchased
-      let newPassiveCheerPerSecond = prev.passiveCheerPerSecond;
-      if (upgradeId === 'golden_bell_counter') {
-        const goldenBell = newUpgrades.find(u => u.id === 'golden_bell_counter');
-        if (goldenBell && goldenBell.passiveIncome) {
-          newPassiveCheerPerSecond = goldenBell.passiveIncome;
-        }
-      }
-      
-      // Log the upgrade purchase event (defer to avoid render-time setState)
-      if (callbacksRef.current.onUpgradePurchased) {
-        setTimeout(() => callbacksRef.current.onUpgradePurchased?.(upgrade.name, upgrade.cost), 0);
-      }
-      
-      return {
-        ...prev,
-        holidayCheer: prev.holidayCheer - upgrade.cost,
-        upgrades: newUpgrades,
-        passiveCheerPerSecond: newPassiveCheerPerSecond,
-      };
-    });
-    
-    return success;
-  }, []);
+    // Decide from current state so the result is reliable; the tree farm uses it to
+    // select a newly unlocked tree. A success flag set inside a setState updater
+    // can still be false when read, because React may run the updater later.
+    const purchase = applyUpgradePurchase(eventStateRef.current, upgradeId);
+    if (!purchase) return false;
+
+    // Let a second purchase in the same frame see this one
+    eventStateRef.current = purchase.next;
+    setEventState(prev => applyUpgradePurchase(prev, upgradeId)?.next ?? prev);
+    callbacksRef.current.onUpgradePurchased?.(purchase.name, purchase.cost);
+    return true;
+  }, [eventStateRef]);
   
   const claimMilestone = useCallback((milestoneId: string): boolean => {
     // Use functional pattern to avoid stale closures
@@ -1235,7 +1205,10 @@ export function useChristmasEvent({
   // TREE GROWTH PROCESSING
   // ============================================================================
   
-  const processTreeGrowth = useCallback(() => {
+  const processTreeGrowth = useCallback((ticks: number = 1) => {
+    // Offline catch-up passes many ticks at once. Growth is linear and the
+    // perfect-tree roll happens once at completion, so one pass is exact.
+    const steps = typeof ticks === 'number' && ticks > 0 ? ticks : 1;
     setEventState(prev => {
       // Check if any upgrades affect growth speed
       const fertilizedSoil = prev.upgrades.find(u => u.id === 'fertilized_soil');
@@ -1251,7 +1224,7 @@ export function useChristmasEvent({
         }
         
         // Grow the tree
-        const newGrowth = plot.growth + speedBonus;
+        const newGrowth = plot.growth + speedBonus * steps;
         
         // Check if tree is ready to harvest
         if (newGrowth >= plot.growthTime) {
@@ -1283,7 +1256,10 @@ export function useChristmasEvent({
   // DAILY ELVES' BENCH CRAFTING
   // ============================================================================
   
-  const processDailyElvesCrafting = useCallback(() => {
+  const processDailyElvesCrafting = useCallback((ticks: number = 1) => {
+    // Offline catch-up passes many ticks at once. Crafting is deterministic and
+    // stops when nothing is left to do, so one pass is exact.
+    const steps = typeof ticks === 'number' && ticks > 0 ? ticks : 1;
     setEventState(prev => {
       // Check if Elves' Bench is owned
       const elvesBenchOwned = prev.upgrades.find(u => u.id === 'elves_bench')?.owned ?? false;
@@ -1304,7 +1280,7 @@ export function useChristmasEvent({
       let currentAction: ChristmasEventState['currentElvesAction'] = undefined;
       
       // Process multiple items based on Cheerful Crafting level
-      for (let i = 0; i < itemsPerSecond; i++) {
+      for (let i = 0; i < itemsPerSecond * steps; i++) {
         let actionTaken = false;
         
         // First Priority: Craft decorations from materials

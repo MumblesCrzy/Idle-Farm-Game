@@ -93,6 +93,37 @@ const createBeekeeperAssistant = (): BeekeeperAssistant => ({
 /**
  * BeeProvider component - manages all bee system state
  */
+/**
+ * Calculate bee box cost with tiered scaling.
+ * Cost increases more significantly every 5 boxes.
+ */
+function calculateBeeBoxCost(boxCount: number): number {
+  const baseCost = 150;
+  const baseIncrement = 75;
+
+  // Calculate which tier (0-4 = tier 0, 5-9 = tier 1, etc.)
+  const tier = Math.floor(boxCount / 5);
+
+  // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
+  const tierMultiplier = Math.pow(2, tier);
+
+  // Within each tier, cost still increases linearly, but the increment grows with tier
+  const withinTierIndex = boxCount % 5;
+
+  // Sum up costs from previous tiers
+  let totalCost = baseCost;
+  for (let t = 0; t < tier; t++) {
+    const prevTierMultiplier = Math.pow(2, t);
+    // Each tier has 5 boxes worth of increments
+    totalCost += baseIncrement * prevTierMultiplier * 5;
+  }
+
+  // Add current tier's partial increment
+  totalCost += baseIncrement * tierMultiplier * withinTierIndex;
+
+  return Math.floor(totalCost);
+}
+
 export const BeeProvider: React.FC<BeeProviderProps> = ({ 
   children, 
   farmTier = 1,
@@ -205,8 +236,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       return false;
     }
 
-    // Calculate cost (increases with each box) - scaled by 15x
-    const cost = 150 + (boxes.length * 75); // 150, 225, 300, 375... honey
+    // Charge the same tiered price the purchase panel shows
+    const cost = calculateBeeBoxCost(boxes.length);
 
     if (regularHoney < cost) {
       console.warn('Not enough honey to purchase bee box');
@@ -411,7 +442,11 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     }
 
     const productionTime = calculateProductionTime();
-    let newlyReadyCount = 0;
+    // Count from current state. A count set inside the updater below may not
+    // exist yet when it is read, because React can run the updater later.
+    const newlyReadyCount = boxes.filter(box =>
+      box.active && !box.harvestReady && box.productionTimer + deltaTime >= productionTime
+    ).length;
 
     setBoxes(prev => {
       const updated = prev.map(box => {
@@ -421,7 +456,6 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
         
         // Check if production is complete
         if (newTimer >= productionTime && !box.harvestReady) {
-          newlyReadyCount++;
           return {
             ...box,
             productionTimer: productionTime,
@@ -733,37 +767,6 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     };
   }, [boxes, totalHoneyCollected, totalGoldenHoneyCollected, calculateProductionRate, calculateProductionTime, calculateYieldBonus]);
 
-  /**
-   * Calculate bee box cost with tiered scaling
-   * Cost increases more significantly every 5 boxes
-   */
-  const calculateBeeBoxCost = useCallback((boxCount: number): number => {
-    const baseCost = 150;
-    const baseIncrement = 75;
-    
-    // Calculate which tier (0-5 = tier 0, 6-10 = tier 1, etc.)
-    const tier = Math.floor(boxCount / 5);
-    
-    // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
-    const tierMultiplier = Math.pow(2, tier);
-    
-    // Calculate cost with tier-based scaling
-    // Within each tier, cost still increases linearly, but the increment grows with tier
-    const withinTierIndex = boxCount % 5;
-    
-    // Sum up costs from previous tiers
-    let totalCost = baseCost;
-    for (let t = 0; t < tier; t++) {
-      const prevTierMultiplier = Math.pow(2, t);
-      // Each tier has 5 boxes worth of increments
-      totalCost += baseIncrement * prevTierMultiplier * 5;
-    }
-    
-    // Add current tier's partial increment
-    totalCost += baseIncrement * tierMultiplier * withinTierIndex;
-    
-    return Math.floor(totalCost);
-  }, []);
 
   /**
    * Get bee box purchase information
@@ -782,7 +785,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       maxCount: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
       yieldBonusGain,
     };
-  }, [boxes.length, regularHoney, calculateBeeBoxCost]);
+  }, [boxes.length, regularHoney]);
 
   /**
    * Check if player can afford a new bee hive

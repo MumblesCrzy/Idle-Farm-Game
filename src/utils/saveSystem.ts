@@ -293,6 +293,7 @@ export interface ExtendedGameState {
   irrigationOwned: boolean;
   currentWeather: string;
   highestUnlockedVeggie: number;
+  totalHarvests?: number;
   globalAutoPurchaseTimer?: number;
   permanentBonuses?: string[];
   
@@ -352,20 +353,52 @@ const GAME_STORAGE_KEY = 'farmIdleGameState';
 /** Legacy canning version - kept for backward compatibility */
 const CANNING_VERSION = 3;
 
+/** Where the untouched save is kept before a migration, or when the save can't be read. */
+export const SAVE_BACKUP_KEY = `${GAME_STORAGE_KEY}_backup`;
+
+/** Set by importGameState. Stops the running game from overwriting an import before the reload. */
+let savesBlocked = false;
+
+function backupRawSave(raw: string): void {
+  try {
+    localStorage.setItem(SAVE_BACKUP_KEY, raw);
+  } catch (error) {
+    console.warn('Could not back up the save:', error);
+  }
+}
+
+/**
+ * Restores permanent bonuses that achievements grant.
+ * Saves made before October 2026 left out permanentBonuses, so a player who had earned
+ * Frost Fertilizer lost the bonus on the next reload and could never earn it again.
+ */
+function restoreAchievementBonuses(state: ExtendedGameState): void {
+  const bonuses = state.permanentBonuses ?? [];
+  const frostFertilizerEarned =
+    state.achievementState?.achievements?.some(a => a.id === 'frost_fertilizer' && a.unlocked) ||
+    Boolean(state.prestigeState?.achievementsUnlocked?.frost_fertilizer);
+  state.permanentBonuses = frostFertilizerEarned && !bonuses.includes('frost_fertilizer')
+    ? [...bonuses, 'frost_fertilizer']
+    : bonuses;
+}
+
 /**
  * Loads game state from localStorage with automatic migration.
  * Uses the new migration framework for version-based migrations.
  * @returns The loaded and migrated game state, or null if no save exists
  */
 export function loadGameStateWithCanning(): ExtendedGameState | null {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(GAME_STORAGE_KEY);
+    raw = localStorage.getItem(GAME_STORAGE_KEY);
     if (!raw) return null;
     
     let loaded = JSON.parse(raw) as ExtendedGameState;
     
     // Check if migration is needed
     if (needsMigration(loaded)) {
+      // Keep the untouched save so a failed or faulty migration cannot destroy it
+      backupRawSave(raw);
       const result = runMigrations(loaded, { 
         verbose: typeof window !== 'undefined' && window.location.hostname === 'localhost',
         enableSnapshots: true 
@@ -378,8 +411,10 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
         // Keep canningVersion for backward compatibility
         loaded.canningVersion = CANNING_VERSION;
       } else {
-        // Migration failed - log and use legacy migration as fallback
-        console.error('Migration failed:', result.migrations.map(m => m.error).filter(Boolean));
+        // Migration failed. The runner returns the data as of the last migration that
+        // succeeded, and the original save stays under SAVE_BACKUP_KEY.
+        console.error(`Migration failed. The original save is kept under "${SAVE_BACKUP_KEY}":`, result.migrations.map(m => m.error).filter(Boolean));
+        loaded = result.data as ExtendedGameState;
         // Still try legacy migration as fallback
         loaded = migrateCanningSaveData(loaded);
         loaded = migrateBeeStateSaveData(loaded);
@@ -434,35 +469,63 @@ export function loadGameStateWithCanning(): ExtendedGameState | null {
     if (typeof loaded.lastTotalDaysElapsed === 'undefined') {
       loaded.lastTotalDaysElapsed = loaded.totalDaysElapsed || 0;
     }
+
+    restoreAchievementBonuses(loaded);
     
     return loaded;
   } catch (error) {
     console.error('loadGameStateWithCanning: Error loading from localStorage:', error);
+    // Keep the unreadable save; otherwise the next autosave would replace it with a new game
+    if (raw) backupRawSave(raw);
     return null;
   }
 }
 
 /**
+ * Adds the version and timestamp fields that every stored or exported save carries.
+ * @param state - The complete game state
+ * @returns The state ready to store or export
+ */
+export function createSaveSnapshot(state: ExtendedGameState): ExtendedGameState {
+  return {
+    ...state,
+    _saveVersion: CURRENT_SAVE_VERSION,
+    // Keep canningVersion for backward compatibility during transition
+    canningVersion: 3,
+    lastSavedAt: Date.now(),
+    lastTotalDaysElapsed: state.totalDaysElapsed || 0
+  };
+}
+
+/**
  * Saves game state to localStorage including all data.
  * Automatically sets the current save version for future migration checks.
+ * Does nothing after an import, until the page reloads.
  * @param state - The complete game state to save
  */
 export function saveGameStateWithCanning(state: ExtendedGameState): void {
+  if (savesBlocked) return;
   try {
-    // Ensure offline tracking fields are updated on save
-    const now = Date.now();
-    const stateToSave = {
-      ...state,
-      _saveVersion: CURRENT_SAVE_VERSION,
-      // Keep canningVersion for backward compatibility during transition
-      canningVersion: 3,
-      lastSavedAt: now,
-      lastTotalDaysElapsed: state.totalDaysElapsed || 0
-    };
-    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(stateToSave));
+    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify(createSaveSnapshot(state)));
   } catch (error) {
     console.error('saveGameStateWithCanning: Error saving to localStorage:', error);
   }
+}
+
+/**
+ * Stores an imported save for the next page load.
+ * The file keeps its own version stamp, so the loader runs whatever migrations it needs.
+ * Saves are then blocked until the page reloads, so the running game cannot overwrite the import.
+ * @param data - The validated save file contents
+ */
+export function importGameState(data: ExtendedGameState): void {
+  localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify({
+    ...data,
+    // Count offline time from the import, not from when the file was exported
+    lastSavedAt: Date.now(),
+    lastTotalDaysElapsed: data.totalDaysElapsed || 0
+  }));
+  savesBlocked = true;
 }
 
 /**

@@ -12,6 +12,9 @@ import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 
+/** One offline step, matching the 1-second interval of the live game loops */
+export const OFFLINE_TICK_MS = 1000;
+
 /** Options for offline progress calculation */
 export interface OfflineProgressOptions {
   /** If provided, cap simulation so totalDaysElapsed does not exceed this value */
@@ -130,13 +133,11 @@ export function calculateOfflineProgress(
     }
   }
   
-  // Use larger tick sizes for longer offline periods to improve performance
-  // For periods > 1 hour, use 1 second ticks instead of 100ms ticks
-  const FAST_TICK_MS = 100;
-  const SLOW_TICK_MS = 1000;
-  const ONE_HOUR_MS = 60 * 60 * 1000;
-  
-  const TICK_MS = cappedTime > ONE_HOUR_MS ? SLOW_TICK_MS : FAST_TICK_MS;
+  // Step once per second, the same rate as the live growth, harvest and day loops,
+  // so offline progress matches what playing would have produced.
+  // (Earlier versions stepped every 100ms for absences under an hour, which
+  // credited ten times the live rate.)
+  const TICK_MS = OFFLINE_TICK_MS;
   const ticks = Math.floor(cappedTime / TICK_MS);
 
   // Track elapsed time for day counter
@@ -176,7 +177,8 @@ export function calculateOfflineProgress(
 
     // Day counter (every dayLength milliseconds)
     if (elapsedMs >= gameState.dayLength) {
-      currentDay += 1;
+      // Wrap at 365 like the live day loop, so seasons keep cycling
+      currentDay = (currentDay % 365) + 1;
       currentTotalDays += 1;
       elapsedMs = 0;
     }

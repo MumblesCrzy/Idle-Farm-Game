@@ -77,8 +77,8 @@ import { useGameState } from './hooks/useGameState';
 import { useGameLoop, useRobustInterval } from './hooks/useGameLoop';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
-import { loadGameStateWithCanning, saveGameStateWithCanning, getMaxLifetimeDaysForPlayer, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
-import { calculateOfflineProgress, formatOfflineTime } from './utils/offlineProgress';
+import { loadGameStateWithCanning, saveGameStateWithCanning, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
+import { calculateOfflineProgress } from './utils/offlineProgress';
 import { devTelemetry } from './utils/devTelemetry';
 import type { Veggie, GameState, EventCategory, EventPriority, WeatherType } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
@@ -332,7 +332,9 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       (canningState?.upgrades ?? []).forEach(u => { canningUpgrades[u.id] = u.level; });
 
       const snapshot: Parameters<typeof calculateOfflineProgress>[1] = {
-        veggies: loaded.veggies || veggies,
+        // Start from the migrated veggies in state, not the raw save, so crops and
+        // fields added by migrateVeggieData survive the catch-up
+        veggies,
         day: loaded.day ?? day,
         totalDaysElapsed: loaded.totalDaysElapsed ?? totalDaysElapsed,
         // dayLength is the real ms per in-game day used by offlineProgress; keep default 1000 unless configured elsewhere
@@ -368,6 +370,20 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       }
       if (typeof result.day === 'number') setDay(result.day);
       if (typeof result.totalDaysElapsed === 'number') setTotalDaysElapsed(result.totalDaysElapsed);
+
+      // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out
+      if (christmasEvent.isEventActive) {
+        if (result.christmasTreeGrowthTicks > 0) {
+          christmasEvent.processTreeGrowth(result.christmasTreeGrowthTicks);
+        }
+        if (result.christmasElvesCraftingTicks > 0 &&
+            christmasEvent.eventState.upgrades.some(u => u.id === 'elves_bench' && u.owned)) {
+          christmasEvent.processDailyElvesCrafting(result.christmasElvesCraftingTicks);
+        }
+        if (christmasEvent.passiveCheerPerSecond > 0) {
+          christmasEvent.updatePassiveIncome(result.timeElapsed);
+        }
+      }
 
       // Persist updated state so lastSavedAt / lastTotalDaysElapsed are set consistently
       saveGameStateWithCanning({
@@ -913,8 +929,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // Season system hook
   const { season } = useSeasonSystem(day);
   
-  // Store prestige state for lifetime calculations (doesn't change during session)
-  const prestigeStateRef = useRef(loaded?.prestigeState);
 
   // Store current game state in a ref so offline progress can access latest values
   const gameStateRef = useRef({
@@ -948,263 +962,96 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     };
   }, [veggies, day, totalDaysElapsed, season, currentWeather, greenhouseOwned, irrigationOwned, almanacLevel, farmTier, knowledge, christmasEvent]);
   
-  // Offline Progress System - tracks when player leaves/returns to the tab
+  // Catch-up for time the tab spent hidden. Every game loop pauses while the tab is
+  // hidden, so this simulates that time once when the player returns. Time away from
+  // a closed page is handled by the startup catch-up above, from the save's timestamp.
   useEffect(() => {
     const LAST_ACTIVE_KEY = 'farmIdleLastActive';
-    let hasProcessedOffline = false;
-    
-    // When tab becomes visible, check for offline time and simulate progress
+
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Tab became visible
-        const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
-        
-        // Reset the flag so we can process offline progress again
-        hasProcessedOffline = false;
-        
-        if (lastActiveTime && !hasProcessedOffline) {
-          const now = Date.now();
-          const timeElapsed = now - parseInt(lastActiveTime, 10);
-          
-          // Only process if player was gone for more than 1 second
-          if (timeElapsed > 1000) {
-            // Skip offline progress if the game is paused
-            if (isPausedRef.current) return;
+      if (document.hidden) {
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+        return;
+      }
 
-            // Get current state from ref
-            const state = gameStateRef.current;
-            
-            // Get lifetime cap for prestige system
-            const lifetimeMaxDays = getMaxLifetimeDaysForPlayer(prestigeStateRef.current);
-            
-            // Calculate offline progress
-            const offlineResult = calculateOfflineProgress(timeElapsed, {
-              veggies: state.veggies,
-              day: state.day,
-              totalDaysElapsed: state.totalDaysElapsed,
-              dayLength: 1000, // 1 second per day
-              season: state.season,
-              currentWeather: state.currentWeather,
-              greenhouseOwned: state.greenhouseOwned,
-              irrigationOwned: state.irrigationOwned,
-              almanacLevel: state.almanacLevel,
-              farmTier: state.farmTier,
-              knowledge: state.knowledge,
-              canningProcesses: [],
-              canningUpgrades: {},
-                autoCanning: { enabled: false },
-                beeState: globalBeeContext ? {
-                  unlocked: globalBeeContext.unlocked,
-                  boxes: globalBeeContext.boxes,
-                  upgrades: globalBeeContext.upgrades,
-                  beekeeperAssistant: globalBeeContext.beekeeperAssistant,
-                  regularHoney: globalBeeContext.regularHoney,
-                  goldenHoney: globalBeeContext.goldenHoney,
-                  totalHoneyCollected: globalBeeContext.totalHoneyCollected,
-                  totalGoldenHoneyCollected: globalBeeContext.totalGoldenHoneyCollected,
-                } : undefined
-            }, { maxTotalDays: lifetimeMaxDays });
-            
-            // Apply the offline progress to game state
-            if (offlineResult.timeElapsed >= 1000) {
-              setVeggies(offlineResult.veggies);
-              setExperience((prev: number) => prev + offlineResult.experienceGain);
-              setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
-              // Track knowledge gained for lifetime stats (prestige system)
-              if (offlineResult.knowledgeGain > 0) {
-                trackKnowledgeGained(offlineResult.knowledgeGain);
-              }
-              setDay(offlineResult.day);
-              setTotalDaysElapsed(offlineResult.totalDaysElapsed);
-              
-              // Get current Christmas event state from ref
-              const currentChristmasEvent = gameStateRef.current.christmasEvent;
-              
-              // Process Christmas tree growth if event is active
-              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-                for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
-                  currentChristmasEvent.processTreeGrowth();
-                }
-              }
-              
-              // Process Christmas passive income (Golden Bell)
-              if (currentChristmasEvent.isEventActive && currentChristmasEvent.passiveCheerPerSecond > 0) {
-                currentChristmasEvent.updatePassiveIncome(offlineResult.timeElapsed);
-              }
-              
-              // Process Elves' Bench automation
-              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-                const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
-                if (elvesBenchOwned) {
-                  for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
-                    currentChristmasEvent.processDailyElvesCrafting();
-                  }
-                }
-              }
+      const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
+      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      if (!lastActiveTime) return;
 
-              // Process bee system offline production
-              if (offlineResult.beeProgress && globalBeeContext?.applyOfflineProgress) {
-                globalBeeContext.applyOfflineProgress(offlineResult.beeProgress);
-              }
-              
-              // Show a welcome back message
-              const timeAwayStr = formatOfflineTime(offlineResult.timeElapsed);
-              console.log(`Welcome back! You were away for ${timeAwayStr}`);
-              
-              // Log offline progress details
-              if (offlineResult.experienceGain > 0 || offlineResult.knowledgeGain > 0) {
-                console.log(`Offline progress: +${offlineResult.experienceGain.toFixed(1)} XP, +${offlineResult.knowledgeGain.toFixed(1)} Knowledge`);
-              }
-              
-              if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-                console.log(`Christmas trees grew ${offlineResult.christmasTreeGrowthTicks} times`);
-              }
-              
-              // Check if offline progress was capped to lifetime end
-              if (offlineResult.cappedToLifetime) {
-                console.log('Offline progress was capped to lifetime end; pending prestige.');
-                setOfflinePrestigePending(true);
-                setTotalDaysElapsed(lifetimeMaxDays);
-              }
-              
-              hasProcessedOffline = true;
-            }
-          }
+      const timeElapsed = Date.now() - parseInt(lastActiveTime, 10);
+      if (timeElapsed <= 1000) return;
+      // No catch-up while paused or once the lifetime has ended
+      if (isPausedRef.current || offlinePrestigePendingRef.current) return;
+
+      // Read current values through refs; this handler is registered once on mount
+      const state = gameStateRef.current;
+      const lifetimeMaxDays = lifetimeMaxDaysRef.current;
+
+      const offlineResult = calculateOfflineProgress(timeElapsed, {
+        veggies: state.veggies,
+        day: state.day,
+        totalDaysElapsed: state.totalDaysElapsed,
+        dayLength: 1000, // 1 second per day
+        season: state.season,
+        currentWeather: state.currentWeather,
+        greenhouseOwned: state.greenhouseOwned,
+        irrigationOwned: state.irrigationOwned,
+        almanacLevel: state.almanacLevel,
+        farmTier: state.farmTier,
+        knowledge: state.knowledge,
+        canningProcesses: [],
+        canningUpgrades: {},
+        autoCanning: { enabled: false },
+        guildState: guildStateRef.current,
+        christmasEvent: state.christmasEvent
+      }, { maxTotalDays: lifetimeMaxDays });
+
+      if (offlineResult.timeElapsed < 1000) return;
+
+      setVeggies(offlineResult.veggies);
+      setExperience((prev: number) => prev + offlineResult.experienceGain);
+      setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
+      if (offlineResult.knowledgeGain > 0) {
+        // Track knowledge gained for lifetime stats (prestige system)
+        trackKnowledgeGainedRef.current(offlineResult.knowledgeGain);
+      }
+      setDay(offlineResult.day);
+      setTotalDaysElapsed(offlineResult.totalDaysElapsed);
+
+      // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out
+      const event = state.christmasEvent;
+      if (event.isEventActive) {
+        if (offlineResult.christmasTreeGrowthTicks > 0) {
+          event.processTreeGrowth(offlineResult.christmasTreeGrowthTicks);
         }
-        
-        // Update last active time
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-      } else {
-        // Tab became hidden - save the current time
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+        if (offlineResult.christmasElvesCraftingTicks > 0 &&
+            event.eventState.upgrades.some(u => u.id === 'elves_bench' && u.owned)) {
+          event.processDailyElvesCrafting(offlineResult.christmasElvesCraftingTicks);
+        }
+        if (event.passiveCheerPerSecond > 0) {
+          event.updatePassiveIncome(offlineResult.timeElapsed);
+        }
+      }
+
+      // ── Telemetry: offline_catchup (tab returned) ──
+      devTelemetry.emit('offline_catchup', {
+        offlineMsRequested: timeElapsed,
+        offlineMsApplied: offlineResult.timeElapsed,
+        cappedToLifetime: offlineResult.cappedToLifetime ?? false
+      });
+
+      if (offlineResult.cappedToLifetime) {
+        setOfflinePrestigePending(true);
+        setTotalDaysElapsed(lifetimeMaxDays);
       }
     };
-    
-    // Check on initial mount (in case user is returning after closing tab)
-    const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
-    if (lastActiveTime) {
-      const now = Date.now();
-      const timeElapsed = now - parseInt(lastActiveTime, 10);
-      
-      if (timeElapsed > 1000) {
-        // Get current state from ref
-        const state = gameStateRef.current;
-        
-        // Get lifetime cap for prestige system
-        const lifetimeMaxDaysMounted = getMaxLifetimeDaysForPlayer(prestigeStateRef.current);
-        
-        const offlineResult = calculateOfflineProgress(timeElapsed, {
-          veggies: state.veggies,
-          day: state.day,
-          totalDaysElapsed: state.totalDaysElapsed,
-          dayLength: 1000,
-          season: state.season,
-          currentWeather: state.currentWeather,
-          greenhouseOwned: state.greenhouseOwned,
-          irrigationOwned: state.irrigationOwned,
-          almanacLevel: state.almanacLevel,
-          farmTier: state.farmTier,
-          knowledge: state.knowledge,
-          canningProcesses: [],
-          canningUpgrades: {},
-            autoCanning: { enabled: false },
-            beeState: globalBeeContext ? {
-              unlocked: globalBeeContext.unlocked,
-              boxes: globalBeeContext.boxes,
-              upgrades: globalBeeContext.upgrades,
-              beekeeperAssistant: globalBeeContext.beekeeperAssistant,
-              regularHoney: globalBeeContext.regularHoney,
-              goldenHoney: globalBeeContext.goldenHoney,
-              totalHoneyCollected: globalBeeContext.totalHoneyCollected,
-              totalGoldenHoneyCollected: globalBeeContext.totalGoldenHoneyCollected,
-            } : undefined
-        }, { maxTotalDays: lifetimeMaxDaysMounted });
-        
-        if (offlineResult.timeElapsed >= 1000) {
-          setVeggies(offlineResult.veggies);
-          setExperience((prev: number) => prev + offlineResult.experienceGain);
-          setKnowledge((prev: number) => prev + offlineResult.knowledgeGain);
-          // Track knowledge gained for lifetime stats (prestige system)
-          if (offlineResult.knowledgeGain > 0) {
-            trackKnowledgeGained(offlineResult.knowledgeGain);
-          }
-          setDay(offlineResult.day);
-          setTotalDaysElapsed(offlineResult.totalDaysElapsed);
-          
-          // Get current Christmas event state from ref
-          const currentChristmasEvent = state.christmasEvent;
-          
-          // Process Christmas tree growth if event is active
-          if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-            for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
-              currentChristmasEvent.processTreeGrowth();
-            }
-          }
-          
-          // Process Christmas passive income (Golden Bell)
-          if (currentChristmasEvent.isEventActive && currentChristmasEvent.passiveCheerPerSecond > 0) {
-            currentChristmasEvent.updatePassiveIncome(offlineResult.timeElapsed);
-          }
-          
-          // Process Elves' Bench automation
-          if (currentChristmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-            const elvesBenchOwned = currentChristmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false;
-            if (elvesBenchOwned) {
-              for (let i = 0; i < offlineResult.christmasTreeGrowthTicks; i++) {
-                currentChristmasEvent.processDailyElvesCrafting();
-              }
-            }
-          }
 
-          // Process bee system offline production
-          if (offlineResult.beeProgress && globalBeeContext?.applyOfflineProgress) {
-            globalBeeContext.applyOfflineProgress(offlineResult.beeProgress);
-          }
-          
-          const timeAwayStr = formatOfflineTime(offlineResult.timeElapsed);
-          console.log(`Welcome back! You were away for ${timeAwayStr}`);
-          
-          if (offlineResult.experienceGain > 0 || offlineResult.knowledgeGain > 0) {
-            console.log(`Offline progress: +${offlineResult.experienceGain.toFixed(1)} XP, +${offlineResult.knowledgeGain.toFixed(1)} Knowledge`);
-          }
-          
-          if (christmasEvent.isEventActive && offlineResult.christmasTreeGrowthTicks > 0) {
-            console.log(`Christmas trees grew ${offlineResult.christmasTreeGrowthTicks} times`);
-          }
-          
-          // ── Telemetry: offline_catchup (visibility change) ──
-          devTelemetry.emit('offline_catchup', {
-            offlineMsRequested: timeElapsed,
-            offlineMsApplied: offlineResult.timeElapsed,
-            cappedToLifetime: offlineResult.cappedToLifetime ?? false
-          });
-
-          // Check if offline progress was capped to lifetime end
-          if (offlineResult.cappedToLifetime) {
-            console.log('Offline progress was capped to lifetime end; pending prestige.');
-            setOfflinePrestigePending(true);
-            setTotalDaysElapsed(lifetimeMaxDaysMounted);
-          }
-        }
-      }
-    }
-    
-    // Set current time
+    // Start the hidden-time clock from page load
     localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-    
-    // Listen for visibility changes
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Also update time periodically while tab is active (every 10 seconds)
-    const updateInterval = setInterval(() => {
-      if (!document.hidden) {
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-      }
-    }, 10000);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(updateInterval);
     };
   }, []); // Run only once on mount
   
@@ -1276,6 +1123,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // Latest-value refs to avoid large dependency arrays and restart of loops
   // Only keep refs that are actually used in game loops
   const knowledgeRef = useLatestRef(knowledge);
+  const veggiesRef = useLatestRef(veggies);
   const dayRef = useLatestRef(day);
   const almanacLevelRef = useLatestRef(almanacLevel);
   const maxPlotsRef = useLatestRef(maxPlots);
@@ -1310,55 +1158,55 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   useEffect(() => {
     if (wisdomDepositedRef.current) return; // wisdom already deposited this lifetime
     const maxDays = lifetimeMaxDaysRef.current;
-    if (totalDaysElapsed >= maxDays) {
-      // ── Final stash sale: sell ALL veggies before computing wisdom ──
-      // This ensures stash value counts toward Total Money Earned.
-      let stashSaleTotal = 0;
-      setVeggies(prev => {
-        for (const v of prev) {
-          if (v.stash > 0) {
-            for (let i = 0; i < v.stash; i++) {
-              stashSaleTotal += applyGuildPriceBonuses(v.salePrice, guildState, true);
-            }
-          }
+    if (totalDaysElapsed < maxDays) return;
+
+    // ── Final stash sale: sell ALL veggies before computing wisdom ──
+    // Worked out from current state first, so the money and the wisdom always
+    // include it. A total read back out of a setState updater can still be 0,
+    // because React may run the updater later.
+    let stashSaleTotal = 0;
+    const soldByName = new Map<string, number>();
+    for (const v of veggies) {
+      if (v.stash > 0) {
+        for (let i = 0; i < v.stash; i++) {
+          stashSaleTotal += applyGuildPriceBonuses(v.salePrice, guildState, true);
         }
-        return prev.map(v => ({ ...v, stash: 0 }));
-      });
-      if (stashSaleTotal > 0) {
-        setMoney(m => m + stashSaleTotal);
+        soldByName.set(v.name, v.stash);
       }
-
-      // Factor the stash sale into totalMoneyEarned BEFORE computing wisdom,
-      // and also apply the Wisdom's Potential bonus on the stash earnings.
-      const potentialBonus = wisdomPotentialMultiplier > 1
-        ? Math.floor(stashSaleTotal * (wisdomPotentialMultiplier - 1))
-        : 0;
-      if (potentialBonus > 0) {
-        setMoney(m => m + potentialBonus);
-      }
-      const stashContribution = stashSaleTotal + potentialBonus;
-
-      // Calculate and deposit wisdom NOW so the shop works immediately.
-      // We must account for the stash money that hasn't hit prestigeState yet.
-      setPrestigeState(prev => {
-        const updatedMoney = (prev.totalMoneyEarned || 0) + stashContribution;
-        const moneyFactor = updatedMoney / 10_000;
-        const knowledgeFactor = (prev.totalKnowledgeGained || 0) / 500;
-        const tierFactor = prev.maxFarmTierReached || 1;
-        const wisdomBonus = Math.floor(Math.sqrt(prev.wisdom || 0));
-        const earned = Math.floor((moneyFactor + knowledgeFactor) * tierFactor) + wisdomBonus;
-
-        setWisdomEarnedThisLifetime(earned);
-        return {
-          ...prev,
-          totalMoneyEarned: updatedMoney,
-          wisdom: prev.wisdom + earned,
-        };
-      });
-      wisdomDepositedRef.current = true;
-      setOfflinePrestigePending(true);
     }
-  }, [totalDaysElapsed, offlinePrestigePending, guildState, wisdomPotentialMultiplier]);
+    if (soldByName.size > 0) {
+      setVeggies(prev => prev.map(v => {
+        const sold = soldByName.get(v.name);
+        return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
+      }));
+    }
+
+    // Wisdom's Potential bonus also applies to the stash earnings
+    const potentialBonus = wisdomPotentialMultiplier > 1
+      ? Math.floor(stashSaleTotal * (wisdomPotentialMultiplier - 1))
+      : 0;
+    const stashContribution = stashSaleTotal + potentialBonus;
+    if (stashContribution > 0) {
+      setMoney(m => m + stashContribution);
+    }
+
+    // Calculate and deposit wisdom now so the shop works immediately,
+    // counting the stash money that hasn't reached prestigeState yet.
+    const moneyFactor = ((prestigeState.totalMoneyEarned || 0) + stashContribution) / 10_000;
+    const knowledgeFactor = (prestigeState.totalKnowledgeGained || 0) / 500;
+    const tierFactor = prestigeState.maxFarmTierReached || 1;
+    const wisdomBonus = Math.floor(Math.sqrt(prestigeState.wisdom || 0));
+    const earned = Math.floor((moneyFactor + knowledgeFactor) * tierFactor) + wisdomBonus;
+
+    setPrestigeState(prev => ({
+      ...prev,
+      totalMoneyEarned: (prev.totalMoneyEarned || 0) + stashContribution,
+      wisdom: prev.wisdom + earned,
+    }));
+    setWisdomEarnedThisLifetime(earned);
+    wisdomDepositedRef.current = true;
+    setOfflinePrestigePending(true);
+  }, [totalDaysElapsed, offlinePrestigePending, guildState, wisdomPotentialMultiplier, veggies, prestigeState]);
   
   useGameLoop(() => {
     // Skip all processing while game is paused
@@ -1641,44 +1489,41 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, [veggies, money]);
 
-  // Sell handler - memoized to prevent useEffect re-runs
+  // Sell handler. The sale is worked out from current state before any update is
+  // queued, so the money, the lifetime stats and the event log always match it.
   const handleSell = useCallback((isAutoSell: boolean = false) => {
     let total = 0;
     const soldVeggies: Array<{ name: string; quantity: number; earnings: number }> = [];
-    
-    setVeggies((prev) => {
-      total = prev.reduce((sum, v) => {
-        // Only include vegetables that are enabled for selling
-        if (v.sellEnabled && v.stash > 0) {
-          // Apply guild price bonuses to each item individually (for Quality Grading)
-          let veggieEarnings = 0;
-          for (let i = 0; i < v.stash; i++) {
-            // Pass true to apply quality grading bonus chance per item
-            veggieEarnings += applyGuildPriceBonuses(v.salePrice, guildState, true);
-          }
-          soldVeggies.push({
-            name: v.name,
-            quantity: v.stash,
-            earnings: veggieEarnings
-          });
-          return sum + veggieEarnings;
+
+    for (const v of veggiesRef.current) {
+      // Only include vegetables that are enabled for selling
+      if (v.sellEnabled && v.stash > 0) {
+        // Apply guild price bonuses to each item individually (for Quality Grading)
+        let veggieEarnings = 0;
+        for (let i = 0; i < v.stash; i++) {
+          // Pass true to apply quality grading bonus chance per item
+          veggieEarnings += applyGuildPriceBonuses(v.salePrice, guildState, true);
         }
-        return sum;
-      }, 0);
-      return prev.map((v) => ({
-        ...v,
-        // Only clear stash for vegetables that are enabled for selling
-        stash: v.sellEnabled ? 0 : v.stash
-      }));
-    });
+        soldVeggies.push({ name: v.name, quantity: v.stash, earnings: veggieEarnings });
+        total += veggieEarnings;
+      }
+    }
+    if (soldVeggies.length === 0) return;
+
+    // Remove only what was sold, so a harvest that lands meanwhile is kept
+    const soldByName = new Map(soldVeggies.map(s => [s.name, s.quantity]));
+    setVeggies((prev) => prev.map((v) => {
+      const sold = soldByName.get(v.name);
+      return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
+    }));
     setMoney((m: number) => m + total);
-    
+
     // Track money earned for lifetime stats (prestige system)
     if (total > 0) {
       trackMoneyEarned(total);
       eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
-  }, [setVeggies, setMoney, guildState, trackMoneyEarned, eventLogCallbacks]);
+  }, [setVeggies, setMoney, guildState, trackMoneyEarned, eventLogCallbacks, veggiesRef]);
 
   // Initialize auto-purchase system
   const { globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer } = useAutoPurchase({
@@ -1697,7 +1542,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
-  // Day counter timer with auto-sell and auto-purchase logic - using robust interval for better background tab support
+  // Day counter timer with auto-sell and auto-purchase logic (pauses while the tab is hidden)
   const handleSellRef = useRef(handleSell);
 
   useEffect(() => {
@@ -1745,8 +1590,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, 1000, []); // Empty deps - refs prevent loop restart
 
-  // Elves' Bench automation loop - runs every second
-  // Use useRobustInterval for better background tab performance
+  // Elves' Bench automation loop - runs every second (pauses while the tab is hidden)
   useRobustInterval(() => {
     if (isPausedRef.current) return;
     if (offlinePrestigePendingRef.current) return;
@@ -2346,79 +2190,64 @@ function App() {
     };
   }, [eventLogCallbacks, addEvent]);
 
-  // Detect if we just loaded imported data (prevent immediate auto-save)
-  useEffect(() => {
-    // If experience is significantly high, we likely just imported data
-    if (experience > 10000) {
-      justImportedRef.current = true;
-      // Reset the flag after a short delay to allow normal auto-saving later
-      setTimeout(() => {
-        justImportedRef.current = false;
-      }, 5000);
-    }
-  }, [experience]);
-
   // Throttled save system - save at most once every 30 seconds
   const saveTimeoutRef = useRef<number | null>(null);
   const lastSaveTimeRef = useRef<number>(Date.now());
-  const pendingSaveRef = useRef<boolean>(false);
-  const justImportedRef = useRef<boolean>(false);
+
+  // Everything that goes into a save. Autosave and export both use this, so an
+  // exported file holds the full game, including prestige, guilds and achievements.
+  const buildSaveState = useCallback((): ExtendedGameState | null => {
+    if (!canningState) return null;
+    return {
+      veggies,
+      money,
+      experience,
+      knowledge,
+      activeVeggie,
+      day,
+      totalDaysElapsed,
+      totalHarvests,
+      globalAutoPurchaseTimer,
+      greenhouseOwned,
+      heirloomOwned,
+      autoSellOwned,
+      almanacLevel,
+      almanacCost,
+      maxPlots,
+      farmTier,
+      farmCost,
+      irrigationOwned,
+      currentWeather,
+      highestUnlockedVeggie,
+      permanentBonuses,
+      canningState,
+      uiPreferences,
+      achievementState: {
+        achievements,
+        totalUnlocked,
+        lastUnlockedId
+      },
+      eventLogState: eventLog.getState(),
+      christmasEventState: christmasEvent?.eventState,
+      beeState: beeState || undefined,
+      harvestTutorialShown,
+      guildIntroShown,
+      lifespanIntroShown,
+      shopExplanationShown,
+      guildState,
+      prestigeState,
+      isPaused
+    };
+  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, lifespanIntroShown, shopExplanationShown, guildState, prestigeState, isPaused]);
 
   const performSave = useCallback(() => {
-    // Don't auto-save if we just imported data or just reset the game
-    if (justImportedRef.current) {
-      justImportedRef.current = false;
-      return;
-    }
-    if (justReset) {
-      return;
-    }
-
-    if (canningState) {
-      const gameState = {
-        veggies,
-        money,
-        experience,
-        knowledge,
-        activeVeggie,
-        day,
-        totalDaysElapsed,
-        totalHarvests,
-        globalAutoPurchaseTimer,
-        greenhouseOwned,
-        heirloomOwned,
-        autoSellOwned,
-        almanacLevel,
-        almanacCost,
-        maxPlots,
-        farmTier,
-        farmCost,
-        irrigationOwned,
-        currentWeather,
-        highestUnlockedVeggie,
-        canningState,
-        uiPreferences,
-        achievementState: {
-          achievements,
-          totalUnlocked,
-          lastUnlockedId
-        },
-        eventLogState: eventLog.getState(),
-        christmasEventState: christmasEvent?.eventState,
-        beeState: beeState || undefined,
-        harvestTutorialShown,
-        guildIntroShown,
-        lifespanIntroShown,
-        shopExplanationShown,
-        guildState,
-        prestigeState,
-        isPaused
-      };
-      saveGameStateWithCanning(gameState);
-      lastSaveTimeRef.current = Date.now();
-      pendingSaveRef.current = false;
-    }
-  }, [justReset, canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, lifespanIntroShown, shopExplanationShown, guildState, prestigeState, isPaused]);
+    // Don't save while a reset is still settling
+    if (justReset) return;
+    const state = buildSaveState();
+    if (!state) return;
+    saveGameStateWithCanning(state);
+    lastSaveTimeRef.current = Date.now();
+  }, [justReset, buildSaveState]);
 
   // Check achievements periodically
   useEffect(() => {
@@ -2477,22 +2306,16 @@ function App() {
     };
   }, []);
 
-  // Force save on page unload (refresh/close)
+  // Always save on page unload (refresh/close). Autosave runs at most every
+  // 30 seconds, so without this the last moments of play would be lost.
+  const performSaveRef = useLatestRef(performSave);
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Force immediate save if there are pending changes
-      if (pendingSaveRef.current || Date.now() - lastSaveTimeRef.current >= 30000) {
-        // Get the current performSave function and call it
-        const currentPerformSave = performSave;
-        currentPerformSave();
-      }
-    };
-
+    const handleBeforeUnload = () => performSaveRef.current();
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []); // Remove performSave dependency
+  }, [performSaveRef]);
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
@@ -2862,26 +2685,7 @@ function App() {
 
   return (
     <SaveLoadSystem
-      veggies={veggies}
-      money={money}
-      experience={experience}
-      knowledge={knowledge}
-      activeVeggie={activeVeggie}
-      day={day}
-      globalAutoPurchaseTimer={globalAutoPurchaseTimer}
-      greenhouseOwned={greenhouseOwned}
-      heirloomOwned={heirloomOwned}
-      autoSellOwned={autoSellOwned}
-      almanacLevel={almanacLevel}
-      almanacCost={almanacCost}
-      maxPlots={maxPlots}
-      farmTier={farmTier}
-      irrigationOwned={irrigationOwned}
-      currentWeather={currentWeather}
-      canningState={canningState}
-      beeState={beeState}
-      christmasEventState={christmasEvent?.eventState}
-      permanentBonuses={permanentBonuses}
+      getSaveState={buildSaveState}
       resetGame={resetGame}
     >
       {({ handleExportSave, handleImportSave, handleResetGame, loadingStates }) => (

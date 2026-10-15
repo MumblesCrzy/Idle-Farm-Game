@@ -39,7 +39,7 @@ export interface MigrationRunResult {
   migrations: MigrationResult[];
   /** Total time for all migrations in milliseconds */
   totalDuration: number;
-  /** The migrated data (or original if failed) */
+  /** The migrated data. On failure, the data as of the last migration that succeeded. */
   data: unknown;
 }
 

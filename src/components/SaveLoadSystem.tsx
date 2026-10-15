@@ -1,10 +1,6 @@
 import { useRef, useState, useCallback, type FC, type ReactNode, type ChangeEvent } from 'react';
-import { validateCanningImport, saveGameStateWithCanning } from '../utils/saveSystem';
+import { validateCanningImport, importGameState, createSaveSnapshot, type ExtendedGameState } from '../utils/saveSystem';
 import { validateSaveData } from '../utils/validation';
-import type { Veggie } from '../types/game';
-import type { CanningState } from '../types/canning';
-import type { BeeState } from '../types/bees';
-import type { ChristmasEventState } from '../types/christmasEvent';
 import styles from './SaveLoadSystem.module.css';
 
 /** Loading states for async operations */
@@ -15,28 +11,9 @@ export interface LoadingStates {
 }
 
 interface SaveLoadSystemProps {
-  // Current game state to export
-  veggies: Veggie[];
-  money: number;
-  experience: number;
-  knowledge: number;
-  activeVeggie: number | null;
-  day: number;
-  globalAutoPurchaseTimer: number;
-  greenhouseOwned: boolean;
-  heirloomOwned: boolean;
-  autoSellOwned: boolean;
-  almanacLevel: number;
-  almanacCost: number;
-  maxPlots: number;
-  farmTier: number;
-  irrigationOwned: boolean;
-  currentWeather: string;
-  canningState: CanningState;
-  beeState?: BeeState | null;
-  christmasEventState?: ChristmasEventState;
-  permanentBonuses?: string[];
-  
+  /** Builds the full save. Export writes exactly what autosave stores. */
+  getSaveState: () => ExtendedGameState | null;
+
   // Function to reset the game
   resetGame: () => void;
   
@@ -50,26 +27,7 @@ interface SaveLoadSystemProps {
 }
 
 const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
-  veggies,
-  money,
-  experience,
-  knowledge,
-  activeVeggie,
-  day,
-  globalAutoPurchaseTimer,
-  greenhouseOwned,
-  heirloomOwned,
-  autoSellOwned,
-  almanacLevel,
-  almanacCost,
-  maxPlots,
-  farmTier,
-  irrigationOwned,
-  currentWeather,
-  canningState,
-  beeState,
-  christmasEventState,
-  permanentBonuses,
+  getSaveState,
   resetGame,
   children
 }) => {
@@ -84,31 +42,6 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
     isResetting: false
   });
 
-  // Returns a serializable snapshot of the current game state
-  const getSerializableGameState = () => ({
-    veggies,
-    money,
-    experience,
-    knowledge,
-    activeVeggie,
-    day,
-    globalAutoPurchaseTimer,
-    greenhouseOwned,
-    heirloomOwned,
-    autoSellOwned,
-    almanacLevel,
-    almanacCost,
-    maxPlots,
-    farmTier,
-    irrigationOwned,
-    currentWeather,
-    canningState,
-    beeState: beeState || undefined,
-    christmasEventState,
-    permanentBonuses,
-    // Optionally add a version for future compatibility
-    saveVersion: 2
-  });
 
   // Export save handler
   const handleExportSave = useCallback(() => {
@@ -117,7 +50,10 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
     // Use setTimeout to allow the UI to update before the synchronous work
     setTimeout(() => {
       try {
-        const saveData = getSerializableGameState();
+        const state = getSaveState();
+        if (!state) return;
+        // Same content and version stamp as the save in localStorage
+        const saveData = createSaveSnapshot(state);
         // Add timestamp and format filename
         const date = new Date();
         const timestamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}`;
@@ -136,12 +72,7 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
         setLoadingStates(prev => ({ ...prev, isExporting: false }));
       }
     }, 50);
-  }, [
-    veggies, money, experience, knowledge, activeVeggie, day,
-    globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned,
-    almanacLevel, almanacCost, maxPlots, farmTier, irrigationOwned,
-    currentWeather, canningState, beeState, christmasEventState, permanentBonuses
-  ]);
+  }, [getSaveState]);
 
   // Import save handler: triggers file input
   const handleImportSave = useCallback(() => {
@@ -207,8 +138,9 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
           return;
         }
         
-        // Save the imported data to localStorage
-        saveGameStateWithCanning(data);
+        // Store the file as-is so the loader migrates it on reload, and block saves
+        // so the running game can't overwrite it before the page reloads
+        importGameState(data);
         
         // Reload the page to reinitialize all systems with imported data
         // Note: isImporting stays true since page will reload

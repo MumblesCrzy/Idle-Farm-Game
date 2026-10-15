@@ -223,9 +223,9 @@ function validateNumericBounds(data: Record<string, unknown>): string[] {
     errors.push('Day must be at least 1');
   }
   
-  // Farm tier should be between 1 and 10
-  if (typeof data.farmTier === 'number' && (data.farmTier < 1 || data.farmTier > 10)) {
-    errors.push('Farm tier must be between 1 and 10');
+  // Farm tier starts at 1 and has no upper limit
+  if (typeof data.farmTier === 'number' && data.farmTier < 1) {
+    errors.push('Farm tier must be at least 1');
   }
   
   // Max plots should be at least 4 (no upper limit due to farm tier upgrades)
