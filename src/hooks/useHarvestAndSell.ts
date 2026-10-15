@@ -56,10 +56,6 @@ export interface UseHarvestAndSellDeps {
   guildState: GuildState;
   /** Setter for guild state (harvests award guild currency; rituals spend it) */
   setGuildState: Dispatch<SetStateAction<GuildState>>;
-  /** Adds knowledge to the lifetime stats used for wisdom */
-  trackKnowledgeGained: (amount: number) => void;
-  /** Adds money to the lifetime stats used for wisdom */
-  trackMoneyEarned: (amount: number) => void;
 }
 
 /**
@@ -116,7 +112,7 @@ export interface UseHarvestAndSellReturn {
  * - The Growers Guild ritual harvest
  * - Toggling sell and auto-harvest per veggie
  * - Selling veggies to the merchant
- * - Event logging and lifetime stat tracking for harvests and sales
+ * - Event logging for harvests and sales
  *
  * @param deps - Dependencies for harvest and sell operations
  * @returns Harvest and sell handlers
@@ -143,8 +139,6 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     eventLogCallbacks,
     guildState,
     setGuildState,
-    trackKnowledgeGained,
-    trackMoneyEarned,
   } = deps;
 
   // Latest values for handlers that should not be recreated on every change
@@ -252,8 +246,6 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       if (day >= 1 && day <= 365) {
         setKnowledge((k: number) => k + totalKnowledgeGain);
         setExperience((exp: number) => exp + experienceGain);
-        // Track knowledge gained for lifetime stats (prestige system)
-        trackKnowledgeGained(totalKnowledgeGain);
       }
 
       // Increment total harvests counter
@@ -284,7 +276,6 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     setTotalHarvests,
     setHighestUnlockedVeggie,
     setGuildState,
-    trackKnowledgeGained,
     guildStateRef,
     scheduleAfterCommit
   ]);
@@ -367,8 +358,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
 
   /**
    * Sell handler for merchant visits. The sale is worked out from current state
-   * before any update is queued, so the money, the lifetime stats and the event
-   * log always match it.
+   * before any update is queued, so the money and the event log always match it.
    */
   const handleSell = useCallback((isAutoSell: boolean = false) => {
     let total = 0;
@@ -397,12 +387,10 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
     }));
     setMoney((m: number) => m + total);
 
-    // Track money earned for lifetime stats (prestige system)
     if (total > 0) {
-      trackMoneyEarned(total);
       eventLogCallbacks.onMerchantSale(total, soldVeggies, isAutoSell);
     }
-  }, [setVeggies, setMoney, guildState, trackMoneyEarned, eventLogCallbacks, veggiesRef]);
+  }, [setVeggies, setMoney, guildState, eventLogCallbacks, veggiesRef]);
 
   return {
     harvestVeggie,

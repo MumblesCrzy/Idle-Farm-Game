@@ -6,7 +6,6 @@
  */
 
 import type { WeatherType } from '../config/gameConstants';
-import type { PrestigeState, WisdomUpgrades } from '../utils/saveSystem';
 import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
 
 // ============================================================================
@@ -203,21 +202,6 @@ export interface GameState {
   // Christmas Event (seasonal)
   christmasEvent?: UseChristmasEventReturn;
 
-  // Prestige System - Lifetime Stat Tracking (v0.12.0)
-  trackMoneyEarned: (amount: number) => void;
-  trackKnowledgeGained: (amount: number) => void;
-  trackFarmTierReached: (tier: number) => void;
-  
-  // Prestige State (v0.12.0)
-  prestigeState: PrestigeState;
-  setPrestigeState: React.Dispatch<React.SetStateAction<PrestigeState>>;
-  handlePurchaseWisdomUpgrade: (upgradeId: keyof WisdomUpgrades) => void;
-  handleStartNextLifetime: (onComplete?: () => void) => void;
-  
-  // Offline Prestige Pending (v0.12.0)
-  offlinePrestigePending: boolean;
-  setOfflinePrestigePending: React.Dispatch<React.SetStateAction<boolean>>;
-  wisdomEarnedThisLifetime: number;
   
   // Pause control
   isPaused: boolean;

@@ -29,6 +29,7 @@ coverage/*
 *.lcov
 
 # Documentation and release files
+RELEASE_NOTES*
 ARCHIE_FEATURE*
 TEST_DOCUMENTATION*
 itch_io*

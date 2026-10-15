@@ -1,0 +1,177 @@
+/**
+ * Locked Feature Card
+ *
+ * Shown by a tab until the farm reaches its unlock tier.
+ * The layout is shared; each theme sets its own colors and spacing.
+ */
+
+.message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.card {
+  max-width: 600px;
+  text-align: center;
+}
+
+.title {
+  margin-bottom: 1rem;
+}
+
+.details {
+  margin: 0.5rem 0;
+}
+
+.features {
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.features li {
+  padding: 0.5rem 0;
+}
+
+.hint {
+  font-style: italic;
+}
+
+/* ============================================================================
+   DARK THEME (Guilds)
+   ============================================================================ */
+
+.dark {
+  min-height: 500px;
+}
+
+.dark .card {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border: 2px solid #444;
+  border-radius: 12px;
+  padding: 2rem;
+  color: #fff;
+}
+
+.dark .title {
+  font-size: 1.5rem;
+  color: #ffd700;
+}
+
+.dark .description {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+.dark .details {
+  font-size: 1rem;
+  color: #aaa;
+}
+
+.dark .features {
+  background: #333;
+  padding: 1rem;
+}
+
+.dark .features h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #ffd700;
+}
+
+.dark .features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dark .features li {
+  border-bottom: 1px solid #444;
+}
+
+.dark .features li:last-child {
+  border-bottom: none;
+}
+
+.dark .hint {
+  color: #888;
+  margin-top: 1rem;
+}
+
+/* ============================================================================
+   HONEY THEME (Bees)
+   ============================================================================ */
+
+.honey {
+  min-height: 600px;
+}
+
+.honey .card {
+  background: linear-gradient(135deg, #fff9e6 0%, #F7B434 20%, #F7C91F 100%);
+  border: 3px solid #AA7942;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 8px 24px rgba(170, 121, 66, 0.4);
+}
+
+.honey .title {
+  font-size: 2rem;
+  color: #D36300;
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+}
+
+.honey .description {
+  font-size: 1.2rem;
+  color: #2F2F2F;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.honey .details {
+  font-size: 1.1rem;
+  color: #52514E;
+  font-weight: 500;
+}
+
+.honey .details strong {
+  color: #D36300;
+}
+
+.honey .features {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 1.5rem;
+  border: 1px solid #AA7942;
+}
+
+.honey .features h3 {
+  color: #D36300;
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.honey .features li {
+  font-size: 1rem;
+  color: #2F2F2F;
+  line-height: 1.6;
+}
+
+.honey .hint {
+  font-size: 1rem;
+  color: #52514E;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .honey .card {
+    padding: 1.5rem;
+  }
+
+  .honey .title {
+    font-size: 1.5rem;
+  }
+}

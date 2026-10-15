@@ -375,27 +375,13 @@ const migrationV7: MigrationDefinition = {
 };
 
 /**
- * Migration v8: Wisdom's Potential is now a standard game feature.
- * Refund the 500 wisdom cost to any player who previously purchased it.
+ * Migration v8: refunded a Wisdom of the Ages upgrade. That feature was removed,
+ * so this step now changes nothing. It stays so save versions keep their order.
  */
 const migrationV8: MigrationDefinition = {
   version: 8,
-  description: "Refund Wisdom's Potential upgrade (now a standard feature)",
-  migrate: (data: unknown): ExtendedGameState => {
-    const state = data as ExtendedGameState;
-
-    if (state.prestigeState?.wisdomUpgrades) {
-      const upgrades = state.prestigeState.wisdomUpgrades as Record<string, number | undefined>;
-      if ((upgrades.wisdomPotential || 0) > 0) {
-        // Refund the 500 wisdom cost
-        state.prestigeState.wisdom = (state.prestigeState.wisdom || 0) + 500;
-        // Remove the upgrade flag
-        delete upgrades.wisdomPotential;
-      }
-    }
-
-    return state;
-  },
+  description: 'No changes (refunded a Wisdom upgrade; Wisdom was removed)',
+  migrate: (data: unknown): ExtendedGameState => data as ExtendedGameState,
   rollback: (data: unknown): ExtendedGameState => {
     const state = data as ExtendedGameState;
     return state;

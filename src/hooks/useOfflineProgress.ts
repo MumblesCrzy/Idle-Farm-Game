@@ -42,18 +42,11 @@ export interface UseOfflineProgressDeps {
   state: OfflineGameState;
   /** No catch-up while the game is paused */
   isPaused: boolean;
-  /** No catch-up once the lifetime has ended */
-  lifetimeEnded: boolean;
-  /** Lifetime length in days; the catch-up stops there */
-  lifetimeMaxDays: number;
-  /** Adds knowledge to the lifetime stats used for wisdom */
-  trackKnowledgeGained: (amount: number) => void;
   setVeggies: Dispatch<SetStateAction<Veggie[]>>;
   setExperience: Dispatch<SetStateAction<number>>;
   setKnowledge: Dispatch<SetStateAction<number>>;
   setDay: Dispatch<SetStateAction<number>>;
   setTotalDaysElapsed: Dispatch<SetStateAction<number>>;
-  setOfflinePrestigePending: Dispatch<SetStateAction<boolean>>;
 }
 
 /**
@@ -65,7 +58,7 @@ function applyCatchUp(
   deps: UseOfflineProgressDeps,
   weather: WeatherType
 ): OfflineProgressResult | null {
-  const { state, lifetimeMaxDays } = deps;
+  const { state } = deps;
 
   const result = calculateOfflineProgress(timeElapsed, {
     veggies: state.veggies,
@@ -85,17 +78,13 @@ function applyCatchUp(
     autoCanning: { enabled: false },
     guildState: state.guildState,
     christmasEvent: state.christmasEvent
-  }, { maxTotalDays: lifetimeMaxDays });
+  });
 
   if (result.timeElapsed < MIN_CATCH_UP_MS) return null;
 
   deps.setVeggies(result.veggies);
   deps.setExperience((prev: number) => prev + result.experienceGain);
   deps.setKnowledge((prev: number) => prev + result.knowledgeGain);
-  if (result.knowledgeGain > 0) {
-    // Track knowledge gained for lifetime stats (prestige system)
-    deps.trackKnowledgeGained(result.knowledgeGain);
-  }
   deps.setDay(result.day);
   deps.setTotalDaysElapsed(result.totalDaysElapsed);
 
@@ -116,15 +105,8 @@ function applyCatchUp(
 
   devTelemetry.emit('offline_catchup', {
     offlineMsRequested: timeElapsed,
-    offlineMsApplied: result.timeElapsed,
-    cappedToLifetime: result.cappedToLifetime ?? false
+    offlineMsApplied: result.timeElapsed
   });
-
-  if (result.cappedToLifetime) {
-    deps.setOfflinePrestigePending(true);
-    // Make sure the UI shows the lifetime boundary
-    deps.setTotalDaysElapsed(lifetimeMaxDays);
-  }
 
   return result;
 }
@@ -135,8 +117,7 @@ function applyCatchUp(
  * - **Startup:** time since the save was written (lastSavedAt), applied once
  *   when the game loads. Skipped if the game was saved while paused.
  * - **Hidden tab:** every game loop pauses while the tab is hidden, so the
- *   hidden time is simulated once when the player returns. Skipped while paused
- *   or after the lifetime has ended.
+ *   hidden time is simulated once when the player returns. Skipped while paused.
  *
  * The two never overlap: the hidden-tab clock starts at page load, after the
  * startup catch-up.
@@ -193,7 +174,7 @@ export function useOfflineProgress(deps: UseOfflineProgressDeps): void {
       if (timeElapsed <= MIN_CATCH_UP_MS) return;
 
       const current = latest.current;
-      if (current.isPaused || current.lifetimeEnded) return;
+      if (current.isPaused) return;
 
       try {
         applyCatchUp(timeElapsed, current, current.state.currentWeather);

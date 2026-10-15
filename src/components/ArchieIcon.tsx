@@ -12,7 +12,6 @@ interface ArchieIconProps {
   isChristmasEventActive?: boolean;
   christmasTreesSold?: number;
   earnCheer?: (amount: number) => void;
-  onMoneyEarned?: (amount: number) => void; // Prestige tracking callback
   isPaused?: boolean;
 }
 
@@ -26,7 +25,6 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   isChristmasEventActive = false,
   christmasTreesSold = 0,
   earnCheer,
-  onMoneyEarned,
   isPaused = false
 }) => {
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward, archieAppearance } = useArchie();
@@ -41,16 +39,13 @@ const ArchieIcon: FC<ArchieIconProps> = ({
       // Add the reward to player's money
       setMoney(prevMoney => prevMoney + archieReward);
       
-      // Track for prestige stats
-      onMoneyEarned?.(archieReward);
-      
       // Store pending reward
       setPendingMoneyReward(archieReward);
       
       // Reset the reward
       setArchieReward(0);
     }
-  }, [archieReward, setMoney, setArchieReward, onMoneyEarned]);
+  }, [archieReward, setMoney, setArchieReward]);
   
   // When archieCheerReward changes (during Christmas event), add Holiday Cheer
   useEffect(() => {

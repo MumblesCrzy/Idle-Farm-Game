@@ -1,8 +1,8 @@
 /**
  * Dev-only Telemetry & Key Counters
  *
- * Structured logging for internal/developer use to help tune the prestige
- * system, detect anomalies, and guide balance decisions.  Events are written
+ * Structured logging for internal/developer use to detect anomalies and
+ * guide balance decisions.  Events are written
  * to the browser console (as grouped, structured JSON) and can optionally
  * be exported to CSV for offline analysis.
  *
@@ -11,54 +11,23 @@
  *
  * Usage:
  *   import { devTelemetry } from './utils/devTelemetry';
- *   devTelemetry.emit('lifetime_complete', { lifetimeCount: 3, wisdomGained: 500 });
+ *   devTelemetry.emit('achievement_unlocked', { achievementId: 'first_harvest' });
  */
 
 import { featureFlags } from './featureFlags';
 
 // ─── Event type definitions ───────────────────────────────────────────
 
-export interface LifetimeCompletePayload {
-  lifetimeCount: number;
-  wisdomGained: number;
-  totalMoneyEarned: number;
-  totalKnowledgeGained: number;
-  maxFarmTierReached: number;
-  durationDays: number;
-}
-
-export interface WisdomAwardedPayload {
-  amount: number;
-  formulaComponents: {
-    moneyFactor: number;
-    knowledgeFactor: number;
-    tierFactor: number;
-    wisdomBonus: number;
-  };
-}
-
-export interface ShopPurchasePayload {
-  upgradeId: string;
-  levelBefore: number;
-  levelAfter: number;
-  cost: number;
-}
-
 export interface AchievementUnlockedPayload {
   achievementId: string;
-  lifetimeWhenUnlocked: number;
 }
 
 export interface OfflineCatchupPayload {
   offlineMsRequested: number;
   offlineMsApplied: number;
-  cappedToLifetime: boolean;
 }
 
 export interface TelemetryEventMap {
-  lifetime_complete: LifetimeCompletePayload;
-  wisdom_awarded: WisdomAwardedPayload;
-  shop_purchase: ShopPurchasePayload;
   achievement_unlocked: AchievementUnlockedPayload;
   offline_catchup: OfflineCatchupPayload;
 }
@@ -151,46 +120,6 @@ class DevTelemetryManager {
     }
   }
 
-  // ── Aggregates (dev dashboard helpers) ──
-
-  /** Average wisdom earned per lifetime. */
-  getAvgWisdomPerLifetime(): number {
-    const completions = this.events.filter(e => e.event === 'lifetime_complete') as StoredEvent<'lifetime_complete'>[];
-    if (completions.length === 0) return 0;
-    const total = completions.reduce((sum, e) => sum + e.payload.wisdomGained, 0);
-    return Math.round(total / completions.length);
-  }
-
-  /** Distribution of lifetime durations (days). */
-  getLifetimeLengthDistribution(): Record<string, number> {
-    const completions = this.events.filter(e => e.event === 'lifetime_complete') as StoredEvent<'lifetime_complete'>[];
-    const buckets: Record<string, number> = {};
-    for (const e of completions) {
-      const years = Math.floor(e.payload.durationDays / 365);
-      const label = `${years}y`;
-      buckets[label] = (buckets[label] || 0) + 1;
-    }
-    return buckets;
-  }
-
-  /** Per-upgrade purchase counts. */
-  getShopPurchaseRateByUpgrade(): Record<string, number> {
-    const purchases = this.events.filter(e => e.event === 'shop_purchase') as StoredEvent<'shop_purchase'>[];
-    const counts: Record<string, number> = {};
-    for (const e of purchases) {
-      counts[e.payload.upgradeId] = (counts[e.payload.upgradeId] || 0) + 1;
-    }
-    return counts;
-  }
-
-  /** Fraction of offline catch-ups that were capped by lifetime end. */
-  getOfflineCatchupCappedRate(): number {
-    const catchups = this.events.filter(e => e.event === 'offline_catchup') as StoredEvent<'offline_catchup'>[];
-    if (catchups.length === 0) return 0;
-    const capped = catchups.filter(e => e.payload.cappedToLifetime).length;
-    return capped / catchups.length;
-  }
-
   // ── Export ──
 
   /** Export the stored event log as a CSV string. */
@@ -219,10 +148,6 @@ class DevTelemetryManager {
   printDashboard(): void {
     console.group('%c[Telemetry Dashboard]', 'color:#6f42c1;font-weight:bold;font-size:14px');
     console.log('Total events:', this.events.length);
-    console.log('Avg wisdom / lifetime:', this.getAvgWisdomPerLifetime());
-    console.log('Lifetime length distribution:', this.getLifetimeLengthDistribution());
-    console.log('Shop purchase rate by upgrade:', this.getShopPurchaseRateByUpgrade());
-    console.log('Offline catchup capped rate:', `${(this.getOfflineCatchupCappedRate() * 100).toFixed(1)}%`);
     console.groupEnd();
   }
 

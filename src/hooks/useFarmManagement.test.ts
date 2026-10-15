@@ -79,8 +79,6 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     setGlobalAutoPurchaseTimer: vi.fn(),
     setFarmCost: vi.fn(),
     eventLogCallbacks: createMockEventLogCallbacks(),
-    prestigeStartingExpBonus: 0,
-    plotEfficiencyLevel: 0,
     ...overrides
   };
 }
@@ -119,33 +117,6 @@ describe('useFarmManagement', () => {
       
       // 4 + 5 = 9, capped at 4 * 2 = 8
       expect(deps.setMaxPlots).toHaveBeenCalledWith(8);
-    });
-
-    it('lowers the experience needed per plot with Plot Efficiency', () => {
-      const deps = createDefaultDeps({
-        experience: 300,
-        maxPlots: 8,
-        plotEfficiencyLevel: 5 // divisor 100 - 50 = 50, so 300 experience adds 6 plots
-      });
-
-      const { result } = renderHook(() => useFarmManagement(deps));
-      act(() => {
-        result.current.handleBuyLargerFarm();
-      });
-
-      expect(deps.setMaxPlots).toHaveBeenCalledWith(14);
-    });
-
-    it('reports the new tier for lifetime stats', () => {
-      const onFarmTierReached = vi.fn();
-      const deps = createDefaultDeps({ farmTier: 2, onFarmTierReached });
-
-      const { result } = renderHook(() => useFarmManagement(deps));
-      act(() => {
-        result.current.handleBuyLargerFarm();
-      });
-
-      expect(onFarmTierReached).toHaveBeenCalledWith(3);
     });
 
     it('keeps fruits in the crop list after a farm upgrade', () => {
@@ -233,28 +204,9 @@ describe('useFarmManagement', () => {
       expect(deps.setIrrigationOwned).toHaveBeenCalledWith(false);
     });
 
-    it('should include prestige startingExperience bonus in starting experience', () => {
-      // Level 2 prestige bonus = 2 * 50 = 100 extra exp
+    it('sets the starting experience for the new tier', () => {
       const deps = createDefaultDeps({
-        farmTier: 1,
-        prestigeStartingExpBonus: 100
-      });
-      
-      const { result } = renderHook(() => useFarmManagement(deps));
-      
-      act(() => {
-        result.current.handleBuyLargerFarm();
-      });
-      
-      // Tier 2: calculateExpRequirement(1) = floor(50 * 1.9^1) = 95
-      // Plus prestige bonus of 100 = 195
-      expect(deps.setExperience).toHaveBeenCalledWith(195);
-    });
-
-    it('should set base starting experience without prestige bonus', () => {
-      const deps = createDefaultDeps({
-        farmTier: 1,
-        prestigeStartingExpBonus: 0
+        farmTier: 1
       });
       
       const { result } = renderHook(() => useFarmManagement(deps));

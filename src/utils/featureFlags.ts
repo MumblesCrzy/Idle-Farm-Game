@@ -116,7 +116,7 @@ export const FEATURE_FLAG_DEFINITIONS: Record<string, FeatureFlagDefinition> = {
   devTelemetry: {
     name: 'Dev Telemetry',
     defaultValue: false,
-    description: 'Log prestige telemetry events (lifetime_complete, wisdom_awarded, shop_purchase, etc.) to console and localStorage',
+    description: 'Log telemetry events (achievement_unlocked, offline_catchup) to console and localStorage',
     category: 'debug',
     userConfigurable: true,
     devOnly: true,

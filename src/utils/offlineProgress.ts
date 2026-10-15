@@ -15,12 +15,6 @@ import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from 
 /** One offline step, matching the 1-second interval of the live game loops */
 export const OFFLINE_TICK_MS = 1000;
 
-/** Options for offline progress calculation */
-export interface OfflineProgressOptions {
-  /** If provided, cap simulation so totalDaysElapsed does not exceed this value */
-  maxTotalDays?: number;
-}
-
 export interface OfflineProgressResult {
   timeElapsed: number; // milliseconds
   veggies: Veggie[];
@@ -34,15 +28,10 @@ export interface OfflineProgressResult {
   christmasElvesCraftingTicks: number; // number of elves crafting ticks processed
   christmasPassiveCheerGain: number; // passive Holiday Cheer earned
   beeProgress?: OfflineBeeProgress; // bee system offline progress (optional until fully implemented)
-  // Optional flags added to indicate offline handling decisions
-  cappedToLifetime?: boolean; // true if offline time was capped by lifetime end
-  offlineMsApplied?: number; // actual ms applied by this simulation (after capping)
-  lifetimeEnded?: boolean; // true if lifetime end was reached during the offline period
 }
 
 /**
  * Calculate and simulate game progress for the time the player was away.
- * Supports capping to a lifetime boundary via opts.maxTotalDays.
  */
 export function calculateOfflineProgress(
   timeElapsedMs: number,
@@ -76,8 +65,7 @@ export function calculateOfflineProgress(
       totalHoneyCollected: number;
       totalGoldenHoneyCollected: number;
     };
-  },
-  opts?: OfflineProgressOptions
+  }
 ): OfflineProgressResult {
   // Don't process if less than 1 second elapsed (avoid flickering on quick tab switches)
   if (timeElapsedMs < 1000) {
@@ -92,10 +80,7 @@ export function calculateOfflineProgress(
       autoCanningProcessed: 0,
       christmasTreeGrowthTicks: 0,
       christmasElvesCraftingTicks: 0,
-      christmasPassiveCheerGain: 0,
-      cappedToLifetime: false,
-      offlineMsApplied: 0,
-      lifetimeEnded: false
+      christmasPassiveCheerGain: 0
     };
   }
 
@@ -109,29 +94,10 @@ export function calculateOfflineProgress(
   let autoCanningCycles = 0;
 
   // Process in chunks to avoid performance issues with very long offline periods
-  // Max 24 hours of offline time (raised from 8 for prestige system lifetimes)
-  const MAX_OFFLINE_HOURS = 24;
+  // Max 8 hours of offline time
+  const MAX_OFFLINE_HOURS = 8;
   const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000;
-  let cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
-
-  // If a lifetime cap (maxTotalDays) is provided, compute the ms that would
-  // reach that lifetime and cap the offline time to not cross the boundary.
-  let cappedToLifetime = false;
-  let lifetimeEnded = false;
-  if (typeof opts?.maxTotalDays === 'number' && gameState.dayLength > 0) {
-    const remainingDays = opts.maxTotalDays - gameState.totalDaysElapsed;
-    if (remainingDays <= 0) {
-      // Lifetime already ended or no time remaining
-      lifetimeEnded = true;
-      cappedTime = 0;
-    } else {
-      const allowedMsForLifetime = remainingDays * gameState.dayLength;
-      if (allowedMsForLifetime < cappedTime) {
-        cappedTime = allowedMsForLifetime;
-        cappedToLifetime = true;
-      }
-    }
-  }
+  const cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
   
   // Step once per second, the same rate as the live growth, harvest and day loops,
   // so offline progress matches what playing would have produced.
@@ -231,10 +197,7 @@ export function calculateOfflineProgress(
     autoCanningProcessed: autoCanningCycles,
     christmasTreeGrowthTicks,
     christmasElvesCraftingTicks,
-    christmasPassiveCheerGain,
-    cappedToLifetime,
-    offlineMsApplied: cappedTime,
-    lifetimeEnded
+    christmasPassiveCheerGain
   };
 }
 

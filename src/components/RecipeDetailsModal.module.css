@@ -1,0 +1,250 @@
+/* Recipe details modal, opened from a recipe card in the canning panel */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover,
+.closeButton:focus-visible {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.description {
+  color: #666;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+/* Ingredient and honey lists */
+
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 4px;
+}
+
+.requirementRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.requirementRow.met {
+  background-color: #f8fff8;
+  border-color: #d4edda;
+}
+
+.requirementRow.unmet {
+  background-color: #fff8f8;
+  border-color: #f5c6cb;
+}
+
+.requirementLabel {
+  font-weight: bold;
+  color: #333;
+}
+
+.requirementLabel.golden {
+  color: #FFD700;
+}
+
+.requirementStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.haveCount {
+  font-size: 12px;
+  color: #666;
+}
+
+.statusIcon {
+  font-size: 18px;
+}
+
+.statusIcon.met {
+  color: #28a745;
+}
+
+.statusIcon.unmet {
+  color: #dc3545;
+}
+
+/* Production info */
+
+.productionInfo {
+  background-color: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.statLabel {
+  color: #666;
+}
+
+.statValue {
+  font-weight: bold;
+  color: #333;
+}
+
+.statValue.salePrice,
+.statValue.profit {
+  color: #28a745;
+}
+
+.statValue.rawValue {
+  color: #666;
+}
+
+.statValue.loss {
+  color: #dc3545;
+}
+
+.statValue.knowledge {
+  color: #2196F3;
+}
+
+.statValue.experience {
+  color: #9C27B0;
+}
+
+.baseNote {
+  font-size: 10px;
+  color: #666;
+  margin-left: 4px;
+}
+
+.betterSeedsNote {
+  font-size: 9px;
+  color: #8BC34A;
+  font-weight: normal;
+}
+
+.autoNote {
+  font-size: 10px;
+  color: #666;
+  font-weight: normal;
+}
+
+.timesCompleted {
+  text-align: center;
+  padding: 8px;
+  background-color: #e3f2fd;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #1565c0;
+}
+
+/* Action button */
+
+.actions {
+  text-align: center;
+}
+
+.actionButton {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  min-width: 150px;
+}
+
+.startButton {
+  background-color: #28a745;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.startButton:hover,
+.startButton:focus-visible {
+  background-color: #218838;
+}
+
+.cannotStartButton {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  margin-bottom: 8px;
+}
+
+.missingText {
+  font-size: 12px;
+  color: #dc3545;
+  font-weight: bold;
+}

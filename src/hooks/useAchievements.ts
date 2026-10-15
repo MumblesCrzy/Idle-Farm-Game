@@ -150,8 +150,7 @@ function evaluateAchievements(
 export function useAchievements(
   initialState?: AchievementState,
   onReward?: (money: number, knowledge: number) => void,
-  onAchievementUnlock?: (achievement: Achievement) => void,
-  persistedUnlocks?: Record<string, { unlockedAt: number; lifetimeWhenUnlocked: number }>
+  onAchievementUnlock?: (achievement: Achievement) => void
 ): UseAchievementsReturn {
   // Initialize achievements from saved state or defaults
   const [achievementState, setAchievementState] = useState<AchievementState>(() => {
@@ -160,8 +159,7 @@ export function useAchievements(
       const savedAchievementMap = new Map(
         initialState.achievements.map(ach => [ach.id, ach])
       );
-      
-      // Add any new achievements that don't exist in the saved state
+
       const mergedAchievements = INITIAL_ACHIEVEMENTS.map(templateAch => {
         const savedAch = savedAchievementMap.get(templateAch.id);
         if (savedAch) {
@@ -174,53 +172,28 @@ export function useAchievements(
             unlockedAt: savedAch.unlockedAt,
             progress: savedAch.progress
           };
-        } else if (persistedUnlocks && persistedUnlocks[templateAch.id]) {
-          // Achievement is new to the save but was unlocked in a previous lifetime
-          // (e.g. after a hard reset that wiped achievementState but kept prestige data)
-          return {
-            ...templateAch,
-            unlocked: true,
-            unlockedAt: persistedUnlocks[templateAch.id].unlockedAt
-          };
-        } else {
-          // Add new achievement as locked
-          return {
-            ...templateAch,
-            unlocked: false
-          };
         }
+        // New achievement since the save was made
+        return {
+          ...templateAch,
+          unlocked: false
+        };
       });
-      
-      // Recalculate total unlocked count
-      const totalUnlocked = mergedAchievements.filter(ach => ach.unlocked).length;
-      
+
       return {
         achievements: mergedAchievements,
-        totalUnlocked,
+        totalUnlocked: mergedAchievements.filter(ach => ach.unlocked).length,
         lastUnlockedId: initialState.lastUnlockedId
       };
     }
-    
-    // No saved state — create fresh achievement state.
-    // If persistedUnlocks exist (e.g. hard reset but prestige survived),
-    // restore any previously-earned achievements.
+
+    // No saved state: a fresh game
     return {
-      achievements: INITIAL_ACHIEVEMENTS.map(ach => {
-        if (persistedUnlocks && persistedUnlocks[ach.id]) {
-          return {
-            ...ach,
-            unlocked: true,
-            unlockedAt: persistedUnlocks[ach.id].unlockedAt
-          };
-        }
-        return {
-          ...ach,
-          unlocked: false
-        };
-      }),
-      totalUnlocked: persistedUnlocks
-        ? Object.keys(persistedUnlocks).filter(id => INITIAL_ACHIEVEMENTS.some(a => a.id === id)).length
-        : 0,
+      achievements: INITIAL_ACHIEVEMENTS.map(ach => ({
+        ...ach,
+        unlocked: false
+      })),
+      totalUnlocked: 0,
       lastUnlockedId: null
     };
   });

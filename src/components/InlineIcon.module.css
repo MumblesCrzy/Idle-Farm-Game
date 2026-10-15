@@ -1,0 +1,5 @@
+/* Small image that sits in a line of text */
+.icon {
+  vertical-align: middle;
+  object-fit: contain;
+}

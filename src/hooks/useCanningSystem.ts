@@ -621,7 +621,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }));
   }, []);
 
-  // Reset canning state to initial values (used during prestige)
+  // Reset canning state to initial values
   const resetCanningState = useCallback(() => {
     setCanningState(INITIAL_CANNING_STATE);
   }, []);

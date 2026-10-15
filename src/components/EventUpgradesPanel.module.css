@@ -1,0 +1,13 @@
+/* Christmas Tree Shop upgrade list, shared by the Tree Farm, Workshop and Shopfront tabs */
+
+.upgradesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  text-align: center;
+  color: #175034; /* Dark green for Christmas */
+  margin-bottom: 1rem;
+}

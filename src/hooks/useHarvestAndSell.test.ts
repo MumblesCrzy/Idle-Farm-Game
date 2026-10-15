@@ -123,8 +123,6 @@ function createDefaultDeps(overrides: Partial<UseHarvestAndSellDeps> = {}): UseH
     eventLogCallbacks: createMockEventLogCallbacks(),
     guildState: DEFAULT_GUILD_STATE,
     setGuildState: vi.fn(),
-    trackKnowledgeGained: vi.fn(),
-    trackMoneyEarned: vi.fn(),
     ...overrides
   };
 }
@@ -262,7 +260,7 @@ describe('useHarvestAndSell', () => {
       expect(deps.setGuildState).not.toHaveBeenCalled();
     });
 
-    it('tracks harvest knowledge for lifetime stats', () => {
+    it('adds the harvest knowledge', () => {
       const deps = createDefaultDeps();
       const { result } = renderHook(() => useHarvestAndSell(deps));
 
@@ -270,10 +268,11 @@ describe('useHarvestAndSell', () => {
         result.current.harvestVeggie(0, false);
       });
 
-      expect(deps.trackKnowledgeGained).toHaveBeenCalledWith(2);
+      const addKnowledge = vi.mocked(deps.setKnowledge).mock.calls[0][0] as (k: number) => number;
+      expect(addKnowledge(0)).toBe(2);
     });
 
-    it('tracks sale money for lifetime stats', () => {
+    it('adds the sale money', () => {
       const deps = createDefaultDeps();
       const { result } = renderHook(() => useHarvestAndSell(deps));
 
@@ -282,7 +281,8 @@ describe('useHarvestAndSell', () => {
       });
 
       // Carrot 5 x 10 + Potato 3 x 15
-      expect(deps.trackMoneyEarned).toHaveBeenCalledWith(95);
+      const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(addMoney(0)).toBe(95);
     });
   });
 

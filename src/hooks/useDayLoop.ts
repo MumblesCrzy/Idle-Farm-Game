@@ -28,12 +28,6 @@ export interface UseDayLoopDependencies {
   // Latest pause state; nothing advances while paused
   isPausedRef: MutableRefObject<boolean>;
 
-  // Latest lifetime-ended state; nothing advances once the lifetime is over
-  offlinePrestigePendingRef: MutableRefObject<boolean>;
-
-  // Lifetime length in days; totalDaysElapsed never goes past it
-  lifetimeMaxDaysRef: MutableRefObject<number>;
-
   // Sell handler, used for the merchant's automatic sale
   handleSell: (isAutoSell?: boolean) => void;
 }
@@ -45,12 +39,10 @@ export interface UseDayLoopDependencies {
 /**
  * Hook that runs the core game day loop.
  *
- * Once per second, unless the game is paused or the lifetime has ended:
+ * Once per second, unless the game is paused:
  *
  * **Day Progression:**
- * - Advances the current day (1-365 cycle) and the lifetime day count,
- *   which stops at the lifetime length. GameProvider's lifetime-end effect
- *   watches that count and ends the lifetime.
+ * - Advances the current day (1-365 cycle) and the total day count
  * - Advances the auto-purchase timer
  *
  * **Auto-Sell System:**
@@ -71,8 +63,6 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     autoSellOwnedRef,
     christmasEventRef,
     isPausedRef,
-    offlinePrestigePendingRef,
-    lifetimeMaxDaysRef,
     handleSell
   } = deps;
 
@@ -90,18 +80,8 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
   useGameTick(() => {
     // Skip all processing while game is paused
     if (isPausedRef.current) return;
-    // Skip all day progression if lifetime has already ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
 
-    // Clamp totalDaysElapsed to the lifetime boundary. The lifetime-end effect in
-    // GameProvider watches totalDaysElapsed and sets the prestige-pending flag;
-    // reading a flag back out of this updater would be unreliable under batching.
-    setTotalDaysElapsed((total: number) => {
-      const maxDays = lifetimeMaxDaysRef.current;
-      if (total >= maxDays) return maxDays;
-      const next = total + 1;
-      return next >= maxDays ? maxDays : next;
-    });
+    setTotalDaysElapsed((total: number) => total + 1);
 
     const tick = {};
     setDay((d: number) => {
@@ -128,7 +108,6 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
   // Elves' Bench automation loop - runs every second
   useGameTick(() => {
     if (isPausedRef.current) return;
-    if (offlinePrestigePendingRef.current) return;
     if (christmasEventRef.current?.isEventActive) {
       const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find(
         (u: EventUpgrade) => u.id === 'elves_bench'

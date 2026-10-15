@@ -1,6 +1,5 @@
 import type { BeeState } from './bees';
 import type { CanningState } from './canning';
-import type { PrestigeState } from '../utils/saveSystem';
 
 /** Game values that achievement requirements are checked against. */
 export interface AchievementGameState {
@@ -14,7 +13,6 @@ export interface AchievementGameState {
   christmasTreesSold?: number;
   beeState?: BeeState | null;
   canningState?: CanningState | null;
-  prestigeState?: PrestigeState;
 }
 
 export interface Achievement {
@@ -22,7 +20,7 @@ export interface Achievement {
   name: string;
   description: string;
   icon: string;
-  category: 'farming' | 'canning' | 'bees' | 'progression' | 'wealth' | 'special' | 'milestone' | 'prestige';
+  category: 'farming' | 'canning' | 'bees' | 'progression' | 'wealth' | 'special' | 'milestone';
   
   // Unlock requirements
   requirement: {

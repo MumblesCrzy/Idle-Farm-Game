@@ -36,15 +36,6 @@ export interface UseFarmManagementDeps {
   
   // Event callbacks
   eventLogCallbacks: EventLogCallbacks;
-  
-  // Prestige bonus: extra starting experience per farm tier upgrade
-  prestigeStartingExpBonus: number;
-
-  // Wisdom upgrade: each Plot Efficiency level lowers the experience needed per extra plot
-  plotEfficiencyLevel: number;
-
-  // Called with the new tier after a farm upgrade (lifetime stats)
-  onFarmTierReached?: (tier: number) => void;
 }
 
 /**
@@ -105,9 +96,6 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setGlobalAutoPurchaseTimer,
     setFarmCost,
     eventLogCallbacks,
-    prestigeStartingExpBonus,
-    plotEfficiencyLevel,
-    onFarmTierReached,
   } = deps;
 
   /**
@@ -121,10 +109,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
    * 5. Sets starting experience based on new tier
    */
   const handleBuyLargerFarm = useCallback(() => {
-    // Calculate new maxPlots (capped at twice the current max).
-    // Plot Efficiency lowers the experience divisor: 100 base, -10 per level, min 50.
-    const expDivisor = Math.max(50, 100 - plotEfficiencyLevel * 10);
-    const experienceBonus = Math.floor(experience / expDivisor);
+    // Calculate new maxPlots (capped at twice the current max): one extra plot per 100 experience
+    const experienceBonus = Math.floor(experience / 100);
     const uncappedMaxPlots = maxPlots + experienceBonus;
     const newMaxPlots = Math.min(uncappedMaxPlots, maxPlots * 2);
     
@@ -139,8 +125,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     
     // Calculate starting experience based on farm tier to unlock appropriate vegetables
     // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
-    // Also add the prestige startingExperience bonus to unlock extra crops
-    const startingExperience = (newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0) + prestigeStartingExpBonus;
+    const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
     
     // Fresh crops (vegetables and fruits), including fresh auto-purchasers
     const resetVeggies = createAllCrops();
@@ -159,7 +144,6 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setHeirloomOwned(false);
     setMaxPlots(newMaxPlots);
     setFarmTier(newFarmTier);
-    onFarmTierReached?.(newFarmTier);
     setIrrigationOwned(false);
     setGlobalAutoPurchaseTimer(0);
     setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)));
@@ -195,10 +179,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
-    eventLogCallbacks,
-    prestigeStartingExpBonus,
-    plotEfficiencyLevel,
-    onFarmTierReached
+    eventLogCallbacks
   ]);
 
   return {

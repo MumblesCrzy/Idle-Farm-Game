@@ -16,23 +16,20 @@ import TreeFarmTab from './components/TreeFarmTab';
 import WorkshopTab from './components/WorkshopTab';
 import ShopfrontTab from './components/ShopfrontTab';
 import GuildsTab from './components/GuildsTab';
-import WisdomTab from './components/WisdomTab';
 
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
 import SaveLoadSystem from './components/SaveLoadSystem';
 import Toast from './components/Toast';
 import HarvestTutorial from './components/HarvestTutorial';
-import { LifespanIntro, ShopExplanation } from './components/LifespanTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useEventLog } from './context/EventLogContext';
-import { ICON_BEE, ICON_GUILDS, ICON_WISDOM } from './config/assetPaths';
+import { ICON_BEE, ICON_GUILDS } from './config/assetPaths';
 
 // Guild system imports
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
-import { applyGuildPriceBonuses } from './utils/guildCalculations';
 
 // Module-level bee context reference for dev tools
 let globalBeeContext: BeeContextValue | null = null;
@@ -86,9 +83,9 @@ import { useGameTick } from './hooks/useGameClock';
 import { useDeferredEffects } from './hooks/useDeferredEffects';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
-import { loadGameStateWithCanning, startNewGame, getMaxLifetimeDaysForPlayer, type ExtendedGameState, type PrestigeState, type WisdomUpgrades } from './utils/saveSystem';
+import { loadGameStateWithCanning, startNewGame, type ExtendedGameState } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
-import type { Veggie, GameState, EventCategory, EventPriority } from './types/game';
+import type { Veggie, GameState, EventCategory } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
@@ -98,7 +95,6 @@ import styles from './components/App.module.css';
 import {
   formatNumber,
   getVeggieGrowthBonus,
-  calculateExpRequirement,
   createAllCrops
 } from './utils/gameCalculations';
 import {
@@ -195,19 +191,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     heirloomKnowledgeCost
   } = gameState;
 
-  // Local flag: whether offline processing discovered a lifetime end (capped)
-  const [offlinePrestigePending, setOfflinePrestigePending] = useState(false);
-
-  // Wisdom earned this lifetime — set when lifetime ends so the player can
-  // spend it in the Wisdom Shop *before* clicking "Start Next Lifetime".
-  const [wisdomEarnedThisLifetime, setWisdomEarnedThisLifetime] = useState(0);
-
-  // Ref to track whether wisdom has been deposited this lifetime.
-  // Prevents the wisdom-calculation useEffect from running twice (e.g. when
-  // an offline handler sets offlinePrestigePending before the effect fires).
-  const wisdomDepositedRef = useRef(false);
-
-  // Pause state — freezes all game loops when true (persisted so offline progress is skipped)
+  // Pause state — freezes all game loops  // Pause state — freezes all game loops when true (persisted so offline progress is skipped)
   const [isPaused, setIsPaused] = useState(() => !!loaded?.isPaused);
 
   // Bee yield bonus tracking (from bee boxes and Meadow Magic upgrades)
@@ -217,114 +201,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [guildState, setGuildState] = useState<GuildState>(() => {
     return loaded?.guildState || DEFAULT_GUILD_STATE;
   });
-
-  // Prestige system state - tracks lifetime stats for Wisdom calculation
-  const [prestigeState, setPrestigeState] = useState<PrestigeState>(() => {
-    return loaded?.prestigeState || {
-      wisdom: 0,
-      lifetimeCount: 1,
-      wisdomUpgrades: {},
-      totalMoneyEarned: 0,
-      totalKnowledgeGained: 0,
-      maxFarmTierReached: loaded?.farmTier || 1,
-      achievementsUnlocked: {}
-    };
-  });
-
-  // Wisdom's Potential: standard 1% bonus per unspent wisdom after first prestige
-  const wisdomPotentialMultiplier = useMemo(() => {
-    if (prestigeState.lifetimeCount >= 2) {
-      return 1 + (prestigeState.wisdom * 0.01);
-    }
-    return 1;
-  }, [prestigeState.lifetimeCount, prestigeState.wisdom]);
-
-  // Helper to track money earned this lifetime (also applies Wisdom's Potential bonus)
-  const trackMoneyEarned = useCallback((amount: number) => {
-    if (amount > 0) {
-      const bonus = wisdomPotentialMultiplier > 1 ? Math.floor(amount * (wisdomPotentialMultiplier - 1)) : 0;
-      if (bonus > 0) {
-        setMoney(m => m + bonus);
-      }
-      setPrestigeState(prev => ({
-        ...prev,
-        totalMoneyEarned: (prev.totalMoneyEarned || 0) + amount + bonus
-      }));
-    }
-  }, [setMoney, wisdomPotentialMultiplier]);
-
-  // Scholarly Roots multiplier: +5% knowledge per level
-  const knowledgeBoostMultiplier = useMemo(() => {
-    const level = prestigeState.wisdomUpgrades?.knowledgeBoost || 0;
-    return level > 0 ? 1 + (level * 0.05) : 1;
-  }, [prestigeState.wisdomUpgrades?.knowledgeBoost]);
-
-  // Helper to track knowledge gained this lifetime (applies Wisdom's Potential + Scholarly Roots bonuses)
-  const trackKnowledgeGained = useCallback((amount: number) => {
-    if (amount > 0) {
-      // Scholarly Roots bonus (flat % increase)
-      const scholarlyBonus = knowledgeBoostMultiplier > 1 ? Math.floor(amount * (knowledgeBoostMultiplier - 1)) : 0;
-      // Wisdom's Potential bonus (stacks additively on the boosted total)
-      const boostedAmount = amount + scholarlyBonus;
-      const potentialBonus = wisdomPotentialMultiplier > 1 ? Math.floor(boostedAmount * (wisdomPotentialMultiplier - 1)) : 0;
-      const totalBonus = scholarlyBonus + potentialBonus;
-      if (totalBonus > 0) {
-        setKnowledge(k => k + totalBonus);
-      }
-      setPrestigeState(prev => ({
-        ...prev,
-        totalKnowledgeGained: (prev.totalKnowledgeGained || 0) + amount + totalBonus
-      }));
-    }
-  }, [knowledgeBoostMultiplier, wisdomPotentialMultiplier, setKnowledge]);
-
-  // Helper to track max farm tier reached (both per-lifetime and all-time)
-  const trackFarmTierReached = useCallback((tier: number) => {
-    setPrestigeState(prev => ({
-      ...prev,
-      maxFarmTierReached: Math.max(prev.maxFarmTierReached || 1, tier),
-      highestFarmTierEver: Math.max(prev.highestFarmTierEver || 1, tier)
-    }));
-  }, []);
-
-  // Upgrade cost calculation (must match WisdomTab's calculation)
-  const getWisdomUpgradeCost = useCallback((upgradeId: keyof WisdomUpgrades, currentLevel: number): number => {
-    const upgradeConfigs: Record<keyof WisdomUpgrades, { baseCost: number; costScaling: number }> = {
-      extendedLifespan: { baseCost: 10, costScaling: 1.5 },
-      startingGold: { baseCost: 5, costScaling: 1.3 },
-      startingKnowledge: { baseCost: 5, costScaling: 1.3 },
-      startingExperience: { baseCost: 8, costScaling: 1.4 },
-      permanentGuildBenefits: { baseCost: 25, costScaling: 2.0 },
-      startingFarmTier: { baseCost: 100, costScaling: 2.0 },
-      knowledgeBoost: { baseCost: 15, costScaling: 1.5 },
-      plotEfficiency: { baseCost: 20, costScaling: 1.6 },
-    };
-    const config = upgradeConfigs[upgradeId];
-    return Math.floor(config.baseCost * Math.pow(config.costScaling, currentLevel));
-  }, []);
-
-  // Handler to purchase a wisdom upgrade
-  const handlePurchaseWisdomUpgrade = useCallback((upgradeId: keyof WisdomUpgrades) => {
-    const currentLevel = prestigeState.wisdomUpgrades[upgradeId] || 0;
-    const cost = getWisdomUpgradeCost(upgradeId, currentLevel);
-    
-    if (prestigeState.wisdom >= cost) {
-      devTelemetry.emit('shop_purchase', {
-        upgradeId,
-        levelBefore: currentLevel,
-        levelAfter: currentLevel + 1,
-        cost
-      });
-      setPrestigeState(prev => ({
-        ...prev,
-        wisdom: prev.wisdom - cost,
-        wisdomUpgrades: {
-          ...prev.wisdomUpgrades,
-          [upgradeId]: (prev.wisdomUpgrades[upgradeId] || 0) + 1
-        }
-      }));
-    }
-  }, [prestigeState.wisdom, prestigeState.wisdomUpgrades, getWisdomUpgradeCost]);
 
   // Initialize Christmas Tree Shop event
   const [initialChristmasState] = useState(() => {
@@ -418,8 +294,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   useGameTick(() => {
     // Skip all processing while game is paused
     if (isPausedRef.current) return;
-    // Skip all processing if lifetime has ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
 
     setVeggies((prev) => {
       const { veggies: newVeggies } = processVeggieGrowth(
@@ -448,15 +322,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const experienceRef = useLatestRef(experience);
   const autoSellOwnedRef = useLatestRef(autoSellOwned);
   const guildStateRef = useLatestRef(guildState);
-  const trackKnowledgeGainedRef = useLatestRef(trackKnowledgeGained);
-  const offlinePrestigePendingRef = useLatestRef(offlinePrestigePending);
   const isPausedRef = useLatestRef(isPaused);
-  // Lifetime max days - recalculated only when extendedLifespan level changes
-  const extendedLifespanLevel = prestigeState.wisdomUpgrades.extendedLifespan || 0;
-  const lifetimeMaxDaysRef = useRef(getMaxLifetimeDaysForPlayer(prestigeState));
-  useEffect(() => {
-    lifetimeMaxDaysRef.current = getMaxLifetimeDaysForPlayer(prestigeState);
-  }, [extendedLifespanLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Progress for time away: once at startup, and whenever a hidden tab comes back
   useOfflineProgress({
@@ -476,78 +342,13 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       christmasEvent
     },
     isPaused,
-    lifetimeEnded: offlinePrestigePending,
-    lifetimeMaxDays: getMaxLifetimeDaysForPlayer(prestigeState),
-    trackKnowledgeGained,
     setVeggies,
     setExperience,
     setKnowledge,
     setDay,
-    setTotalDaysElapsed,
-    setOfflinePrestigePending
+    setTotalDaysElapsed
   });
 
-  // Reliable lifetime-end detection: fires whenever totalDaysElapsed changes.
-  // The day-loop updater clamps totalDaysElapsed to the max, but setting the
-  // prestige flag via a closure variable inside setState is unreliable under
-  // React 18 batching.  This useEffect runs after the committed state,
-  // guaranteeing the check sees the real value.
-  //
-  // When the lifetime ends we also deposit the earned wisdom immediately so
-  // the player can spend it in the Wisdom Shop before clicking
-  // "Start Next Lifetime".
-  useEffect(() => {
-    if (wisdomDepositedRef.current) return; // wisdom already deposited this lifetime
-    const maxDays = lifetimeMaxDaysRef.current;
-    if (totalDaysElapsed < maxDays) return;
-
-    // ── Final stash sale: sell ALL veggies before computing wisdom ──
-    // Worked out from current state first, so the money and the wisdom always
-    // include it. A total read back out of a setState updater can still be 0,
-    // because React may run the updater later.
-    let stashSaleTotal = 0;
-    const soldByName = new Map<string, number>();
-    for (const v of veggies) {
-      if (v.stash > 0) {
-        for (let i = 0; i < v.stash; i++) {
-          stashSaleTotal += applyGuildPriceBonuses(v.salePrice, guildState, true);
-        }
-        soldByName.set(v.name, v.stash);
-      }
-    }
-    if (soldByName.size > 0) {
-      setVeggies(prev => prev.map(v => {
-        const sold = soldByName.get(v.name);
-        return sold ? { ...v, stash: Math.max(0, v.stash - sold) } : v;
-      }));
-    }
-
-    // Wisdom's Potential bonus also applies to the stash earnings
-    const potentialBonus = wisdomPotentialMultiplier > 1
-      ? Math.floor(stashSaleTotal * (wisdomPotentialMultiplier - 1))
-      : 0;
-    const stashContribution = stashSaleTotal + potentialBonus;
-    if (stashContribution > 0) {
-      setMoney(m => m + stashContribution);
-    }
-
-    // Calculate and deposit wisdom now so the shop works immediately,
-    // counting the stash money that hasn't reached prestigeState yet.
-    const moneyFactor = ((prestigeState.totalMoneyEarned || 0) + stashContribution) / 10_000;
-    const knowledgeFactor = (prestigeState.totalKnowledgeGained || 0) / 500;
-    const tierFactor = prestigeState.maxFarmTierReached || 1;
-    const wisdomBonus = Math.floor(Math.sqrt(prestigeState.wisdom || 0));
-    const earned = Math.floor((moneyFactor + knowledgeFactor) * tierFactor) + wisdomBonus;
-
-    setPrestigeState(prev => ({
-      ...prev,
-      totalMoneyEarned: (prev.totalMoneyEarned || 0) + stashContribution,
-      wisdom: prev.wisdom + earned,
-    }));
-    setWisdomEarnedThisLifetime(earned);
-    wisdomDepositedRef.current = true;
-    setOfflinePrestigePending(true);
-  }, [totalDaysElapsed, offlinePrestigePending, guildState, wisdomPotentialMultiplier, veggies, prestigeState, setVeggies, setMoney]);
   
   // Runs work recorded by state updaters once their result is committed
   const scheduleAfterCommit = useDeferredEffects();
@@ -558,8 +359,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   useGameTick(() => {
     // Skip all processing while game is paused
     if (isPausedRef.current) return;
-    // Skip all game processing if lifetime has ended (prestige pending)
-    if (offlinePrestigePendingRef.current) return;
 
     const tick = {};
     setVeggies((prev) => {
@@ -600,10 +399,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         if (awardGains) {
           setKnowledge((k: number) => k + totalKnowledgeGain);
           setExperience((exp: number) => exp + totalExperienceGain);
-          // Track knowledge gained for lifetime stats (prestige system)
-          if (totalKnowledgeGain > 0) {
-            trackKnowledgeGainedRef.current(totalKnowledgeGain);
-          }
         }
         setHighestUnlockedVeggie(current => Math.max(current, highestUnlockedIndex));
       });
@@ -640,9 +435,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     activeVeggie,
     eventLogCallbacks,
     guildState,
-    setGuildState,
-    trackKnowledgeGained,
-    trackMoneyEarned
+    setGuildState
   });
 
   // Initialize auto-purchase system
@@ -690,127 +483,10 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
-    eventLogCallbacks,
-    prestigeStartingExpBonus: (prestigeState.wisdomUpgrades.startingExperience || 0) * 50,
-    plotEfficiencyLevel: prestigeState.wisdomUpgrades.plotEfficiency || 0,
-    onFarmTierReached: trackFarmTierReached
+    eventLogCallbacks
   });
 
-  // Handler to start the next lifetime (prestige)
-  // Note: Tab switching and event logging happen via separate handlers passed from component
-  // Declared after the weather and auto-purchase hooks, so its dependency list can name their setters
-  const handleStartNextLifetime = useCallback((onComplete?: () => void) => {
-    // Wisdom was already deposited into prestigeState.wisdom when the
-    // lifetime ended (in the lifetime-end useEffect).  Use the stored
-    // amount for telemetry and then clear it.
-    const earnedWisdom = wisdomEarnedThisLifetime;
-
-    // ── Telemetry: lifetime_complete + wisdom_awarded ──
-    devTelemetry.emit('lifetime_complete', {
-      lifetimeCount: prestigeState.lifetimeCount,
-      wisdomGained: earnedWisdom,
-      totalMoneyEarned: prestigeState.totalMoneyEarned || 0,
-      totalKnowledgeGained: prestigeState.totalKnowledgeGained || 0,
-      maxFarmTierReached: prestigeState.maxFarmTierReached || 1,
-      durationDays: totalDaysElapsed
-    });
-    devTelemetry.emit('wisdom_awarded', {
-      amount: earnedWisdom,
-      formulaComponents: {
-        moneyFactor: (prestigeState.totalMoneyEarned || 0) / 10_000,
-        knowledgeFactor: (prestigeState.totalKnowledgeGained || 0) / 500,
-        tierFactor: prestigeState.maxFarmTierReached || 1,
-        wisdomBonus: Math.floor(Math.sqrt((prestigeState.wisdom - earnedWisdom) || 0))
-      }
-    });
-    
-    // Get starting bonuses from upgrades
-    const startingGoldLevel = prestigeState.wisdomUpgrades.startingGold || 0;
-    const startingKnowledgeLevel = prestigeState.wisdomUpgrades.startingKnowledge || 0;
-    const startingExperienceLevel = prestigeState.wisdomUpgrades.startingExperience || 0;
-    const startingFarmTierLevel = prestigeState.wisdomUpgrades.startingFarmTier || 0;
-    
-    const bonusGold = startingGoldLevel * 500;
-    const bonusKnowledge = startingKnowledgeLevel * 25;
-    const bonusExperience = startingExperienceLevel * 50;
-    
-    // Compute starting farm tier (1 = base, +1 per level of Ancestral Farmstead)
-    const startTier = 1 + startingFarmTierLevel;
-    const startMaxPlots = startTier * 4;
-    const startFarmCost = Math.ceil(FARM_BASE_COST * Math.pow(1.85, startTier - 1));
-    // Starting experience: enough to unlock crops for that tier + prestige exp bonus
-    const tierExperience = startTier > 1 ? calculateExpRequirement(startTier - 1) : 0;
-    
-    // Update prestige state for new lifetime
-    // Note: wisdom is NOT added here — it was already deposited when the
-    // lifetime ended so the player could shop before clicking this button.
-    setPrestigeState(prev => ({
-      ...prev,
-      lifetimeCount: prev.lifetimeCount + 1,
-      totalMoneyEarned: 0,
-      totalKnowledgeGained: 0,
-      maxFarmTierReached: startTier,
-    }));
-    setWisdomEarnedThisLifetime(0);
-    wisdomDepositedRef.current = false;
-    
-    // ── Resources ──
-    setMoney(100 + bonusGold);
-    setKnowledge(bonusKnowledge);
-    setExperience(tierExperience + bonusExperience);
-    
-    // ── Farm ──
-    setFarmTier(startTier);
-    setFarmCost(startFarmCost);
-    setMaxPlots(startMaxPlots);
-    setHighestUnlockedVeggie(0);
-    
-    // Reset crops to initial state (vegetables and fruits)
-    const resetVeggies = createAllCrops();
-    setActiveVeggie(0);
-    setVeggies(resetVeggies);
-    
-    // ── Time ──
-    setDay(1);
-    setTotalDaysElapsed(0);
-    
-    // ── Statistics ──
-    setTotalHarvests(0);
-    
-    // ── Knowledge upgrades ──
-    setIrrigationOwned(false);
-    setGreenhouseOwned(false);
-    setHeirloomOwned(false);
-    setAutoSellOwned(false);
-    setAlmanacLevel(0);
-    setAlmanacCost(10);
-    
-    // ── Weather ──
-    setCurrentWeather('Clear');
-    
-    // ── Auto-purchase ──
-    setGlobalAutoPurchaseTimer(0);
-    
-    // ── Guilds (commitment + currencies reset, upgrades reset) ──
-    setGuildState(DEFAULT_GUILD_STATE);
-    
-    // ── Bees (boxes, upgrades, honey/wax reset) ──
-    if (globalBeeContext?.resetBeeSystem) {
-      globalBeeContext.resetBeeSystem();
-    }
-    
-    // Note: Canning reset is handled by the onComplete callback from App
-    // because the canning system lives in the App component scope.
-    // Note: Seasonal events (Christmas) PERSIST across lifetimes per design.
-    
-    // Clear prestige pending flag
-    setOfflinePrestigePending(false);
-    
-    // Callback for additional cleanup (tab switching, canning reset, logging)
-    if (onComplete) onComplete();
-  }, [wisdomEarnedThisLifetime, prestigeState.lifetimeCount, prestigeState.totalMoneyEarned, prestigeState.totalKnowledgeGained, prestigeState.maxFarmTierReached, prestigeState.wisdom, prestigeState.wisdomUpgrades.startingGold, prestigeState.wisdomUpgrades.startingKnowledge, prestigeState.wisdomUpgrades.startingExperience, prestigeState.wisdomUpgrades.startingFarmTier, totalDaysElapsed, FARM_BASE_COST, setMoney, setKnowledge, setExperience, setFarmTier, setFarmCost, setMaxPlots, setHighestUnlockedVeggie, setActiveVeggie, setVeggies, setDay, setTotalDaysElapsed, setTotalHarvests, setIrrigationOwned, setGreenhouseOwned, setHeirloomOwned, setAutoSellOwned, setAlmanacLevel, setAlmanacCost, setCurrentWeather, setGlobalAutoPurchaseTimer]);
-
-  // Day counter, merchant auto-sell, auto-purchase timer and Christmas daily ticks
+  // Day counter, merchant auto-sell  // Day counter, merchant auto-sell, auto-purchase timer and Christmas daily ticks
   useDayLoop({
     setDay,
     setTotalDaysElapsed,
@@ -818,8 +494,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     autoSellOwnedRef,
     christmasEventRef,
     isPausedRef,
-    offlinePrestigePendingRef,
-    lifetimeMaxDaysRef,
     handleSell
   });
 
@@ -840,10 +514,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
     christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
-    guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached,
-    prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime,
-    offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused,
-    setIsPaused
+    guildState, setGuildState, isPaused, setIsPaused
   }), [
     veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge,
     activeVeggie, day, setDay, totalDaysElapsed, setTotalDaysElapsed, totalHarvests,
@@ -858,10 +529,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
     christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
-    guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, trackFarmTierReached,
-    prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime,
-    offlinePrestigePending, setOfflinePrestigePending, wisdomEarnedThisLifetime, isPaused,
-    setIsPaused
+    guildState, setGuildState, isPaused, setIsPaused
   ]);
 
   return (
@@ -997,7 +665,7 @@ function App() {
   }, []);
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas' | 'guilds' | 'wisdom'>('growing');
+  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas' | 'guilds'>('growing');
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
   
   // Guild UI state (guild data state is in GameProvider context)
@@ -1010,34 +678,7 @@ function App() {
     setGuildIntroShown(true);
   }, []);
   
-  // Lifespan/Wisdom tutorial state - tracks one-time tutorials for prestige system
-  const [lifespanIntroShown, setLifespanIntroShown] = useState(
-    () => loadedGameState?.lifespanIntroShown || false
-  );
-  const [shopExplanationShown, setShopExplanationShown] = useState(
-    () => loadedGameState?.shopExplanationShown || false
-  );
-  const [showLifespanIntro, setShowLifespanIntro] = useState(false);
-  const [showShopExplanation, setShowShopExplanation] = useState(false);
-  
-  // Handlers for lifespan tutorials
-  const handleDismissLifespanIntro = useCallback(() => {
-    setShowLifespanIntro(false);
-    setLifespanIntroShown(true);
-  }, []);
-  
-  const handleDismissShopExplanation = useCallback(() => {
-    setShowShopExplanation(false);
-    setShopExplanationShown(true);
-  }, []);
-  
-  const handleShopExplanationOpenShop = useCallback(() => {
-    setShowShopExplanation(false);
-    setShopExplanationShown(true);
-    setActiveTab('wisdom');
-  }, []);
-  
-  // Initialize canning state (uses pre-loaded state)
+  // Initialize canning state (uses pre-loaded state)  // Initialize canning state (uses pre-loaded state)
   const [initialCanningState] = useState(() => loadedGameState?.canningState || undefined);
 
   // Load and manage UI preferences (uses pre-loaded state)
@@ -1094,14 +735,8 @@ function App() {
   const setRegularHoney = useMemo(() => createBeeStateUpdater('regularHoney'), [createBeeStateUpdater]);
   const setGoldenHoney = useMemo(() => createBeeStateUpdater('goldenHoney'), [createBeeStateUpdater]);
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, trackMoneyEarned, trackKnowledgeGained, prestigeState, setPrestigeState, handlePurchaseWisdomUpgrade, handleStartNextLifetime, offlinePrestigePending, wisdomEarnedThisLifetime, isPaused, setIsPaused } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
-  // Force wisdom tab when lifetime has ended (prestige pending)
-  useEffect(() => {
-    if (offlinePrestigePending && activeTab !== 'wisdom') {
-      setActiveTab('wisdom');
-    }
-  }, [offlinePrestigePending, activeTab]);
 
   // Guild system handlers (needs day from useGame)
   const handleCommitToGuild = useCallback((guildId: GuildType) => {
@@ -1241,11 +876,9 @@ function App() {
     (moneyReward, knowledgeReward) => {
       if (moneyReward > 0) {
         setMoney(prev => prev + moneyReward);
-        trackMoneyEarned(moneyReward);
       }
       if (knowledgeReward > 0) {
         setKnowledge(prev => prev + knowledgeReward);
-        trackKnowledgeGained(knowledgeReward);
       }
     },
     (achievement) => {
@@ -1261,26 +894,12 @@ function App() {
       
       // ── Telemetry: achievement_unlocked ──
       devTelemetry.emit('achievement_unlocked', {
-        achievementId: achievement.id,
-        lifetimeWhenUnlocked: prestigeState.lifetimeCount
+        achievementId: achievement.id
       });
 
-      // Persist unlock in prestige state (survives hard resets)
-      setPrestigeState(prev => ({
-        ...prev,
-        achievementsUnlocked: {
-          ...prev.achievementsUnlocked,
-          [achievement.id]: {
-            unlockedAt: achievement.unlockedAt || Date.now(),
-            lifetimeWhenUnlocked: prev.lifetimeCount
-          }
-        }
-      }));
-      
       // Call the event log callback
       eventLogCallbacks.onAchievementUnlock(achievement);
-    },
-    prestigeState.achievementsUnlocked
+    }
   );
 
   // Get unlocked achievement IDs for systems that need to check achievement-locked content
@@ -1289,30 +908,6 @@ function App() {
     [achievements]
   );
 
-  // Runs work recorded by state updaters once their result is committed
-  const scheduleAfterCommit = useDeferredEffects();
-
-  // Wrapped setters for the canning system that also track prestige stats.
-  // The gain is only known inside the updater, so tracking runs after the commit.
-  const setMoneyWithTracking = useCallback((value: number | ((prev: number) => number)) => {
-    const key = {};
-    setMoney((prev: number) => {
-      const newValue = typeof value === 'function' ? value(prev) : value;
-      const gained = newValue - prev;
-      scheduleAfterCommit(key, gained > 0 ? () => trackMoneyEarned(gained) : undefined);
-      return newValue;
-    });
-  }, [setMoney, trackMoneyEarned, scheduleAfterCommit]);
-
-  const setKnowledgeWithTracking = useCallback((value: number | ((prev: number) => number)) => {
-    const key = {};
-    setKnowledge((prev: number) => {
-      const newValue = typeof value === 'function' ? value(prev) : value;
-      const gained = newValue - prev;
-      scheduleAfterCommit(key, gained > 0 ? () => trackKnowledgeGained(gained) : undefined);
-      return newValue;
-    });
-  }, [setKnowledge, trackKnowledgeGained, scheduleAfterCommit]);
 
   // Initialize canning system
   const {
@@ -1321,17 +916,16 @@ function App() {
     completeCanning: _completeCanning, // Used internally by useCanningSystem for auto-collection
     purchaseUpgrade,
     canMakeRecipe,
-    toggleAutoCanning,
-    resetCanningState
+    toggleAutoCanning
   } = useCanningSystem(
     // experience parameter removed - unused
     veggies, 
     setVeggies, 
     heirloomOwned, 
     money, 
-    setMoneyWithTracking, 
+    setMoney,
     knowledge, 
-    setKnowledgeWithTracking, 
+    setKnowledge,
     initialCanningState, 
     uiPreferences.canningRecipeSort, 
     farmTier,
@@ -1450,7 +1044,7 @@ function App() {
   }, [eventLogCallbacks, addEvent]);
 
   // Everything that goes into a save. Autosave and export both use this, so an
-  // exported file holds the full game, including prestige, guilds and achievements.
+  // exported file holds the full game, including guilds and achievements.
   const buildSaveState = useCallback((): ExtendedGameState | null => {
     if (!canningState) return null;
     return {
@@ -1487,13 +1081,10 @@ function App() {
       beeState: beeState || undefined,
       harvestTutorialShown,
       guildIntroShown,
-      lifespanIntroShown,
-      shopExplanationShown,
       guildState,
-      prestigeState,
       isPaused
     };
-  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, lifespanIntroShown, shopExplanationShown, guildState, prestigeState, isPaused]);
+  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, beeState, harvestTutorialShown, guildIntroShown, guildState, isPaused]);
 
   // Saves at most every 30 seconds, and always on page unload
   useAutoSave({ getGameState: buildSaveState });
@@ -1514,10 +1105,9 @@ function App() {
       totalHarvests,
       christmasTreesSold,
       beeState,
-      canningState,
-      prestigeState
+      canningState
     });
-  }, [veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, prestigeState]);
+  }, [veggies, canningState, christmasEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState]);
 
   // Reset tab to growing if canning becomes locked while on canning tab
   useEffect(() => {
@@ -1586,21 +1176,6 @@ function App() {
       previousVeggieGrowthRef.current.set(veggie.name, veggie.growth);
     });
   }, [veggies, season, currentWeather, greenhouseOwned, irrigationOwned, eventLog, harvestTutorialShown, activeTab, guildState]);
-  
-  // Lifespan tutorial triggers
-  // Show intro at start of first lifetime (day 0-1)
-  useEffect(() => {
-    if (!lifespanIntroShown && prestigeState.lifetimeCount === 1 && day <= 1) {
-      setShowLifespanIntro(true);
-    }
-  }, [lifespanIntroShown, prestigeState.lifetimeCount, day]);
-  
-  // Show shop explanation after first prestige (when starting lifetime 2)
-  useEffect(() => {
-    if (!shopExplanationShown && prestigeState.lifetimeCount > 1 && day <= 1) {
-      setShowShopExplanation(true);
-    }
-  }, [shopExplanationShown, prestigeState.lifetimeCount, day]);
   
   // Track season changes
   useEffect(() => {
@@ -1708,7 +1283,6 @@ function App() {
         isChristmasEventActive={christmasEvent?.isEventActive ?? false}
         christmasTreesSold={christmasEvent?.totalTreesSold ?? 0}
         earnCheer={christmasEvent?.earnCheer}
-        onMoneyEarned={trackMoneyEarned}
         isPaused={isPaused}
       />
     )}
@@ -1753,8 +1327,6 @@ function App() {
             holidayCheer={christmasEvent?.holidayCheer ?? 0}
             isChristmasEventActive={christmasEvent?.isEventActive ?? false}
             guildState={guildState}
-            prestigeState={prestigeState}
-            lifetimeMaxDays={getMaxLifetimeDaysForPlayer(prestigeState)}
           />
         </aside>
 
@@ -1878,23 +1450,6 @@ function App() {
                     Nov 1 - Dec 25
                   </div>
                 )}
-              </button>
-            )}
-            {/* Wisdom Tab Button - visible after first lifetime or when prestige pending */}
-            {(offlinePrestigePending || prestigeState.lifetimeCount >= 2) && (
-              <button
-                role="tab"
-                id="tab-wisdom"
-                aria-selected={activeTab === 'wisdom'}
-                aria-controls="panel-wisdom"
-                onClick={() => setActiveTab('wisdom')}
-                className={activeTab === 'wisdom' ? styles.tabButtonWisdomActive : styles.tabButtonWisdom}
-                title="Wisdom of the Ages"
-              >
-                <div className={styles.tabButtonContent}>
-                  <img src={ICON_WISDOM} alt="" aria-hidden="true" className={styles.tabIcon} />
-                  Wisdom
-                </div>
               </button>
             )}
           </div>
@@ -2180,40 +1735,6 @@ function App() {
         </div>
       )}
 
-      {/* Wisdom Tab Content */}
-      {(offlinePrestigePending || prestigeState.lifetimeCount >= 2) && (
-        <div 
-          role="tabpanel" 
-          id="panel-wisdom" 
-          aria-labelledby="tab-wisdom"
-          className={activeTab !== 'wisdom' ? styles.tabPanelHidden : undefined}
-        >
-          <PerformanceWrapper id="WisdomTab">
-            <WisdomTab
-              prestigeState={prestigeState}
-              isLifetimeEnded={offlinePrestigePending}
-              wisdomEarnedThisLifetime={wisdomEarnedThisLifetime}
-              onPurchaseUpgrade={handlePurchaseWisdomUpgrade}
-              showUpgradesOnly={!offlinePrestigePending && prestigeState.lifetimeCount >= 2}
-              onStartNextLifetime={() => {
-                handleStartNextLifetime(() => {
-                  // Reset canning (lives in App scope, not GameProvider)
-                  resetCanningState();
-                  // Clear event log for fresh lifetime
-                  eventLog.clearEvents();
-                  setActiveTab('growing');
-                  addEvent(
-                    'system' as EventCategory,
-                    `Started lifetime #${prestigeState.lifetimeCount + 1}!`,
-                    { priority: 'normal' as EventPriority }
-                  );
-                });
-              }}
-              formatNumber={formatNumber}
-            />
-          </PerformanceWrapper>
-        </div>
-      )}
       </main>
       </div>
     </div>
@@ -2302,38 +1823,14 @@ function App() {
       />
     </ErrorBoundary>
 
-    {/* Lifespan / Wisdom Tutorials */}
-    <ErrorBoundary fallback={<OverlayError title="Lifespan tutorial" onClose={handleDismissLifespanIntro} />} onReset={handleDismissLifespanIntro}>
-      <LifespanIntro
-        isVisible={showLifespanIntro}
-        onDismiss={handleDismissLifespanIntro}
-      />
-    </ErrorBoundary>
-
-    <ErrorBoundary fallback={<OverlayError title="Wisdom shop tutorial" onClose={handleDismissShopExplanation} />} onReset={handleDismissShopExplanation}>
-      <ShopExplanation
-        isVisible={showShopExplanation}
-        wisdomEarned={prestigeState.wisdom}
-        onOpenShop={handleShopExplanationOpenShop}
-        onBeginNextLifetime={handleDismissShopExplanation}
-        formatNumber={formatNumber}
-      />
-    </ErrorBoundary>
-
-    {/* DevTools - Only visible when feature flag enabled, lazy loaded */}
+    {/* DevTools - Only visible    {/* DevTools - Only visible when feature flag enabled, lazy loaded */}
     {devToolsEnabled && (
       <ErrorBoundary fallback={<OverlayError title="DevTools" />}>
         <Suspense fallback={null}>
           <DevTools
-          onAddMoney={(amount) => {
-            setMoney(prev => prev + amount);
-            if (amount > 0) trackMoneyEarned(amount);
-          }}
+          onAddMoney={(amount) => setMoney(prev => prev + amount)}
           onAddExperience={(amount) => setExperience(prev => prev + amount)}
-          onAddKnowledge={(amount) => {
-            setKnowledge(prev => prev + amount);
-            if (amount > 0) trackKnowledgeGained(amount);
-          }}
+          onAddKnowledge={(amount) => setKnowledge(prev => prev + amount)}
           onSkipDays={(days) => setDay(prev => prev + days)}
           onResetGame={handleResetGame}
           onResetGuild={() => setGuildState(DEFAULT_GUILD_STATE)}

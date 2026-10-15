@@ -37,8 +37,7 @@ const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
     { key: 'bees', label: 'Bees & Honey', color: '#f39c12' },
     { key: 'progression', label: 'Progression', color: '#2196f3' },
     { key: 'wealth', label: 'Wealth', color: '#ffc107' },
-    { key: 'special', label: 'Special', color: '#9c27b0' },
-    { key: 'prestige', label: 'Wisdom of the Ages', color: '#d4a017' }
+    { key: 'special', label: 'Special', color: '#9c27b0' }
   ];
 
   const totalAchievements = achievements.length;

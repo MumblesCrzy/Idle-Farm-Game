@@ -37,7 +37,6 @@ const simulated = (overrides: Partial<OfflineProgressResult> = {}): OfflineProgr
   christmasTreeGrowthTicks: 0,
   christmasElvesCraftingTicks: 0,
   christmasPassiveCheerGain: 0,
-  cappedToLifetime: false,
   ...overrides
 });
 
@@ -91,15 +90,11 @@ const createDeps = (overrides: Partial<UseOfflineProgressDeps> = {}): UseOffline
     christmasEvent: christmasEvent()
   },
   isPaused: false,
-  lifetimeEnded: false,
-  lifetimeMaxDays: 29200,
-  trackKnowledgeGained: vi.fn(),
   setVeggies: vi.fn(),
   setExperience: vi.fn(),
   setKnowledge: vi.fn(),
   setDay: vi.fn(),
   setTotalDaysElapsed: vi.fn(),
-  setOfflinePrestigePending: vi.fn(),
   ...overrides
 });
 
@@ -130,7 +125,7 @@ describe('useOfflineProgress', () => {
       expect(deps.setExperience).toHaveBeenCalledTimes(1);
       expect(vi.mocked(deps.setExperience).mock.calls[0][0]).toBeTypeOf('function');
       expect(deps.setDay).toHaveBeenCalledWith(50);
-      expect(deps.trackKnowledgeGained).toHaveBeenCalledWith(5);
+      expect(deps.setKnowledge).toHaveBeenCalledTimes(1);
     });
 
     it('does not count time twice when an old hidden-tab timestamp is also stored', () => {
@@ -196,17 +191,12 @@ describe('useOfflineProgress', () => {
       expect(calculateOfflineProgress).not.toHaveBeenCalled();
     });
 
-    it('does nothing while paused or after the lifetime has ended', () => {
-      const { rerender } = renderHook((deps: UseOfflineProgressDeps) => useOfflineProgress(deps), {
+    it('does nothing while paused', () => {
+      renderHook((deps: UseOfflineProgressDeps) => useOfflineProgress(deps), {
         initialProps: createDeps({ isPaused: true })
       });
       setHidden(true);
       vi.setSystemTime(NOW + TEN_MINUTES);
-      setHidden(false);
-
-      rerender(createDeps({ lifetimeEnded: true }));
-      setHidden(true);
-      vi.setSystemTime(NOW + 2 * TEN_MINUTES);
       setHidden(false);
 
       expect(calculateOfflineProgress).not.toHaveBeenCalled();
@@ -225,16 +215,6 @@ describe('useOfflineProgress', () => {
   });
 
   describe('results', () => {
-    it('ends the lifetime when the catch-up reaches it', () => {
-      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ cappedToLifetime: true }));
-      const deps = createDeps({ loaded: savedGame(), lifetimeMaxDays: 700 });
-
-      renderHook(() => useOfflineProgress(deps));
-
-      expect(deps.setOfflinePrestigePending).toHaveBeenCalledWith(true);
-      expect(deps.setTotalDaysElapsed).toHaveBeenLastCalledWith(700);
-    });
-
     it('catches up the Christmas event in one pass', () => {
       vi.mocked(calculateOfflineProgress).mockReturnValue(
         simulated({ christmasTreeGrowthTicks: 600, christmasElvesCraftingTicks: 600 })
