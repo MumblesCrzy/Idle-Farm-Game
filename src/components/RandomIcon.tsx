@@ -7,6 +7,7 @@ interface RandomIconProps {
   duration?: number; // Optional: How long the icon stays visible in ms
   reward?: () => void; // Optional: Function to call when clicked (e.g., give reward)
   onAppear?: () => void; // Optional: Function to call when icon appears on screen
+  isPaused?: boolean; // When true, hide icon and stop scheduling new appearances
 }
 
 /**
@@ -19,7 +20,8 @@ const RandomIcon: FC<RandomIconProps> = ({
   maxInterval = minInterval * 2, 
   duration = 10000, 
   reward = () => {},
-  onAppear = () => {}
+  onAppear = () => {},
+  isPaused = false
 }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -51,7 +53,15 @@ const RandomIcon: FC<RandomIconProps> = ({
     reward();
   };
   
+  // Hide immediately when paused
   useEffect(() => {
+    if (isPaused) setVisible(false);
+  }, [isPaused]);
+
+  useEffect(() => {
+    // Don't schedule appearances while paused
+    if (isPaused) return;
+
     let appearanceTimer: number | null = null;
     let hideTimer: number | null = null;
     let isActive = true;
@@ -111,7 +121,7 @@ const RandomIcon: FC<RandomIconProps> = ({
       if (appearanceTimer) clearTimeout(appearanceTimer);
       if (hideTimer) clearTimeout(hideTimer);
     };
-  }, [minInterval, maxInterval, duration]);
+  }, [minInterval, maxInterval, duration, isPaused]);
   
   // Only render when visible
   if (!visible) return null;

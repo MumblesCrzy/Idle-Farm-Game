@@ -7,6 +7,7 @@
 
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
+import type { CanningProcess } from '../types/canning';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
@@ -54,9 +55,9 @@ export function calculateOfflineProgress(
     almanacLevel: number;
     farmTier: number;
     knowledge: number;
-    canningProcesses: any[];
-    canningUpgrades: any;
-    autoCanning: any;
+    canningProcesses: CanningProcess[];
+    canningUpgrades: Record<string, number>; // upgrade id -> level
+    autoCanning: { enabled: boolean };
     guildState?: GuildState;
     christmasEvent?: {
       isEventActive: boolean;
@@ -105,8 +106,8 @@ export function calculateOfflineProgress(
   let autoCanningCycles = 0;
 
   // Process in chunks to avoid performance issues with very long offline periods
-  // Max 8 hours of offline time (can be increased to 24 hours for prestige system later)
-  const MAX_OFFLINE_HOURS = 8; // Change to 24 for prestige system
+  // Max 24 hours of offline time (raised from 8 for prestige system lifetimes)
+  const MAX_OFFLINE_HOURS = 24;
   const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000;
   let cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
 
@@ -187,9 +188,9 @@ export function calculateOfflineProgress(
   const progressPerTick = (100 / 300) * canningSpeedMultiplier; // 30 seconds base = 300 ticks at 100ms
   const progressGained = progressPerTick * ticks;
 
-  gameState.canningProcesses.forEach((process: any) => {
+  gameState.canningProcesses.forEach((process) => {
     if (!process.completed) {
-      canningProgressUpdates.set(process.id, progressGained);
+      canningProgressUpdates.set(process.recipeId, progressGained);
     }
   });
 

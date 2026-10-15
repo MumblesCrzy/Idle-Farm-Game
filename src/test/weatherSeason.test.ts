@@ -301,8 +301,8 @@ describe('processVeggieGrowth', () => {
   
   it('should apply weather effects to all veggies', () => {
     const veggies = [
-      createTestVeggie({ id: '1', growth: 50 }),
-      createTestVeggie({ id: '2', growth: 60 })
+      createTestVeggie({ name: 'Veggie1', growth: 50 }),
+      createTestVeggie({ name: 'Veggie2', growth: 60 })
     ];
     
     const clearResult = processVeggieGrowth(veggies, 'Summer', 'Clear', false, false);

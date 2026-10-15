@@ -30,7 +30,8 @@ import { calculateHarvestRewards } from '../utils/harvestCalculations';
  * Creates mock veggies array with specified overrides
  */
 function createMockVeggies(overrides: Partial<Veggie>[] = []): Veggie[] {
-  const baseVeggies: Veggie[] = [
+  // Partial fixtures: the hook reads only the fields listed here
+  const baseVeggies = [
     {
       name: 'Carrot',
       growth: 100,
@@ -38,8 +39,6 @@ function createMockVeggies(overrides: Partial<Veggie>[] = []): Veggie[] {
       stash: 5,
       unlocked: true,
       sellEnabled: true,
-      harvestLevel: 1,
-      harvesterLevel: 0,
       harvesterTimer: 0,
       fertilizerLevel: 0,
       additionalPlotLevel: 0,
@@ -52,8 +51,6 @@ function createMockVeggies(overrides: Partial<Veggie>[] = []): Veggie[] {
       stash: 3,
       unlocked: true,
       sellEnabled: true,
-      harvestLevel: 1,
-      harvesterLevel: 0,
       harvesterTimer: 0,
       fertilizerLevel: 0,
       additionalPlotLevel: 0,
@@ -66,8 +63,6 @@ function createMockVeggies(overrides: Partial<Veggie>[] = []): Veggie[] {
       stash: 0,
       unlocked: false,
       sellEnabled: true,
-      harvestLevel: 1,
-      harvesterLevel: 0,
       harvesterTimer: 0,
       fertilizerLevel: 0,
       additionalPlotLevel: 0,
@@ -78,7 +73,7 @@ function createMockVeggies(overrides: Partial<Veggie>[] = []): Veggie[] {
   return baseVeggies.map((veggie, index) => ({
     ...veggie,
     ...(overrides[index] || {})
-  }));
+  })) as Veggie[];
 }
 
 /**
@@ -195,7 +190,8 @@ describe('useHarvestAndSell', () => {
         0, // almanacLevel
         1, // farmTier
         100, // knowledge
-        false // isAutoHarvest
+        false, // isAutoHarvest
+        undefined // guildState
       );
     });
 

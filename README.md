@@ -244,6 +244,9 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
   - `npm run test` - Run test suite in watch mode
   - `npm run coverage` - Generate test coverage report
   - `npm run lint` - Run ESLint checks
+  - `npm run typecheck` - Type-check the app, the tests and the Vite config
+  - `npm run check` - Type check, lint and run all tests, the same checks CI runs
+- **Commit checks**: `npm install` points git at `.githooks/`, whose pre-commit hook runs `npm run check`. A failing check stops the commit. GitHub Actions runs the same checks plus a production build on every push to `main` and on pull requests.
 
 ---
 

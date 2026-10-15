@@ -26,6 +26,8 @@ interface WisdomUpgradeConfig {
   baseCost: number;
   costScaling: number; // Multiplier per level
   appliesNextLifetime: boolean; // If true, can only purchase between lifetimes
+  /** Optional function that returns a dynamic cap based on prestige state */
+  dynamicMaxLevel?: (prestigeState: PrestigeState) => number;
 }
 
 const WISDOM_UPGRADES: WisdomUpgradeConfig[] = [
@@ -79,19 +81,44 @@ const WISDOM_UPGRADES: WisdomUpgradeConfig[] = [
     costScaling: 2.0,
     appliesNextLifetime: true,
   },
+  {
+    id: 'startingFarmTier',
+    name: 'Ancestral Farmstead',
+    description: 'Start each new lifetime at a higher farm tier.',
+    effectDescription: (level) => level === 0 ? 'Start at tier 2 (first level)' : `Start at tier ${level + 1}`,
+    maxLevel: 9,
+    baseCost: 100,
+    costScaling: 2.0,
+    appliesNextLifetime: true,
+    dynamicMaxLevel: (ps) => Math.max(0, (ps.highestFarmTierEver || 1) - 1),
+  },
+  {
+    id: 'knowledgeBoost',
+    name: 'Scholarly Roots',
+    description: 'Your ancestors\' love of learning increases all knowledge gained.',
+    effectDescription: (level) => level === 0 ? '+5% knowledge per level' : `+${level * 5}% knowledge gain`,
+    maxLevel: 10,
+    baseCost: 15,
+    costScaling: 1.5,
+    appliesNextLifetime: false,
+  },
+  {
+    id: 'plotEfficiency',
+    name: 'Efficient Expansion',
+    description: 'Experience goes further when expanding your farm — less XP needed for bonus plots.',
+    effectDescription: (level) => {
+      const divisor = 100 - level * 10;
+      return level === 0 ? 'Reduces XP-per-plot divisor by 10 per level' : `XP divisor: ${divisor} (was 100)`;
+    },
+    maxLevel: 5,
+    baseCost: 20,
+    costScaling: 1.6,
+    appliesNextLifetime: false,
+  },
 ];
 
 function calculateUpgradeCost(upgrade: WisdomUpgradeConfig, currentLevel: number): number {
   return Math.floor(upgrade.baseCost * Math.pow(upgrade.costScaling, currentLevel));
-}
-
-function calculateWisdomEarned(totalMoneyEarned: number, totalKnowledgeGained: number, maxFarmTierReached: number): number {
-  // Formula: (money/1M) × (knowledge/1K) × maxTier
-  const moneyFactor = totalMoneyEarned / 1_000_000;
-  const knowledgeFactor = totalKnowledgeGained / 1_000;
-  const tierFactor = maxFarmTierReached;
-  
-  return Math.floor(moneyFactor * knowledgeFactor * tierFactor);
 }
 
 interface WisdomTabProps {
@@ -99,10 +126,14 @@ interface WisdomTabProps {
   prestigeState: PrestigeState;
   /** Whether a lifetime has ended and prestige is pending */
   isLifetimeEnded: boolean;
+  /** Wisdom earned this lifetime (pre-computed and already deposited) */
+  wisdomEarnedThisLifetime: number;
   /** Handler to purchase a wisdom upgrade */
   onPurchaseUpgrade: (upgradeId: keyof WisdomUpgrades) => void;
   /** Handler to start the next lifetime */
   onStartNextLifetime: () => void;
+  /** When true, show only the upgrade shop (no lifetime summary or prestige button) */
+  showUpgradesOnly?: boolean;
   /** Number formatting function */
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
@@ -115,6 +146,7 @@ interface UpgradeCardProps {
   currentLevel: number;
   wisdom: number;
   isLifetimeEnded: boolean;
+  prestigeState: PrestigeState;
   onPurchase: () => void;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
@@ -124,59 +156,69 @@ const UpgradeCard: FC<UpgradeCardProps> = memo(({
   currentLevel,
   wisdom,
   isLifetimeEnded,
+  prestigeState,
   onPurchase,
   formatNumber
 }) => {
   const cost = calculateUpgradeCost(upgrade, currentLevel);
-  const isMaxLevel = currentLevel >= upgrade.maxLevel;
+  const effectiveMaxLevel = upgrade.dynamicMaxLevel
+    ? Math.min(upgrade.maxLevel, upgrade.dynamicMaxLevel(prestigeState))
+    : upgrade.maxLevel;
+  const isMaxLevel = currentLevel >= effectiveMaxLevel;
   const canAfford = wisdom >= cost;
   const canPurchase = !isMaxLevel && canAfford && (!upgrade.appliesNextLifetime || isLifetimeEnded);
-  
+  const isGatedByDynamic = !isMaxLevel && currentLevel >= (upgrade.dynamicMaxLevel?.(prestigeState) ?? Infinity);
+
+  // Determine status hint for the button
+  let statusHint = '';
+  if (!isMaxLevel) {
+    if (isGatedByDynamic) statusHint = 'Reach a higher farm tier first';
+    else if (!canAfford) statusHint = 'Not enough Wisdom';
+    else if (canAfford && upgrade.appliesNextLifetime && !isLifetimeEnded) statusHint = 'Available at end of lifetime';
+  }
+
   return (
-    <div className={`${styles.upgradeCard} ${isMaxLevel ? styles.upgradeCardMaxed : ''}`}>
-      <div className={styles.upgradeHeader}>
-        <h4 className={styles.upgradeName}>{upgrade.name}</h4>
-        <span className={styles.upgradeLevel}>
-          Lv. {currentLevel}{upgrade.maxLevel ? ` / ${upgrade.maxLevel}` : ''}
-        </span>
+    <div className={`${styles.upgradeRow} ${isMaxLevel ? styles.upgradeRowMaxed : ''}`}>
+      {/* Left section: Name, level, and description */}
+      <div className={styles.upgradeInfo}>
+        <div className={styles.upgradeNameRow}>
+          <span className={styles.upgradeName}>{upgrade.name}</span>
+          <span className={styles.upgradeLevel}>
+            Lv. {currentLevel}{effectiveMaxLevel ? ` / ${effectiveMaxLevel}` : ''}
+          </span>
+          {upgrade.appliesNextLifetime && (
+            <span className={styles.nextLifetimeTag} title="Applies to next lifetime">⏳</span>
+          )}
+        </div>
+        <span className={styles.upgradeDescription}>{upgrade.description}</span>
       </div>
-      
-      <p className={styles.upgradeDescription}>{upgrade.description}</p>
-      
+
+      {/* Center section: Current effect */}
       <div className={styles.upgradeEffect}>
-        <span className={styles.effectLabel}>Effect:</span>
         <span className={styles.effectValue}>{upgrade.effectDescription(currentLevel)}</span>
       </div>
-      
-      {upgrade.appliesNextLifetime && (
-        <div className={styles.upgradeNote}>
-          <span className={styles.noteIcon}>⏳</span>
-          <span>Applies to next lifetime</span>
-        </div>
-      )}
-      
-      {!isMaxLevel ? (
-        <button
-          className={`${styles.purchaseButton} ${canPurchase ? styles.purchaseButtonEnabled : styles.purchaseButtonDisabled}`}
-          onClick={onPurchase}
-          disabled={!canPurchase}
-          aria-label={`Purchase ${upgrade.name} for ${cost} Wisdom`}
-        >
-          <span className={styles.purchaseCost}>
-            <span className={styles.wisdomIcon}>✨</span>
-            {formatNumber(cost)}
-          </span>
-          {!canAfford && <span className={styles.purchaseStatus}>Not enough Wisdom</span>}
-          {canAfford && upgrade.appliesNextLifetime && !isLifetimeEnded && (
-            <span className={styles.purchaseStatus}>Available at end of lifetime</span>
-          )}
-          {canPurchase && <span className={styles.purchaseStatus}>Purchase</span>}
-        </button>
-      ) : (
-        <div className={styles.maxLevelBadge}>
-          <span>✓ Max Level</span>
-        </div>
-      )}
+
+      {/* Right section: Purchase action */}
+      <div className={styles.upgradeAction}>
+        {!isMaxLevel ? (
+          <button
+            className={`${styles.purchaseButton} ${canPurchase ? styles.purchaseButtonEnabled : styles.purchaseButtonDisabled}`}
+            onClick={onPurchase}
+            disabled={!canPurchase}
+            aria-label={`Purchase ${upgrade.name} for ${cost} Wisdom`}
+            title={statusHint}
+          >
+            <span className={styles.purchaseCost}>
+              <span className={styles.wisdomIcon}>✨</span>
+              {formatNumber(cost)}
+            </span>
+          </button>
+        ) : (
+          <div className={styles.maxLevelBadge}>
+            <span>✓ Max</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 });
@@ -226,7 +268,7 @@ const LifetimeSummary: FC<LifetimeSummaryProps> = memo(({
         <h3 className={styles.wisdomTitle}>Wisdom Earned</h3>
         <div className={styles.wisdomFormula}>
           <span className={styles.formulaLine}>
-            ({formatNumber(totalMoney)} ÷ 1M) × ({formatNumber(totalKnowledge)} ÷ 1K) × {maxTier}
+            ({formatNumber(totalMoney)} ÷ 10K + {formatNumber(totalKnowledge)} ÷ 500) × {maxTier} + √{formatNumber(Math.max(0, (prestigeState.wisdom || 0) - wisdomEarned))}
           </span>
         </div>
         <div className={styles.wisdomResult}>
@@ -250,23 +292,18 @@ LifetimeSummary.displayName = 'LifetimeSummary';
 const WisdomTab: FC<WisdomTabProps> = memo(({
   prestigeState,
   isLifetimeEnded,
+  wisdomEarnedThisLifetime,
   onPurchaseUpgrade,
   onStartNextLifetime,
+  showUpgradesOnly = false,
   formatNumber
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'lifespan' | 'starting'>('all');
   
-  // Calculate wisdom earned this lifetime
-  const wisdomEarned = calculateWisdomEarned(
-    prestigeState.totalMoneyEarned || 0,
-    prestigeState.totalKnowledgeGained || 0,
-    prestigeState.maxFarmTierReached || 1
-  );
-  
-  // Total available wisdom (existing + newly earned if lifetime ended)
-  const totalWisdom = isLifetimeEnded 
-    ? prestigeState.wisdom + wisdomEarned 
-    : prestigeState.wisdom;
+  // Wisdom was already deposited into prestigeState.wisdom when the lifetime
+  // ended, so we use the pre-computed amount for display and the balance directly.
+  const wisdomEarned = wisdomEarnedThisLifetime;
+  const totalWisdom = prestigeState.wisdom;
   
   // Filter upgrades by category
   const filteredUpgrades = WISDOM_UPGRADES.filter(upgrade => {
@@ -279,8 +316,8 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
   // Main content - upgrade shop
   const mainContent = (
     <div className={styles.container}>
-      {/* Lifetime Summary - only shown when lifetime ends */}
-      {isLifetimeEnded && (
+      {/* Lifetime Summary - only shown when lifetime ends (not in browse mode) */}
+      {isLifetimeEnded && !showUpgradesOnly && (
         <LifetimeSummary
           prestigeState={prestigeState}
           wisdomEarned={wisdomEarned}
@@ -310,8 +347,8 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
         </button>
       </div>
       
-      {/* Upgrades Grid */}
-      <div className={styles.upgradesGrid}>
+      {/* Upgrades List */}
+      <div className={styles.upgradesList}>
         {filteredUpgrades.map(upgrade => (
           <UpgradeCard
             key={upgrade.id}
@@ -319,6 +356,7 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
             currentLevel={prestigeState.wisdomUpgrades?.[upgrade.id] || 0}
             wisdom={totalWisdom}
             isLifetimeEnded={isLifetimeEnded}
+            prestigeState={prestigeState}
             onPurchase={() => onPurchaseUpgrade(upgrade.id)}
             formatNumber={formatNumber}
           />
@@ -337,7 +375,7 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
         <span className={styles.wisdomTotal}>{formatNumber(totalWisdom)}</span>
       </div>
       
-      {isLifetimeEnded && wisdomEarned > 0 && (
+      {isLifetimeEnded && !showUpgradesOnly && wisdomEarned > 0 && (
         <div className={styles.wisdomPending}>
           <span className={styles.pendingLabel}>This lifetime:</span>
           <span className={styles.pendingAmount}>+{formatNumber(wisdomEarned)}</span>
@@ -351,7 +389,7 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
         </div>
       </div>
       
-      {isLifetimeEnded && (
+      {isLifetimeEnded && !showUpgradesOnly && (
         <button
           className={styles.startNextLifetimeButton}
           onClick={onStartNextLifetime}
@@ -362,7 +400,7 @@ const WisdomTab: FC<WisdomTabProps> = memo(({
         </button>
       )}
       
-      {!isLifetimeEnded && (
+      {!isLifetimeEnded && !showUpgradesOnly && (
         <div className={styles.currentLifetimeNote}>
           <p>Your current lifetime is still in progress.</p>
           <p className={styles.noteSmall}>
@@ -397,5 +435,4 @@ WisdomTab.displayName = 'WisdomTab';
 export default WisdomTab;
 
 // Export types and helpers for use in other components
-export { calculateWisdomEarned, calculateUpgradeCost, WISDOM_UPGRADES };
 export type { WisdomUpgradeConfig };

@@ -21,7 +21,7 @@ import { CANNING_AUTO_PURCHASERS, DEFAULT_AUTO_CANNING_CONFIG } from '../canning
 import { INITIAL_RECIPES } from '../../data/recipes';
 
 /** Current save data version */
-export const CURRENT_SAVE_VERSION = 7;
+export const CURRENT_SAVE_VERSION = 8;
 
 /**
  * Default canning upgrades for migration
@@ -227,7 +227,7 @@ const migrationV3: MigrationDefinition = {
       // Migrate activeProcesses to include totalTime field
       if (state.canningState.activeProcesses) {
         state.canningState.activeProcesses = state.canningState.activeProcesses.map(process => {
-          if (typeof (process as any).totalTime !== 'number') {
+          if (typeof process.totalTime !== 'number') { // Older saves predate totalTime
             const recipe = state.canningState?.recipes.find(r => r.id === process.recipeId);
             const estimatedTotalTime = recipe ? recipe.baseProcessingTime : process.remainingTime;
             return { ...process, totalTime: estimatedTotalTime };
@@ -375,6 +375,34 @@ const migrationV7: MigrationDefinition = {
 };
 
 /**
+ * Migration v8: Wisdom's Potential is now a standard game feature.
+ * Refund the 500 wisdom cost to any player who previously purchased it.
+ */
+const migrationV8: MigrationDefinition = {
+  version: 8,
+  description: "Refund Wisdom's Potential upgrade (now a standard feature)",
+  migrate: (data: unknown): ExtendedGameState => {
+    const state = data as ExtendedGameState;
+
+    if (state.prestigeState?.wisdomUpgrades) {
+      const upgrades = state.prestigeState.wisdomUpgrades as Record<string, number | undefined>;
+      if ((upgrades.wisdomPotential || 0) > 0) {
+        // Refund the 500 wisdom cost
+        state.prestigeState.wisdom = (state.prestigeState.wisdom || 0) + 500;
+        // Remove the upgrade flag
+        delete upgrades.wisdomPotential;
+      }
+    }
+
+    return state;
+  },
+  rollback: (data: unknown): ExtendedGameState => {
+    const state = data as ExtendedGameState;
+    return state;
+  }
+};
+
+/**
  * All migrations in order
  * IMPORTANT: Keep this array sorted by version number
  */
@@ -385,7 +413,8 @@ export const MIGRATIONS: MigrationDefinition[] = [
   migrationV4,
   migrationV5,
   migrationV6,
-  migrationV7
+  migrationV7,
+  migrationV8
 ];
 
 /**

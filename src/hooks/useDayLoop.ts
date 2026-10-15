@@ -23,6 +23,15 @@ export interface UseDayLoopDependencies {
   // Ref to latest Christmas event state (to avoid loop restart)
   christmasEventRef: MutableRefObject<UseChristmasEventReturn | null | undefined>;
   
+  // Ref to latest offline prestige pending state (to stop loop when lifetime ends)
+  offlinePrestigePendingRef: MutableRefObject<boolean>;
+  
+  // Ref to lifetime max days (to detect lifetime boundary)
+  lifetimeMaxDaysRef: MutableRefObject<number>;
+  
+  // Callback to set prestige pending flag when lifetime ends
+  setOfflinePrestigePending: Dispatch<SetStateAction<boolean>>;
+  
   // Sell handler function
   handleSell: (isAutoSell?: boolean) => void;
 }
@@ -84,6 +93,9 @@ export function useDayLoop(deps: UseDayLoopDependencies): UseDayLoopReturn {
     setGlobalAutoPurchaseTimer,
     autoSellOwnedRef,
     christmasEventRef,
+    offlinePrestigePendingRef,
+    lifetimeMaxDaysRef,
+    setOfflinePrestigePending,
     handleSell
   } = deps;
 
@@ -97,8 +109,35 @@ export function useDayLoop(deps: UseDayLoopDependencies): UseDayLoopReturn {
 
   // Main day loop - runs every second (1000ms)
   useRobustInterval(() => {
-    // Increment total days elapsed (lifetime stat)
-    setTotalDaysElapsed((total: number) => total + 1);
+    // Skip all day progression if lifetime has already ended (prestige pending)
+    if (offlinePrestigePendingRef.current) return;
+    
+    // Check lifetime boundary inside the functional updater so we have the
+    // latest totalDaysElapsed value.  If the boundary is reached we cap it,
+    // trigger the prestige-pending flag, and skip all other side-effects.
+    let lifetimeJustEnded = false;
+    
+    setTotalDaysElapsed((total: number) => {
+      const maxDays = lifetimeMaxDaysRef.current;
+      if (total >= maxDays) {
+        // Already at or past the boundary — don't increment
+        lifetimeJustEnded = true;
+        return maxDays;
+      }
+      const next = total + 1;
+      if (next >= maxDays) {
+        lifetimeJustEnded = true;
+        return maxDays;
+      }
+      return next;
+    });
+    
+    // If the lifetime just ended, set the prestige pending flag and bail out
+    // before processing any further side-effects for this tick.
+    if (lifetimeJustEnded) {
+      setOfflinePrestigePending(true);
+      return;
+    }
     
     // Update current day with year cycle (1-365)
     setDay((d: number) => {
@@ -129,6 +168,7 @@ export function useDayLoop(deps: UseDayLoopDependencies): UseDayLoopReturn {
   // Elves' Bench automation loop - runs every second
   // Separated from main loop to allow independent timing if needed in future
   useRobustInterval(() => {
+    if (offlinePrestigePendingRef.current) return;
     if (christmasEventRef.current?.isEventActive) {
       const elvesBenchOwned = christmasEventRef.current.eventState.upgrades.find(
         (u: EventUpgrade) => u.id === 'elves_bench'

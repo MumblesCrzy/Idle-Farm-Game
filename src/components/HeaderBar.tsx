@@ -10,6 +10,8 @@ interface HeaderBarProps {
   totalAchievements?: number;
   unlockedAchievements?: number;
   unreadEventCount?: number;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
 }
 
 const HeaderBar: FC<HeaderBarProps> = memo(({
@@ -19,7 +21,9 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
   setShowEventLog,
   totalAchievements = 0,
   unlockedAchievements = 0,
-  unreadEventCount = 0
+  unreadEventCount = 0,
+  isPaused = false,
+  onTogglePause
 }) => {
   return (
     <>
@@ -33,6 +37,17 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
         >
           Info
         </button>
+        {onTogglePause && (
+          <button
+            onClick={onTogglePause}
+            className={isPaused ? styles.pauseButtonActive : styles.pauseButton}
+            title={isPaused ? 'Resume game' : 'Pause game'}
+            aria-label={isPaused ? 'Resume game' : 'Pause game'}
+            aria-pressed={isPaused}
+          >
+            {isPaused ? '▶ Play' : '⏸ Pause'}
+          </button>
+        )}
         <button
           onClick={() => setShowAchievements(true)}
           className={styles.achievementsButton}

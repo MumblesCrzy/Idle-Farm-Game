@@ -51,6 +51,7 @@ interface BeeProviderProps {
       icon?: string;
     }
   ) => void; // Callback to add event log entries
+  isPaused?: boolean; // Whether the game is paused
 }
 
 /**
@@ -99,7 +100,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   onYieldBonusChange,
   initialState,
   onStateChange,
-  addEventLogEntry
+  addEventLogEntry,
+  isPaused = false
 }) => {
   // Core state - initialize from saved state if available
   const [unlocked, setUnlocked] = useState(initialState?.unlocked ?? false);
@@ -882,7 +884,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
 
   // Handle offline production when component mounts or becomes visible
   useEffect(() => {
-    if (!unlocked || boxes.length === 0) return;
+    if (!unlocked || boxes.length === 0 || isPaused) return;
 
     const now = Date.now();
     const elapsedSeconds = (now - lastUpdateTimeRef.current) / 1000;
@@ -894,12 +896,12 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       lastUpdateTimeRef.current = now;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlocked, boxes.length]); // Only run on mount or when unlocked/boxes change
+  }, [unlocked, boxes.length, isPaused]); // Only run on mount or when unlocked/boxes change
 
   // Set up production update loop using useGameLoop (runs every second)
   useGameLoop(
     () => {
-      if (!unlocked || boxes.length === 0) return;
+      if (!unlocked || boxes.length === 0 || isPaused) return;
 
       const now = Date.now();
       const deltaTime = (now - lastUpdateTimeRef.current) / 1000; // Convert to seconds
@@ -908,7 +910,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       updateProduction(deltaTime, season);
     },
     1000, // Update every second
-    [unlocked, boxes.length, season] // Restart loop when these change
+    [unlocked, boxes.length, season, isPaused] // Restart loop when these change
   );
 
   // Update box active status based on season

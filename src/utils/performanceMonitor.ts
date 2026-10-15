@@ -12,7 +12,7 @@ interface RenderMetrics {
   baseDuration: number;
   startTime: number;
   commitTime: number;
-  interactions: Set<any>;
+  interactions: Set<unknown>;
 }
 
 interface ComponentStats {
@@ -53,7 +53,7 @@ class PerformanceMonitor {
     baseDuration: number,
     startTime: number,
     commitTime: number,
-    interactions: Set<any>
+    interactions: Set<unknown>
   ) {
     if (!this.enabled) return;
 
@@ -197,7 +197,7 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Make it available globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).performanceMonitor = performanceMonitor;
+  window.performanceMonitor = performanceMonitor;
 }
 
 /**
@@ -211,7 +211,7 @@ export const usePerformanceMonitor = (componentName: string) => {
     baseDuration: number,
     startTime: number,
     commitTime: number,
-    interactions: Set<any>
+    interactions: Set<unknown>
   ) => {
     performanceMonitor.onRender(
       componentName || id,

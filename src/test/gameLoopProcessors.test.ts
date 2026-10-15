@@ -24,6 +24,7 @@ const createTestVeggie = (overrides: Partial<Veggie> = {}): Veggie => ({
   harvesterOwned: false,
   harvesterCost: 300,
   harvesterTimer: 0,
+  autoHarvesterEnabled: true,
   harvesterSpeedLevel: 0,
   harvesterSpeedCost: 500,
   additionalPlotLevel: 0,
@@ -55,11 +56,11 @@ describe('calculateWeatherChange', () => {
   });
 
   it('should return Snow in Winter instead of Rain', () => {
-    Math.random = vi.fn(() => 0.05); // Roll that would cause rain
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.05); // Roll that would cause rain
     const result = calculateWeatherChange('Winter', 'Clear');
     // Should be Snow or Clear (depending on exact chances)
     expect(['Clear', 'Snow', 'Drought', 'Storm', 'Heatwave']).toContain(result);
-    (Math.random as any).mockRestore();
+    randomSpy.mockRestore();
   });
 
   it('should handle all seasons', () => {
@@ -161,6 +162,21 @@ describe('processAutoHarvest', () => {
     expect(result.experienceGain).toBe(0);
   });
 
+  it('should not harvest or advance the timer when the auto-harvester is disabled', () => {
+    const veggie = createTestVeggie({
+      harvesterOwned: true,
+      autoHarvesterEnabled: false,
+      harvesterTimer: 99,
+      growth: 100
+    });
+
+    const result = processAutoHarvest([veggie], 0, 1, 0);
+
+    expect(result.veggies[0]).toBe(veggie);
+    expect(result.needsUpdate).toBe(false);
+    expect(result.experienceGain).toBe(0);
+  });
+
   it('should increment harvester timer', () => {
     const veggie = createTestVeggie({ 
       harvesterOwned: true, 
@@ -173,7 +189,7 @@ describe('processAutoHarvest', () => {
     expect(result.veggies[0].harvesterTimer).toBe(1);
   });
 
-  it('should harvest when timer reaches 100 and veggie is ready', () => {
+  it('should harvest when the timer is primed and veggie is ready', () => {
     const veggie = createTestVeggie({ 
       harvesterOwned: true, 
       harvesterTimer: 99,

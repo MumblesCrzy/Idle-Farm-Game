@@ -87,6 +87,46 @@
   background: #5a6268;
 }
 
+.pauseButton {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  margin-left: 0.5rem;
+  background: #6f42c1;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 28px;
+  font-weight: bold;
+}
+
+.pauseButton:hover {
+  background: #5a32a3;
+}
+
+.pauseButtonActive {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  margin-left: 0.5rem;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 28px;
+  font-weight: bold;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.pauseButtonActive:hover {
+  background: #218838;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .farmUpgradeContainer {
   min-height: 0;
   margin-bottom: 1rem;
@@ -206,4 +246,11 @@
 
 .tabIconDisabled {
   opacity: 0.5;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .pauseButtonActive {
+    animation: none;
+  }
 }

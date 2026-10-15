@@ -146,7 +146,7 @@ export function selectBestRecipe(
   }
   
   // Filter recipes based on configuration
-  let eligibleRecipes = availableRecipes.filter(recipe => {
+  const eligibleRecipes = availableRecipes.filter(recipe => {
     // Must be in selected recipes list
     if (config.selectedRecipes.length > 0 && !config.selectedRecipes.includes(recipe.id)) {
       return false;

@@ -119,7 +119,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   setRegularHoney?: (value: number | ((prev: number) => number)) => void,
   setGoldenHoney?: (value: number | ((prev: number) => number)) => void,
   unlockedAchievementIds?: string[],
-  guildState?: GuildState
+  guildState?: GuildState,
+  isPaused?: boolean
 ) {
   const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
   
@@ -349,7 +350,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }));
     
     // Call event logging callback if available
-    const globalCanningStartCallback = (window as any).globalCanningStartCallback;
+    const globalCanningStartCallback = window.globalCanningStartCallback;
     if (globalCanningStartCallback) {
       const ingredientsList = recipe.ingredients
         .map(ing => `${ing.quantity} ${ing.veggieName}`)
@@ -427,9 +428,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     setKnowledge(prev => prev + knowledgeReward);
     
     // Call event logging callback if available
-    const globalCanningCompleteCallback = (window as any).globalCanningCompleteCallback;
+    const globalCanningCompleteCallback = window.globalCanningCompleteCallback;
     if (globalCanningCompleteCallback) {
-      globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, process.automated);
+      globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, process.automated ?? false);
     }
     
     // Remove completed process
@@ -495,6 +496,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const hasActiveProcesses = canningState.activeProcesses.length > 0;
   
   useGameLoop(() => {
+    if (isPaused) return;
     if (!hasActiveProcesses) return;
     
     setCanningState(prev => {
@@ -512,7 +514,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         activeProcesses: updatedProcesses
       };
     });
-  }, 1000, [hasActiveProcesses]);
+  }, 1000, [hasActiveProcesses, isPaused]);
 
   // Handle completed processes in a separate effect to avoid race conditions
   useEffect(() => {
@@ -557,6 +559,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const cannerEnabled = cannerLevel > 0 && autoCanningEnabled;
   
   useGameLoop(() => {
+    if (isPaused) return;
     if (!cannerEnabled) return;
     
     // Use a fresh state getter to avoid stale closures
@@ -601,7 +604,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       
       return currentState; // Return unchanged state
     });
-  }, 10000, [cannerEnabled, unlockedRecipeCount]); // 10 seconds
+  }, 10000, [cannerEnabled, unlockedRecipeCount, isPaused]); // 10 seconds
   
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {
@@ -639,6 +642,11 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }));
   }, []);
 
+  // Reset canning state to initial values (used during prestige)
+  const resetCanningState = useCallback(() => {
+    setCanningState(INITIAL_CANNING_STATE);
+  }, []);
+
   return {
     canningState,
     startCanning,
@@ -647,6 +655,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     canMakeRecipe,
     getAvailableRecipes,
     getRecipeAnalysis,
-    toggleAutoCanning
+    toggleAutoCanning,
+    resetCanningState
   };
 }

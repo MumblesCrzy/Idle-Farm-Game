@@ -10,33 +10,33 @@ describe('Harvest Calculations', () => {
   describe('calculateHarvestAmount', () => {
     it('should calculate base harvest amount with no bonuses', () => {
       const result = calculateHarvestAmount(0, 'Spring', [], 0);
-      expect(result).toBe(1);
+      expect(result.amount).toBe(1);
     });
 
     it('should add additional plots to harvest amount', () => {
       const result = calculateHarvestAmount(2, 'Spring', [], 0);
-      expect(result).toBe(3); // 1 base + 2 additional plots
+      expect(result.amount).toBe(3); // 1 base + 2 additional plots
     });
 
     it('should apply Frost Fertilizer bonus in Winter', () => {
       const result = calculateHarvestAmount(2, 'Winter', ['frost_fertilizer'], 0);
-      expect(result).toBe(4); // ceil((1 + 2) * 1.05) = ceil(3.15) = 4
+      expect(result.amount).toBe(4); // ceil((1 + 2) * 1.05) = ceil(3.15) = 4
     });
 
     it('should not apply Frost Fertilizer bonus in other seasons', () => {
       const result = calculateHarvestAmount(2, 'Spring', ['frost_fertilizer'], 0);
-      expect(result).toBe(3); // No winter bonus
+      expect(result.amount).toBe(3); // No winter bonus
     });
 
     it('should apply bee yield bonus', () => {
       const result = calculateHarvestAmount(0, 'Spring', [], 0.2);
-      expect(result).toBe(2); // ceil(1 * 1.2) = ceil(1.2) = 2
+      expect(result.amount).toBe(2); // ceil(1 * 1.2) = ceil(1.2) = 2
     });
 
     it('should apply both Frost Fertilizer and bee yield bonus', () => {
       const result = calculateHarvestAmount(2, 'Winter', ['frost_fertilizer'], 0.2);
       // (1 + 2) = 3, then * 1.05 = 3.15, ceil = 4, then * 1.2 = 4.8, ceil = 5
-      expect(result).toBe(5);
+      expect(result.amount).toBe(5);
     });
   });
 

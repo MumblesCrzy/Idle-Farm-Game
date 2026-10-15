@@ -778,3 +778,19 @@
     width: 100%;
   }
 }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .harvestAllButton {
+    animation: none;
+    transition: none;
+  }
+
+  .treePlot.ready {
+    animation: none;
+  }
+
+  .treePlot.luxury {
+    animation: none;
+  }
+}

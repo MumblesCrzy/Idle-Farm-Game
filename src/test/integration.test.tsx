@@ -4,7 +4,7 @@ import React from 'react'
 import { ArchieProvider } from '../context/ArchieContext'
 import ProgressBar from '../components/ProgressBar'
 import VeggiePanel from '../components/VeggiePanel'
-import { loadGameStateWithCanning, saveGameStateWithCanning } from '../utils/saveSystem'
+import { loadGameStateWithCanning, saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem'
 
 // Mock dependencies for integration tests
 vi.mock('../data/recipes', () => ({
@@ -121,7 +121,7 @@ describe('Integration Tests', () => {
       }
 
       // Save the game state
-      saveGameStateWithCanning(gameState)
+      saveGameStateWithCanning(gameState as ExtendedGameState)
 
       // Load the game state
       const loadedState = loadGameStateWithCanning()

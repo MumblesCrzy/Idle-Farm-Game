@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "check": "npm run typecheck && npm run lint && npm run test:run",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -16,7 +18,8 @@
     "coverage:open": "vitest run --coverage && start coverage/index.html",
     "test:components": "vitest run --reporter=verbose src/test/*component*.test.*",
     "test:integration": "vitest run --reporter=verbose src/test/integration.test.*",
-    "test:utils": "vitest run --reporter=verbose src/test/*System*.test.*"
+    "test:utils": "vitest run --reporter=verbose src/test/*System*.test.*",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
     "react": "^19.1.1",

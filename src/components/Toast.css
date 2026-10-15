@@ -77,3 +77,14 @@
     width: 0%;
   }
 }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+
+  .toast-progress-bar {
+    animation: none;
+  }
+}

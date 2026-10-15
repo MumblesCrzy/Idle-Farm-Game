@@ -13,7 +13,8 @@ import {
   ICON_BEE,
   ICON_HONEY,
   ICON_GOLDEN_HONEY,
-  ICON_BEE_HIVE
+  ICON_BEE_HIVE,
+  ICON_WISDOM
 } from '../config/assetPaths';
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -26,7 +27,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     category: 'farming',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => gameState.totalHarvests >= 1
+      customCheck: (gameState) => (gameState.totalHarvests ?? 0) >= 1
     },
     reward: {
       money: 50,
@@ -473,7 +474,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       type: 'custom',
       customCheck: (gameState) => {
         // Check if the player has crafted at least one Beekeeper's Pride recipe
-        const recipe = gameState.canningState?.recipes?.find((r: any) => r.name === "Beekeeper's Pride");
+        const recipe = gameState.canningState?.recipes?.find((r) => r.name === "Beekeeper's Pride");
         return recipe ? (recipe.timesCompleted || 0) >= 1 : false;
       }
     },
@@ -499,7 +500,7 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
         // There are 5 unique upgrades: Busy Bees, Royal Jelly, Hexcomb Engineering, Meadow Magic, Queen's Blessing
         const uniqueUpgrades = ['busy_bees', 'royal_jelly', 'hexcomb_engineering', 'meadow_magic', 'queens_blessing'];
         return uniqueUpgrades.every(upgradeId => {
-          const upgrade = upgrades.find((u: any) => u.id === upgradeId);
+          const upgrade = upgrades.find((u) => u.id === upgradeId);
           return upgrade && upgrade.purchased;
         });
       }
@@ -508,6 +509,104 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       knowledge: 100,
       money: 3000,
       message: 'You\'ve mastered every aspect of beekeeping! +100 knowledge and $3,000'
+    }
+  },
+
+  // ── Prestige / Wisdom Achievements ──
+  {
+    id: 'lifetime_complete_1',
+    name: 'First Generation',
+    description: 'Complete your first lifetime.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.prestigeState?.lifetimeCount || 1) >= 2,
+      getProgress: (gameState) => Math.max(0, (gameState.prestigeState?.lifetimeCount || 1) - 1)
+    },
+    reward: {
+      message: 'Your first lifetime is complete. The wisdom of the ages begins.'
+    }
+  },
+  {
+    id: 'lifetime_complete_2',
+    name: 'Family Tradition',
+    description: 'Complete 2 lifetimes.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      value: 2,
+      customCheck: (gameState) => (gameState.prestigeState?.lifetimeCount || 1) >= 3,
+      getProgress: (gameState) => Math.min(2, Math.max(0, (gameState.prestigeState?.lifetimeCount || 1) - 1))
+    },
+    reward: {
+      message: 'Two lifetimes of farming wisdom passed down through the generations.'
+    }
+  },
+  {
+    id: 'lifetime_complete_5',
+    name: 'Lineage',
+    description: 'Complete 5 lifetimes.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      value: 5,
+      customCheck: (gameState) => (gameState.prestigeState?.lifetimeCount || 1) >= 6,
+      getProgress: (gameState) => Math.min(5, Math.max(0, (gameState.prestigeState?.lifetimeCount || 1) - 1))
+    },
+    reward: {
+      message: 'Five generations of farmers have tilled this land.'
+    }
+  },
+  {
+    id: 'lifetime_complete_10',
+    name: 'Dynasty',
+    description: 'Complete 10 lifetimes.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      value: 10,
+      customCheck: (gameState) => (gameState.prestigeState?.lifetimeCount || 1) >= 11,
+      getProgress: (gameState) => Math.min(10, Math.max(0, (gameState.prestigeState?.lifetimeCount || 1) - 1))
+    },
+    reward: {
+      message: 'A dynasty of ten generations stands tall. Your farm is legendary.'
+    }
+  },
+  {
+    id: 'starting_bonus_bought_1',
+    name: 'First Inheritance',
+    description: 'Purchase your first starting-life bonus upgrade.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => {
+        const upgrades = gameState.prestigeState?.wisdomUpgrades || {};
+        return (upgrades.startingGold || 0) + (upgrades.startingKnowledge || 0) + (upgrades.startingExperience || 0) >= 1;
+      }
+    },
+    reward: {
+      message: 'The first gift from a previous generation. Your descendants will start stronger.'
+    }
+  },
+  {
+    id: 'wisdom_10000',
+    name: 'Wisdom Seeker',
+    description: 'Accumulate 1,000,000 total Wisdom.',
+    icon: ICON_WISDOM,
+    category: 'prestige',
+    requirement: {
+      type: 'custom',
+      value: 1000000,
+      customCheck: (gameState) => (gameState.prestigeState?.wisdom || 0) >= 1000000,
+      getProgress: (gameState) => Math.min(1000000, gameState.prestigeState?.wisdom || 0)
+    },
+    reward: {
+      message: 'A million points of Wisdom gathered across lifetimes. True enlightenment.'
     }
   }
 ];

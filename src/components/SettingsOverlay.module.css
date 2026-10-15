@@ -299,3 +299,10 @@
 .resetButton:disabled:not(.buttonLoading) {
   background: #e77a86;
 }
+
+/* Reduced motion — keep .spinner since it indicates loading state */
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    transition: none;
+  }
+}

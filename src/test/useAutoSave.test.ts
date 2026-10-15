@@ -56,14 +56,14 @@ describe('useAutoSave', () => {
     Object.keys(eventListeners).forEach(key => delete eventListeners[key]);
     
     // Mock addEventListener/removeEventListener
-    vi.spyOn(window, 'addEventListener').mockImplementation((event: string, handler: EventListener) => {
+    vi.spyOn(window, 'addEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
       if (!eventListeners[event]) {
         eventListeners[event] = [];
       }
       eventListeners[event].push(handler as () => void);
     });
     
-    vi.spyOn(window, 'removeEventListener').mockImplementation((event: string, handler: EventListener) => {
+    vi.spyOn(window, 'removeEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
       if (eventListeners[event]) {
         eventListeners[event] = eventListeners[event].filter(h => h !== handler);
       }

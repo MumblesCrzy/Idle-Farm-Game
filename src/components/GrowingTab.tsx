@@ -25,6 +25,7 @@ import {
   getBlessedCropChance,
   getGrowersBeePollinationBonus,
   applyGuildPriceBonuses,
+  hasWhispersOfSeed,
   hasFruitCultivation,
   getUpgradeLevel
 } from '../utils/guildCalculations';
@@ -427,9 +428,17 @@ const GrowingTab: FC<GrowingTabProps> = memo((props) => {
             )}
             <span 
               className={styles.salePrice}
-              title={guildState && getGrowersPriceBonus(guildState) > 0 
-                ? `Base: $${formatNumber(veggies[activeVeggie].salePrice, 2)} + ${Math.round(getGrowersPriceBonus(guildState) * 100)}% guild bonus`
-                : `Sale price per unit`}
+              title={(() => {
+                const base = veggies[activeVeggie].salePrice;
+                const parts: string[] = [`$${formatNumber(base, 2)} base`];
+                if (guildState && getGrowersPriceBonus(guildState) > 0) {
+                  parts.push(`× ${formatNumber(1 + getGrowersPriceBonus(guildState), 2)} guild (+${Math.round(getGrowersPriceBonus(guildState) * 100)}%)`);
+                }
+                if (guildState && hasWhispersOfSeed(guildState)) {
+                  parts.push('× 10 Whispers of the Seed');
+                }
+                return parts.join(' ');
+              })()}
             >
               ${formatNumber(guildState ? applyGuildPriceBonuses(veggies[activeVeggie].salePrice, guildState, false) : veggies[activeVeggie].salePrice, 2)}
             </span>

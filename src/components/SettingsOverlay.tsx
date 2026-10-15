@@ -1,5 +1,7 @@
 import { useState, useEffect, memo, type FC } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { featureFlags } from '../utils/featureFlags';
+import { devTelemetry } from '../utils/devTelemetry';
 import type { LoadingStates } from './SaveLoadSystem';
 import styles from './SettingsOverlay.module.css';
 
@@ -32,10 +34,12 @@ const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(visible, onClose);
   const [itchViewport, setItchViewport] = useState(false);
+  const [telemetryEnabled, setTelemetryEnabled] = useState(() => featureFlags.isEnabled('devTelemetry'));
   
   // Check for itch viewport mode on mount
   useEffect(() => {
     setItchViewport(document.body.classList.contains('itch-viewport'));
+    setTelemetryEnabled(featureFlags.isEnabled('devTelemetry'));
   }, [visible]);
   
   const toggleItchViewport = () => {
@@ -185,6 +189,49 @@ const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
                   {itchViewport ? '📐 ON' : '📐 OFF'}
                 </button>
               </div>
+              <div className={styles.soundSettings}>
+                <label className={styles.soundLabel}>Dev Telemetry:</label>
+                <button
+                  onClick={() => {
+                    const next = !telemetryEnabled;
+                    featureFlags.setFlag('devTelemetry', next);
+                    setTelemetryEnabled(next);
+                  }}
+                  className={`${styles.soundButton} ${telemetryEnabled ? styles.soundButtonOn : styles.soundButtonOff}`}
+                  aria-label={telemetryEnabled ? 'Dev telemetry enabled. Click to disable' : 'Dev telemetry disabled. Click to enable'}
+                  aria-pressed={telemetryEnabled}
+                >
+                  {telemetryEnabled ? '📊 ON' : '📊 OFF'}
+                </button>
+              </div>
+              {telemetryEnabled && (
+                <div className={styles.buttonGroup}>
+                  <button
+                    onClick={() => devTelemetry.printDashboard()}
+                    className={styles.exportButton}
+                    aria-label="Print telemetry dashboard to console"
+                  >
+                    Print Dashboard
+                  </button>
+                  <button
+                    onClick={() => devTelemetry.downloadCSV()}
+                    className={styles.exportButton}
+                    aria-label="Export telemetry log as CSV file"
+                  >
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      devTelemetry.clear();
+                      console.log('[Telemetry] Event log cleared.');
+                    }}
+                    className={styles.resetButton}
+                    aria-label="Clear all stored telemetry events"
+                  >
+                    Clear Log
+                  </button>
+                </div>
+              )}
             </div>
           )}
           

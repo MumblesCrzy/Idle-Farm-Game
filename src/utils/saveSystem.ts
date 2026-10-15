@@ -40,6 +40,9 @@ export interface WisdomUpgrades {
   startingGold?: number;
   startingKnowledge?: number;
   startingExperience?: number;
+  startingFarmTier?: number;
+  knowledgeBoost?: number;
+  plotEfficiency?: number;
 }
 
 export interface PrestigeState {
@@ -51,6 +54,9 @@ export interface PrestigeState {
   totalMoneyEarned?: number;
   totalKnowledgeGained?: number;
   maxFarmTierReached?: number;
+
+  // Persistent across lifetimes
+  highestFarmTierEver?: number;
 
   // achievements unlocked map
   achievementsUnlocked?: Record<string, { unlockedAt: number; lifetimeWhenUnlocked: number }>;
@@ -324,6 +330,9 @@ export interface ExtendedGameState {
   guildIntroShown?: boolean;
   lifespanIntroShown?: boolean;
   shopExplanationShown?: boolean;
+  
+  // Pause state — persisted so offline progress is skipped when paused
+  isPaused?: boolean;
   
   // Save version for migration system
   _saveVersion?: number;
@@ -786,6 +795,14 @@ function migrateBeeStateSaveData(loaded: ExtendedGameState): ExtendedGameState {
   return loaded;
 }
 
+/** A veggie plus the per-veggie canning upgrade fields that migrateVeggieDataWithCanning adds. */
+export type VeggieWithCanningFields = Veggie & {
+  canningYieldLevel?: number;
+  canningYieldCost?: number;
+  canningQualityLevel?: number;
+  canningQualityCost?: number;
+};
+
 /**
  * Extends veggie data to include canning-specific upgrade fields.
  * Adds canningYieldLevel, canningYieldCost, canningQualityLevel, and canningQualityCost.
@@ -793,7 +810,7 @@ function migrateBeeStateSaveData(loaded: ExtendedGameState): ExtendedGameState {
  * @param veggies - Array of vegetable data to extend
  * @returns Updated veggie array with canning upgrade fields
  */
-export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
+export function migrateVeggieDataWithCanning(veggies: VeggieWithCanningFields[]): VeggieWithCanningFields[] {
   return veggies.map((veggie, veggieIndex) => {
     // Fix Radish upgrade costs that were incorrectly set to 'calculated' string
     if (veggie.name === 'Radish') {
@@ -831,10 +848,15 @@ export function migrateVeggieDataWithCanning(veggies: any[]): any[] {
  * @param data - The data to validate
  * @returns True if data is a valid ExtendedGameState
  */
-export function validateCanningImport(data: any): data is ExtendedGameState {
+export function validateCanningImport(data: unknown): data is ExtendedGameState {
   try {
     // Basic validation
     if (!data || typeof data !== 'object') return false;
+    const d = data as {
+      veggies?: unknown;
+      canningState?: { recipes?: unknown; upgrades?: unknown; activeProcesses?: unknown };
+      beeState?: { unlocked?: unknown; boxes?: unknown; regularHoney?: unknown; goldenHoney?: unknown };
+    };
     
     // Required fields
     const requiredFields = [
@@ -847,21 +869,21 @@ export function validateCanningImport(data: any): data is ExtendedGameState {
     }
     
     // Validate array fields
-    if (!Array.isArray(data.veggies)) return false;
+    if (!Array.isArray(d.veggies)) return false;
     
     // Validate canning state if present
-    if (data.canningState) {
-      if (!Array.isArray(data.canningState.recipes)) return false;
-      if (!Array.isArray(data.canningState.upgrades)) return false;
-      if (!Array.isArray(data.canningState.activeProcesses)) return false;
+    if (d.canningState) {
+      if (!Array.isArray(d.canningState.recipes)) return false;
+      if (!Array.isArray(d.canningState.upgrades)) return false;
+      if (!Array.isArray(d.canningState.activeProcesses)) return false;
     }
     
     // Validate bee state if present (optional, will be migrated if missing)
-    if (data.beeState) {
-      if (typeof data.beeState.unlocked !== 'boolean') return false;
-      if (!Array.isArray(data.beeState.boxes)) return false;
-      if (typeof data.beeState.regularHoney !== 'number') return false;
-      if (typeof data.beeState.goldenHoney !== 'number') return false;
+    if (d.beeState) {
+      if (typeof d.beeState.unlocked !== 'boolean') return false;
+      if (!Array.isArray(d.beeState.boxes)) return false;
+      if (typeof d.beeState.regularHoney !== 'number') return false;
+      if (typeof d.beeState.goldenHoney !== 'number') return false;
     }
     
     return true;

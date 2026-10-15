@@ -22,7 +22,7 @@ describe('useOfflineProgress', () => {
   
   // Track intervals
   let intervalId = 0;
-  const activeIntervals: Record<number, NodeJS.Timeout> = {};
+  const activeIntervals: Record<number, ReturnType<typeof setTimeout>> = {};
   
   // Mock game state ref
   const createMockGameStateRef = (): React.MutableRefObject<OfflineGameState> => ({
@@ -84,29 +84,29 @@ describe('useOfflineProgress', () => {
     // Reset event listeners
     Object.keys(eventListeners).forEach(key => delete eventListeners[key]);
     
-    vi.spyOn(document, 'addEventListener').mockImplementation((event: string, handler: EventListener) => {
+    vi.spyOn(document, 'addEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
       if (!eventListeners[event]) {
         eventListeners[event] = [];
       }
       eventListeners[event].push(handler as () => void);
     });
     
-    vi.spyOn(document, 'removeEventListener').mockImplementation((event: string, handler: EventListener) => {
+    vi.spyOn(document, 'removeEventListener').mockImplementation((event: string, handler: EventListenerOrEventListenerObject) => {
       if (eventListeners[event]) {
         eventListeners[event] = eventListeners[event].filter(h => h !== handler);
       }
     });
     
     // Mock setInterval/clearInterval
-    vi.spyOn(global, 'setInterval').mockImplementation((fn: () => void) => {
+    vi.spyOn(globalThis, 'setInterval').mockImplementation(() => {
       intervalId += 1;
       const id = intervalId;
-      activeIntervals[id] = setTimeout(() => {}, 0) as unknown as NodeJS.Timeout;
-      return id as unknown as NodeJS.Timeout;
+      activeIntervals[id] = setTimeout(() => {}, 0);
+      return id;
     });
-    
-    vi.spyOn(global, 'clearInterval').mockImplementation((id: NodeJS.Timeout) => {
-      delete activeIntervals[id as unknown as number];
+
+    vi.spyOn(globalThis, 'clearInterval').mockImplementation((id) => {
+      delete activeIntervals[id as number];
     });
   });
 
@@ -150,7 +150,7 @@ describe('useOfflineProgress', () => {
 
       renderHook(() => useOfflineProgress(gameStateRef, callbacks));
 
-      expect(global.setInterval).toHaveBeenCalledWith(expect.any(Function), 10000);
+      expect(globalThis.setInterval).toHaveBeenCalledWith(expect.any(Function), 10000);
     });
   });
 
@@ -175,7 +175,7 @@ describe('useOfflineProgress', () => {
       const { unmount } = renderHook(() => useOfflineProgress(gameStateRef, callbacks));
       unmount();
 
-      expect(global.clearInterval).toHaveBeenCalled();
+      expect(globalThis.clearInterval).toHaveBeenCalled();
     });
   });
 

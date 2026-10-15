@@ -8,6 +8,38 @@ import {
   updateAutoPurchaserTimers,
   processAutoPurchases
 } from '../utils/canningAutoPurchase'
+import type { CanningUpgrade, Recipe } from '../types/canning'
+
+// Builders fill required fields with neutral values, so each test lists only the fields it checks.
+const makeUpgrade = (
+  fields: Pick<CanningUpgrade, 'id' | 'level' | 'cost' | 'costCurrency'> & Partial<CanningUpgrade>
+): CanningUpgrade => ({
+  name: fields.id,
+  description: '',
+  type: 'speed',
+  baseCost: fields.cost,
+  upgradeCostScaling: 1,
+  effect: 0,
+  unlocked: true,
+  ...fields
+})
+
+const makeRecipe = (fields: {
+  id: string
+  name: string
+  salePrice: number
+  ingredients: Array<{ veggieName: string; quantity: number }>
+}): Recipe => ({
+  description: '',
+  processingTime: 30,
+  baseProcessingTime: 30,
+  baseSalePrice: fields.salePrice,
+  experienceRequired: 0,
+  unlocked: true,
+  timesCompleted: 0,
+  ...fields,
+  ingredients: fields.ingredients.map(ing => ({ veggieIndex: -1, ...ing }))
+})
 
 describe('canningAutoPurchase', () => {
   describe('CANNING_AUTO_PURCHASERS', () => {
@@ -98,13 +130,13 @@ describe('canningAutoPurchase', () => {
       costCurrency: 'money' as const
     }
 
-    const mockUpgrade = {
+    const mockUpgrade = makeUpgrade({
       id: 'test_upgrade',
       level: 2,
       cost: 500,
       costCurrency: 'money',
       maxLevel: undefined
-    }
+    })
 
     it('should return true when all conditions are met', () => {
       expect(shouldPurchaseUpgrade(mockAutoPurchaser, mockUpgrade, 1000, 0)).toBe(true)
@@ -130,7 +162,7 @@ describe('canningAutoPurchase', () => {
     })
 
     it('should handle knowledge currency upgrades', () => {
-      const knowledgeUpgrade = { ...mockUpgrade, costCurrency: 'knowledge' }
+      const knowledgeUpgrade = makeUpgrade({ ...mockUpgrade, costCurrency: 'knowledge' })
       expect(shouldPurchaseUpgrade(mockAutoPurchaser, knowledgeUpgrade, 0, 1000)).toBe(true)
       expect(shouldPurchaseUpgrade(mockAutoPurchaser, knowledgeUpgrade, 1000, 100)).toBe(false)
     })
@@ -144,13 +176,13 @@ describe('canningAutoPurchase', () => {
     ]
 
     const mockRecipes = [
-      {
+      makeRecipe({
         id: 'recipe1',
         name: 'Simple Recipe',
         salePrice: 50,
         ingredients: [{ veggieName: 'Tomatoes', quantity: 2 }]
-      },
-      {
+      }),
+      makeRecipe({
         id: 'recipe2',
         name: 'Complex Recipe',
         salePrice: 100,
@@ -158,13 +190,13 @@ describe('canningAutoPurchase', () => {
           { veggieName: 'Tomatoes', quantity: 3 },
           { veggieName: 'Carrots', quantity: 2 }
         ]
-      },
-      {
+      }),
+      makeRecipe({
         id: 'recipe3',
         name: 'Expensive Recipe',
         salePrice: 30,
         ingredients: [{ veggieName: 'Onions', quantity: 10 }] // Not enough onions
-      }
+      })
     ]
 
     it('should return null when auto-canning is disabled', () => {
@@ -316,18 +348,18 @@ describe('canningAutoPurchase', () => {
     ]
 
     const mockUpgrades = [
-      {
+      makeUpgrade({
         id: 'upgrade1',
         level: 2,
         cost: 500,
         costCurrency: 'money'
-      },
-      {
+      }),
+      makeUpgrade({
         id: 'upgrade2',
         level: 1,
         cost: 300,
         costCurrency: 'knowledge'
-      }
+      })
     ]
 
     it('should attempt purchase and reset timer on success', () => {

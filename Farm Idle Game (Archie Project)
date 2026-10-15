@@ -1,0 +1,211 @@
+# 🌾 Farm Idle Game (Archie Project)
+
+## Purpose of This Reference
+
+This document serves as the **single source of truth** for tone, goals, visual style, and design philosophy for the Farm Idle Game (Archie Project). It is intended to ensure consistency across features, art, systems, balance decisions, and community-facing content as development continues.
+
+---
+
+## 🧑‍🌾 Core Game Identity
+
+**Genre:** Cozy incremental / idle farming game
+**Platform:** Browser-based (itch.io)
+**Tech Stack:** React + TypeScript + Vite
+**Save System:** Persistent localStorage
+
+**High-level fantasy:**
+
+> A peaceful, long-running farm that grows across seasons, generations, and systems — rewarding patience, planning, and cozy progression rather than optimization stress.
+
+The game should feel:
+
+* Calm, warm, and welcoming
+* Continuously rewarding without pressure
+* Friendly to short sessions *and* long idle play
+
+---
+
+## 🎨 Visual Style — *Farm Idle Pixel Reference Set v1*
+
+### Icon & Art Rules
+
+* **Resolution:** 64×64 pixel icons (unless otherwise noted)
+* **Pixel Style:** Chunky, readable, Stardew-adjacent but simpler
+* **Outlines:** Thick, dark outlines are mandatory
+* **Colors:** Soft, cozy palette (warm browns, greens, yellows, oranges)
+* **Backgrounds:**
+
+  * Solid color only (no gradients unless explicitly approved)
+  * Background color must **contrast clearly** with the icon subject
+* **Transparency:**
+
+  * Allowed only for icon backgrounds
+  * Never inside characters or core shapes
+
+### General Art Direction
+
+* Shapes should be **simple and readable at small sizes**
+* Avoid realism, fine detail, or noise
+* Favor warmth over saturation
+* Everything should look like it belongs in the *same world*
+
+---
+
+## 🐶 Archie (Dog Companion)
+
+* Based on the developer’s real dog
+* Small terrier mix
+* Brown-and-white coat
+* Friendly, happy, floppy ears
+
+**Gameplay Role:**
+
+* Appears periodically in-game
+* Clicking Archie grants a small timed bonus
+
+**Art Rules:**
+
+* Must match existing Archie pixel icons exactly in style
+* Expressions: playful, cheerful, cozy — never aggressive or realistic
+
+---
+
+## 🌱 Core Systems (Current)
+
+* Crops with seasonal growth
+* Weather events
+* Assistants (automation roles)
+* Per-crop upgrades
+* Canning system (late game)
+* Bees (slow progression system)
+* Trees / Tree Shop (slow, seasonal system)
+* Prestige (Knowledge → evolving toward *Wisdom of the Ages*)
+
+Progression philosophy:
+
+> Always give the player *something meaningful to do*, but never make them feel rushed or punished for waiting.
+
+---
+
+## 🥫 Canning System Philosophy
+
+* Unlocks deeper recipe complexity over time
+* Recipes combine multiple crops
+* Late-game honey integration expands recipe set
+
+**Design goals:**
+
+* Feels rewarding, not mandatory
+* Encourages diversification
+* Synergizes with Bees, Trees, and Seasons
+
+---
+
+## 🐝 Bees System Philosophy
+
+* Slow, background progression system
+* Starts small (2 bee boxes)
+* Honey harvested on long intervals (6 months / twice per year)
+
+**Key Roles:**
+
+* Honey as a canning ingredient
+* Bee boxes boost per-plot crop yield
+
+**Upgrade Tone:**
+
+* Cozy
+* Natural
+* Slightly magical
+* Never industrial or harsh
+
+---
+
+## 🌲 Seasonal / Holiday Systems
+
+Example: **Christmas Tree Shop (Nov 1 – Dec 25)**
+
+* Seasonal content should feel festive, optional, and generous
+* Progress is **not reset** by farm expansions or prestige
+* Seasonal systems are additive, not mandatory
+
+Tone:
+
+> Celebration, warmth, tradition, and gentle magic
+
+---
+
+## 🏛️ Guilds (Future System)
+
+Four guilds, each with strengths and tradeoffs:
+
+* **Grower’s Guild** 🌱 — earthy, ritualistic
+* **Engineer’s Guild** ⚙️ — machines and optimization
+* **Preserver’s Guild** 🍯 — abundance and indulgence
+* **Merchant’s Guild** 💰 — profit-first
+
+Guilds should:
+
+* Encourage replay
+* Create light strategic tension
+* Never hard-lock content
+
+---
+
+## 🌟 Prestige Direction — *Wisdom of the Ages*
+
+Prestige is evolving toward a **generational / legacy fantasy**.
+
+Design goals:
+
+* Give the game a clear, satisfying long-term arc
+* Avoid arbitrary resets that feel disconnected from the world
+* Reward mastery and patience
+
+Likely direction:
+
+* Hybrid prestige model (performance-based + graceful endpoint)
+* Currency: **Wisdom of the Ages**
+* Permanent, small, meaningful bonuses
+
+Tone:
+
+> You are not starting over — you are continuing a legacy.
+
+---
+
+## 💬 Community & Tone Guidelines
+
+* Maintain a positive, constructive community space
+* Hostile or bad-faith behavior is not tolerated
+* Transparency is encouraged in devlogs and patch notes
+* Cozy, friendly, sincere tone in all communication
+
+Donations support real-world needs (e.g., Archie’s medical care) and should be framed with honesty and gratitude.
+
+---
+
+## 🧭 Design North Star
+
+If a decision is unclear, default to:
+
+> **Does this make the game cozier, clearer, and more rewarding over time — without adding stress?**
+
+If yes, it belongs.
+
+---
+
+## ✅ What This Reference Is For
+
+* Feature planning
+* Art generation consistency
+* Balance discussions
+* Prestige design
+* System expansion
+* Devlogs & community posts
+* Onboarding new collaborators (human or AI)
+
+---
+
+**Project Name:** Farm Idle Game (Archie Project)
+**Status:** Active Development (Alpha → Beta)

@@ -146,3 +146,19 @@
     font-size: 0.9rem;
   }
 }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tutorialIcon {
+    animation: none;
+  }
+
+  .backdrop,
+  .tutorialContainer {
+    transition: none;
+  }
+
+  .dismissButton {
+    transition: none;
+  }
+}

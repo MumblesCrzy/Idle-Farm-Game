@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { calculateRecipeProfit, INITIAL_RECIPES, RECIPE_CATEGORIES } from '../data/recipes';
-import type { CanningUpgrade, Recipe, CanningIngredient } from '../types/canning';
+import type { CanningUpgrade } from '../types/canning';
 
 // Mock veggie data for testing - using actual veggie names from the game
 const mockVeggies = [

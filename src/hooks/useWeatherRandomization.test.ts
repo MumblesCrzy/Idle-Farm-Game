@@ -11,6 +11,7 @@ const createMockEventLog = (): UseEventLogReturn => ({
   addEvent: vi.fn(),
   markAllAsRead: vi.fn(),
   clearEvents: vi.fn(),
+  clearOldEvents: vi.fn(),
   getFilteredEvents: vi.fn().mockReturnValue([]),
   getCategoryCounts: vi.fn().mockReturnValue({}),
   getUnreadCountForCategories: vi.fn().mockReturnValue(0),

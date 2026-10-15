@@ -4,7 +4,7 @@
 
 This release lays the groundwork for the **Wisdom of the Ages** prestige system — a major new feature that introduces limited lifespans, a prestige currency (Wisdom), and permanent upgrades that persist across lifetimes.
 
-> **Note:** This is a foundational release. The full prestige UI, Wisdom Shop, and lifetime counter display are planned for subsequent releases.
+> **Note:** This release includes the full prestige system implementation, all prestige-related bug fixes, accessibility improvements, a dev telemetry system, and a comprehensive test suite.
 
 ---
 
@@ -30,6 +30,48 @@ This release lays the groundwork for the **Wisdom of the Ages** prestige system 
   - `cappedToLifetime` flag is returned for UI handling
   - `offlinePrestigePending` state is set to trigger prestige flow
 - Season now advances dynamically during offline simulation (using `getSeason` from day)
+- Offline max cap increased from 8 hours to 24 hours — with 80-year lifetimes the previous cap was too restrictive
+
+#### Live-Gameplay Lifetime End Detection
+- Day loop now checks `totalDaysElapsed >= getMaxLifetimeDays()` during active play (not only during offline catch-up)
+- When the boundary is reached during live play:
+  - All 4 game loops (growth, auto-harvest, day tick, elves' bench) halt immediately
+  - `offlinePrestigePending` is set to `true`
+  - Wisdom tab is forced active so the player can prestige
+
+#### Complete Prestige Reset
+- `handleStartNextLifetime` now resets all state fields required by the design doc's "What RESETS" table:
+  - `totalDaysElapsed`, `totalHarvests`, `maxPlots` (→ 4), `highestUnlockedVeggie` (→ 0)
+  - `irrigationOwned`, `greenhouseOwned`, `heirloomOwned`, `autoSellOwned`
+  - `almanacLevel` / `almanacCost`, `currentWeather` (→ 'Clear')
+  - Guild state (commitment + currencies + upgrades)
+  - Bee system (boxes, upgrades, honey/wax)
+  - `globalAutoPurchaseTimer`
+- Starting bonuses from Wisdom upgrades are properly applied on reset
+
+#### Starting Experience on Farm Tier Upgrade
+- `handleBuyLargerFarm` now includes the prestige `startingExperience` bonus when computing initial experience for the new tier, keeping extra crops unlocked
+
+#### Lifetime Achievements
+- 6 new prestige-category achievements added to `achievements.ts`:
+  - `lifetime_complete_1` — "First Generation" (complete 1 lifetime)
+  - `lifetime_complete_2` — "Family Tradition" (complete 2 lifetimes)
+  - `lifetime_complete_5` — "Lineage" (complete 5 lifetimes)
+  - `lifetime_complete_10` — "Dynasty" (complete 10 lifetimes)
+  - `starting_bonus_bought_1` — "First Inheritance" (buy first starting-life bonus)
+  - `wisdom_10000` — "Wisdom Seeker" (accumulate 1,000,000 total Wisdom)
+
+#### Cross-Lifetime Achievement Persistence
+- `PrestigeState.achievementsUnlocked` map is now actively used:
+  - Written to when any achievement unlocks (stores `unlockedAt` timestamp + `lifetimeWhenUnlocked`)
+  - Checked on init to restore previously-earned achievements across lifetimes
+  - `useAchievements` hook accepts `persistedUnlocks` parameter for restoration
+
+#### Pause Button
+- New pause/play toggle in the header bar between Info and Achievements buttons
+- All 4 game loops (growth, auto-harvest, day tick, elves' bench) gated on `isPausedRef`
+- Visual states: purple when running ("⏸ Pause"), green with pulse animation when paused ("▶ Play")
+- Proper `aria-label` and `aria-pressed` attributes for accessibility
 
 ---
 
@@ -84,11 +126,45 @@ This release lays the groundwork for the **Wisdom of the Ages** prestige system 
 - Farm tier tracking hooked into:
   - `handleBuyLargerFarm` (farm tier upgrades)
 
+### Dev Telemetry System (`devTelemetry.ts`)
+- New `DevTelemetryManager` singleton gated behind the `devTelemetry` feature flag — zero-cost no-op in production
+- 5 structured telemetry events:
+  - `lifetime_complete` — emitted when a lifetime ends (lifetimeCount, wisdomGained, totalMoneyEarned, totalKnowledgeGained, maxFarmTierReached, durationDays)
+  - `wisdom_awarded` — emitted alongside lifetime_complete with formula component breakdown
+  - `shop_purchase` — emitted on Wisdom Shop purchases (upgradeId, levelBefore, levelAfter, cost)
+  - `achievement_unlocked` — emitted on achievement unlock (achievementId, lifetimeWhenUnlocked)
+  - `offline_catchup` — emitted on both mount and visibility-change offline catch-up (offlineMsRequested, offlineMsApplied, cappedToLifetime)
+- Events persisted to localStorage (last 500 events) with automatic truncation
+- Grouped console output with `console.groupCollapsed` + `console.table` for readable dev inspection
+- Aggregate helpers for balance tuning:
+  - `getAvgWisdomPerLifetime()` — average wisdom earned per completed lifetime
+  - `getLifetimeLengthDistribution()` — histogram of lifetime durations by year
+  - `getShopPurchaseRateByUpgrade()` — per-upgrade purchase counts
+  - `getOfflineCatchupCappedRate()` — fraction of offline catch-ups capped by lifetime end
+- `printDashboard()` — one-call summary of all aggregates to console
+- `exportCSV()` / `downloadCSV()` — export event log as CSV for offline analysis
+- Exposed as `window.__telemetry` in dev builds for easy console access
+- Toggle + Dashboard/CSV/Clear buttons added to Settings overlay's Developer Tools section
+- New `devTelemetry` feature flag added to `featureFlags.ts` (debug category, default off)
+
+### Prestige Test Suite (`prestige.test.ts`)
+- 59 tests across 10 describe blocks:
+  - Wisdom calculation accuracy
+  - Prestige reset preserving correct data
+  - Upgrade cost calculations
+  - Lifetime boundary edge cases (exactly day 29,200)
+  - `computeAllowedOfflineMs` capping
+  - Conversion utilities (`convertMsToDays`, `convertDaysToMs`)
+  - Save/load with prestige data + migration from pre-prestige saves
+  - Tracking helpers (`trackMoneyEarned`, `trackKnowledgeGained`, `trackFarmTierReached`)
+  - Purchase simulation with insufficient/sufficient wisdom
+  - Full prestige cycle (earn → prestige → verify bonuses → earn again)
+
 ### Wisdom Tab UI
 - New `WisdomTab` component for prestige upgrade purchases:
   - `LifetimeSummaryCard` — displays lifetime stats (money earned, knowledge gained, max tier, wisdom earned)
   - `UpgradeCard` — individual upgrade purchase cards with level display and cost
-  - Wisdom calculation formula: `floor((money/1M) × (knowledge/1K) × maxTier)`
+  - Wisdom calculation formula: `floor((money/10K) × (knowledge/500) × maxTier) + floor(√currentWisdom)`
 - Five wisdom upgrades implemented:
   - **Extended Lifespan** — +5 years per level (max 10)
   - **Inheritance** — +$500 starting gold per level (max 20)
@@ -168,7 +244,12 @@ Updated `Wisdom of the Ages Design.md` with:
 ### Accessibility
 - Keyboard navigation for all prestige UI elements
 - Screen reader support with ARIA labels
-- Respects `prefers-reduced-motion` for animations
+- `prefers-reduced-motion` media queries added across 12 CSS files:
+  - Infinite animations set to `animation: none`
+  - Transitions set to `transition: none`
+  - Hover transforms disabled
+  - Spinner animations retained for loading indication
+  - Files: Toast.css, WisdomTab, HeaderBar, EventLogOverlay, GrowingTab, ShopfrontTab, SettingsOverlay, TreeFarmTab, WorkshopTab, StatsDisplay, HarvestTutorial, LifespanTutorial
 
 ---
 
@@ -180,9 +261,9 @@ The following features are designed but not yet implemented:
 - [x] ~~Wisdom Shop with purchase logic and gating~~ — Implemented in WisdomTab with 5 upgrades
 - [x] ~~Lifetime counter UI component~~ — Implemented in StatsDisplay header
 - [x] ~~Tutorial overlay components~~ — Implemented as LifespanTutorial (Lifespan Intro + Shop Explanation)
-- [ ] Achievement notification system
-- [ ] Telemetry hooks implementation
-- [ ] Automated tests for migration, offline cap, and achievements
+- [x] ~~Achievement notification system~~ — Lifetime achievements + cross-lifetime persistence implemented
+- [x] ~~Telemetry hooks implementation~~ — devTelemetry module with 5 event types, feature flag toggle, CSV export
+- [x] ~~Automated tests for migration, offline cap, and achievements~~ — 59 tests in prestige.test.ts
 
 ---
 
@@ -190,6 +271,11 @@ The following features are designed but not yet implemented:
 
 - Fixed inconsistent `DEFAULT_MS_PER_GAME_DAY` constant (was 1 hour, now correctly 1 second)
 - Fixed potential crash when `dayLength` is 0 in offline calculations
+- Fixed live-gameplay lifetime end: day loop now halts at lifetime boundary instead of ticking indefinitely past 29,200 days
+- Fixed incomplete prestige reset: `handleStartNextLifetime` was missing resets for 15+ state fields (plots, weather, almanac, guilds, bees, etc.)
+- Fixed `startingExperience` bonus not applying when buying a larger farm
+- Fixed performance regression: `lifetimeMaxDaysRef` useEffect depended on entire `prestigeState` object (changes every second via tracking functions); narrowed to `extendedLifespanLevel` only
+- Fixed growth loop missing `offlinePrestigePendingRef` guard — veggies continued growing after lifetime end
 
 ---
 
@@ -201,18 +287,27 @@ The following features are designed but not yet implemented:
 - `src/components/WisdomTab.module.css` — Purple/gold prestige theme styling
 - `src/components/LifespanTutorial.tsx` — Tutorial overlay components (Lifespan Intro + Shop Explanation)
 - `src/components/LifespanTutorial.module.css` — Tutorial overlay styling with prestige theme
+- `src/utils/devTelemetry.ts` — Dev-only telemetry manager with event logging, aggregates, and CSV export
+- `src/test/prestige.test.ts` — 59 prestige system tests (wisdom, reset, upgrades, boundaries, migration)
 
 ### Modified Files
 - `src/utils/saveSystem.ts` — Prestige types, offline helpers, save/load integration
-- `src/utils/offlineProgress.ts` — Lifetime cap support, typed options, getSeason integration
-- `src/App.tsx` — Offline integration with lifetime cap, prestige state tracking, WisdomTab integration, upgrade/prestige handlers
-- `src/types/game.ts` — Added tracking function types to GameState interface
+- `src/utils/offlineProgress.ts` — Lifetime cap support, typed options, getSeason integration; `MAX_OFFLINE_HOURS` → 24
+- `src/utils/featureFlags.ts` — Added `devTelemetry` feature flag
+- `src/App.tsx` — Offline integration with lifetime cap, prestige state tracking, WisdomTab integration, upgrade/prestige handlers, live lifetime end detection, complete prestige reset, pause button state, all 4 game loops gated on isPausedRef + offlinePrestigePendingRef, telemetry emit calls, performance fix for lifetimeMaxDaysRef dependency
+- `src/types/game.ts` — Added tracking function types, `isPaused`/`setIsPaused` to GameState interface
 - `src/components/ArchieIcon.tsx` — Added `onMoneyEarned` callback prop for prestige tracking
 - `src/components/App.module.css` — Added wisdom tab button styles
 - `src/components/StatsDisplay.tsx` — Added lifetime counter badge with prestige state props
-- `src/components/StatsDisplay.module.css` — Added lifetime badge styles with golden animation
+- `src/components/StatsDisplay.module.css` — Added lifetime badge styles with golden animation + reduced-motion
+- `src/components/HeaderBar.tsx` — Added pause/play toggle button with isPaused/onTogglePause props
+- `src/components/HeaderBar.module.css` — Pause button styles (purple/green) with pulse animation + reduced-motion
+- `src/components/SettingsOverlay.tsx` — Added dev telemetry toggle, dashboard, CSV export, and clear buttons
+- `src/data/achievements.ts` — Added 6 prestige-category lifetime achievements
+- `src/hooks/useAchievements.ts` — Added `persistedUnlocks` parameter for cross-lifetime restoration
 - `src/config/assetPaths.ts` — Added `ICON_WISDOM` export
 - `Wisdom of the Ages Design.md` — Design documentation updates
+- 12 CSS files — Added `@media (prefers-reduced-motion: reduce)` blocks
 
 ---
 

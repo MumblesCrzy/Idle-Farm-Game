@@ -13,6 +13,7 @@ interface ArchieIconProps {
   christmasTreesSold?: number;
   earnCheer?: (amount: number) => void;
   onMoneyEarned?: (amount: number) => void; // Prestige tracking callback
+  isPaused?: boolean;
 }
 
 const ARCHIE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -25,7 +26,8 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   isChristmasEventActive = false,
   christmasTreesSold = 0,
   earnCheer,
-  onMoneyEarned
+  onMoneyEarned,
+  isPaused = false
 }) => {
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward, archieAppearance } = useArchie();
   const [showToast, setShowToast] = useState(false);
@@ -121,6 +123,7 @@ const ArchieIcon: FC<ArchieIconProps> = ({
             christmasTreesSold 
           })}
           onAppear={handleArchieAppear}
+          isPaused={isPaused}
         />
       )}
       

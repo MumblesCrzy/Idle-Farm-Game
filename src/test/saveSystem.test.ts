@@ -1,3 +1,4 @@
+import type { VeggieWithCanningFields } from '../utils/saveSystem'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   loadGameStateWithCanning,
@@ -216,7 +217,7 @@ describe('saveSystem', () => {
         { name: 'Carrots', price: 8 }
       ]
 
-      const migrated = migrateVeggieDataWithCanning(veggies)
+      const migrated = migrateVeggieDataWithCanning(veggies as unknown as VeggieWithCanningFields[]) // legacy save shape
 
       expect(migrated[0].canningYieldLevel).toBe(0)
       expect(migrated[0].canningYieldCost).toBe(200)
@@ -240,7 +241,7 @@ describe('saveSystem', () => {
         }
       ]
 
-      const migrated = migrateVeggieDataWithCanning(veggies)
+      const migrated = migrateVeggieDataWithCanning(veggies as unknown as VeggieWithCanningFields[]) // legacy save shape
 
       expect(migrated[0].canningYieldLevel).toBe(5)
       expect(migrated[0].canningYieldCost).toBe(1000)

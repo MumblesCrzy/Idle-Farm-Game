@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs the same checks as CI: type check (app and tests), lint, and the test suite.
+# To skip once in an emergency: git commit --no-verify
+npm run check

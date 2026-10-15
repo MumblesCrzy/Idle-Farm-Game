@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFarmManagement, type UseFarmManagementDeps } from './useFarmManagement';
 import type { EventLogCallbacks } from '../context/EventLogContext';
+import type { BeeContextValue } from '../types/bees';
+import type { UseChristmasEventReturn } from './useChristmasEvent';
 
 // Mock gameCalculations
 vi.mock('../utils/gameCalculations', () => ({
@@ -83,6 +85,7 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     eventLogCallbacks: createMockEventLogCallbacks(),
     globalBeeContext: null,
     christmasEvent: null,
+    prestigeStartingExpBonus: 0,
     ...overrides
   };
 }
@@ -193,6 +196,40 @@ describe('useFarmManagement', () => {
       expect(deps.setAutoSellOwned).toHaveBeenCalledWith(false);
       expect(deps.setHeirloomOwned).toHaveBeenCalledWith(false);
       expect(deps.setIrrigationOwned).toHaveBeenCalledWith(false);
+    });
+
+    it('should include prestige startingExperience bonus in starting experience', () => {
+      // Level 2 prestige bonus = 2 * 50 = 100 extra exp
+      const deps = createDefaultDeps({
+        farmTier: 1,
+        prestigeStartingExpBonus: 100
+      });
+      
+      const { result } = renderHook(() => useFarmManagement(deps));
+      
+      act(() => {
+        result.current.handleBuyLargerFarm();
+      });
+      
+      // Tier 2: calculateExpRequirement(1) = floor(50 * 1.9^1) = 95
+      // Plus prestige bonus of 100 = 195
+      expect(deps.setExperience).toHaveBeenCalledWith(195);
+    });
+
+    it('should set base starting experience without prestige bonus', () => {
+      const deps = createDefaultDeps({
+        farmTier: 1,
+        prestigeStartingExpBonus: 0
+      });
+      
+      const { result } = renderHook(() => useFarmManagement(deps));
+      
+      act(() => {
+        result.current.handleBuyLargerFarm();
+      });
+      
+      // Tier 2: calculateExpRequirement(1) = floor(50 * 1.9^1) = 95
+      expect(deps.setExperience).toHaveBeenCalledWith(95);
     });
 
     it('should update farm cost exponentially', () => {
@@ -368,7 +405,7 @@ describe('useFarmManagement', () => {
       const deps = createDefaultDeps({
         globalBeeContext: {
           resetBeeSystem: mockResetBeeSystem
-        } as any
+        } as Partial<BeeContextValue> as BeeContextValue
       });
       
       const { result } = renderHook(() => useFarmManagement(deps));
@@ -385,7 +422,7 @@ describe('useFarmManagement', () => {
       const deps = createDefaultDeps({
         christmasEvent: {
           resetEvent: mockResetEvent
-        } as any
+        } as Partial<UseChristmasEventReturn> as UseChristmasEventReturn
       });
       
       const { result } = renderHook(() => useFarmManagement(deps));

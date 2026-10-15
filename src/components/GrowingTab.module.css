@@ -407,3 +407,19 @@
   animation: none;
   opacity: 0.6;
 }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .veggieSelectorButtonReady {
+    animation: none;
+  }
+
+  .harvestButton:not(:disabled) {
+    animation: none;
+  }
+
+  .sellAllButton {
+    animation: none;
+    transition: none;
+  }
+}

@@ -6,6 +6,8 @@
  */
 
 import type { WeatherType } from '../config/gameConstants';
+import type { PrestigeState, WisdomUpgrades } from '../utils/saveSystem';
+import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
 
 // ============================================================================
 // AUTO-PURCHASE SYSTEM TYPES
@@ -199,60 +201,27 @@ export interface GameState {
   resetGame: () => void;
   
   // Christmas Event (seasonal)
-  christmasEvent?: {
-    eventState: any;
-    isEventActive: boolean;
-    holidayCheer: number;
-    earnCheer: (amount: number) => void;
-    spendCheer: (amount: number) => boolean;
-    treePlots: any[];
-    materials: any;
-    plantTree: (plotIndex: number, treeType: 'pine' | 'spruce' | 'fir') => void;
-    harvestTree: (plotIndex: number) => void;
-    harvestAllTrees: () => void;
-    craftItem: (recipeId: string, quantity: number) => boolean;
-    decorateTree: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => boolean;
-    addToDecorationQueue: (treeType: 'pine' | 'spruce' | 'fir', decorations: any[]) => void;
-    removeFromQueue: (queueItemId: string) => void;
-    sellTrees: (variant: any, quantity: number) => void;
-    sellAllTrees: () => void;
-    sellGarland: (quantity: number) => void;
-    sellCandle: (quantity: number) => void;
-    sellOrnament: (quantity: number) => void;
-    claimDailyBonus: () => boolean;
-    totalTreesSold: number;
-    purchaseUpgrade: (upgradeId: string) => boolean;
-    claimMilestone: (milestoneId: string) => boolean;
-    toggleCosmetic: (cosmeticId: string) => void;
-    updatePassiveIncome: (deltaTime: number) => void;
-    processTreeGrowth: () => void;
-    checkEventActive: () => boolean;
-  };
-  
-  // Bee System (v0.9.0)
-  beeSystem?: {
-    unlocked: boolean;
-    regularHoney: number;
-    goldenHoney: number;
-    totalHoneyCollected: number;
-    boxes: any[];
-    upgrades: any[];
-    beekeeperAssistant: any;
-    addBeeBox: () => boolean;
-    harvestHoney: (boxId: string) => any;
-    harvestAllHoney: () => any[];
-    purchaseUpgrade: (upgradeId: string) => boolean;
-    unlockBeekeeperAssistant: () => boolean;
-    upgradeBeekeeperAssistant: () => boolean;
-    toggleBeekeeperAssistant: (active: boolean) => void;
-    calculateYieldBonus: () => number;
-    getBeeStats: () => any;
-  };
-  
+  christmasEvent?: UseChristmasEventReturn;
+
   // Prestige System - Lifetime Stat Tracking (v0.12.0)
   trackMoneyEarned: (amount: number) => void;
   trackKnowledgeGained: (amount: number) => void;
   trackFarmTierReached: (tier: number) => void;
+  
+  // Prestige State (v0.12.0)
+  prestigeState: PrestigeState;
+  setPrestigeState: React.Dispatch<React.SetStateAction<PrestigeState>>;
+  handlePurchaseWisdomUpgrade: (upgradeId: keyof WisdomUpgrades) => void;
+  handleStartNextLifetime: (onComplete?: () => void) => void;
+  
+  // Offline Prestige Pending (v0.12.0)
+  offlinePrestigePending: boolean;
+  setOfflinePrestigePending: React.Dispatch<React.SetStateAction<boolean>>;
+  wisdomEarnedThisLifetime: number;
+  
+  // Pause control
+  isPaused: boolean;
+  setIsPaused: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // ============================================================================

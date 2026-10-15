@@ -39,16 +39,19 @@ When the 80-year mark is reached:
 The Wisdom earned at the end of each lifetime is calculated as:
 
 ```
-Wisdom = (Total Money Earned ÷ 1,000,000) × (Total Knowledge Gained ÷ 1,000) × Max Farm Tier Reached
+Wisdom = floor( (Total Money Earned ÷ 10,000) × (Total Knowledge Gained ÷ 500) × Max Farm Tier Reached ) + floor( √Current Wisdom )
 ```
+
+The first term (base earnings) rewards in-lifetime progress. The second term (wisdom bonus) provides a gentle snowball: accumulated wisdom from previous lifetimes feeds back into future earnings via `floor(√currentWisdom)`, ensuring returning players always earn *something* even on a weak run.
 
 ### Formula Components
 
 | Component | Description | Division Factor |
 |-----------|-------------|-----------------|
-| Total Money Earned | Cumulative gold earned during the lifetime (not current balance) | 1,000,000 |
-| Total Knowledge Gained | Cumulative knowledge earned during the lifetime | 1,000 |
+| Total Money Earned | Cumulative gold earned during the lifetime (not current balance) | 10,000 |
+| Total Knowledge Gained | Cumulative knowledge earned during the lifetime | 500 |
 | Max Farm Tier Reached | Highest farm tier achieved (1-10) | None (multiplier) |
+| Current Wisdom | Total Wisdom accumulated before this lifetime | √ (square root, floored) |
 
 ### Example Calculation
 
@@ -56,10 +59,21 @@ A player who:
 - Earned 50,000,000 gold total
 - Gained 15,000 knowledge total  
 - Reached Farm Tier 7
+- Has 200 Wisdom accumulated from prior lifetimes
 
-Would receive: `(50,000,000 ÷ 1,000,000) × (15,000 ÷ 1,000) × 7 = 50 × 15 × 7 = 5,250 Wisdom`
+Would receive: `floor((50,000,000 ÷ 10,000) × (15,000 ÷ 500) × 7) + floor(√200) = floor(5,000 × 30 × 7) + 14 = 1,050,000 + 14 = 1,050,014 Wisdom`
 
-> **Note:** Formula values are initial estimates and will be tuned after playtesting.
+### Early-Game Example
+
+A first-lifetime player who:
+- Earned 100,000 gold total
+- Gained 500 knowledge total
+- Reached Farm Tier 2
+- Has 0 Wisdom (first lifetime)
+
+Would receive: `floor((100,000 ÷ 10,000) × (500 ÷ 500) × 2) + floor(√0) = floor(10 × 1 × 2) + 0 = 20 Wisdom`
+
+> **Note:** Formula values were tuned after playtesting (v0.12.0). Original divisors of 1M/1K were too steep — players earned 0 Wisdom across multiple early lifetimes. Money divisor further reduced from 100K to 10K to ensure first-lifetime players earn meaningful Wisdom.
 
 ---
 
@@ -168,11 +182,11 @@ Design notes:
 │                                                          │
 │   📜 WISDOM CALCULATION                                  │
 │   ────────────────────                                   │
-│   (52,347,891 ÷ 1,000,000) × (18,432 ÷ 1,000) × 8       │
-│   = 52.35 × 18.43 × 8                                   │
-│   = 7,717 Wisdom                                         │
+│   (52,347,891 ÷ 10,000) × (18,432 ÷ 500) × 8 + √4,736  │
+│   = 5,234.79 × 36.86 × 8 + 68                           │
+│   = 1,543,870 Wisdom                                     │
 │                                                          │
-│   🌟 Total Wisdom: 12,453 (+7,717)                       │
+│   🌟 Total Wisdom: 1,548,606 (+1,543,870)                │
 │                                                          │
 │              [ Begin New Lifetime ]                      │
 │                                                          │

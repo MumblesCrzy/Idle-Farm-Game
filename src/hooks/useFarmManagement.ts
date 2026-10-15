@@ -47,6 +47,9 @@ export interface UseFarmManagementDeps {
   // Event callbacks
   eventLogCallbacks: EventLogCallbacks;
   
+  // Prestige bonus: extra starting experience per farm tier upgrade
+  prestigeStartingExpBonus: number;
+  
   // External systems (optional)
   globalBeeContext: BeeContextValue | null;
   christmasEvent: UseChristmasEventReturn | null;
@@ -127,6 +130,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     eventLogCallbacks,
     globalBeeContext,
     christmasEvent,
+    prestigeStartingExpBonus,
   } = deps;
 
   /**
@@ -156,7 +160,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     
     // Calculate starting experience based on farm tier to unlock appropriate vegetables
     // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
-    const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
+    // Also add the prestige startingExperience bonus to unlock extra crops
+    const startingExperience = (newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0) + prestigeStartingExpBonus;
     
     // Reset veggies with fresh auto-purchaser configs
     const resetVeggies = createInitialVeggies().map(v => ({
@@ -218,7 +223,8 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
-    eventLogCallbacks
+    eventLogCallbacks,
+    prestigeStartingExpBonus
   ]);
 
   /**
