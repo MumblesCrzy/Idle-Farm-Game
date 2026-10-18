@@ -1,7 +1,7 @@
 /**
  * Fall Pumpkin Rush Event Type Definitions
  *
- * Seasonal event (September 22 - October 31). Grow pumpkins in the Pumpkin
+ * Seasonal event (September 22 through Thanksgiving). Grow pumpkins in the Pumpkin
  * Patch, carve and light them in the Carving Barn, sell them at the Farm Stand
  * for Candy Corn, and enter Atlantic Giants in the County Fair weigh-off.
  */

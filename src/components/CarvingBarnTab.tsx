@@ -14,6 +14,7 @@ import EventUpgradesPanel from './EventUpgradesPanel';
 import {
   CARVABLE_VARIETIES,
   PUMPKIN_ART,
+  PUMPKIN_FINISH_BONUSES,
   PUMPKIN_FINISH_MULTIPLIERS,
   PUMPKIN_FINISH_NAMES,
   PUMPKIN_RECIPES,
@@ -83,10 +84,10 @@ function countFinish(inventory: PumpkinInventory, variety: PumpkinVariety, finis
   return count;
 }
 
-/** "+5% value" or "x3 value" */
+/** "+2 Candy Corn" or "×3 value" */
 function finishBonus(finish: PumpkinFinish): string {
   const multiplier = PUMPKIN_FINISH_MULTIPLIERS[finish];
-  return multiplier >= 2 ? `×${multiplier} value` : `+${Math.round((multiplier - 1) * 100)}% value`;
+  return multiplier > 1 ? `×${multiplier} value` : `+${PUMPKIN_FINISH_BONUSES[finish]} Candy Corn`;
 }
 
 /** What the Scarecrow Crew is doing, in words */

@@ -157,12 +157,23 @@ export const PUMPKIN_QUALITY_MULTIPLIERS: Record<PumpkinQuality, number> = {
   blueRibbon: 2.0,
 };
 
-/** Sale value multipliers by finish */
+/** Sale value multipliers by finish: a Jack-o'-Lantern, carved and lit, is worth triple */
 export const PUMPKIN_FINISH_MULTIPLIERS: Record<PumpkinFinish, number> = {
   plain: 1.0,
-  carved: 1.05,     // +5%
-  candlelit: 1.15,  // +15%
-  lantern: 3.0,     // carved and lit: triple
+  carved: 1.0,
+  candlelit: 1.0,
+  lantern: 3.0,
+};
+
+/**
+ * Candy Corn a carving or a candle adds to each pumpkin, after the other bonuses.
+ * More than a stencil (1) or a candle (2) sells for on its own, so finishing pays.
+ */
+export const PUMPKIN_FINISH_BONUSES: Record<PumpkinFinish, number> = {
+  plain: 0,
+  carved: 2,
+  candlelit: 3,
+  lantern: 0,
 };
 
 /** Display names for finishes */

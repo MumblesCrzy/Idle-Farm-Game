@@ -9,6 +9,7 @@ import {
   PUMPKIN_VARIETIES,
   PUMPKIN_QUALITY_MULTIPLIERS,
   PUMPKIN_FINISH_MULTIPLIERS,
+  PUMPKIN_FINISH_BONUSES,
   PUMPKIN_EVENT_CONSTANTS
 } from '../data/pumpkinEventData';
 import { floorCheer } from './christmasTreePricing';
@@ -103,6 +104,7 @@ export function getPumpkinPrice(
   const baseValue = (PUMPKIN_VARIETIES[variety] ?? PUMPKIN_VARIETIES.sugarPie).baseValue;
   const qualityMultiplier = PUMPKIN_QUALITY_MULTIPLIERS[quality] ?? 1;
   const finishMultiplier = PUMPKIN_FINISH_MULTIPLIERS[finish] ?? 1;
+  const finishBonus = PUMPKIN_FINISH_BONUSES[finish] ?? 0;
   // Spooky Patterns raises every carved finish, Glowing Lanterns raises Jack-o'-Lanterns,
   // and Harvest Display raises Blue Ribbons; the bonuses add together
   const upgradeMultiplier = 1
@@ -110,7 +112,8 @@ export function getPumpkinPrice(
     + (finish === 'lantern' ? ownedBonus(upgrades, 'glowing_lanterns') : 0)
     + (quality === 'blueRibbon' ? ownedBonus(upgrades, 'harvest_display') : 0);
 
-  return floorCandyCorn(baseValue * qualityMultiplier * finishMultiplier * demandMultiplier * upgradeMultiplier);
+  // A carving or a candle then adds its flat Candy Corn
+  return floorCandyCorn(baseValue * qualityMultiplier * finishMultiplier * demandMultiplier * upgradeMultiplier) + finishBonus;
 }
 
 /** Candy Corn for one Atlantic Giant, priced by weight */

@@ -82,6 +82,18 @@ describe('Pumpkin pricing', () => {
     expect(getPumpkinPrice('carver_normal_lantern', none, 2)).toBe(18);
   });
 
+  it('adds Candy Corn for a carving or a candle, more than the stencil or candle sells for', () => {
+    const none = upgradesOwning();
+    for (const demand of [1, 1.5, 2]) {
+      const plain = getPumpkinPrice('sugarPie_normal_plain', none, demand);
+      expect(getPumpkinPrice('sugarPie_normal_carved', none, demand)).toBe(plain + 2);
+      expect(getPumpkinPrice('sugarPie_normal_candlelit', none, demand)).toBe(plain + 3);
+      expect(getPumpkinPrice('sugarPie_normal_carved', none, demand) - plain).toBeGreaterThan(C.GOOD_PRICES.stencils);
+      expect(getPumpkinPrice('sugarPie_normal_candlelit', none, demand) - plain).toBeGreaterThan(C.GOOD_PRICES.candles);
+    }
+    expect(getPumpkinPrice('carver_blueRibbon_carved', none, 1)).toBe(8);
+  });
+
   it('applies Glowing Lanterns, Harvest Display and Bunting', () => {
     expect(getPumpkinPrice('carver_normal_lantern', upgradesOwning('glowing_lanterns'), 1)).toBe(13); // 9 x 1.5
     expect(getPumpkinPrice('carver_blueRibbon_plain', upgradesOwning('harvest_display'), 1)).toBe(9);  // 6 x 1.5
@@ -91,9 +103,9 @@ describe('Pumpkin pricing', () => {
   it('applies Spooky Patterns to carved pumpkins and Jack-o\'-Lanterns only', () => {
     const spooky = upgradesOwning('spooky_patterns');
     expect(getPumpkinPrice('carver_normal_lantern', spooky, 1)).toBe(11);                    // 9 x 1.25
-    expect(getPumpkinPrice('carver_normal_carved', spooky, 4)).toBe(15);                     // 12.6 x 1.25
+    expect(getPumpkinPrice('carver_normal_carved', spooky, 4)).toBe(17);                     // 12 x 1.25, +2 carving
     expect(getPumpkinPrice('carver_normal_plain', spooky, 4)).toBe(12);                      // no bonus
-    expect(getPumpkinPrice('carver_normal_candlelit', spooky, 4)).toBe(13);                  // no bonus
+    expect(getPumpkinPrice('carver_normal_candlelit', spooky, 4)).toBe(15);                  // 12 and +3 candle; no Spooky bonus
     expect(getPumpkinPrice('carver_normal_lantern', upgradesOwning('spooky_patterns', 'glowing_lanterns'), 1)).toBe(15); // 9 x 1.75
   });
 

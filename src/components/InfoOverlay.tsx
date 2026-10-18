@@ -714,7 +714,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
             {selectedInfoCategory === 'pumpkin' && (
               <div>
                 <h4 className={styles.sectionTitle}>🎃 Fall Pumpkin Rush</h4>
-                <p>The Pumpkin Rush is a seasonal event from <strong>September 22nd to October 31st</strong>. Grow pumpkins, carve and light them, sell them at the Farm Stand for Candy Corn, and enter giant pumpkins in the County Fair!</p>
+                <p>The Pumpkin Rush is a seasonal event from <strong>September 22nd through Thanksgiving</strong>. Grow pumpkins, carve and light them, sell them at the Farm Stand for Candy Corn, and enter giant pumpkins in the County Fair!</p>
 
                 <h5>🌾 Pumpkin Patch:</h5>
                 <ul>
@@ -727,7 +727,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <h5>🛖 Carving Barn:</h5>
                 <ul>
                   <li><strong>Crafting:</strong> Bake pies, make candles and cut carving stencils</li>
-                  <li><strong>Carving:</strong> A stencil carves a pumpkin (+5%), a candle lights it (+15%), and both make a Jack-o'-Lantern (triple value)</li>
+                  <li><strong>Carving:</strong> A stencil carves a pumpkin (+2 Candy Corn), a candle lights it (+3 Candy Corn), and both make a Jack-o'-Lantern (triple value)</li>
                   <li><strong>Scarecrow Crew:</strong> Once hired, crafts supplies and finishes pumpkins for you</li>
                 </ul>
 
