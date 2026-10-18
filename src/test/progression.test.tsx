@@ -10,7 +10,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { useContext } from 'react';
-import App, { GameContext } from '../App';
+import App from '../App';
+import { GameContext } from '../context/GameContext';
 import { GameProviders } from '../GameProviders';
 import { GAME_STORAGE_KEY } from '../config/gameConstants';
 import { loadGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';

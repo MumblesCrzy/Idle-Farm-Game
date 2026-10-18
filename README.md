@@ -252,7 +252,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Test Suite**: Comprehensive tests with Vitest, Testing Library, and coverage reporting
 - **Build Commands**:
   - `npm run dev` - Start development server
-  - `npm run build` - Production build with type checking
+  - `npm run build` - Production build with type checking; leaves images the game never loads, like Archie's full-size originals, out of dist
   - `npm run test` - Run test suite in watch mode
   - `npm run coverage` - Generate test coverage report
   - `npm run lint` - Run ESLint checks

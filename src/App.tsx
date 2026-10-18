@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, createContext, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode } from 'react';
 import ArchieIcon from './components/ArchieIcon';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
@@ -72,6 +72,7 @@ import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
 import { BeeProvider, useBees } from './context/BeeContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
+import { GameContext } from './context/GameContext';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
 import { useAchievements } from './hooks/useAchievements';
@@ -98,8 +99,8 @@ import type { Veggie, GameState, EventCategory } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
-import { BEE_CONSTANTS, GROWTH_COMPLETE_THRESHOLD } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH } from './config/assetPaths';
+import { ACTIVE_TAB_KEY, BEE_CONSTANTS, GROWTH_COMPLETE_THRESHOLD } from './config/gameConstants';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH, ICON_HOLIDAY_REGISTER, PUMPKIN_UPGRADE_FORTUNE_TELLER } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -155,7 +156,18 @@ const pumpkinSaleMessage = (variety: string, quantity: number) =>
 
 const PLACING_NAMES = ['First place', 'Second place', 'Third place', 'No ribbon'] as const;
 
-const GameContext = createContext<GameState | undefined>(undefined);
+/** The game's tabs. The open one is kept for the browser session, so a reload returns to it. */
+const GAME_TABS = ['growing', 'canning', 'bees', 'guilds', 'christmas', 'pumpkin'] as const;
+type GameTab = typeof GAME_TABS[number];
+const rememberedTab = (): GameTab => {
+  try {
+    const tab = sessionStorage.getItem(ACTIVE_TAB_KEY);
+    return GAME_TABS.find(t => t === tab) ?? 'growing';
+  } catch {
+    return 'growing';
+  }
+};
+
 
 // Removed unused saveGameState function
 
@@ -712,7 +724,7 @@ function App() {
   ]);
 
   // Toast state for magical register bonus
-  const [magicalRegisterToast, setMagicalRegisterToast] = useState({
+  const [magicalRegisterToast, setMagicalRegisterToast] = useState<{ visible: boolean; message: string; icon?: string }>({
     visible: false,
     message: '',
   });
@@ -730,7 +742,15 @@ function App() {
   }, []);
 
   // Tab system state
-  const [activeTab, setActiveTab] = useState<'growing' | 'canning' | 'bees' | 'christmas' | 'pumpkin' | 'guilds'>('growing');
+  const [activeTab, setActiveTab] = useState<GameTab>(rememberedTab);
+  // Remember the open tab for this browser session, so a reload returns to it
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(ACTIVE_TAB_KEY, activeTab);
+    } catch {
+      // Storage unavailable: the tab just isn't remembered
+    }
+  }, [activeTab]);
   const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
   const [pumpkinSubTab, setPumpkinSubTab] = useState<PumpkinSubTab>('patch');
   
@@ -1194,12 +1214,21 @@ function App() {
     });
   }, [veggies, canningState, christmasEvent, pumpkinEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState]);
 
-  // Reset tab to growing if canning becomes locked while on canning tab
+  // A tab that's locked or out of season falls back to Growing: after a reset, when an
+  // event ends, or when the tab remembered across a reload isn't open any more
+  const activeTabOpen = {
+    growing: true,
+    canning: canningUnlocked,
+    bees: beeSystemEnabled && farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER,
+    guilds: farmTier >= GUILDS_UNLOCK_TIER,
+    christmas: christmasEventEnabled && !!christmasEvent?.isEventActive,
+    pumpkin: pumpkinEventEnabled && pumpkinEvent.isEventActive
+  }[activeTab];
   useEffect(() => {
-    if (activeTab === 'canning' && !canningUnlocked) {
+    if (!activeTabOpen) {
       setActiveTab('growing');
     }
-  }, [activeTab, canningUnlocked]);
+  }, [activeTabOpen]);
 
   // Calculate totalPlotsUsed for UI
   // Memoized to prevent expensive recalculation on every render
@@ -1317,7 +1346,8 @@ function App() {
     if (bonus && bonus.amount > 0 && bonus.timestamp > lastBonusTimestamp.current) {
       setMagicalRegisterToast({
         visible: true,
-        message: `✨ Holiday Tip! +${bonus.amount} Cheer`,
+        message: `Holiday Tip! +${bonus.amount} Cheer`,
+        icon: ICON_HOLIDAY_REGISTER,
       });
       lastBonusTimestamp.current = bonus.timestamp;
     }
@@ -1330,7 +1360,8 @@ function App() {
     if (tip.amount > 0 && tip.timestamp > lastFortuneTipTimestamp.current) {
       setMagicalRegisterToast({
         visible: true,
-        message: `🔮 Fortune Teller tip! +${tip.amount} Candy Corn`,
+        message: `Fortune Teller tip! +${tip.amount} Candy Corn`,
+        icon: PUMPKIN_UPGRADE_FORTUNE_TELLER,
       });
       lastFortuneTipTimestamp.current = tip.timestamp;
     }
@@ -2040,6 +2071,7 @@ function App() {
     <ErrorBoundary fallback={<OverlayError title="Toast" onClose={() => setMagicalRegisterToast({ visible: false, message: '' })} />} onReset={() => setMagicalRegisterToast({ visible: false, message: '' })}>
       <Toast
         message={magicalRegisterToast.message}
+        icon={magicalRegisterToast.icon}
         type="success"
         visible={magicalRegisterToast.visible}
         duration={3000}
@@ -2064,4 +2096,4 @@ function App() {
 }
 
 export default App;
-export { GameProvider, GameContext };
+export { GameProvider };

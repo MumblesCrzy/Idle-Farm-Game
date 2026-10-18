@@ -39,7 +39,7 @@ export const calculateFruitExpRequirement = (index: number): number => {
 
 /**
  * Complete fruit configuration array
- * 11 fruits with exponentially scaling requirements
+ * 10 fruits with exponentially scaling requirements
  */
 export const FRUIT_CONFIGS: FruitConfig[] = [
   {

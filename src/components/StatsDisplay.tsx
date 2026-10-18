@@ -2,7 +2,7 @@ import { memo, type FC } from 'react';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
-import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
+import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER, ICON_FARM_TIER, ICON_SIGIL, ICON_GUILD_TOKEN, ICON_GUILDS } from '../config/assetPaths';
 import EventArt from './EventArt';
 import { PUMPKIN_ART } from '../data/pumpkinEventData';
 import styles from './StatsDisplay.module.css';
@@ -62,8 +62,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
     ? (guildState.committedGuild === 'growers' ? 'Sigils' : 'Guild Currency')
     : 'Guild Tokens';
   const guildCurrencyIcon = isCommitted 
-    ? (guildState.committedGuild === 'growers' ? '✦' : '🏛️')
-    : '🎫';
+    ? (guildState.committedGuild === 'growers' ? ICON_SIGIL : ICON_GUILDS)
+    : ICON_GUILD_TOKEN;
 
   return (
     <>
@@ -88,7 +88,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
       <div className={styles.divider} />
       <div className={styles.stats}>
         <span className={styles.statItem} title={`Farm Tier ${farmTier} - Expand your farm to unlock new features!`}>
-          🏠 Farm Tier: {farmTier}
+          <img src={ICON_FARM_TIER} alt="" className={styles.statIcon} aria-hidden="true" />
+          Farm Tier: {farmTier}
         </span>
         <span className={styles.statItem}>
           <img src={ICON_PLOTS} alt="" className={styles.statIcon} aria-hidden="true" />
@@ -121,7 +122,7 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <span className={styles.statItem} title={isCommitted 
             ? `${guildCurrencyName} - Earned from manual harvests` 
             : 'Guild Tokens - Will convert to guild currency when you commit to a guild'}>
-            <span className={styles.guildCurrencyIcon}>{guildCurrencyIcon}</span>
+            <img src={guildCurrencyIcon} alt="" className={styles.statIcon} aria-hidden="true" />
             {guildCurrencyName}: {formatNumber(guildCurrencyAmount)}
           </span>
         )}

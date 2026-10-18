@@ -1,3 +1,4 @@
+import { ICON_LOCK } from '../config/assetPaths';
 import { memo, useCallback, type FC } from 'react';
 import UpgradeButton from './UpgradeButton';
 import type { EventCurrency, EventUpgrade, EventUpgradeCategory } from '../types/eventUpgrades';
@@ -45,7 +46,8 @@ const EventUpgradeItem: FC<EventUpgradeItemProps> = memo(({
         isOwned={upgrade.owned && !isRepeatable}
         isMaxLevel={isEventUpgradeAtMaxLevel(upgrade)}
         level={isRepeatable ? upgrade.level ?? 0 : undefined}
-        effect={missingPrerequisite ? `🔒 Requires ${missingPrerequisite}` : upgrade.effect || upgrade.description}
+        effect={missingPrerequisite ? `Requires ${missingPrerequisite}` : upgrade.effect || upgrade.description}
+        effectIcon={missingPrerequisite ? ICON_LOCK : undefined}
         formatNumber={formatNumber}
       />
     </div>

@@ -5,7 +5,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, screen, fireEvent, within } from '@testing-library/react';
 import { useContext } from 'react';
-import App, { GameContext } from '../App';
+import App from '../App';
+import { GameContext } from '../context/GameContext';
 import { GameProviders } from '../GameProviders';
 import { GAME_STORAGE_KEY } from '../config/gameConstants';
 import type { GameState } from '../types/game';

@@ -7,6 +7,8 @@
  * anywhere else, or "Got it!", just closes it.
  */
 
+import InlineIcon from './InlineIcon';
+import { ICON_HARVEST } from '../config/assetPaths';
 import { useEffect, useLayoutEffect, useState, type CSSProperties, type FC } from 'react';
 import styles from './HarvestTutorial.module.css';
 
@@ -88,7 +90,7 @@ const HarvestTutorial: FC<HarvestTutorialProps> = ({ isVisible, onDismiss }) => 
   const fade = isVisible ? styles.visible : styles.hidden;
   const message = (
     <div className={styles.tutorialMessage}>
-      <h3 className={styles.tutorialTitle}>🎉 Your first harvest is ready!</h3>
+      <h3 className={styles.tutorialTitle}><InlineIcon src={ICON_HARVEST} size={22} gap={6} />Your first harvest is ready!</h3>
       <p className={styles.tutorialText}>
         Click the <strong>Harvest</strong> button to collect your vegetables and earn experience!
       </p>

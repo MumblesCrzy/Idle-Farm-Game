@@ -246,6 +246,10 @@
   border-color: #0056b3;
 }
 
+.lockIcon {
+  margin-left: 4px;
+}
+
 .appearanceButtonLocked {
   opacity: 0.5;
   cursor: not-allowed;

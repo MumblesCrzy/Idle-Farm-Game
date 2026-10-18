@@ -11,6 +11,8 @@
 import { memo, useCallback, useId, useState, type FC, type ReactNode } from 'react';
 import BaseTab from './BaseTab';
 import LockedFeatureCard from './LockedFeatureCard';
+import InlineIcon from './InlineIcon';
+import { GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, GUILD_PRESERVERS, ICON_BEE, ICON_BLESSED_CROP, ICON_CANNING, ICON_GROWING, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_HARVEST, ICON_IDEA, ICON_MONEY, ICON_SCROLL, ICON_SIGIL, ICON_UPGRADE, ICON_WARNING, RIBBON_BLUE, UPGRADE_AUTO_HARVESTER, UPGRADE_FERTILIZER, UPGRADE_HEIRLOOM_SEEDS } from '../config/assetPaths';
 import type { GuildType, GuildState, Guild, GuildUpgrade } from '../types/guilds';
 import { GUILDS, GUILDS_UNLOCK_TIER, GUILD_TOKEN_SOURCES, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
 import {
@@ -127,7 +129,7 @@ const GuildCard: FC<GuildCardProps> = memo(({
             <>
               {/* Key Benefits */}
               <div className={styles.cardBenefits}>
-                <h4 className={styles.cardBenefitsTitle}>✨ Benefits</h4>
+                <h4 className={styles.cardBenefitsTitle}><InlineIcon src={ICON_UPGRADE} size={16} gap={4} />Benefits</h4>
                 <ul className={styles.cardBenefitsList}>
                   {guild.passiveBonuses.slice(0, 3).map(bonus => (
                     <li key={bonus.id} className={styles.cardBenefitItem}>
@@ -139,7 +141,7 @@ const GuildCard: FC<GuildCardProps> = memo(({
 
               {/* Trade-offs */}
               <div className={styles.cardTradeoffs}>
-                <h4 className={styles.cardTradeoffsTitle}>⚠️ Trade-offs</h4>
+                <h4 className={styles.cardTradeoffsTitle}><InlineIcon src={ICON_WARNING} size={16} gap={4} />Trade-offs</h4>
                 <ul className={styles.cardTradeoffsList}>
                   {guild.tradeOffs.slice(0, 2).map(tradeoff => (
                     <li key={tradeoff.id} className={styles.cardTradeoffItem}>
@@ -178,6 +180,8 @@ GuildCard.displayName = 'GuildCard';
 interface GuildUpgradeRowProps {
   upgrade: GuildUpgrade;
   currentLevel: number;
+  /** Whether a one-time upgrade has been bought */
+  owned: boolean;
   money: number;
   knowledge: number;
   experience: number;
@@ -192,6 +196,7 @@ interface GuildUpgradeRowProps {
 const GuildUpgradeRow: FC<GuildUpgradeRowProps> = memo(({
   upgrade,
   currentLevel,
+  owned,
   money,
   knowledge,
   experience,
@@ -221,14 +226,14 @@ const GuildUpgradeRow: FC<GuildUpgradeRowProps> = memo(({
     switch (upgrade.currencyType) {
       case 'money': return `$${formatNumber(cost)}`;
       case 'knowledge': return `${formatNumber(cost)} Kn`;
-      case 'sigils': return `${formatNumber(cost)} ✦`;
-      case 'guildTokens': return `${formatNumber(cost)} 🎫`;
+      case 'sigils': return <>{formatNumber(cost)} <InlineIcon src={ICON_SIGIL} size={14} /></>;
+      case 'guildTokens': return <>{formatNumber(cost)} <InlineIcon src={ICON_GUILD_TOKEN} size={14} /></>;
       default: return formatNumber(cost);
     }
   };
   
   const canAfford = getCurrency() >= cost;
-  const isMaxed = upgrade.isOneTime ? upgrade.purchased : currentLevel >= upgrade.maxLevel;
+  const isMaxed = upgrade.isOneTime ? owned : currentLevel >= upgrade.maxLevel;
   
   // Build a detailed tooltip
   const tooltipText = `${upgrade.description}\n\nCurrent: ${
@@ -349,7 +354,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
           <p className={styles.committedPhilosophy}>{guild.philosophy}</p>
         </div>
         <div className={styles.committedCurrency} title="Sigils - Earned from manual harvests and blessed crops">
-          <span className={styles.currencyIcon}>✦</span>
+          <InlineIcon src={ICON_SIGIL} size={24} className={styles.currencyIcon} />
           <span className={styles.currencyAmount}>{formatNumber(sigils)}</span>
           <span className={styles.currencyLabel}>Sigils</span>
         </div>
@@ -361,12 +366,12 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
         <div className={styles.committedLeftColumn}>
           {/* Active Effects - Computed Values */}
           <div className={styles.bonusesSection}>
-            <h3 className={styles.sectionTitle}>✨ Active Effects</h3>
+            <h3 className={styles.sectionTitle}><InlineIcon src={ICON_UPGRADE} size={18} gap={6} />Active Effects</h3>
             <div className={styles.bonusesList}>
               {/* Growth Bonus */}
               {growthBonus > 0 && (
                 <div className={styles.bonusItem} title="From Fertile Soil and Advanced Fertilizer Research upgrades">
-                  <span className={styles.bonusIcon}>🌱</span>
+                  <InlineIcon src={ICON_GROWING} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Growth: <span className={styles.bonusValue}>+{formatNumber(growthBonus * 100, 1)}%</span></span>
                 </div>
               )}
@@ -374,7 +379,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Price Bonus */}
               {priceBonus > 0 && (
                 <div className={styles.bonusItem} title="From Green Thumb and Selective Breeding upgrades">
-                  <span className={styles.bonusIcon}>💰</span>
+                  <InlineIcon src={ICON_MONEY} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Value: <span className={styles.bonusValue}>+{formatNumber(priceBonus * 100, 1)}%</span></span>
                 </div>
               )}
@@ -382,7 +387,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Whispers of the Seed */}
               {hasWhispers && (
                 <div className={styles.bonusItem} title="Ancient knowledge grants 10× multiplier to all crop sales">
-                  <span className={styles.bonusIcon}>🌟</span>
+                  <InlineIcon src={UPGRADE_HEIRLOOM_SEEDS} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Whispers: <span className={styles.bonusValue}>10× Price</span></span>
                 </div>
               )}
@@ -390,7 +395,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Manual Harvest Bonus */}
               {manualHarvestBonus > 0 && (
                 <div className={styles.bonusItem} title="Growers commitment bonus - manual harvests are rewarded">
-                  <span className={styles.bonusIcon}>🤲</span>
+                  <InlineIcon src={ICON_HARVEST} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Manual: <span className={styles.bonusValue}>+{manualHarvestBonus}</span></span>
                 </div>
               )}
@@ -398,7 +403,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Blessed Crop Chance */}
               {blessedCropChance > 0 && (
                 <div className={styles.bonusItem} title="From Soilbound Pact - chance for double yield on harvest">
-                  <span className={styles.bonusIcon}>✨</span>
+                  <InlineIcon src={ICON_BLESSED_CROP} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Blessed: <span className={styles.bonusValue}>{formatNumber(blessedCropChance * 100, 0)}%</span></span>
                 </div>
               )}
@@ -406,7 +411,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Quality Grading */}
               {qualityGradingChance > 0 && (
                 <div className={styles.bonusItem} title="From Quality Grading - chance for each crop to sell for +50% value">
-                  <span className={styles.bonusIcon}>⭐</span>
+                  <InlineIcon src={RIBBON_BLUE} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Quality: <span className={styles.bonusValue}>{formatNumber(qualityGradingChance * 100, 0)}%</span></span>
                 </div>
               )}
@@ -414,7 +419,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Fertilizer Effectiveness */}
               {fertilizerMult > 1 && (
                 <div className={styles.bonusItem} title="From Verdant Glyphs - boosts all fertilizer upgrades">
-                  <span className={styles.bonusIcon}>🌿</span>
+                  <InlineIcon src={UPGRADE_FERTILIZER} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Fertilizer: <span className={styles.bonusValue}>+{formatNumber((fertilizerMult - 1) * 100, 0)}%</span></span>
                 </div>
               )}
@@ -422,7 +427,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Bee Synergy */}
               {beePollinationBonus > 0 && (
                 <div className={styles.bonusItem} title="Growers commitment bonus - enhanced bee productivity">
-                  <span className={styles.bonusIcon}>🐝</span>
+                  <InlineIcon src={ICON_BEE} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Bees: <span className={styles.bonusValue}>+{formatNumber(beePollinationBonus * 100, 0)}%</span></span>
                 </div>
               )}
@@ -430,7 +435,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Show message if no active bonuses */}
               {growthBonus === 0 && priceBonus === 0 && manualHarvestBonus === 0 && (
                 <div className={styles.bonusItem}>
-                  <span className={styles.bonusIcon}>📜</span>
+                  <InlineIcon src={ICON_SCROLL} size={18} className={styles.bonusIcon} />
                   <span className={styles.bonusText}>Purchase upgrades to unlock</span>
                 </div>
               )}
@@ -439,12 +444,12 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
           
           {/* Trade-offs - with computed penalties */}
           <div className={styles.tradeoffsSection}>
-            <h3 className={styles.sectionTitle}>⚖️ Trade-offs</h3>
+            <h3 className={styles.sectionTitle}><InlineIcon src={ICON_WARNING} size={18} gap={6} />Trade-offs</h3>
             <div className={styles.tradeoffsList}>
               {/* Harvester Speed Penalty */}
               {harvesterSpeedMult < 1 && (
                 <div className={styles.tradeoffItem} title="Growers prefer the personal touch - automation is less effective">
-                  <span className={styles.tradeoffIcon}>🤖</span>
+                  <InlineIcon src={UPGRADE_AUTO_HARVESTER} size={18} className={styles.tradeoffIcon} />
                   <span className={styles.tradeoffText}>Harvester: <span className={styles.penaltyValue}>-{formatNumber((1 - harvesterSpeedMult) * 100, 0)}%</span></span>
                 </div>
               )}
@@ -452,7 +457,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Canning Profit Penalty */}
               {canningProfitMult < 1 && (
                 <div className={styles.tradeoffItem} title="Raw produce is valued higher than processed goods by Growers">
-                  <span className={styles.tradeoffIcon}>🥫</span>
+                  <InlineIcon src={ICON_CANNING} size={18} className={styles.tradeoffIcon} />
                   <span className={styles.tradeoffText}>Canning: <span className={styles.penaltyValue}>-{formatNumber((1 - canningProfitMult) * 100, 0)}%</span></span>
                 </div>
               )}
@@ -460,7 +465,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               {/* Show static trade-offs if no computed penalties */}
               {harvesterSpeedMult === 1 && canningProfitMult === 1 && guild.tradeOffs.map(tradeoff => (
                 <div key={tradeoff.id} className={styles.tradeoffItem}>
-                  <span className={styles.tradeoffIcon}>⚠</span>
+                  <InlineIcon src={ICON_WARNING} size={18} className={styles.tradeoffIcon} />
                   <span className={styles.tradeoffText}>{tradeoff.description}</span>
                 </div>
               ))}
@@ -477,6 +482,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 key={upgrade.id}
                 upgrade={upgrade}
                 currentLevel={guildState.upgradeLevels[upgrade.id] ?? 0}
+                owned={guildState.purchasedUpgrades.includes(upgrade.id)}
                 money={money}
                 knowledge={knowledge}
                 experience={experience}
@@ -579,17 +585,17 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
     const mainContent = (
       <LockedFeatureCard
         theme="dark"
-        icon="🏛️"
+        icon={<InlineIcon src={ICON_GUILDS} size={24} />}
         featureName="Guilds System"
         currentTier={farmTier}
         requiredTier={GUILDS_UNLOCK_TIER}
         featuresTitle="What Guilds Offer:"
         hint="Keep expanding your farm to unlock this feature!"
       >
-        <li>🌱 <strong>Growers Guild:</strong> Enhanced crop growth and manual harvest bonuses</li>
-        <li>🥫 <strong>Preservers Guild:</strong> Superior canning and preservation abilities</li>
-        <li>⚙️ <strong>Engineers Guild:</strong> Advanced automation and efficiency</li>
-        <li>💰 <strong>Merchants Guild:</strong> Better trading and profit margins</li>
+        <li><InlineIcon src={GUILD_GROWERS} size={18} gap={6} /><strong>Growers Guild:</strong> Enhanced crop growth and manual harvest bonuses</li>
+        <li><InlineIcon src={GUILD_PRESERVERS} size={18} gap={6} /><strong>Preservers Guild:</strong> Superior canning and preservation abilities</li>
+        <li><InlineIcon src={GUILD_ENGINEERS} size={18} gap={6} /><strong>Engineers Guild:</strong> Advanced automation and efficiency</li>
+        <li><InlineIcon src={GUILD_MERCHANTS} size={18} gap={6} /><strong>Merchants Guild:</strong> Better trading and profit margins</li>
       </LockedFeatureCard>
     );
     
@@ -672,7 +678,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
             Sample upgrades from different guilds, then commit to one for exclusive benefits.
           </p>
           <div className={styles.introTokens}>
-            <p className={styles.introTokensTitle}>Earn 🎫 Guild Tokens to sample upgrades:</p>
+            <p className={styles.introTokensTitle}>Earn <InlineIcon src={ICON_GUILD_TOKEN} size={16} /> Guild Tokens to sample upgrades:</p>
             <ul className={styles.introTokenList}>
               {Object.entries(GUILD_TOKEN_SOURCES).map(([source, { tokens, every, label }]) => (
                 <li key={source}>{`+${tokens} per ${every > 1 ? `${every} ` : ''}${label}`}</li>
@@ -680,7 +686,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
             </ul>
           </div>
           <p className={styles.introWarning}>
-            <strong>⚠️ Warning:</strong> Once committed, you cannot change guilds or access other guild upgrades!
+            <strong><InlineIcon src={ICON_WARNING} size={16} gap={4} />Warning:</strong> Once committed, you cannot change guilds or access other guild upgrades!
           </p>
           <button type="button" className={styles.introButton} onClick={handleDismissIntro}>
             I Understand
@@ -708,7 +714,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
         <div className={styles.samplingSection}>
           {/* Soft Cap Warning */}
           <div className={styles.softCapWarning}>
-            <span className={styles.softCapIcon}>ℹ️</span>
+            <InlineIcon src={ICON_IDEA} size={18} className={styles.softCapIcon} />
             <span className={styles.softCapText}>
               Sampling upgrades operate at <strong>50% effectiveness</strong> until you commit to this guild.
             </span>
@@ -724,10 +730,10 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
               <div className={styles.samplingEffects}>
                 <span className={styles.samplingEffectsTitle}>Current Effects (at 50%):</span>
                 {growthBonus > 0 && (
-                  <span className={styles.samplingEffect}>🌱 +{formatNumber(growthBonus * 100, 1)}% Growth</span>
+                  <span className={styles.samplingEffect}><InlineIcon src={ICON_GROWING} size={14} gap={3} />+{formatNumber(growthBonus * 100, 1)}% Growth</span>
                 )}
                 {priceBonus > 0 && (
-                  <span className={styles.samplingEffect}>💰 +{formatNumber(priceBonus * 100, 1)}% Value</span>
+                  <span className={styles.samplingEffect}><InlineIcon src={ICON_MONEY} size={14} gap={3} />+{formatNumber(priceBonus * 100, 1)}% Value</span>
                 )}
               </div>
             ) : null;
@@ -746,6 +752,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
                   key={upgrade.id}
                   upgrade={upgrade}
                   currentLevel={currentLevel}
+                  owned={guildState.purchasedUpgrades.includes(upgrade.id)}
                   money={money}
                   knowledge={knowledge}
                   experience={experience}
@@ -773,7 +780,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
         >
           <h3 id={confirmTitleId}>Commit to {selectedGuildData.displayName}?</h3>
           <p className={styles.confirmWarning}>
-            ⚠️ This action is <strong>permanent</strong>! You will:
+            <InlineIcon src={ICON_WARNING} size={16} gap={4} />This action is <strong>permanent</strong>! You will:
           </p>
           <ul className={styles.confirmList}>
             <li>Gain access to exclusive guild upgrades</li>

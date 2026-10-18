@@ -1,3 +1,5 @@
+import InlineIcon from './InlineIcon';
+import { ICON_LOCK, ICON_SOUND_OFF, ICON_SOUND_ON } from '../config/assetPaths';
 import { useState, useEffect, memo, type FC } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { featureFlags } from '../utils/featureFlags';
@@ -126,7 +128,9 @@ const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
                 aria-label={soundEnabled ? 'Sound effects enabled. Click to disable' : 'Sound effects disabled. Click to enable'}
                 aria-pressed={soundEnabled}
               >
-                {soundEnabled ? '🔊 ON' : '🔇 OFF'}
+                {soundEnabled
+                  ? <><InlineIcon src={ICON_SOUND_ON} size={18} gap={4} />ON</>
+                  : <><InlineIcon src={ICON_SOUND_OFF} size={18} gap={4} />OFF</>}
               </button>
             </div>
           </div>
@@ -149,7 +153,9 @@ const SettingsOverlay: FC<SettingsOverlayProps> = memo(({
                       disabled={locked}
                       title={locked ? `Unlock '${achievementName}' achievement to use this appearance` : undefined}
                     >
-                      {locked ? `${look.label} 🔒` : look.label}
+                      <InlineIcon src={look.image} size={24} gap={6} />
+                      {look.label}
+                      {locked && <InlineIcon src={ICON_LOCK} size={14} className={styles.lockIcon} />}
                     </button>
                   );
                 })}

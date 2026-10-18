@@ -3,6 +3,7 @@ import styles from '../components/Toast.module.css'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { act } from '@testing-library/react'
 import Toast from '../components/Toast'
+import { ICON_HOLIDAY_REGISTER, ICON_IDEA } from '../config/assetPaths'
 
 describe('Toast', () => {
   beforeEach(() => {
@@ -75,8 +76,15 @@ describe('Toast', () => {
       />
     )
 
-    expect(screen.getByText('ℹ️')).toBeInTheDocument()
+    expect(document.querySelector(`img[src="${ICON_IDEA}"]`)).toBeInTheDocument()
     expect(screen.getByText('Information')).toBeInTheDocument()
+  })
+
+  it('shows a picture in place of the type mark when given one', () => {
+    render(<Toast message="Holiday Tip! +5 Cheer" icon={ICON_HOLIDAY_REGISTER} visible={true} onClose={vi.fn()} />)
+
+    expect(document.querySelector(`img[src="${ICON_HOLIDAY_REGISTER}"]`)).toBeInTheDocument()
+    expect(screen.queryByText('✓')).not.toBeInTheDocument()
   })
 
   it('should auto-close after default duration', async () => {

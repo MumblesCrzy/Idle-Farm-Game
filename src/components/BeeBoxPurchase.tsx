@@ -1,5 +1,5 @@
 import { memo, type FC } from 'react';
-import { ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
+import { ICON_BEE_HIVE, ICON_HONEY, ICON_TROPHY } from '../config/assetPaths';
 import styles from './BeeBoxPurchase.module.css';
 
 interface BeeBoxPurchaseProps {
@@ -60,7 +60,7 @@ const BeeBoxPurchase: FC<BeeBoxPurchaseProps> = memo(({
                 : 'Purchase a new bee hive'
             }
           >
-            <span className={styles.buttonIcon}>➕</span>
+            <img src={ICON_BEE_HIVE} alt="" aria-hidden="true" className={styles.buttonIcon} />
             <span className={styles.buttonText}>Purchase</span>
             <span className={styles.buttonCost}>
               <img src={ICON_HONEY} alt="Honey" className={styles.costIconInButton} />
@@ -70,7 +70,7 @@ const BeeBoxPurchase: FC<BeeBoxPurchaseProps> = memo(({
         </>
       ) : (
         <div className={styles.maxCapacityContent}>
-          <div className={styles.maxIcon}>🏆</div>
+          <img src={ICON_TROPHY} alt="" aria-hidden="true" className={styles.maxIcon} />
           <div className={styles.maxText}>
             All {maxBoxes} boxes owned!
           </div>

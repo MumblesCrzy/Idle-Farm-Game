@@ -5,6 +5,7 @@
  * Displays tree plots, seed selector, growth progress, and harvest controls.
  */
 
+import InlineIcon from './InlineIcon';
 import { memo, useCallback, useState, useEffect, type FC } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
@@ -12,7 +13,7 @@ import EventUpgradesPanel from './EventUpgradesPanel';
 import type { TreePlot, TreeType, CraftingMaterials, TreeInventory } from '../types/christmasEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 import { TREE_DEFINITIONS } from '../data/christmasEventData';
-import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH } from '../config/assetPaths';
+import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, ICON_GOLD_STAR, ICON_SPARKLES } from '../config/assetPaths';
 import styles from './TreeFarmTab.module.css';
 
 /**
@@ -163,7 +164,9 @@ const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
     <div className={`${styles.treePlot} ${isEmpty ? styles.empty : ''} ${canHarvest ? styles.ready : ''} ${isPerfect ? styles.perfect : ''} ${isLuxury ? styles.luxury : ''}`}>
       {plot.quality !== 'normal' && !isEmpty && (
         <div className={styles.qualityBadgeTop}>
-          {plot.quality === 'perfect' ? '⭐ Perfect' : '✨ Luxury'}
+          {plot.quality === 'perfect'
+            ? <><InlineIcon src={ICON_GOLD_STAR} size={12} gap={3} />Perfect</>
+            : <><InlineIcon src={ICON_SPARKLES} size={12} gap={3} />Luxury</>}
         </div>
       )}
       
@@ -255,7 +258,7 @@ const MaterialsDisplay: FC<MaterialsDisplayProps> = memo(({ materials, treeInven
   
   return (
     <div className={styles.materialsDisplay}>
-      <h3 className={styles.materialsTitle}>📦 Materials</h3>
+      <h3 className={styles.materialsTitle}><InlineIcon src={MATERIAL_WOOD} size={18} gap={6} />Materials</h3>
       <div className={styles.materialsList}>
         {/* Trees Row */}
         <div className={styles.materialItem}>

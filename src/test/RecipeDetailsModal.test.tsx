@@ -137,7 +137,7 @@ describe('RecipeDetailsModal', () => {
       goldenHoney: 0,
     });
     expect(screen.getByText('Honey Required:')).toBeInTheDocument();
-    expect(screen.getByText('🍯 Regular Honey × 5.000')).toBeInTheDocument();
+    expect(screen.getByText('Regular Honey × 5.000')).toBeInTheDocument();
     expect(screen.getByText('(Have: 10.000)')).toBeInTheDocument();
     expect(screen.getByText('Golden Honey × 1.000')).toBeInTheDocument();
     expect(screen.getByText('(Have: 0.000)')).toBeInTheDocument();

@@ -22,6 +22,20 @@ export const ICON_MERCHANT = './Merchant.png';
 export const ICON_SCROLL = './Scroll.png';
 export const ICON_DETAIL = './Detail.png';
 export const ICON_COFFEE = './Coffee Mug.png';
+export const ICON_FARM_TIER = './Farm Tier.png';
+export const ICON_SIGIL = './Sigil.png'; // Growers Guild currency
+export const ICON_GUILD_TOKEN = './Guild Token.png'; // Earned before committing to a guild
+export const ICON_RITUAL_HARVEST = './Ritual Harvest.png';
+export const ICON_BLESSED_CROP = './Blessed Crop.png';
+export const ICON_WARNING = './Warning.png';
+export const ICON_CRATE = './Crate.png';
+export const ICON_PLAY = './Play.png';
+export const ICON_PAUSE = './Pause.png';
+export const ICON_SOUND_ON = './Sound On.png';
+export const ICON_SOUND_OFF = './Sound Off.png';
+export const ICON_LOCK = './Lock.png';
+export const ICON_GOLD_STAR = './Gold Star.png';
+export const ICON_SPARKLES = './Sparkles.png';
 export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event currency
 export const ICON_GUILDS = './Guilds.png'; // Guild system icon
 
@@ -64,6 +78,18 @@ export const VEGGIE_CUCUMBERS = './Cucumbers.png';
 export const VEGGIE_GREEN_BEANS = './Green Beans.png';
 export const VEGGIE_ZUCCHINI = './Zucchini.png';
 export const VEGGIE_EGGPLANT = './Eggplant.png';
+
+// Fruit crops, opened by the Growers Guild's Fruit Cultivation
+export const FRUIT_STRAWBERRY = './Strawberry.png';
+export const FRUIT_BLUEBERRY = './Blueberry.png';
+export const FRUIT_RASPBERRY = './Raspberry.png';
+export const FRUIT_BLACKBERRY = './Blackberry.png';
+export const FRUIT_APPLE = './Apple.png';
+export const FRUIT_PEAR = './Pear.png';
+export const FRUIT_PEACH = './Peach.png';
+export const FRUIT_PLUM = './Plum.png';
+export const FRUIT_CHERRY = './Cherry.png';
+export const FRUIT_WATERMELON = './Watermelon.png';
 
 // Christmas Tree Images
 export const TREE_SAPLING = './Sapling.png';
@@ -131,12 +157,14 @@ export const CANNING_CANNER = './Canner.png';
 
 // Special Images
 // The game draws Archie at 80 px, so it loads 256 px copies; the full-size originals stay in public/
+// but scripts/leave-out-of-dist.mjs leaves them out of the build
 export const SPECIAL_ARCHIE = './Archie 256.png';
 export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones 256.png';
 export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer 256.png';
 export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater 256.png';
 export const SPECIAL_ARCHIE_FALL_SWEATER = './Archie Fall Sweater 256.png';
 export const SPECIAL_ARCHIE_WARLOCK = './Archie Warlock Costume 256.png';
+// Art for the itch.io page, not the game: the build leaves both out of dist
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
 
@@ -258,6 +286,18 @@ export const ALL_IMAGES = [
   VEGGIE_CUCUMBERS,
   VEGGIE_GREEN_BEANS,
   VEGGIE_ZUCCHINI,
+
+  // All fruit images
+  FRUIT_STRAWBERRY,
+  FRUIT_BLUEBERRY,
+  FRUIT_RASPBERRY,
+  FRUIT_BLACKBERRY,
+  FRUIT_APPLE,
+  FRUIT_PEAR,
+  FRUIT_PEACH,
+  FRUIT_PLUM,
+  FRUIT_CHERRY,
+  FRUIT_WATERMELON,
   
   // Growing tab upgrade images
   UPGRADE_FERTILIZER,
@@ -321,6 +361,22 @@ export const ALL_IMAGES = [
   SPECIAL_ARCHIE_SWEATER,
   SPECIAL_ARCHIE_FALL_SWEATER,
   SPECIAL_ARCHIE_WARLOCK,
+
+  // Farm and guild icons
+  ICON_FARM_TIER,
+  ICON_SIGIL,
+  ICON_GUILD_TOKEN,
+  ICON_RITUAL_HARVEST,
+  ICON_BLESSED_CROP,
+  ICON_WARNING,
+  ICON_CRATE,
+  ICON_PLAY,
+  ICON_PAUSE,
+  ICON_SOUND_ON,
+  ICON_SOUND_OFF,
+  ICON_LOCK,
+  ICON_GOLD_STAR,
+  ICON_SPARKLES,
   
   // Bee upgrade images
   BEE_BUSY_BEES,

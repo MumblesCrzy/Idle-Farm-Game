@@ -120,7 +120,8 @@
 }
 
 .buttonIcon {
-  font-size: 1rem;
+  width: 20px;
+  height: 20px;
 }
 
 .buttonText {
@@ -160,7 +161,8 @@
 }
 
 .maxIcon {
-  font-size: 2rem;
+  width: 40px;
+  height: 40px;
   margin-bottom: 0.25rem;
 }
 

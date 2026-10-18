@@ -41,12 +41,27 @@ const sampledGrowersState: GuildState = {
 
 const growersCard = () => screen.getByRole('button', { name: /Growers Guild/ });
 
+/** Committed to the Growers with Ritual Circles bought and sigils to spare */
+const committedGrowersState: GuildState = {
+  ...DEFAULT_GUILD_STATE,
+  status: 'committed',
+  committedGuild: 'growers',
+  guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, growers: 5000 },
+  purchasedUpgrades: ['growers_ritual_circles'],
+  upgradeLevels: { growers_ritual_circles: 1 },
+};
+
+/** The buy button in the upgrade row under this heading */
+const buyButton = (name: string) => within(screen.getByRole('heading', { name }).parentElement!.parentElement!).getByRole('button');
+
+const emoji = /\p{Extended_Pictographic}/u;
+
 describe('GuildsTab', () => {
   describe('locked card', () => {
     it('shows the locked card below the unlock tier', () => {
       renderTab({ farmTier: GUILDS_UNLOCK_TIER - 1 });
 
-      expect(screen.getByRole('heading', { level: 2, name: '🏛️ Guilds System Locked 🏛️' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Guilds System Locked' })).toBeInTheDocument();
       expect(screen.getByText('Current Tier:').parentElement).toHaveTextContent(`Current Tier: ${GUILDS_UNLOCK_TIER - 1}`);
       expect(screen.getByText('Required Tier:').parentElement).toHaveTextContent(`Required Tier: ${GUILDS_UNLOCK_TIER}`);
       expect(screen.getByRole('heading', { level: 3, name: 'What Guilds Offer:' })).toBeInTheDocument();
@@ -97,6 +112,41 @@ describe('GuildsTab', () => {
       await user.click(within(row).getByRole('button'));
 
       expect(props.onPurchaseUpgrade).toHaveBeenCalledWith(upgrade.id);
+    });
+  });
+
+  describe('committed Growers upgrades', () => {
+    it('show a bought one-time upgrade as Owned and disable its button', () => {
+      renderTab({ guildState: committedGrowersState });
+
+      expect(buyButton('Ritual Circles')).toHaveTextContent('Owned');
+      expect(buyButton('Ritual Circles')).toBeDisabled();
+      expect(buyButton('Fruit Cultivation')).toHaveTextContent('200');
+      expect(buyButton('Fruit Cultivation')).toBeEnabled();
+    });
+  });
+
+  describe('icons', () => {
+    it('shows no emoji on the locked card', () => {
+      renderTab({ farmTier: GUILDS_UNLOCK_TIER - 1 });
+      expect(document.body.textContent).not.toMatch(emoji);
+    });
+
+    it('shows no emoji in the intro, the guild picker or the commit dialog', async () => {
+      const user = userEvent.setup();
+      renderTab({ guildState: sampledGrowersState, introShown: false });
+      expect(document.body.textContent).not.toMatch(emoji);
+
+      await user.click(screen.getByRole('button', { name: 'I Understand' }));
+      await user.click(growersCard());
+      await user.click(screen.getByRole('button', { name: 'Commit to Guild' }));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(emoji);
+    });
+
+    it('shows no emoji on the Growers page after committing', () => {
+      renderTab({ guildState: committedGrowersState });
+      expect(document.body.textContent).not.toMatch(emoji);
     });
   });
 

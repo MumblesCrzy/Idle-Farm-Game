@@ -3,7 +3,7 @@ import ProgressBar from './ProgressBar';
 import InlineIcon from './InlineIcon';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { getVeggieImage, ICON_BEE } from '../config/assetPaths';
+import { getVeggieImage, ICON_BEE, ICON_RITUAL_HARVEST, ICON_SIGIL, ICON_MONEY, ICON_CRATE } from '../config/assetPaths';
 import { GROWTH_COMPLETE_THRESHOLD, veggieSeasonBonuses } from '../config/gameConstants';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
 import {
@@ -79,7 +79,7 @@ const CropHeader: FC<CropHeaderProps> = memo(({
           {crop.name}
           {!crop.sellEnabled && (
             <span className={styles.stockpileBadge} title="This vegetable is set to stockpile (won't auto-sell)">
-              🚫 HOLD
+              <InlineIcon src={ICON_CRATE} size={14} gap={3} />HOLD
             </span>
           )}
           <span className={styles.salePrice} title={priceParts.join(' ')}>
@@ -115,7 +115,7 @@ const CropHeader: FC<CropHeaderProps> = memo(({
                 : 'No crops are ready to harvest'}
             aria-label={`Ritual harvest all ready crops for ${RITUAL_HARVEST_COST} sigils`}
           >
-            🔮 Ritual Harvest ({RITUAL_HARVEST_COST}✦)
+            <InlineIcon src={ICON_RITUAL_HARVEST} size={18} gap={4} />Ritual Harvest ({RITUAL_HARVEST_COST} <InlineIcon src={ICON_SIGIL} size={14} />)
           </button>
         )}
         <button
@@ -127,7 +127,9 @@ const CropHeader: FC<CropHeaderProps> = memo(({
             : `Auto-sell disabled for ${crop.name}. Click to enable and sell on harvest`}
           aria-pressed={crop.sellEnabled}
         >
-          {crop.sellEnabled ? '💰 Sell' : '🚫 Hold'}
+          {crop.sellEnabled
+            ? <><InlineIcon src={ICON_MONEY} size={16} gap={4} />Sell</>
+            : <><InlineIcon src={ICON_CRATE} size={16} gap={4} />Hold</>}
         </button>
       </div>
 

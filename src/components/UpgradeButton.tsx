@@ -1,5 +1,5 @@
 import { memo, type FC } from 'react';
-import { ICON_HONEY, ICON_GOLDEN_HONEY } from '../config/assetPaths';
+import { ICON_HONEY, ICON_GOLDEN_HONEY, ICON_PAUSE } from '../config/assetPaths';
 import InlineIcon from './InlineIcon';
 import styles from './UpgradeButton.module.css';
 
@@ -19,6 +19,8 @@ export interface UpgradeButtonProps {
   level?: number;
   flex?: boolean;
   effect?: string;
+  /** A small picture before the effect text, such as a padlock */
+  effectIcon?: string;
   requirement?: string; // Optional requirement text (e.g., "Requires 10 boxes")
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
   regularHoney?: number; // Honey currency for bee upgrades
@@ -46,6 +48,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   level,
   flex = false,
   effect,
+  effectIcon,
   requirement,
   knowledgeCost,
   regularHoney = 0,
@@ -129,6 +132,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
           </div>
           {effect && (
             <div className={styles.description}>
+              {effectIcon && <InlineIcon src={effectIcon} size={12} gap={3} />}
               {effect}
             </div>
           )}
@@ -158,7 +162,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
           )}
           {isOwned && isTogglable && (
             <div className={isActive ? styles.statusActive : styles.statusInactive}>
-              {isActive ? '✓ Active' : '⏸ Paused'}
+              {isActive ? '✓ Active' : <><InlineIcon src={ICON_PAUSE} size={12} gap={3} />Paused</>}
             </div>
           )}
           {isOwned && !isTogglable && (

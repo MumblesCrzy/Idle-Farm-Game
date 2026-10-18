@@ -30,4 +30,5 @@ afterEach(() => {
   cleanup()
   vi.clearAllMocks()
   localStorageMock.clear()
+  sessionStorage.clear()
 })

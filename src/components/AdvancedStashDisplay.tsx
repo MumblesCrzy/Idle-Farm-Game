@@ -1,3 +1,5 @@
+import InlineIcon from './InlineIcon';
+import { ICON_BEE, ICON_CRATE, ICON_MONEY } from '../config/assetPaths';
 import { useEffect, memo, type FC, type MouseEvent } from 'react';
 import { SEASON_BONUS, veggieSeasonBonuses } from '../config/gameConstants';
 import type { Veggie } from '../types/game';
@@ -207,7 +209,9 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                         }}
                         title={`Click to ${veggie.sellEnabled ? 'stockpile' : 'enable auto-sell'} ${veggie.name}`}
                       >
-                        {veggie.sellEnabled ? '💰 Auto-sell' : '🚫 Stockpile'}
+                        {veggie.sellEnabled
+                          ? <><InlineIcon src={ICON_MONEY} size={14} gap={4} />Auto-sell</>
+                          : <><InlineIcon src={ICON_CRATE} size={14} gap={4} />Stockpile</>}
                       </button>
                     </td>
                     <td className={styles.growthRate}>
@@ -235,7 +239,7 @@ const AdvancedStashDisplay: FC<AdvancedStashDisplayProps> = memo(({
                         <>
                           <br />
                           <small style={{ color: '#ffa500', fontSize: '0.75em' }}>
-                            🐝 +{(beeYieldBonus * 100).toFixed(1)}% bee bonus
+                            <InlineIcon src={ICON_BEE} size={12} gap={3} />+{(beeYieldBonus * 100).toFixed(1)}% bee bonus
                           </small>
                         </>
                       )}

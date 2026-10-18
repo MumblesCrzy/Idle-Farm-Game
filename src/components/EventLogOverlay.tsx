@@ -10,7 +10,7 @@ import { useState, useEffect, useRef, useCallback, memo, type FC } from 'react';
 import type { EventLogEntry, EventCategory } from '../types/game';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useEventLogFilter } from '../hooks/useEventLog';
-import { ICON_SCROLL, ICON_DETAIL } from '../config/assetPaths';
+import { ICON_SCROLL, ICON_DETAIL, ICON_MONEY, ICON_KNOWLEDGE, ICON_EXPERIENCE } from '../config/assetPaths';
 import {
   formatEventTimestamp,
   formatEventTimestampCompact,
@@ -304,17 +304,17 @@ const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
                     <div className={styles.eventMetadata}>
                       {entry.metadata.moneyGained && entry.metadata.moneyGained > 0 && (
                         <span className={styles.metadataItem}>
-                          💰 {formatMoney(entry.metadata.moneyGained)}
+                          <InlineIcon src={ICON_MONEY} size={14} gap={3} />{formatMoney(entry.metadata.moneyGained)}
                         </span>
                       )}
                       {entry.metadata.knowledgeGained && entry.metadata.knowledgeGained > 0 && (
                         <span className={styles.metadataItem}>
-                          📚 {formatKnowledge(entry.metadata.knowledgeGained)}
+                          <InlineIcon src={ICON_KNOWLEDGE} size={14} gap={3} />{formatKnowledge(entry.metadata.knowledgeGained)}
                         </span>
                       )}
                       {entry.metadata.experienceGained && entry.metadata.experienceGained > 0 && (
                         <span className={styles.metadataItem}>
-                          ⭐ {formatExperience(entry.metadata.experienceGained)}
+                          <InlineIcon src={ICON_EXPERIENCE} size={14} gap={3} />{formatExperience(entry.metadata.experienceGained)}
                         </span>
                       )}
                     </div>

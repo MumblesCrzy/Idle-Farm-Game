@@ -146,9 +146,11 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const currentVeggiesRef = useRef(veggies);
   currentVeggiesRef.current = veggies;
   
-  // Initialize recipes from configuration
+  // Build the recipe list from configuration. It runs whenever the crops change, every game
+  // step, so it keeps how many times each recipe was made.
   useEffect(() => {
     setCanningState(prev => {
+      const completed = new Map(prev.recipes.map(recipe => [recipe.id, recipe.timesCompleted]));
       const recipes: Recipe[] = INITIAL_RECIPES.map(config => {
         const ingredients: CanningIngredient[] = config.ingredients.map(ing => {
           const veggieIndex = veggies.findIndex(v => v.name === ing.veggieName);
@@ -199,7 +201,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           experienceRequired: config.experienceRequired,
           requiredAchievementId: config.requiredAchievementId,
           unlocked,
-          timesCompleted: 0
+          timesCompleted: completed.get(config.id) ?? 0
         };
       });
       

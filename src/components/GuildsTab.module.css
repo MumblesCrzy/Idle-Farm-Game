@@ -364,7 +364,7 @@
 }
 
 .softCapIcon {
-  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .softCapText {
@@ -585,6 +585,9 @@
 .committedPanel {
   padding: 0.5rem;
   color: #fff;
+  /* Its own dark background: the page behind is white when the system uses light mode */
+  background: var(--guild-background, #2d2d2d);
+  border-radius: 10px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
@@ -643,9 +646,7 @@
 }
 
 .currencyIcon {
-  font-size: 1.25rem;
-  color: #ffd700;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
 }
 
 .currencyAmount {
@@ -715,14 +716,10 @@
 }
 
 .bonusIcon {
-  color: #4caf50;
-  font-size: 0.85rem;
   flex-shrink: 0;
 }
 
 .tradeoffIcon {
-  color: #ff9800;
-  font-size: 0.85rem;
   flex-shrink: 0;
 }
 

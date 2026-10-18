@@ -6,7 +6,7 @@ import BeeUpgradesPanel from './BeeUpgradesPanel';
 import InlineIcon from './InlineIcon';
 import LockedFeatureCard from './LockedFeatureCard';
 import type { BeeContextValue } from '../types/bees';
-import { ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, BEE_BEEKEEPER } from '../config/assetPaths';
+import { ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, BEE_BEEKEEPER, BEE_BUSY_BEES, ICON_CANNING, ICON_GROWING, ICON_HARVEST } from '../config/assetPaths';
 import { BEE_CONSTANTS } from '../config/gameConstants';
 import styles from './BeesTab.module.css';
 
@@ -45,8 +45,8 @@ const BeesTab: FC<BeesTabProps> = memo(({
         hint="Keep farming and expanding to unlock this feature!"
       >
         <li><InlineIcon src={ICON_HONEY} alt="Honey" /> Produce Honey every 6 months (182 seconds)</li>
-        <li>📈 Boost crop yields (+0.5% per bee box)</li>
-        <li>🥫 Unlock unique honey-based canning recipes</li>
+        <li><InlineIcon src={ICON_GROWING} alt="Growing" /> Boost crop yields (+0.5% per bee box)</li>
+        <li><InlineIcon src={ICON_CANNING} alt="Canning" /> Unlock unique honey-based canning recipes</li>
         <li><InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" /> Chance to produce rare Golden Honey</li>
         <li><InlineIcon src={BEE_BEEKEEPER} alt="Beekeeper Assistant" /> Automate with the Beekeeper Assistant</li>
       </LockedFeatureCard>
@@ -150,7 +150,9 @@ const BeesTab: FC<BeesTabProps> = memo(({
 
         {/* Production Stats */}
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>⚡</div>
+          <div className={styles.statIcon}>
+            <img src={BEE_BUSY_BEES} alt="" className={styles.statIconImage} />
+          </div>
           <div className={styles.statContent}>
             <div className={styles.statLabel}>Production</div>
             <div className={styles.statValue}>
@@ -164,7 +166,9 @@ const BeesTab: FC<BeesTabProps> = memo(({
 
         {/* Crop Yield Bonus */}
         <div className={styles.statCard}>
-          <div className={styles.statIcon}>🌾</div>
+          <div className={styles.statIcon}>
+            <img src={ICON_HARVEST} alt="" className={styles.statIconImage} />
+          </div>
           <div className={styles.statContent}>
             <div className={styles.statLabel}>Crop Yield Bonus</div>
             <div className={styles.statValue}>

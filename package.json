@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/leave-out-of-dist.mjs",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
     "check": "npm run typecheck && npm run lint && npm run test:run",

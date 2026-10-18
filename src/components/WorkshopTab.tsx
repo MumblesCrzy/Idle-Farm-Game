@@ -8,10 +8,11 @@
  * - Elves' Bench automation queue for automated decoration
  */
 
+import InlineIcon from './InlineIcon';
 import { memo, useState, type FC, type ReactNode } from 'react';
 import type { CraftingRecipe, CraftingMaterials, TreeType, DecorationType, EventUpgrade, TreeInventory } from '../types/christmasEvent';
 import { CRAFTING_RECIPES } from '../data/christmasEventData';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR } from '../config/assetPaths';
+import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR, ICON_ELVES, ICON_IDEA } from '../config/assetPaths';
 import BaseTab from './BaseTab';
 import EventUpgradesPanel from './EventUpgradesPanel';
 import styles from './WorkshopTab.module.css';
@@ -265,7 +266,7 @@ const ElvesBench: FC<ElvesBenchProps> = memo(({ enabled }) => {
   if (!enabled) {
     return (
       <div className={styles.elvesBench}>
-        <h3 className={styles.sectionTitle}>🧝 Elves' Bench</h3>
+        <h3 className={styles.sectionTitle}><InlineIcon src={ICON_ELVES} size={20} gap={6} />Elves' Bench</h3>
         <div className={styles.lockedMessage}>
           <p>Purchase the Elves' Bench upgrade to automate crafting and decoration!</p>
         </div>
@@ -279,7 +280,7 @@ const ElvesBench: FC<ElvesBenchProps> = memo(({ enabled }) => {
         className={styles.sectionTitle}
         title="Elves automatically craft 1 decoration per in-game day (priority: Garland > Candles > Ornaments). Trees are auto-decorated on harvest with the best decorations available."
       >
-        🧝 Elves' Bench (Active) ℹ️
+        <InlineIcon src={ICON_ELVES} size={20} gap={6} />Elves' Bench (Active) <InlineIcon src={ICON_IDEA} size={14} />
       </h3>
       <div className={styles.benchStatus}>
         <span className={styles.automationActive}>✓ Auto-Crafting Enabled</span>

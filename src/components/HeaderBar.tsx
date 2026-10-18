@@ -1,6 +1,6 @@
 import InlineIcon from './InlineIcon';
 import { memo, type FC } from 'react';
-import { ICON_TROPHY, ICON_SCROLL, ICON_COFFEE } from '../config/assetPaths';
+import { ICON_TROPHY, ICON_SCROLL, ICON_COFFEE, ICON_PLAY, ICON_PAUSE } from '../config/assetPaths';
 import styles from './HeaderBar.module.css';
 
 interface HeaderBarProps {
@@ -46,7 +46,9 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
             aria-label={isPaused ? 'Resume game' : 'Pause game'}
             aria-pressed={isPaused}
           >
-            {isPaused ? '▶ Play' : '⏸ Pause'}
+            {isPaused
+              ? <><InlineIcon src={ICON_PLAY} size={14} gap={4} />Play</>
+              : <><InlineIcon src={ICON_PAUSE} size={14} gap={4} />Pause</>}
           </button>
         )}
         <button

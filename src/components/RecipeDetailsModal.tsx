@@ -1,3 +1,5 @@
+import InlineIcon from './InlineIcon';
+import { ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
 import { memo, type FC, type ReactNode } from 'react';
 import type { Recipe } from '../types/canning';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -169,14 +171,14 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
             <div>
               {honey.regular > 0 && (
                 <RequirementRow
-                  label={<>🍯 Regular Honey × {formatNumber(honey.regular, 3)}</>}
+                  label={<><InlineIcon src={ICON_HONEY} size={14} gap={4} />Regular Honey × {formatNumber(honey.regular, 3)}</>}
                   have={regularHoney !== undefined ? formatNumber(regularHoney, 3) : undefined}
                   met={regularHoney !== undefined && regularHoney >= honey.regular}
                 />
               )}
               {honey.golden > 0 && (
                 <RequirementRow
-                  label={<>Golden Honey × {formatNumber(honey.golden, 3)}</>}
+                  label={<><InlineIcon src={ICON_GOLDEN_HONEY} size={14} gap={4} />Golden Honey × {formatNumber(honey.golden, 3)}</>}
                   have={goldenHoney !== undefined ? formatNumber(goldenHoney, 3) : undefined}
                   met={goldenHoney !== undefined && goldenHoney >= honey.golden}
                   golden

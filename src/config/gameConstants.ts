@@ -321,6 +321,8 @@ export const LAST_ACTIVE_KEY = 'farmIdleLastActive';
 /** Archie's click streak, and the time of the last click that the streak counts from */
 export const ARCHIE_STREAK_KEY = 'archieClickStreak';
 export const ARCHIE_LAST_CLICK_KEY = 'archieLastClickTime';
+/** The open tab, kept in sessionStorage so a reload in the same browser tab returns to it */
+export const ACTIVE_TAB_KEY = 'farmIdleActiveTab';
 export const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
 /** Longest absence the game credits: the offline and hidden-tab catch-ups stop at 8 hours */

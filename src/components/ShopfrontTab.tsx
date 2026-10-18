@@ -9,9 +9,10 @@
  * - Daily Bonus claim (requires Wreath Sign upgrade)
  */
 
+import InlineIcon from './InlineIcon';
 import { memo, useCallback, useMemo, useState, type FC, type ChangeEvent } from 'react';
 import type { TreeInventory, EventUpgrade, CraftingMaterials, EventMilestone } from '../types/christmasEvent';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
+import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER, ICON_HOLIDAY_REGISTER, ICON_SPARKLES } from '../config/assetPaths';
 import BaseTab from './BaseTab';
 import EventUpgradesPanel from './EventUpgradesPanel';
 import EventMilestones, { type EventMilestoneView } from './EventMilestones';
@@ -49,7 +50,8 @@ interface ShopfrontTabProps {
 interface TreeVariant {
   key: string; // treeType_decoration
   name: string;
-  emoji: string;
+  /** What finishes the tree, which picks its picture */
+  finish: 'plain' | 'ornamented' | 'candled' | 'luxury';
 }
 
 /**
@@ -58,19 +60,29 @@ interface TreeVariant {
  * Luxury trees require both ornaments AND candles.
  */
 const TREE_VARIANTS: TreeVariant[] = [
-  { key: 'pine_plain', name: 'Pine Tree', emoji: '🌲' },
-  { key: 'pine_ornamented', name: 'Ornamented Pine', emoji: '🎄' },
-  { key: 'pine_candled', name: 'Candled Pine', emoji: '🕯️' },
-  { key: 'pine_luxury', name: 'Luxury Pine', emoji: '✨' },
-  { key: 'spruce_plain', name: 'Spruce Tree', emoji: '🌲' },
-  { key: 'spruce_ornamented', name: 'Ornamented Spruce', emoji: '🎄' },
-  { key: 'spruce_candled', name: 'Candled Spruce', emoji: '🕯️' },
-  { key: 'spruce_luxury', name: 'Luxury Spruce', emoji: '✨' },
-  { key: 'fir_plain', name: 'Fir Tree', emoji: '🌲' },
-  { key: 'fir_ornamented', name: 'Ornamented Fir', emoji: '🎄' },
-  { key: 'fir_candled', name: 'Candled Fir', emoji: '🕯️' },
-  { key: 'fir_luxury', name: 'Luxury Fir', emoji: '✨' },
+  { key: 'pine_plain', name: 'Pine Tree', finish: 'plain' },
+  { key: 'pine_ornamented', name: 'Ornamented Pine', finish: 'ornamented' },
+  { key: 'pine_candled', name: 'Candled Pine', finish: 'candled' },
+  { key: 'pine_luxury', name: 'Luxury Pine', finish: 'luxury' },
+  { key: 'spruce_plain', name: 'Spruce Tree', finish: 'plain' },
+  { key: 'spruce_ornamented', name: 'Ornamented Spruce', finish: 'ornamented' },
+  { key: 'spruce_candled', name: 'Candled Spruce', finish: 'candled' },
+  { key: 'spruce_luxury', name: 'Luxury Spruce', finish: 'luxury' },
+  { key: 'fir_plain', name: 'Fir Tree', finish: 'plain' },
+  { key: 'fir_ornamented', name: 'Ornamented Fir', finish: 'ornamented' },
+  { key: 'fir_candled', name: 'Candled Fir', finish: 'candled' },
+  { key: 'fir_luxury', name: 'Luxury Fir', finish: 'luxury' },
 ];
+
+/** A price card's picture: the bare tree, or what finishes it */
+const variantImage = (variant: TreeVariant): string => {
+  switch (variant.finish) {
+    case 'ornamented': return TREE_DECORATED;
+    case 'candled': return DECORATION_CANDLE;
+    case 'luxury': return ICON_SPARKLES;
+    default: return getTreeImageFromKey(variant.key) || TREE_PINE;
+  }
+};
 
 /** Trees held under one inventory key (treeType_quality_decoration) */
 interface StockEntry {
@@ -168,15 +180,7 @@ const PriceCard: FC<PriceCardProps> = memo(({ variant, stock, upgrades, demandMu
     <div className={styles.priceCard}>
       <div className={styles.cardHeader}>
         <span className={styles.treeEmoji}>
-          {variant.emoji === '🌲' ? (
-            <img src={getTreeImageFromKey(variant.key) || TREE_PINE} alt={variant.name} className={styles.treeImage} />
-          ) : variant.emoji === '🎄' ? (
-            <img src={TREE_DECORATED} alt={variant.name} className={styles.treeImage} />
-          ) : variant.emoji === '🕯️' ? (
-            <img src={DECORATION_CANDLE} alt={variant.name} className={styles.treeImage} />
-          ) : (
-            variant.emoji
-          )}
+          <img src={variantImage(variant)} alt={variant.name} className={styles.treeImage} />
         </span>
         <div className={styles.cardTitle}>
           <div className={styles.treeName}>{variant.name}</div>
@@ -272,7 +276,7 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
       {/* Left Column: Price Cards */}
       <div className={styles.leftColumn}>
         <div className={styles.demandBanner}>
-          <span className={styles.demandLabel}>🔥 Market Demand:</span>
+          <span className={styles.demandLabel}><InlineIcon src={ICON_HOLIDAY_REGISTER} size={18} gap={4} />Market Demand:</span>
           <span className={styles.demandMultiplier}>×{demandMultiplier.toFixed(2)}</span>
           <span className={styles.demandHint}>(increases closer to Christmas)</span>
         </div>

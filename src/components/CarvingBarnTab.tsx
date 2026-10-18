@@ -7,6 +7,8 @@
  * on the right.
  */
 
+import InlineIcon from './InlineIcon';
+import { ICON_LOCK } from '../config/assetPaths';
 import { memo, useId, useState, type FC } from 'react';
 import BaseTab from './BaseTab';
 import EventArt, { type EventArtSource } from './EventArt';
@@ -171,7 +173,7 @@ const RecipeCard: FC<RecipeCardProps> = memo(({ recipe, materials, quantity, loc
 
       {lockedBy && (
         <p className={styles.lockNote}>
-          <span aria-hidden="true">🔒</span> Requires {lockedBy}
+          <InlineIcon src={ICON_LOCK} size={14} gap={4} />Requires {lockedBy}
         </p>
       )}
 

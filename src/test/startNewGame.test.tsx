@@ -19,8 +19,9 @@ const loadModules = async () => {
   vi.resetModules();
   const save = await import('../utils/saveSystem');
   const app = await import('../App');
+  const context = await import('../context/GameContext');
   const providers = await import('../GameProviders');
-  return { save, ...app, ...providers };
+  return { save, ...app, ...context, ...providers };
 };
 
 // Boots the whole game, which can take several seconds while other test files run in parallel

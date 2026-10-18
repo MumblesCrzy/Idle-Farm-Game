@@ -188,7 +188,7 @@ export const GROWERS_UPGRADES: GuildUpgrade[] = [
     costScaling: 1,
     currencyType: 'sigils',
     effectPerLevel: 1,
-    effectTemplate: 'Unlocks 11 fruit crops with premium yields',
+    effectTemplate: 'Unlocks 10 fruit crops with premium yields',
     purchased: false
   }
 ];

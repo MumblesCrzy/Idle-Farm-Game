@@ -16,7 +16,7 @@ export type ArchieAppearance = 'default' | 'pinecones' | 'sweater' | 'reindeer' 
 
 export interface ArchieLook {
   id: ArchieAppearance;
-  /** Button text in Settings */
+  /** Button text in Settings, beside a picture of the look */
   label: string;
   /** The button's name for screen readers */
   description: string;
@@ -27,12 +27,12 @@ export interface ArchieLook {
 
 /** In the order Settings shows them */
 export const ARCHIE_LOOKS: readonly ArchieLook[] = [
-  { id: 'default', label: '🐕 Default', description: 'Default Archie appearance', image: SPECIAL_ARCHIE },
-  { id: 'pinecones', label: '🌲 Pinecones', description: 'Archie with pinecones', image: SPECIAL_ARCHIE_PINECONES },
-  { id: 'sweater', label: '🧥 Sweater', description: "Archie's winter sweater", image: SPECIAL_ARCHIE_SWEATER, achievementId: 'winter_sweater' },
-  { id: 'reindeer', label: '🦌 Reindeer', description: "Archie's reindeer hat", image: SPECIAL_ARCHIE_REINDEER, achievementId: 'reindeer_hat' },
-  { id: 'fallSweater', label: '🍂 Fall Sweater', description: "Archie's fall sweater", image: SPECIAL_ARCHIE_FALL_SWEATER, achievementId: 'pumpkin_50_sold' },
-  { id: 'warlock', label: '🧙 Warlock', description: "Archie's warlock costume", image: SPECIAL_ARCHIE_WARLOCK, achievementId: 'pumpkin_2500_sold' }
+  { id: 'default', label: 'Default', description: 'Default Archie appearance', image: SPECIAL_ARCHIE },
+  { id: 'pinecones', label: 'Pinecones', description: 'Archie with pinecones', image: SPECIAL_ARCHIE_PINECONES },
+  { id: 'sweater', label: 'Sweater', description: "Archie's winter sweater", image: SPECIAL_ARCHIE_SWEATER, achievementId: 'winter_sweater' },
+  { id: 'reindeer', label: 'Reindeer', description: "Archie's reindeer hat", image: SPECIAL_ARCHIE_REINDEER, achievementId: 'reindeer_hat' },
+  { id: 'fallSweater', label: 'Fall Sweater', description: "Archie's fall sweater", image: SPECIAL_ARCHIE_FALL_SWEATER, achievementId: 'pumpkin_50_sold' },
+  { id: 'warlock', label: 'Warlock', description: "Archie's warlock costume", image: SPECIAL_ARCHIE_WARLOCK, achievementId: 'pumpkin_2500_sold' }
 ];
 
 /** Whether a saved setting names one of Archie's looks */

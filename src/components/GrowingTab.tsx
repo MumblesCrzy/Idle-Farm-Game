@@ -1,3 +1,4 @@
+import InlineIcon from './InlineIcon';
 import { memo, type FC, type ReactNode } from 'react';
 import BaseTab from './BaseTab';
 import ProgressBar from './ProgressBar';
@@ -6,7 +7,7 @@ import CropHeader from './CropHeader';
 import CropUpgradesGrid from './CropUpgradesGrid';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { ICON_EXPERIENCE } from '../config/assetPaths';
+import { ICON_EXPERIENCE, GUILD_GROWERS } from '../config/assetPaths';
 import { AUTO_PURCHASER_CYCLE_DAYS, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import {
   getGrowersGrowthBonus,
@@ -70,7 +71,7 @@ const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
 
   return (
     <div className={styles.guildBonusesIndicator}>
-      <span className={styles.guildBonusesTitle}>🌱 Growers Guild</span>
+      <span className={styles.guildBonusesTitle}><InlineIcon src={GUILD_GROWERS} size={18} gap={4} />Growers Guild</span>
       <div className={styles.guildBonusesList}>
         {growthBonus > 0 && (
           <span className={styles.guildBonus} title="Growth Speed Bonus from Guild Upgrades">

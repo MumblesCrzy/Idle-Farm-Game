@@ -11,7 +11,7 @@ import type {
   EventTimestamp,
   EventMetadata 
 } from '../types/game';
-import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
+import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, ICON_TREE_SHOP, ICON_UPGRADE, PUMPKIN_SUGAR_PIE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
 
 /**
  * Generate a unique ID for an event
@@ -88,9 +88,9 @@ export function getCategoryIcon(category: EventCategory): string {
     canning: ICON_CANNING,
     milestone: ICON_MILESTONE,
     bees: ICON_BEE,
-    christmas: '🎄', // Using emoji for christmas tree
-    pumpkin: '🎃',
-    upgrade: '⬆️' // Using emoji for upgrades
+    christmas: ICON_TREE_SHOP,
+    pumpkin: PUMPKIN_SUGAR_PIE,
+    upgrade: ICON_UPGRADE
   };
   return icons[category];
 }
