@@ -130,11 +130,13 @@ export const CANNING_BATCH_CANNING = './Batch Canning.png';
 export const CANNING_CANNER = './Canner.png';
 
 // Special Images
-// The game draws Archie at 80 px, so it loads 256 px copies; the 1024 px originals stay in public/
+// The game draws Archie at 80 px, so it loads 256 px copies; the full-size originals stay in public/
 export const SPECIAL_ARCHIE = './Archie 256.png';
 export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones 256.png';
 export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer 256.png';
 export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater 256.png';
+export const SPECIAL_ARCHIE_FALL_SWEATER = './Archie Fall Sweater 256.png';
+export const SPECIAL_ARCHIE_WARLOCK = './Archie Warlock Costume 256.png';
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
 
@@ -317,6 +319,8 @@ export const ALL_IMAGES = [
   SPECIAL_ARCHIE_PINECONES,
   SPECIAL_ARCHIE_REINDEER,
   SPECIAL_ARCHIE_SWEATER,
+  SPECIAL_ARCHIE_FALL_SWEATER,
+  SPECIAL_ARCHIE_WARLOCK,
   
   // Bee upgrade images
   BEE_BUSY_BEES,

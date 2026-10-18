@@ -395,7 +395,8 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     reward: {
       candyCorn: 150,
       knowledge: 25,
-      message: 'Folks drive out for your pumpkins! +150 Candy Corn and 25 knowledge'
+      unlocks: ["Archie's Fall Sweater"],
+      message: 'Folks drive out for your pumpkins, and Archie gets a Fall Sweater! +150 Candy Corn and 25 knowledge'
     }
   },
   {
@@ -443,7 +444,8 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     reward: {
       candyCorn: 4000,
       knowledge: 200,
-      message: 'Harvest Moon: permanent +5% fall crop yield! +4,000 Candy Corn and 200 knowledge'
+      unlocks: ['Harvest Moon', "Archie's Warlock Costume"],
+      message: 'Harvest Moon: permanent +5% fall crop yield, and Archie gets a Warlock Costume! +4,000 Candy Corn and 200 knowledge'
     }
   },
 

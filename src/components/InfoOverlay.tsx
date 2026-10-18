@@ -735,7 +735,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <ul>
                   <li><strong>Selling:</strong> Sell pumpkins, pies, candles and stencils for Candy Corn</li>
                   <li><strong>Demand:</strong> Prices rise every day until they double on Halloween, then stay doubled until the event ends on Thanksgiving</li>
-                  <li><strong>Achievements:</strong> Selling pumpkins earns achievements that pay Candy Corn and farm rewards</li>
+                  <li><strong>Achievements:</strong> Selling pumpkins earns achievements that pay Candy Corn and farm rewards, plus two new looks for Archie: a Fall Sweater at 50 pumpkins sold and a Warlock Costume at 2,500</li>
                 </ul>
 
                 <h5>🎡 County Fair:</h5>

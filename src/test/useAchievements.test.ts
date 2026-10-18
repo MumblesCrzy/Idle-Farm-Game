@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAchievements } from '../hooks/useAchievements';
 import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
+import { ARCHIE_LOOKS } from '../data/archieLooks';
 import type { AchievementGameState, AchievementState } from '../types/achievements';
 
 const gameState = (overrides: Partial<AchievementGameState> = {}): AchievementGameState => ({
@@ -114,6 +115,16 @@ describe('useAchievements checks', () => {
   });
 });
 
+describe("Archie's looks", () => {
+  it('each look earned from an achievement names one that exists', () => {
+    const earned = ARCHIE_LOOKS.filter(look => look.achievementId);
+    expect(earned.map(look => look.id)).toEqual(['sweater', 'reindeer', 'fallSweater', 'warlock']);
+    for (const look of earned) {
+      expect(INITIAL_ACHIEVEMENTS.some(a => a.id === look.achievementId)).toBe(true);
+    }
+  });
+});
+
 describe('Pumpkin Rush sales achievements', () => {
   const pumpkinIds = ['pumpkin_first_sale', 'pumpkin_50_sold', 'pumpkin_250_sold', 'pumpkin_1000_sold', 'pumpkin_2500_sold'];
 
@@ -129,6 +140,16 @@ describe('Pumpkin Rush sales achievements', () => {
     const unlocked = onUnlock.mock.calls.map(([achievement]) => achievement.id).filter(id => pumpkinIds.includes(id));
     expect(unlocked).toEqual(['pumpkin_first_sale', 'pumpkin_50_sold']);
     expect(result.current.achievements.find(a => a.id === 'pumpkin_250_sold')?.progress).toEqual({ current: 60, goal: 250 });
+  });
+
+  it("unlock Archie's Fall Sweater on the 2nd and his Warlock Costume on the 5th", () => {
+    const unlockedBy = (appearance: string) => ARCHIE_LOOKS.find(look => look.id === appearance)?.achievementId;
+    expect(unlockedBy('fallSweater')).toBe(pumpkinIds[1]);
+    expect(unlockedBy('warlock')).toBe(pumpkinIds[4]);
+
+    const unlocks = (id: string) => INITIAL_ACHIEVEMENTS.find(a => a.id === id)?.reward?.unlocks;
+    expect(unlocks(pumpkinIds[1])).toEqual(["Archie's Fall Sweater"]);
+    expect(unlocks(pumpkinIds[4])).toEqual(['Harvest Moon', "Archie's Warlock Costume"]);
   });
 
   it('pay Candy Corn and a farm reward', () => {

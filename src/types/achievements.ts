@@ -37,6 +37,8 @@ export interface Achievement {
     knowledge?: number;
     /** Fall Pumpkin Rush currency */
     candyCorn?: number;
+    /** Named rewards the achievement list shows, like an Archie look or a permanent bonus */
+    unlocks?: string[];
     message?: string;
   } | null;
   

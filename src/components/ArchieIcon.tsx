@@ -3,7 +3,7 @@ import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
 import { archieCandyCornReward } from '../utils/pumpkinPricing';
-import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_REINDEER, SPECIAL_ARCHIE_SWEATER } from '../config/assetPaths';
+import { archieLookImage } from '../data/archieLooks';
 
 interface ArchieIconProps {
   setMoney: Dispatch<SetStateAction<number>>;
@@ -108,16 +108,7 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   const canAppear = timeSinceLastClick >= ARCHIE_COOLDOWN;
 
   // Determine Archie image based on appearance setting
-  let archieImage = SPECIAL_ARCHIE; // default
-  
-  if (archieAppearance === 'pinecones') {
-    archieImage = SPECIAL_ARCHIE_PINECONES;
-  } else if (archieAppearance === 'reindeer') {
-    archieImage = SPECIAL_ARCHIE_REINDEER;
-  } else if (archieAppearance === 'sweater') {
-    archieImage = SPECIAL_ARCHIE_SWEATER;
-  }
-  // If appearance is 'default', archieImage is already set to SPECIAL_ARCHIE
+  const archieImage = archieLookImage(archieAppearance);
   
   return (
     <>

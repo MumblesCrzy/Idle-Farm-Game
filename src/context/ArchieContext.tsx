@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useRef, useEffect, type FC, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { ARCHIE_LAST_CLICK_KEY, ARCHIE_STREAK_KEY } from '../config/gameConstants';
+import { isArchieAppearance, type ArchieAppearance } from '../data/archieLooks';
 
 interface ArchieContextType {
   archieClicked: boolean;
@@ -14,8 +15,8 @@ interface ArchieContextType {
   setArchieClickStreak: Dispatch<SetStateAction<number>>;
   soundEnabled: boolean;
   setSoundEnabled: Dispatch<SetStateAction<boolean>>;
-  archieAppearance: 'default' | 'reindeer' | 'sweater' | 'pinecones';
-  setArchieAppearance: Dispatch<SetStateAction<'default' | 'reindeer' | 'sweater' | 'pinecones'>>;
+  archieAppearance: ArchieAppearance;
+  setArchieAppearance: Dispatch<SetStateAction<ArchieAppearance>>;
   handleArchieClick: (gameState?: { 
     money: number; 
     experience: number; 
@@ -37,7 +38,7 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [lastClickTime, setLastClickTime] = useState(0);
   const [archieClickStreak, setArchieClickStreak] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [archieAppearance, setArchieAppearance] = useState<'default' | 'reindeer' | 'sweater' | 'pinecones'>('default');
+  const [archieAppearance, setArchieAppearance] = useState<ArchieAppearance>('default');
 
   // Reuse a single audio instance to prevent memory leaks
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -185,8 +186,8 @@ export const ArchieProvider: FC<{ children: ReactNode }> = ({ children }) => {
       
       // Load appearance setting
       const savedAppearance = localStorage.getItem('archieAppearance');
-      if (savedAppearance && ['default', 'reindeer', 'sweater', 'pinecones'].includes(savedAppearance)) {
-        setArchieAppearance(savedAppearance as 'default' | 'reindeer' | 'sweater' | 'pinecones');
+      if (savedAppearance && isArchieAppearance(savedAppearance)) {
+        setArchieAppearance(savedAppearance);
       }
     } catch (error) {
       console.error('Failed to load Archie settings:', error);

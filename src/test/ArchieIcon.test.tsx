@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import ArchieIcon from '../components/ArchieIcon'
 import { ArchieProvider } from '../context/ArchieContext'
-import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES } from '../config/assetPaths'
+import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_FALL_SWEATER, SPECIAL_ARCHIE_WARLOCK } from '../config/assetPaths'
 
 // Mock RandomIcon component
 vi.mock('../components/RandomIcon', () => ({
@@ -229,6 +229,23 @@ describe('ArchieIcon', () => {
     
     const img = screen.getByAltText('Archie')
     expect(img).toHaveAttribute('src', SPECIAL_ARCHIE_PINECONES)
+  })
+
+  it.each([
+    ['fallSweater', SPECIAL_ARCHIE_FALL_SWEATER],
+    ['warlock', SPECIAL_ARCHIE_WARLOCK]
+  ])('should wear the %s look when it is chosen', (appearance, image) => {
+    localStorage.setItem('archieAppearance', appearance)
+    renderArchieIcon()
+
+    expect(screen.getByAltText('Archie')).toHaveAttribute('src', image)
+  })
+
+  it('should use the default image when the saved look is unknown', () => {
+    localStorage.setItem('archieAppearance', 'classic')
+    renderArchieIcon()
+
+    expect(screen.getByAltText('Archie')).toHaveAttribute('src', SPECIAL_ARCHIE)
   })
 
   it('should use default image when Christmas event is inactive', () => {
