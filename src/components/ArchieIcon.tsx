@@ -2,6 +2,7 @@ import { useEffect, useState, type FC, type Dispatch, type SetStateAction } from
 import RandomIcon from './RandomIcon';
 import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
+import { archieCandyCornReward } from '../utils/pumpkinPricing';
 import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_REINDEER, SPECIAL_ARCHIE_SWEATER } from '../config/assetPaths';
 
 interface ArchieIconProps {
@@ -12,6 +13,9 @@ interface ArchieIconProps {
   isChristmasEventActive?: boolean;
   christmasTreesSold?: number;
   earnCheer?: (amount: number) => void;
+  isPumpkinEventActive?: boolean;
+  pumpkinsSold?: number;
+  earnCandyCorn?: (amount: number) => void;
   isPaused?: boolean;
 }
 
@@ -25,6 +29,9 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   isChristmasEventActive = false,
   christmasTreesSold = 0,
   earnCheer,
+  isPumpkinEventActive = false,
+  pumpkinsSold = 0,
+  earnCandyCorn,
   isPaused = false
 }) => {
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward, archieAppearance } = useArchie();
@@ -32,6 +39,7 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   const [toastMessage, setToastMessage] = useState('');
   const [pendingMoneyReward, setPendingMoneyReward] = useState(0);
   const [pendingCheerReward, setPendingCheerReward] = useState(0);
+  const [pendingCandyCornReward, setPendingCandyCornReward] = useState(0);
   
   // When archieReward changes (i.e., Archie is clicked), add the reward to money
   useEffect(() => {
@@ -41,11 +49,18 @@ const ArchieIcon: FC<ArchieIconProps> = ({
       
       // Store pending reward
       setPendingMoneyReward(archieReward);
+
+      // During the Pumpkin Rush he also finds Candy Corn
+      if (isPumpkinEventActive && earnCandyCorn) {
+        const candyCorn = archieCandyCornReward(pumpkinsSold, archieClickStreak);
+        earnCandyCorn(candyCorn);
+        setPendingCandyCornReward(candyCorn);
+      }
       
       // Reset the reward
       setArchieReward(0);
     }
-  }, [archieReward, setMoney, setArchieReward]);
+  }, [archieReward, setMoney, setArchieReward, isPumpkinEventActive, earnCandyCorn, pumpkinsSold, archieClickStreak]);
   
   // When archieCheerReward changes (during Christmas event), add Holiday Cheer
   useEffect(() => {
@@ -65,16 +80,17 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   useEffect(() => {
     if (pendingMoneyReward > 0 || pendingCheerReward > 0) {
       const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
+      const candyCornMessage = pendingCandyCornReward > 0 ? ` & +${pendingCandyCornReward} Candy Corn` : '';
       
       // During Christmas event, show both rewards
       if (isChristmasEventActive && pendingCheerReward > 0 && pendingMoneyReward > 0) {
-        setToastMessage(`Found Archie! +$${pendingMoneyReward} & +${pendingCheerReward} Holiday Cheer${streakMessage}`);
+        setToastMessage(`Found Archie! +$${pendingMoneyReward} & +${pendingCheerReward} Holiday Cheer${candyCornMessage}${streakMessage}`);
       } else if (pendingCheerReward > 0) {
         // Just Cheer (shouldn't happen anymore, but keep as fallback)
         setToastMessage(`Found Archie! +${pendingCheerReward} Holiday Cheer${streakMessage}`);
       } else {
         // Just money
-        setToastMessage(`Found Archie! +$${pendingMoneyReward}${streakMessage}`);
+        setToastMessage(`Found Archie! +$${pendingMoneyReward}${candyCornMessage}${streakMessage}`);
       }
       
       setShowToast(true);
@@ -82,8 +98,9 @@ const ArchieIcon: FC<ArchieIconProps> = ({
       // Clear pending rewards
       setPendingMoneyReward(0);
       setPendingCheerReward(0);
+      setPendingCandyCornReward(0);
     }
-  }, [pendingMoneyReward, pendingCheerReward, archieClickStreak, isChristmasEventActive]);
+  }, [pendingMoneyReward, pendingCheerReward, pendingCandyCornReward, archieClickStreak, isChristmasEventActive]);
   
   // Check if cooldown has passed
   const currentTime = Date.now();

@@ -13,8 +13,19 @@ import {
   ICON_BEE,
   ICON_HONEY,
   ICON_GOLDEN_HONEY,
-  ICON_BEE_HIVE
+  ICON_BEE_HIVE,
+  PUMPKIN_STAND,
+  PUMPKIN_SUGAR_PIE,
+  PUMPKIN_LANTERN,
+  PUMPKIN_GIANT,
+  RIBBON_BLUE
 } from '../config/assetPaths';
+
+/** Achievements that add a permanent bonus, by the id they add to permanentBonuses */
+export const PERMANENT_BONUS_ACHIEVEMENTS: Record<string, string> = {
+  frost_fertilizer: 'frost_fertilizer',
+  pumpkin_2500_sold: 'harvest_moon'
+};
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
   // Farming Achievements
@@ -351,6 +362,89 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       message: 'Snowfall permanently added to farm background! +200 knowledge'
     },
     hidden: true
+  },
+
+  // Fall Pumpkin Rush Achievements: the Farm Stand's sales milestones, paying farm
+  // rewards beside their Candy Corn
+  {
+    id: 'pumpkin_first_sale',
+    name: 'Open for Business',
+    description: 'Sell your first pumpkin',
+    icon: PUMPKIN_STAND,
+    category: 'special',
+    requirement: {
+      type: 'pumpkins_sold',
+      value: 1
+    },
+    reward: {
+      candyCorn: 50,
+      money: 100,
+      message: 'The Farm Stand is open! +50 Candy Corn and $100'
+    }
+  },
+  {
+    id: 'pumpkin_50_sold',
+    name: 'Roadside Favorite',
+    description: 'Sell 50 pumpkins',
+    icon: PUMPKIN_SUGAR_PIE,
+    category: 'special',
+    requirement: {
+      type: 'pumpkins_sold',
+      value: 50
+    },
+    reward: {
+      candyCorn: 150,
+      knowledge: 25,
+      message: 'Folks drive out for your pumpkins! +150 Candy Corn and 25 knowledge'
+    }
+  },
+  {
+    id: 'pumpkin_250_sold',
+    name: 'Patch Celebrity',
+    description: 'Sell 250 pumpkins',
+    icon: PUMPKIN_LANTERN,
+    category: 'special',
+    requirement: {
+      type: 'pumpkins_sold',
+      value: 250
+    },
+    reward: {
+      candyCorn: 500,
+      money: 1000,
+      message: 'Everyone knows your patch! +500 Candy Corn and $1,000'
+    }
+  },
+  {
+    id: 'pumpkin_1000_sold',
+    name: 'Great Pumpkin',
+    description: 'Sell 1,000 pumpkins',
+    icon: PUMPKIN_GIANT,
+    category: 'special',
+    requirement: {
+      type: 'pumpkins_sold',
+      value: 1000
+    },
+    reward: {
+      candyCorn: 1500,
+      knowledge: 100,
+      message: 'The Great Pumpkin rises! +1,500 Candy Corn and 100 knowledge'
+    }
+  },
+  {
+    id: 'pumpkin_2500_sold',
+    name: 'Pumpkin Legend',
+    description: 'Sell 2,500 pumpkins',
+    icon: RIBBON_BLUE,
+    category: 'special',
+    requirement: {
+      type: 'pumpkins_sold',
+      value: 2500
+    },
+    reward: {
+      candyCorn: 4000,
+      knowledge: 200,
+      message: 'Harvest Moon: permanent +5% fall crop yield! +4,000 Candy Corn and 200 knowledge'
+    }
   },
 
   // Bee System Achievements

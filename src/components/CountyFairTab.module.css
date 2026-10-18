@@ -1,0 +1,477 @@
+/* County Fair Tab Styles */
+/*
+ * Fall Pumpkin Rush Color Palette:
+ * Pumpkin Orange: #E8711A - Accents, highlights
+ * Deep Orange: #B8520F - Sell buttons, prices
+ * Bark Brown: #6B3E1F - Text, trophy case
+ * Harvest Gold: #D9A33A - Borders, your entry
+ * Cream: #FFF4E0 - Backgrounds, light text
+ * Purple: #5B2A6E - Blue Ribbons
+ * County Fair Red: #C0392B on white - Banners, ribbons, weigh-off
+ */
+
+.container {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0.75rem;
+  color: #6B3E1F;
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.currencyIcon {
+  margin: 0 2px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6B3E1F;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* FAIR BANNER */
+/* =================================================================== */
+
+.fairBanner {
+  position: relative;
+  background: #FFFFFF;
+  border: 3px solid #C0392B;
+  border-radius: 8px;
+  padding: 1.1rem 0.75rem 0.6rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.25);
+}
+
+/* Red-and-white tent stripes along the top */
+.fairBanner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: repeating-linear-gradient(90deg, #C0392B 0 16px, #FFFFFF 16px 32px);
+  border-bottom: 1px solid #C0392B;
+}
+
+.fairBannerOpen {
+  background: #C0392B;
+  color: #FFFFFF;
+}
+
+.fairBannerOpen::before {
+  background: repeating-linear-gradient(90deg, #FFFFFF 0 16px, #C0392B 16px 32px);
+  border-bottom-color: #FFFFFF;
+}
+
+.fairHeading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.fairTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #C0392B;
+}
+
+.fairBannerOpen .fairTitle {
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.fairHint {
+  margin: 0.4rem 0 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  text-align: center;
+}
+
+/* =================================================================== */
+/* EXPECTED COMPETITION */
+/* =================================================================== */
+
+.competition {
+  background: #FFF4E0;
+  border: 2px solid #D9A33A;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+}
+
+.competitionText {
+  margin: 0.35rem 0 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.competitionHint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* GIANT SHELF */
+/* =================================================================== */
+
+.shelf {
+  background: #FFF4E0;
+  border: 3px solid #6B3E1F;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.shelfHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid #D9A33A;
+}
+
+.shelfUsage {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: #6B3E1F;
+  color: #FFF4E0;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.shelfFull {
+  margin: 0 0 0.5rem 0;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  background: #FBE3DF;
+  color: #8E2A20;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.giantList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.5rem;
+}
+
+.giantRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #FFFFFF;
+  border: 2px solid #B8520F;
+  border-radius: 6px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+}
+
+.giantRow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 82, 15, 0.3);
+}
+
+.giantArt {
+  filter: drop-shadow(0 1px 2px rgba(107, 62, 31, 0.3));
+}
+
+.giantInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.giantWeight {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #6B3E1F;
+}
+
+.giantDetails {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.blueRibbonBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #5B2A6E;
+  color: #FFF4E0;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.outlook {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6B3E1F;
+}
+
+.outlookWin {
+  color: #2E6B2F;
+}
+
+.outlookLose {
+  color: #8E2A20;
+}
+
+.giantActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 130px;
+}
+
+.enterButton,
+.sellButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.enterButton {
+  background: #C0392B;
+  color: #FFFFFF;
+}
+
+.enterButton:hover:not(:disabled) {
+  background: #8E2A20;
+  transform: translateY(-1px);
+}
+
+.enterButton:disabled {
+  background: #A08F7C;
+  color: #FFF4E0;
+  cursor: not-allowed;
+}
+
+.sellButton {
+  background: #B8520F;
+  color: #FFF4E0;
+}
+
+.sellButton:hover {
+  background: #6B3E1F;
+  transform: translateY(-1px);
+}
+
+.enterButton:focus-visible,
+.sellButton:focus-visible {
+  outline: 2px solid #5B2A6E;
+  outline-offset: 2px;
+}
+
+/* =================================================================== */
+/* EMPTY STATE */
+/* =================================================================== */
+
+.emptyState {
+  text-align: center;
+  padding: 1.5rem;
+  background: #FFFFFF;
+  border: 2px dashed #B8520F;
+  border-radius: 8px;
+  color: #6B3E1F;
+}
+
+.emptyState p {
+  margin: 0.25rem 0;
+}
+
+.emptyStateTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* =================================================================== */
+/* LAST RESULT */
+/* =================================================================== */
+
+.resultCard {
+  background: #FFFFFF;
+  border: 3px solid #C0392B;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.resultTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #C0392B;
+  text-align: center;
+}
+
+.noResult {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+  font-style: italic;
+}
+
+.placing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.placingLabel {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #6B3E1F;
+}
+
+.placingRibbon .placingLabel {
+  color: #C0392B;
+}
+
+.standings {
+  list-style: none;
+  margin: 0 0 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  counter-reset: standing;
+}
+
+.standing {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: #FFF4E0;
+  font-size: 0.85rem;
+  counter-increment: standing;
+}
+
+.standing::before {
+  content: counter(standing) '.';
+  width: 1.5rem;
+  font-weight: 600;
+}
+
+.standing > span:first-child {
+  flex: 1;
+}
+
+.standingYours {
+  background: #F3D58E;
+  box-shadow: inset 4px 0 0 #D9A33A;
+  font-weight: 700;
+}
+
+.standingWeight {
+  font-weight: 600;
+}
+
+.prize {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-weight: 700;
+  color: #B8520F;
+}
+
+/* =================================================================== */
+/* TROPHY CASE */
+/* =================================================================== */
+
+.trophyCase {
+  background: linear-gradient(135deg, #6B3E1F 0%, #4A2A14 100%);
+  border: 3px solid #4A2A14;
+  border-radius: 8px;
+  padding: 0.6rem;
+  color: #FFF4E0;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.trophyTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.trophyStats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.trophyStat {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding: 0.35rem 0.25rem;
+  border-radius: 6px;
+  background: rgba(255, 244, 224, 0.12);
+  border: 1px solid rgba(217, 163, 58, 0.6);
+  text-align: center;
+}
+
+.trophyStatWide {
+  grid-column: 1 / -1;
+}
+
+.trophyStat dt {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+}
+
+.trophyStat dd {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #FFE7B8;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .giantRow,
+  .giantRow:hover {
+    transition: none;
+    transform: none;
+  }
+}

@@ -1,0 +1,482 @@
+/* Pumpkin Patch Tab Styles (Fall Pumpkin Rush) */
+/* Autumn palette, with contrast ratios for the text pairs used here:
+   Pumpkin Orange: #E8711A  - progress, borders, accents (ink text on it: 4.7)
+   Deep Orange:    #B8520F  - harvest actions (cream text: 4.5)
+   Bark Brown:     #6B3E1F  - header, primary actions (cream text: 8.3)
+   Harvest Gold:   #D9A33A  - borders, Plant All (ink text: 6.4)
+   Cream:          #FFF4E0  - cards and light text
+   Halloween Purple: #5B2A6E - Blue Ribbons, focus rings (cream text: 9.6)
+   Ink:            #3B2414  - body text (on cream: 13.3)
+*/
+
+.container {
+  --pumpkin: #E8711A;
+  --deep-orange: #B8520F;
+  --deep-orange-dark: #8A4A12;
+  --bark: #6B3E1F;
+  --bark-dark: #4A2A14;
+  --gold: #D9A33A;
+  --gold-tint: #FBE3B4;
+  --cream: #FFF4E0;
+  --purple: #5B2A6E;
+  --ink: #3B2414;
+  --disabled: #6E6259;
+
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.container button:focus-visible {
+  outline: 3px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* =================================================================== */
+/* COLUMNS */
+/* =================================================================== */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, var(--cream), var(--pumpkin));
+  border: 3px solid var(--deep-orange);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* The shared upgrades panel title is Christmas green; make it autumn brown here */
+.rightColumn h2 {
+  color: var(--bark);
+}
+
+/* =================================================================== */
+/* HEADER ROW: title, Harvest All / Plant All, materials */
+/* =================================================================== */
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bark);
+  border: 2px solid var(--deep-orange);
+  color: var(--cream);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.headerRow button:focus-visible {
+  outline-color: var(--gold);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.plotsTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--cream);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.harvestAllButton,
+.plantAllButton {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.harvestAllButton {
+  background: var(--deep-orange);
+  color: var(--cream);
+  animation: pulseOrange 2s ease-in-out infinite;
+}
+
+.harvestAllButton:hover {
+  background: var(--deep-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 113, 26, 0.4);
+  animation: none;
+}
+
+@keyframes pulseOrange {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(232, 113, 26, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(232, 113, 26, 0.7), 0 0 20px rgba(232, 113, 26, 0.4);
+  }
+}
+
+.plantAllButton {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.plantAllButton:hover {
+  background: var(--gold-tint);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(217, 163, 58, 0.4);
+}
+
+/* =================================================================== */
+/* MATERIALS */
+/* =================================================================== */
+
+.materialsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--cream);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.materialLabel {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.materialValue {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--bark);
+}
+
+/* =================================================================== */
+/* VARIETY SELECTION */
+/* =================================================================== */
+
+.varietyRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--bark-dark);
+  border: 2px solid var(--bark);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--cream);
+}
+
+.varietyRow button:focus-visible {
+  outline-color: var(--gold);
+}
+
+.varietyGroup {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.varietySelector {
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
+  background: var(--bark);
+  color: var(--cream);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.varietySelector:hover:not(:disabled) {
+  background: var(--gold-tint);
+  color: var(--ink);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(232, 113, 26, 0.35);
+}
+
+.varietySelector.selected {
+  background: var(--gold-tint);
+  border-color: var(--pumpkin);
+  color: var(--ink);
+  font-weight: bold;
+}
+
+.varietySelector.locked {
+  border-style: dashed;
+}
+
+.varietySelector.cantAfford {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.varietySelector.cantAfford:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.varietyName {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.varietyCost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.giantHint {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* PLOTS */
+/* =================================================================== */
+
+.plotsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plot {
+  background: var(--cream);
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.plot.empty {
+  border-style: dashed;
+  border-color: var(--bark);
+}
+
+.plot.ready {
+  border-color: var(--pumpkin);
+  background: var(--gold-tint);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.plot.blueRibbon {
+  border-color: var(--purple);
+  background: linear-gradient(135deg, var(--gold-tint) 0%, var(--cream) 100%);
+  box-shadow: 0 0 18px rgba(91, 42, 110, 0.35);
+  animation: glowPurple 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(232, 113, 26, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(232, 113, 26, 0.45);
+  }
+}
+
+@keyframes glowPurple {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(91, 42, 110, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(91, 42, 110, 0.55), 0 0 36px rgba(232, 113, 26, 0.3);
+  }
+}
+
+.ribbonBadge {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  background: var(--purple);
+  color: var(--cream);
+  border-radius: 4px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.plotContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.emptyArt {
+  opacity: 0.45;
+}
+
+.plantButton {
+  padding: 0.5rem 1rem;
+  background: var(--bark);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plantButton:hover {
+  background: var(--bark-dark);
+  transform: translateY(-2px);
+}
+
+.pumpkinDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.pumpkinName {
+  font-weight: 600;
+  color: var(--bark);
+  font-size: 0.9rem;
+}
+
+.progressSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.progressBarWrapper {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-bottom: 0.25rem;
+}
+
+.progressLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: var(--ink);
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 0 2px var(--cream), 0 0 2px var(--cream), 0 0 2px var(--cream);
+}
+
+.progressText {
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+}
+
+.harvestButton {
+  padding: 0.5rem 1rem;
+  background: var(--deep-orange);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.harvestButton:hover {
+  background: var(--deep-orange-dark);
+  transform: scale(1.05);
+}
+
+/* =================================================================== */
+/* RESPONSIVE AND MOTION */
+/* =================================================================== */
+
+@media (max-width: 1400px) {
+  .plotsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .harvestAllButton,
+  .plot.ready,
+  .plot.blueRibbon {
+    animation: none;
+  }
+
+  .harvestAllButton,
+  .plantAllButton,
+  .varietySelector,
+  .plantButton,
+  .harvestButton,
+  .plot {
+    transition: none;
+  }
+
+  .harvestAllButton:hover,
+  .plantAllButton:hover,
+  .varietySelector:hover:not(:disabled),
+  .plantButton:hover,
+  .harvestButton:hover {
+    transform: none;
+  }
+}

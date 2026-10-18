@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EventUpgradesPanel from '../components/EventUpgradesPanel';
 import { ALL_EVENT_UPGRADES } from '../data/christmasEventData';
-import { getEventUpgradeCost } from '../utils/christmasUpgrades';
-import type { EventUpgrade, EventUpgradeCategory } from '../types/christmasEvent';
+import { getEventUpgradeCost } from '../utils/eventUpgrades';
+import type { EventUpgrade, EventUpgradeCategory } from '../types/eventUpgrades';
 
 const format = (n: number) => String(Math.floor(n));
 
@@ -17,7 +17,8 @@ const renderPanel = (category: EventUpgradeCategory, upgrades: EventUpgrade[], h
       title="Upgrades"
       category={category}
       upgrades={upgrades}
-      holidayCheer={holidayCheer}
+      currency="cheer"
+      balance={holidayCheer}
       purchaseUpgrade={purchaseUpgrade}
       formatNumber={format}
     />

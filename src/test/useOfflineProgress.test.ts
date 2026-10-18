@@ -10,7 +10,8 @@ import { renderHook } from '@testing-library/react';
 import { useOfflineProgress, LAST_ACTIVE_KEY, type UseOfflineProgressDeps } from '../hooks/useOfflineProgress';
 import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/offlineProgress';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
-import { DEFAULT_GUILD_STATE } from '../types/guilds';
+import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
+import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
 
 vi.mock('../utils/offlineProgress', () => ({
@@ -30,6 +31,7 @@ const simulated = (overrides: Partial<OfflineProgressResult> = {}): OfflineProgr
   veggies: [],
   experienceGain: 30,
   knowledgeGain: 5,
+  autoHarvests: 0,
   day: 50,
   totalDaysElapsed: 649,
   canningProgressUpdates: new Map(),
@@ -95,6 +97,7 @@ const createDeps = (overrides: Partial<UseOfflineProgressDeps> = {}): UseOffline
   setKnowledge: vi.fn(),
   setDay: vi.fn(),
   setTotalDaysElapsed: vi.fn(),
+  setGuildState: vi.fn(),
   ...overrides
 });
 
@@ -232,6 +235,25 @@ describe('useOfflineProgress', () => {
       expect(event.processTreeGrowth).toHaveBeenCalledWith(600);
       expect(event.processDailyElvesCrafting).toHaveBeenCalledWith(600);
       expect(event.updatePassiveIncome).toHaveBeenCalledWith(TEN_MINUTES);
+    });
+
+    it('pays Guild Tokens for the auto harvests', () => {
+      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ autoHarvests: 25 }));
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, farmTier: GUILDS_UNLOCK_TIER } });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(deps.setGuildState).toHaveBeenCalledTimes(1);
+      const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      expect(update(DEFAULT_GUILD_STATE).guildTokens).toBe(2);
+    });
+
+    it('leaves guild state alone when nothing was auto harvested', () => {
+      const deps = createDeps({ loaded: savedGame() });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(deps.setGuildState).not.toHaveBeenCalled();
     });
   });
 });

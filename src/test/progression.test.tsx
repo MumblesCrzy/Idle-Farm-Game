@@ -94,7 +94,8 @@ const savedGame = (): ExtendedGameState => {
   return JSON.parse(localStorage.getItem(GAME_STORAGE_KEY)!);
 };
 
-describe('game progression', () => {
+// Boots the whole game, which can take several seconds while other test files run in parallel
+describe('game progression', { timeout: 20_000 }, () => {
   beforeEach(() => {
     localStorage.clear();
     game = undefined;

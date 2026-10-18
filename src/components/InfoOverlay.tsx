@@ -28,7 +28,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     { id: 'autopurchase', label: 'Auto-Purchasers' },
     { id: 'canning', label: 'Canning System' },
     { id: 'bees', label: 'Bee System' },
-    { id: 'christmas', label: 'Tree Shop' }
+    { id: 'christmas', label: 'Tree Shop' },
+    { id: 'pumpkin', label: 'Pumpkin Rush' }
   ];
 
   const categoryTitles: Record<InfoCategory, string> = {
@@ -39,7 +40,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     autopurchase: 'Auto-Purchasers',
     canning: 'Canning System',
     bees: 'Bee System',
-    christmas: 'Christmas Tree Shop'
+    christmas: 'Christmas Tree Shop',
+    pumpkin: 'Fall Pumpkin Rush'
   };
 
   return (
@@ -684,7 +686,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <h5><InlineIcon src={ICON_TREE_STOREFRONT} alt="Shopfront" size={20} gap={4} /> Shopfront:</h5>                <ul>
                   <li><strong>Sell Trees:</strong> Sell decorated trees for Holiday Cheer</li>
                   <li><strong>Sell Decorations:</strong> Sell excess ornaments (1 cheer), candles (2 cheer), or garland (4 cheer)</li>
-                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +15% candles, +200% luxury)</li>
+                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +15% candles, double for luxury trees, triple with the Star Forge)</li>
                   <li><strong>Demand Multiplier:</strong> Prices increase as Christmas approaches</li>
                   <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day (requires Wreath Sign upgrade)</li>
                   <li><strong>Passive Income:</strong> Golden Bell Counter provides idle Holiday Cheer generation</li>
@@ -705,6 +707,42 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li>Purchase Fertilized Soil early for +25% growth speed on all trees</li>
                   <li>Perfect trees are rare but very valuable - watch for the ⭐ badge!</li>
                   <li>Event progress persists year-to-year, so you can continue next season</li>
+                </ul>
+              </div>
+            )}
+
+            {selectedInfoCategory === 'pumpkin' && (
+              <div>
+                <h4 className={styles.sectionTitle}>🎃 Fall Pumpkin Rush</h4>
+                <p>The Pumpkin Rush is a seasonal event from <strong>September 22nd to October 31st</strong>. Grow pumpkins, carve and light them, sell them at the Farm Stand for Candy Corn, and enter giant pumpkins in the County Fair!</p>
+
+                <h5>🌾 Pumpkin Patch:</h5>
+                <ul>
+                  <li><strong>Varieties:</strong> Sugar Pie (quick, full of pulp), Carver (best for carving) and Atlantic Giant (slow and enormous)</li>
+                  <li><strong>Harvesting:</strong> Ripe pumpkins give Seeds, Pulp and Vines, plus a little Candy Corn</li>
+                  <li><strong>Blue Ribbons:</strong> 🎀 With Prize Seeds, some pumpkins grow into Blue Ribbon pumpkins worth double</li>
+                  <li><strong>Atlantic Giants:</strong> Weighed at harvest and kept on the giant shelf for the County Fair</li>
+                </ul>
+
+                <h5>🛖 Carving Barn:</h5>
+                <ul>
+                  <li><strong>Crafting:</strong> Bake pies, make candles and cut carving stencils</li>
+                  <li><strong>Carving:</strong> A stencil carves a pumpkin (+5%), a candle lights it (+15%), and both make a Jack-o'-Lantern (triple value)</li>
+                  <li><strong>Scarecrow Crew:</strong> Once hired, crafts supplies and finishes pumpkins for you</li>
+                </ul>
+
+                <h5>🧺 Farm Stand:</h5>
+                <ul>
+                  <li><strong>Selling:</strong> Sell pumpkins, pies, candles and stencils for Candy Corn</li>
+                  <li><strong>Demand:</strong> Prices rise every day until they double on Halloween, then stay doubled until the event ends on Thanksgiving</li>
+                  <li><strong>Achievements:</strong> Selling pumpkins earns achievements that pay Candy Corn and farm rewards</li>
+                </ul>
+
+                <h5>🎡 County Fair:</h5>
+                <ul>
+                  <li><strong>Weigh-off:</strong> The fair opens once a game year (every 365 days). Enter one giant and it is weighed against three rivals</li>
+                  <li><strong>Prizes:</strong> First, second and third place win ribbons and Candy Corn; heavier winners earn more</li>
+                  <li><strong>Rivals:</strong> The competition grows heavier with every fair you enter, so feed your giants Giant Vine Tonic</li>
                 </ul>
               </div>
             )}

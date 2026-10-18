@@ -2,7 +2,8 @@
  * Guild bonus calculation utilities
  * Calculates all bonuses and penalties from guild upgrades
  */
-import type { GuildState } from '../types/guilds';
+import type { GuildState, GuildTokenSource } from '../types/guilds';
+import { GUILD_TOKEN_SOURCES, GUILDS_UNLOCK_TIER } from '../data/guildData';
 
 /** Soft cap multiplier for pre-commitment upgrades (50% effectiveness) */
 const PRE_COMMITMENT_SOFT_CAP = 0.5;
@@ -245,4 +246,34 @@ export function getGuildGrowthMultiplier(guildState: GuildState): number {
  */
 export function getGuildBeeYieldBonus(guildState: GuildState): number {
   return getGrowersBeePollinationBonus(guildState);
+}
+
+// =============================================================================
+// GUILD TOKENS
+// =============================================================================
+
+/**
+ * Adds Guild Tokens for work done before committing to a guild. Sources that pay
+ * every few actions keep the remainder, so the count carries over between calls.
+ * Returns the same state when nothing is earned: guilds still locked, or already committed.
+ */
+export function awardGuildTokens(
+  guildState: GuildState,
+  source: GuildTokenSource,
+  count: number,
+  farmTier: number
+): GuildState {
+  if (count <= 0 || farmTier < GUILDS_UNLOCK_TIER || guildState.committedGuild !== null) {
+    return guildState;
+  }
+  const { tokens, every } = GUILD_TOKEN_SOURCES[source];
+  if (every <= 1) {
+    return { ...guildState, guildTokens: guildState.guildTokens + tokens * count };
+  }
+  const progress = (guildState.tokenProgress?.[source] ?? 0) + count;
+  return {
+    ...guildState,
+    guildTokens: guildState.guildTokens + tokens * Math.floor(progress / every),
+    tokenProgress: { ...guildState.tokenProgress, [source]: progress % every }
+  };
 }

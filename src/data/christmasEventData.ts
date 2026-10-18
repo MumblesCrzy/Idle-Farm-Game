@@ -77,7 +77,7 @@ export const DECORATION_MULTIPLIERS: Record<string, number> = {
   plain: 1.0,
   ornamented: 1.05, // +5% value
   candled: 1.15,    // +15% value
-  luxury: 3.0,      // triple value
+  luxury: 2.0,      // double value; the Star Forge makes it triple
   garlanded: 1.1,   // older saves only; garland is now sold on its own
 };
 
@@ -384,87 +384,31 @@ export const ALL_EVENT_UPGRADES: EventUpgrade[] = [
 // ============================================================================
 
 /**
- * Event milestones with rewards
+ * Event milestones: Holiday Cheer for trees sold, claimed on the Shopfront.
+ * The achievements at the same counts give the permanent rewards (Archie's
+ * sweater and hat, Frost Fertilizer, the cocoa recipe and the snowfall).
  */
+const cheerMilestone = (id: string, name: string, requirement: number, cheerAmount: number): EventMilestone => ({
+  id,
+  name,
+  description: `Sell ${requirement.toLocaleString('en-US')} Christmas tree${requirement === 1 ? '' : 's'}`,
+  requirement,
+  claimed: false,
+  reward: {
+    type: 'currency',
+    name: 'Holiday Cheer',
+    description: `${cheerAmount.toLocaleString('en-US')} Holiday Cheer`,
+    cheerAmount,
+  },
+});
+
 export const EVENT_MILESTONES: EventMilestone[] = [
-  {
-    id: 'milestone_first_tree',
-    name: 'First Sale',
-    description: 'Sell your first Christmas tree',
-    requirement: 1,
-    claimed: false,
-    reward: {
-      type: 'currency',
-      name: 'Holiday Spirit',
-      description: 'Unlocked Holiday Cheer currency system',
-      cheerAmount: 50,
-    },
-  },
-  {
-    id: 'milestone_50_trees',
-    name: 'Growing Business',
-    description: 'Sell 50 Christmas trees',
-    requirement: 50,
-    claimed: false,
-    reward: {
-      type: 'permanent',
-      name: "Elves' Bench Unlock",
-      description: 'Unlock automated tree decoration',
-      permanentBonusId: 'elves_bench_unlock',
-    },
-  },
-  {
-    id: 'milestone_250_trees',
-    name: 'Master Decorator',
-    description: 'Sell 250 beautifully decorated trees',
-    requirement: 250,
-    claimed: false,
-    reward: {
-      type: 'cosmetic',
-      name: "Archie's Reindeer Hat",
-      description: 'Festive hat cosmetic for Archie',
-      cosmeticId: 'archie_reindeer_hat',
-    },
-  },
-  {
-    id: 'milestone_1000_trees',
-    name: 'Winter Farmer',
-    description: 'Sell 1,000 trees and master winter farming',
-    requirement: 1000,
-    claimed: false,
-    reward: {
-      type: 'permanent',
-      name: 'Frost Fertilizer',
-      description: 'Permanent +5% yield for winter crops',
-      permanentBonusId: 'frost_fertilizer',
-    },
-  },
-  {
-    id: 'milestone_2500_trees',
-    name: 'Canning Expert',
-    description: 'Sell 2,500 trees to unlock new recipe',
-    requirement: 2500,
-    claimed: false,
-    reward: {
-      type: 'recipe',
-      name: "Canner's Cocoa Recipe",
-      description: 'New seasonal jam recipe for canning',
-      recipeId: 'canners_cocoa',
-    },
-  },
-  {
-    id: 'milestone_5000_trees',
-    name: 'Christmas Legend',
-    description: 'Sell 5,000 trees and become a legend',
-    requirement: 5000,
-    claimed: false,
-    reward: {
-      type: 'cosmetic',
-      name: 'Snowfall Background',
-      description: 'Permanent gentle snowfall on farm',
-      cosmeticId: 'snowfall_background',
-    },
-  },
+  cheerMilestone('milestone_first_tree', 'First Sale', 1, 50),
+  cheerMilestone('milestone_50_trees', 'Growing Business', 50, 150),
+  cheerMilestone('milestone_250_trees', 'Master Decorator', 250, 500),
+  cheerMilestone('milestone_1000_trees', 'Winter Farmer', 1000, 1500),
+  cheerMilestone('milestone_2500_trees', 'Holiday Tradition', 2500, 4000),
+  cheerMilestone('milestone_5000_trees', 'Christmas Legend', 5000, 8000),
 ];
 
 // ============================================================================

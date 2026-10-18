@@ -28,6 +28,7 @@ describe('useDayLoop', () => {
       setGlobalAutoPurchaseTimer: vi.fn(),
       autoSellOwnedRef: { current: false },
       christmasEventRef: { current: null as UseChristmasEventReturn | null },
+      pumpkinEventRef: { current: null },
       isPausedRef: { current: false },
       handleSell: vi.fn(),
       ...overrides

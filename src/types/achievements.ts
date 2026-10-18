@@ -11,6 +11,7 @@ export interface AchievementGameState {
   farmTier: number;
   totalHarvests?: number;
   christmasTreesSold?: number;
+  pumpkinsSold?: number;
   beeState?: BeeState | null;
   canningState?: CanningState | null;
 }
@@ -24,7 +25,7 @@ export interface Achievement {
   
   // Unlock requirements
   requirement: {
-    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'custom';
+    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'pumpkins_sold' | 'custom';
     value?: number;
     customCheck?: (gameState: AchievementGameState) => boolean;
     getProgress?: (gameState: AchievementGameState) => number; // For custom achievements that want progress tracking
@@ -34,6 +35,8 @@ export interface Achievement {
   reward?: {
     money?: number;
     knowledge?: number;
+    /** Fall Pumpkin Rush currency */
+    candyCorn?: number;
     message?: string;
   } | null;
   

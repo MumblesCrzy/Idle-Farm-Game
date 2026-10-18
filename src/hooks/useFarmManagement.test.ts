@@ -46,6 +46,7 @@ function createMockEventLogCallbacks(): EventLogCallbacks {
     onItemCrafted: vi.fn(),
     onUpgradePurchased: vi.fn(),
     onMilestoneClaimed: vi.fn(),
+    onPumpkinEvent: vi.fn(),
     registerCallbacks: vi.fn()
   };
 }

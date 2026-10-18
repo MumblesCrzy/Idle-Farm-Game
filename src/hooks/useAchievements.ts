@@ -33,6 +33,8 @@ function checkRequirement(achievement: Achievement, gameState: GameStateForAchie
       return gameState.farmTier >= (requirement.value || 0);
     case 'christmas_trees_sold':
       return (gameState.christmasTreesSold || 0) >= (requirement.value || 0);
+    case 'pumpkins_sold':
+      return (gameState.pumpkinsSold || 0) >= (requirement.value || 0);
     case 'custom':
       return requirement.customCheck ? requirement.customCheck(gameState) : false;
     default:
@@ -70,6 +72,9 @@ function getProgress(achievement: Achievement, gameState: GameStateForAchievemen
       break;
     case 'christmas_trees_sold':
       current = gameState.christmasTreesSold || 0;
+      break;
+    case 'pumpkins_sold':
+      current = gameState.pumpkinsSold || 0;
       break;
     case 'total_harvests':
       current = gameState.totalHarvests || 0;

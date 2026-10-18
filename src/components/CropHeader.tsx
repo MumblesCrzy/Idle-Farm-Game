@@ -70,7 +70,7 @@ const CropHeader: FC<CropHeaderProps> = memo(({
       <div className={styles.veggiePanelHeader}>
         <h2 className={styles.veggiePanelTitle}>
           <img
-            title={`Bonus Growth: ${veggieSeasonBonuses[crop.name]}`}
+            title={`Bonus Growth: ${veggieSeasonBonuses[crop.name]?.join(', ') ?? 'None'}`}
             src={getVeggieImage(crop.name)}
             alt=""
             aria-hidden="true"

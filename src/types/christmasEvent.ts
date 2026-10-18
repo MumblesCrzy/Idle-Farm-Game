@@ -4,6 +4,7 @@
  * Type definitions for the seasonal Christmas Tree Shop event (Nov 1 - Dec 25).
  * This event features tree cultivation, decoration crafting, and holiday sales.
  */
+import type { EventUpgrade } from './eventUpgrades';
 
 // ============================================================================
 // TREE TYPES
@@ -139,41 +140,8 @@ export interface DailyBonus {
 // UPGRADE TYPES
 // ============================================================================
 
-/**
- * Event-specific upgrade categories
- */
-export type EventUpgradeCategory = 'farming' | 'workshop' | 'shopfront';
-
-/**
- * Individual event upgrade
- */
-export interface EventUpgrade {
-  id: string;
-  name: string;
-  description: string;
-  category: EventUpgradeCategory;
-  icon: string;
-  cost: number; // Holiday Cheer cost
-  owned: boolean;
-  effect?: string; // Human-readable effect description
-  
-  // Upgrade-specific properties
-  speedBonus?: number;      // e.g., +25% for Fertilized Soil
-  valueBonus?: number;      // e.g., +10% for Garland Station
-  procChance?: number;      // e.g., 10% for Evergreen Essence
-  passiveIncome?: number;   // Cheer/second for Golden Bell Counter
-  multiplier?: number;      // e.g., 3x for Star Forge
-  
-  // Repeatable upgrade properties
-  repeatable?: boolean;     // Can be purchased multiple times
-  level?: number;           // Current level (for repeatable upgrades)
-  maxLevel?: number;        // Maximum level (for repeatable upgrades)
-  costScaling?: number;     // Cost multiplier per level (e.g., 1.5x)
-
-  // Prerequisite
-  requires?: string;             // Id of an upgrade that must be owned first
-  hiddenUntilRequired?: boolean; // Hide this upgrade, rather than show it locked, until then
-}
+// Upgrade types are shared with the other seasonal events
+export type { EventUpgrade, EventUpgradeCategory } from './eventUpgrades';
 
 // ============================================================================
 // MILESTONE TYPES
@@ -248,6 +216,8 @@ export interface ChristmasEventState {
   marketDemand: MarketDemand;
   dailyBonus: DailyBonus;
   passiveCheerPerSecond: number;
+  /** Passive income below one cheer, carried over to the next second */
+  passiveRemainder?: number;
   
   // Progression
   upgrades: EventUpgrade[];

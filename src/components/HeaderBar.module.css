@@ -87,6 +87,29 @@
   background: #5a6268;
 }
 
+/* Buy Me a Coffee: just the mug, in that site's yellow */
+.coffeeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+  padding: 2px 6px;
+  height: 28px;
+  box-sizing: border-box;
+  background: #ffdd00;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.coffeeButton:hover {
+  background: #ffe94d;
+}
+
+.coffeeButton:focus-visible {
+  outline: 3px solid #007bff;
+  outline-offset: 2px;
+}
+
 .pauseButton {
   font-size: 0.85rem;
   padding: 2px 10px;

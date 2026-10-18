@@ -1,0 +1,522 @@
+/* Carving Barn Tab Styles (Fall Pumpkin Rush) */
+/* Autumn palette, with contrast ratios for the text pairs used here:
+   Pumpkin Orange: #E8711A  - accents, borders
+   Deep Orange:    #B8520F  - decorate actions (cream text: 4.5)
+   Bark Brown:     #6B3E1F  - header, craft buttons (cream text: 8.3)
+   Harvest Gold:   #D9A33A  - borders, chips
+   Cream:          #FFF4E0  - cards and light text
+   Halloween Purple: #5B2A6E - Jack-o'-Lanterns, the Scarecrow Crew (cream text: 9.6)
+   Ink:            #3B2414  - body text (on cream: 13.3)
+*/
+
+.container {
+  --pumpkin: #E8711A;
+  --deep-orange: #B8520F;
+  --deep-orange-dark: #8A4A12;
+  --bark: #6B3E1F;
+  --bark-dark: #4A2A14;
+  --gold: #D9A33A;
+  --gold-tint: #FBE3B4;
+  --cream: #FFF4E0;
+  --cream-muted: #EEDDC4;
+  --purple: #5B2A6E;
+  --purple-dark: #43205A;
+  --warning: #9A3B0A;
+  --ink: #3B2414;
+  --disabled: #6E6259;
+
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 0.6rem;
+  color: var(--ink);
+}
+
+.container button:focus-visible {
+  outline: 3px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* =================================================================== */
+/* COLUMNS */
+/* =================================================================== */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, var(--cream), var(--pumpkin));
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* The shared upgrades panel title is Christmas green; make it autumn brown here */
+.rightColumn h2 {
+  color: var(--bark);
+}
+
+/* =================================================================== */
+/* HEADER ROW: title and materials */
+/* =================================================================== */
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bark);
+  border: 2px solid var(--deep-orange);
+  color: var(--cream);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.barnTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--cream);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.materialsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--cream);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.materialLabel {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.materialValue {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--bark);
+}
+
+/* =================================================================== */
+/* SECTIONS */
+/* =================================================================== */
+
+.craftingSection,
+.carvingSection,
+.crewPanel {
+  background: var(--cream);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.crewPanel {
+  padding: 0.75rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--bark);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* CRAFT QUANTITY */
+/* =================================================================== */
+
+.quantityPicker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.quantityButton {
+  min-width: 2.75rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--bark);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quantityButton:hover {
+  background: var(--gold-tint);
+}
+
+.quantityButton[aria-pressed='true'] {
+  background: var(--bark);
+  color: var(--cream);
+}
+
+/* =================================================================== */
+/* RECIPE CARDS */
+/* =================================================================== */
+
+.recipesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipeCard {
+  background: var(--cream);
+  border: 2px solid var(--bark);
+  border-radius: 6px;
+  padding: 0.5rem;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative; /* For the crew indicator */
+}
+
+.recipeCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(107, 62, 31, 0.25);
+}
+
+.recipeCard.cantCraft {
+  border-color: var(--disabled);
+  background: var(--cream-muted);
+}
+
+.recipeCard.locked {
+  border-style: dashed;
+  border-color: var(--disabled);
+  background: var(--cream-muted);
+}
+
+/* The Scarecrow Crew is working on this recipe */
+.recipeCard.active {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 2px rgba(91, 42, 110, 0.25), 0 0 14px rgba(91, 42, 110, 0.35);
+}
+
+.recipeName {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--bark);
+  font-weight: 600;
+  text-align: center;
+}
+
+.recipeDescription {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.recipeIO {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  background: var(--gold-tint);
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.chip.insufficient {
+  background: var(--cream);
+  border-color: var(--deep-orange);
+  color: var(--warning);
+}
+
+.outputChip {
+  color: var(--bark);
+}
+
+.arrow {
+  color: var(--bark);
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.lockNote {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--purple);
+  text-align: center;
+}
+
+.craftButton {
+  padding: 0.5rem;
+  background: var(--bark);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.craftButton:hover:not(:disabled) {
+  background: var(--bark-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(107, 62, 31, 0.35);
+}
+
+.craftButton:disabled {
+  background: var(--disabled);
+  color: var(--cream);
+  cursor: not-allowed;
+}
+
+/* Scarecrow on the recipe the crew is working on */
+.crewIndicator {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px;
+  background: var(--cream);
+  border: 2px solid var(--purple);
+  border-radius: 50%;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: scarecrowSway 2.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes scarecrowSway {
+  0%, 100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+/* =================================================================== */
+/* CARVING STATION */
+/* =================================================================== */
+
+.supplies {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--bark);
+}
+
+.varietyButtons {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.varietyButton {
+  flex: 1;
+  padding: 0.5rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--bark);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.varietyButton:hover {
+  background: var(--gold-tint);
+  transform: translateY(-1px);
+}
+
+.varietyButton[aria-pressed='true'] {
+  background: var(--bark);
+  color: var(--cream);
+}
+
+.decorateButtons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.decorateButton {
+  padding: 0.5rem;
+  background: var(--deep-orange);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.decorateButton:hover:not(:disabled) {
+  background: var(--deep-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 113, 26, 0.35);
+}
+
+.lanternButton {
+  background: var(--purple);
+}
+
+.lanternButton:hover:not(:disabled) {
+  background: var(--purple-dark);
+  box-shadow: 0 4px 12px rgba(91, 42, 110, 0.4);
+}
+
+.decorateButton:disabled {
+  background: var(--disabled);
+  color: var(--cream);
+  cursor: not-allowed;
+}
+
+.decorateLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.decorateDetail {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.finishedLine {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* =================================================================== */
+/* SCARECROW CREW */
+/* =================================================================== */
+
+.crewStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(91, 42, 110, 0.06);
+  border-left: 4px solid var(--purple);
+  border-radius: 6px;
+}
+
+.crewNow {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.crewNow strong {
+  color: var(--purple);
+}
+
+.crewLine {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--bark);
+  font-weight: 500;
+}
+
+.lockedMessage {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  padding: 1rem;
+  color: var(--ink);
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .crewIndicator {
+    animation: none;
+  }
+
+  .recipeCard,
+  .craftButton,
+  .quantityButton,
+  .varietyButton,
+  .decorateButton {
+    transition: none;
+  }
+
+  .recipeCard:hover,
+  .craftButton:hover:not(:disabled),
+  .varietyButton:hover,
+  .decorateButton:hover:not(:disabled) {
+    transform: none;
+  }
+}

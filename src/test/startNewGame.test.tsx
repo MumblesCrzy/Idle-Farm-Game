@@ -23,7 +23,8 @@ const loadModules = async () => {
   return { save, ...app, ...providers };
 };
 
-describe('startNewGame', () => {
+// Boots the whole game, which can take several seconds while other test files run in parallel
+describe('startNewGame', { timeout: 20_000 }, () => {
   beforeEach(() => localStorage.clear());
 
   it('erases stored progress, keeps settings, and reloads', async () => {

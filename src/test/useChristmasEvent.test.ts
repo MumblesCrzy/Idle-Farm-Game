@@ -194,6 +194,7 @@ describe('useChristmasEvent', () => {
         result.current.sellTrees(treeKey, 1);
       });
 
+      const cheerBefore = result.current.holidayCheer;
       let claimed = false;
       let claimedAgain = true;
       act(() => {
@@ -207,6 +208,47 @@ describe('useChristmasEvent', () => {
       expect(claimedAgain).toBe(false);
       expect(callbacks.onMilestoneClaimed).toHaveBeenCalledTimes(1);
       expect(callbacks.onMilestoneClaimed).toHaveBeenCalledWith('First Sale');
+      expect(result.current.holidayCheer - cheerBefore).toBe(50);
     });
+  });
+
+  it('pays Golden Bell income across seconds without losing the fraction', () => {
+    const { result } = renderHook(() => useChristmasEvent({
+      farmTier: 1,
+      initialState: { holidayCheer: 0, passiveCheerPerSecond: 0.1 }
+    }));
+
+    for (let i = 0; i < 25; i++) {
+      act(() => {
+        result.current.updatePassiveIncome(1000);
+      });
+    }
+    expect(result.current.holidayCheer).toBe(2);
+    expect(result.current.eventState.totalCheerEarned).toBe(2);
+  });
+
+  it('loads milestones from an older save with current rewards and the claimed flags kept', () => {
+    const { result } = renderHook(() => useChristmasEvent({
+      farmTier: 1,
+      initialState: {
+        milestones: [{
+          id: 'milestone_50_trees',
+          name: 'Growing Business',
+          description: 'Sell 50 trees',
+          requirement: 50,
+          claimed: true,
+          reward: { type: 'cosmetic', name: 'Reindeer Hat', description: 'Archie wears a hat', cosmeticId: 'archie_reindeer_hat' }
+        }]
+      }
+    }));
+
+    const milestones = result.current.eventState.milestones;
+    expect(milestones.map(m => m.id)).toEqual([
+      'milestone_first_tree', 'milestone_50_trees', 'milestone_250_trees',
+      'milestone_1000_trees', 'milestone_2500_trees', 'milestone_5000_trees'
+    ]);
+    expect(milestones.every(m => m.reward.type === 'currency' && (m.reward.cheerAmount ?? 0) > 0)).toBe(true);
+    expect(milestones.find(m => m.id === 'milestone_50_trees')).toMatchObject({ claimed: true, reward: { cheerAmount: 150 } });
+    expect(milestones.find(m => m.id === 'milestone_first_tree')?.claimed).toBe(false);
   });
 });

@@ -12,8 +12,7 @@ import { memo, useCallback, useId, useState, type FC, type ReactNode } from 'rea
 import BaseTab from './BaseTab';
 import LockedFeatureCard from './LockedFeatureCard';
 import type { GuildType, GuildState, Guild, GuildUpgrade } from '../types/guilds';
-import { GUILDS, GUILDS_UNLOCK_TIER, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
-import { GUILD_GROWERS } from '../config/assetPaths';
+import { GUILDS, GUILDS_UNLOCK_TIER, GUILD_TOKEN_SOURCES, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
 import {
   getGrowersGrowthBonus,
   getGrowersPriceBonus,
@@ -102,20 +101,11 @@ const GuildCard: FC<GuildCardProps> = memo(({
       >
         <div className={styles.guildCardBody}>
           <div className={styles.guildEmblem}>
-            {guild.id === 'growers' ? (
-              <img
-                src={GUILD_GROWERS}
-                alt={`${guild.displayName} Emblem`}
-                className={styles.guildEmblemImage}
-              />
-            ) : (
-              <div
-                className={styles.guildEmblemPlaceholder}
-                style={{ backgroundColor: guild.colors.primary }}
-              >
-                {guild.displayName.charAt(0)}
-              </div>
-            )}
+            <img
+              src={guild.emblem}
+              alt={`${guild.displayName} Emblem`}
+              className={styles.guildEmblemImage}
+            />
           </div>
           <h3 className={styles.guildName}>{guild.displayName}</h3>
           <p className={styles.guildPhilosophy}>{guild.philosophy}</p>
@@ -681,6 +671,14 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
           <p className={styles.introDescription}>
             Sample upgrades from different guilds, then commit to one for exclusive benefits.
           </p>
+          <div className={styles.introTokens}>
+            <p className={styles.introTokensTitle}>Earn 🎫 Guild Tokens to sample upgrades:</p>
+            <ul className={styles.introTokenList}>
+              {Object.entries(GUILD_TOKEN_SOURCES).map(([source, { tokens, every, label }]) => (
+                <li key={source}>{`+${tokens} per ${every > 1 ? `${every} ` : ''}${label}`}</li>
+              ))}
+            </ul>
+          </div>
           <p className={styles.introWarning}>
             <strong>⚠️ Warning:</strong> Once committed, you cannot change guilds or access other guild upgrades!
           </p>

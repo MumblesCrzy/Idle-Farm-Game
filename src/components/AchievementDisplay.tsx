@@ -5,6 +5,16 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICON_TROPHY } from '../config/assetPaths';
 import styles from './AchievementDisplay.module.css';
 
+/** The reward line: money, knowledge and Candy Corn joined, or the message when there are none */
+const rewardText = (reward: NonNullable<Achievement['reward']>): string => {
+  const parts = [
+    reward.money ? `$${reward.money.toLocaleString()}` : '',
+    reward.knowledge ? `${reward.knowledge.toLocaleString()} Knowledge` : '',
+    reward.candyCorn ? `${reward.candyCorn.toLocaleString()} Candy Corn` : ''
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' + ') : reward.message ?? '';
+};
+
 interface AchievementDisplayProps {
   visible: boolean;
   onClose: () => void;
@@ -167,9 +177,7 @@ const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
                       {achievement.reward && (
                         <div className={styles.achievementRewards}>
                           <span className={styles.achievementRewardLabel}>Reward:</span>{' '}
-                          {achievement.reward.money && `$${achievement.reward.money.toLocaleString()}`}
-                          {achievement.reward.money && achievement.reward.knowledge && ' + '}
-                          {achievement.reward.knowledge && `${achievement.reward.knowledge} Knowledge`}
+                          {rewardText(achievement.reward)}
                         </div>
                       )}
                     </div>

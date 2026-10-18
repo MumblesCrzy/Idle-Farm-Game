@@ -1,9 +1,9 @@
 /**
- * Christmas event upgrade rules shared by the purchase code and the upgrade panels.
+ * Seasonal event upgrade rules shared by the purchase code and the upgrade panels.
  */
-import type { EventUpgrade } from '../types/christmasEvent';
+import type { EventUpgrade } from '../types/eventUpgrades';
 
-/** Holiday Cheer price of the next purchase; repeatable upgrades scale with their level */
+/** Price of the next purchase in the event's currency; repeatable upgrades scale with their level */
 export function getEventUpgradeCost(upgrade: EventUpgrade): number {
   if (!upgrade.repeatable) return upgrade.cost;
   const costScaling = upgrade.costScaling ?? 1.5;

@@ -40,6 +40,11 @@ export function calculateHarvestAmount(
   if (season === 'Winter' && permanentBonuses.includes('frost_fertilizer')) {
     harvestAmount = Math.ceil(harvestAmount * 1.05);
   }
+
+  // Apply Harvest Moon bonus: +5% yield during fall, from the Pumpkin Legend achievement
+  if (season === 'Fall' && permanentBonuses.includes('harvest_moon')) {
+    harvestAmount = Math.ceil(harvestAmount * 1.05);
+  }
   
   // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
   // Plus guild bee synergy bonus

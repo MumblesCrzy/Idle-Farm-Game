@@ -10,6 +10,7 @@ import type { GuildState } from '../types/guilds';
 import type { CanningProcess } from '../types/canning';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
+import { MAX_OFFLINE_MS } from '../config/gameConstants';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 
 /** One offline step, matching the 1-second interval of the live game loops */
@@ -20,6 +21,7 @@ export interface OfflineProgressResult {
   veggies: Veggie[];
   experienceGain: number;
   knowledgeGain: number;
+  autoHarvests: number; // auto harvests performed (they pay Guild Tokens)
   day: number;
   totalDaysElapsed: number;
   canningProgressUpdates: Map<string, number>; // recipeId -> progress gained
@@ -74,6 +76,7 @@ export function calculateOfflineProgress(
       veggies: gameState.veggies,
       experienceGain: 0,
       knowledgeGain: 0,
+      autoHarvests: 0,
       day: gameState.day,
       totalDaysElapsed: gameState.totalDaysElapsed,
       canningProgressUpdates: new Map(),
@@ -87,16 +90,14 @@ export function calculateOfflineProgress(
   let currentVeggies = [...gameState.veggies];
   let totalExperienceGain = 0;
   let totalKnowledgeGain = 0;
+  let totalAutoHarvests = 0;
   let currentDay = gameState.day;
   let currentTotalDays = gameState.totalDaysElapsed;
   
   const canningProgressUpdates = new Map<string, number>();
   let autoCanningCycles = 0;
 
-  // Process in chunks to avoid performance issues with very long offline periods
-  // Max 8 hours of offline time
-  const MAX_OFFLINE_HOURS = 8;
-  const MAX_OFFLINE_MS = MAX_OFFLINE_HOURS * 60 * 60 * 1000;
+  // At most 8 hours of offline time is credited
   const cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
   
   // Step once per second, the same rate as the live growth, harvest and day loops,
@@ -139,6 +140,7 @@ export function calculateOfflineProgress(
       currentVeggies = autoHarvestResult.veggies;
       totalExperienceGain += autoHarvestResult.experienceGain;
       totalKnowledgeGain += autoHarvestResult.knowledgeGain;
+      totalAutoHarvests += autoHarvestResult.harvestedVeggies.length;
     }
 
     // Day counter (every dayLength milliseconds)
@@ -191,6 +193,7 @@ export function calculateOfflineProgress(
     veggies: currentVeggies,
     experienceGain: totalExperienceGain,
     knowledgeGain: totalKnowledgeGain,
+    autoHarvests: totalAutoHarvests,
     day: currentDay,
     totalDaysElapsed: currentTotalDays,
     canningProgressUpdates,

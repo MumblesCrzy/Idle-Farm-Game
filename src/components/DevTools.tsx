@@ -19,6 +19,9 @@ interface DevToolsProps {
   onHarvestAllTrees?: () => void;
   onAddTreeMaterials?: () => void;
   onProcessTreeGrowth?: (ticks?: number) => void;
+  // Pumpkin Rush
+  onAddCandyCorn?: (amount: number) => void;
+  onGrowPumpkins?: (days: number) => void;
   // Bees
   onAddHoney?: (amount: number) => void;
   onAddGoldenHoney?: (amount: number) => void;
@@ -41,6 +44,8 @@ const DevTools: FC<DevToolsProps> = ({
   onHarvestAllTrees,
   onAddTreeMaterials,
   onProcessTreeGrowth,
+  onAddCandyCorn,
+  onGrowPumpkins,
   onAddHoney,
   onAddGoldenHoney,
   onHarvestAllHoney,
@@ -378,6 +383,34 @@ const DevTools: FC<DevToolsProps> = ({
                     className={styles.actionButton}
                   >
                     📦 Add Materials (x100 each)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Pumpkin Rush Section */}
+          {(onAddCandyCorn || onGrowPumpkins) && (
+            <div className={styles.section}>
+              <h4 className={styles.sectionTitle}>🎃 Pumpkin Rush</h4>
+              <div className={styles.actionButtons}>
+                {onAddCandyCorn && (
+                  <>
+                    <button onClick={() => onAddCandyCorn(100)} className={styles.actionButton}>
+                      +100 Candy Corn
+                    </button>
+                    <button onClick={() => onAddCandyCorn(1000)} className={styles.actionButton}>
+                      +1K Candy Corn
+                    </button>
+                  </>
+                )}
+                {onGrowPumpkins && (
+                  <button
+                    onClick={() => onGrowPumpkins(600)}
+                    className={styles.actionButton}
+                    title="Grows every pumpkin and opens the County Fair"
+                  >
+                    🌱 Grow Pumpkins (600 days)
                   </button>
                 )}
               </div>

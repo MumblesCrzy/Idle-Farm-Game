@@ -3,6 +3,7 @@ import { useGameTick } from './useGameClock';
 import { useDeferredEffects } from './useDeferredEffects';
 import { MERCHANT_DAYS } from '../config/gameConstants';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
+import type { UsePumpkinEventReturn } from './usePumpkinEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 
 // ============================================================================
@@ -24,6 +25,9 @@ export interface UseDayLoopDependencies {
 
   // Latest Christmas event state
   christmasEventRef: MutableRefObject<UseChristmasEventReturn | null | undefined>;
+
+  // Latest Pumpkin Rush state
+  pumpkinEventRef: MutableRefObject<UsePumpkinEventReturn | null | undefined>;
 
   // Latest pause state; nothing advances while paused
   isPausedRef: MutableRefObject<boolean>;
@@ -50,6 +54,7 @@ export interface UseDayLoopDependencies {
  *
  * **Christmas Event Integration:**
  * - Grows Christmas trees and pays out passive Holiday Cheer
+ * - Grows pumpkins, counts down to the County Fair and pays out Hayride Candy Corn
  * - Runs Elves' Bench crafting (separate loop)
  *
  * Both run on the game clock (useGameTick), which pauses while the tab is
@@ -62,6 +67,7 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     setGlobalAutoPurchaseTimer,
     autoSellOwnedRef,
     christmasEventRef,
+    pumpkinEventRef,
     isPausedRef,
     handleSell
   } = deps;
@@ -103,6 +109,12 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
       christmasEventRef.current.processTreeGrowth();
       christmasEventRef.current.updatePassiveIncome(1000); // 1000ms = 1 second
     }
+
+    // Grow pumpkins and count down to the fair each day
+    if (pumpkinEventRef.current?.isEventActive) {
+      pumpkinEventRef.current.processPumpkinGrowth();
+      pumpkinEventRef.current.updatePassiveIncome(1000);
+    }
   }, { order: 30 });
 
   // Elves' Bench automation loop - runs every second
@@ -116,6 +128,10 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
       if (elvesBenchOwned) {
         christmasEventRef.current.processDailyElvesCrafting();
       }
+    }
+    // The Scarecrow Crew checks for itself whether it has been hired
+    if (pumpkinEventRef.current?.isEventActive) {
+      pumpkinEventRef.current.processScarecrowCrew();
     }
   }, { order: 40 });
 }

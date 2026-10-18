@@ -3,6 +3,8 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
+import EventArt from './EventArt';
+import { PUMPKIN_ART } from '../data/pumpkinEventData';
 import styles from './StatsDisplay.module.css';
 
 interface StatsDisplayProps {
@@ -23,6 +25,8 @@ interface StatsDisplayProps {
   handleBuyLargerFarm: () => void;
   holidayCheer?: number; // Optional: only shown during Christmas event
   isChristmasEventActive?: boolean;
+  candyCorn?: number; // Optional: only shown during the Pumpkin Rush
+  isPumpkinEventActive?: boolean;
   guildState: GuildState;
 }
 
@@ -44,6 +48,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   handleBuyLargerFarm,
   holidayCheer,
   isChristmasEventActive,
+  candyCorn,
+  isPumpkinEventActive,
   guildState
 }) => {
   // Calculate guild currency display
@@ -124,6 +130,12 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
               <img src={ICON_HOLIDAY_CHEER} alt="" className={styles.statIcon} aria-hidden="true" />
               Holiday Cheer: {holidayCheer ?? 0}
             </span>
+        )}
+        {isPumpkinEventActive && candyCorn !== undefined && (
+          <span className={styles.statItem}>
+            <EventArt art={PUMPKIN_ART.candyCorn} size={18} />
+            Candy Corn: {formatNumber(candyCorn)}
+          </span>
         )}
         <span className={styles.statItemWithButton}>
           <button

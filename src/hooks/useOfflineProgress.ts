@@ -2,9 +2,11 @@ import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/offlineProgress';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
 import { devTelemetry } from '../utils/devTelemetry';
+import { awardGuildTokens } from '../utils/guildCalculations';
 import type { Veggie, WeatherType } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
+import type { UsePumpkinEventReturn } from './usePumpkinEvent';
 import { useLatestRef } from './useLatestRef';
 import { LAST_ACTIVE_KEY } from '../config/gameConstants';
 
@@ -30,6 +32,7 @@ export interface OfflineGameState {
   knowledge: number;
   guildState: GuildState;
   christmasEvent: UseChristmasEventReturn;
+  pumpkinEvent?: UsePumpkinEventReturn;
 }
 
 /**
@@ -47,6 +50,7 @@ export interface UseOfflineProgressDeps {
   setKnowledge: Dispatch<SetStateAction<number>>;
   setDay: Dispatch<SetStateAction<number>>;
   setTotalDaysElapsed: Dispatch<SetStateAction<number>>;
+  setGuildState: Dispatch<SetStateAction<GuildState>>;
 }
 
 /**
@@ -87,6 +91,9 @@ function applyCatchUp(
   deps.setKnowledge((prev: number) => prev + result.knowledgeGain);
   deps.setDay(result.day);
   deps.setTotalDaysElapsed(result.totalDaysElapsed);
+  if (result.autoHarvests > 0) {
+    deps.setGuildState(prev => awardGuildTokens(prev, 'autoHarvests', result.autoHarvests, state.farmTier));
+  }
 
   // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out
   const event = state.christmasEvent;
@@ -101,6 +108,17 @@ function applyCatchUp(
     if (event.passiveCheerPerSecond > 0) {
       event.updatePassiveIncome(result.timeElapsed);
     }
+  }
+
+  // Pumpkin Rush catch-up: pumpkins grow, the fair counts down, the crew works, the Hayride pays out
+  const pumpkins = state.pumpkinEvent;
+  if (pumpkins?.isEventActive) {
+    const ticks = Math.floor(result.timeElapsed / 1000);
+    if (ticks > 0) {
+      pumpkins.processPumpkinGrowth(ticks);
+      pumpkins.processScarecrowCrew(ticks);
+    }
+    pumpkins.updatePassiveIncome(result.timeElapsed);
   }
 
   devTelemetry.emit('offline_catchup', {

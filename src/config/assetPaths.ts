@@ -21,11 +21,15 @@ export const ICON_TROPHY = './Trophy.png';
 export const ICON_MERCHANT = './Merchant.png';
 export const ICON_SCROLL = './Scroll.png';
 export const ICON_DETAIL = './Detail.png';
+export const ICON_COFFEE = './Coffee Mug.png';
 export const ICON_HOLIDAY_CHEER = './Holiday Cheer.png'; // Christmas event currency
 export const ICON_GUILDS = './Guilds.png'; // Guild system icon
 
 // Guild Emblems
 export const GUILD_GROWERS = './Growers.png';
+export const GUILD_PRESERVERS = './Preservers.png';
+export const GUILD_ENGINEERS = './Engineers.png';
+export const GUILD_MERCHANTS = './Merchants.png';
 
 // Bee System Icons
 export const ICON_BEE = './Bee.png';
@@ -126,10 +130,11 @@ export const CANNING_BATCH_CANNING = './Batch Canning.png';
 export const CANNING_CANNER = './Canner.png';
 
 // Special Images
-export const SPECIAL_ARCHIE = './Archie.png';
-export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones.png';
-export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer.png';
-export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater.png';
+// The game draws Archie at 80 px, so it loads 256 px copies; the 1024 px originals stay in public/
+export const SPECIAL_ARCHIE = './Archie 256.png';
+export const SPECIAL_ARCHIE_PINECONES = './Archie Pinecones 256.png';
+export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer 256.png';
+export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater 256.png';
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
 
@@ -149,6 +154,51 @@ export const BEE_BEEKEEPER = './Beekeeper.png';
 export const BEE_BEEKEEPER_UPGRADE = './Beekeeper Upgrade.png';
 export const BEE_HONEY_PRODUCTION = './Honey Production.png';
 export const BEE_CROP_YIELD = './Crop Yield.png';
+
+// Fall Pumpkin Rush
+export const PUMPKIN_SUGAR_PIE = './Sugar Pie Pumpkin.png';
+export const PUMPKIN_CARVER = './Carver Pumpkin.png';
+export const PUMPKIN_GIANT = './Atlantic Giant.png';
+export const PUMPKIN_SPROUT = './Pumpkin Sprout.png';
+export const PUMPKIN_CARVED = './Carved Pumpkin.png';
+export const PUMPKIN_CANDLELIT = './Candlelit Pumpkin.png';
+export const PUMPKIN_LANTERN = "./Jack-o'-Lantern.png";
+export const PUMPKIN_SEEDS = './Pumpkin Seeds.png';
+export const PUMPKIN_PULP = './Pumpkin Pulp.png';
+export const PUMPKIN_VINES = './Pumpkin Vines.png';
+export const PUMPKIN_PIE = './Pumpkin Pie.png';
+export const PUMPKIN_CANDLE = './Autumn Candle.png';
+export const PUMPKIN_STENCIL = './Carving Stencil.png';
+export const ICON_CANDY_CORN = './Candy Corn.png';
+export const PUMPKIN_SCARECROW = './Scarecrow.png';
+export const PUMPKIN_COUNTY_FAIR = './County Fair.png';
+export const PUMPKIN_SCALE = './Weighing Scale.png';
+export const RIBBON_FIRST = './First Place Ribbon.png';
+export const RIBBON_SECOND = './Second Place Ribbon.png';
+export const RIBBON_THIRD = './Third Place Ribbon.png';
+export const RIBBON_BLUE = './Blue Ribbon.png';
+export const PUMPKIN_PATCH = './Pumpkin Patch.png';
+export const PUMPKIN_BARN = './Carving Barn.png';
+export const PUMPKIN_STAND = './Farm Stand.png';
+export const PUMPKIN_UPGRADE_SUGAR_PIE_SEEDS = './Sugar Pie Seeds.png';
+export const PUMPKIN_UPGRADE_CARVER_SEEDS = './Carver Seeds.png';
+export const PUMPKIN_UPGRADE_GIANT_SEEDS = './Atlantic Giant Seeds.png';
+export const PUMPKIN_UPGRADE_COMPOST_HEAP = './Compost Heap.png';
+export const PUMPKIN_UPGRADE_PATCH_EXPANSION = './Patch Expansion.png';
+export const PUMPKIN_UPGRADE_PRIZE_SEEDS = './Prize Seeds.png';
+export const PUMPKIN_UPGRADE_VINE_TONIC = './Giant Vine Tonic.png';
+export const PUMPKIN_UPGRADE_WHEELBARROW = './Wheelbarrow.png';
+export const PUMPKIN_UPGRADE_SEED_DRILL = './Seed Drill.png';
+export const PUMPKIN_UPGRADE_STENCIL_TABLE = './Stencil Table.png';
+export const PUMPKIN_UPGRADE_SPOOKY_PATTERNS = './Spooky Patterns.png';
+export const PUMPKIN_UPGRADE_SCARECROW_CREW = './Scarecrow Crew.png';
+export const PUMPKIN_UPGRADE_BUSY_SCARECROWS = './Busy Scarecrows.png';
+export const PUMPKIN_UPGRADE_GLOWING_LANTERNS = './Glowing Lanterns.png';
+export const PUMPKIN_UPGRADE_BUNTING = './Autumn Bunting.png';
+export const PUMPKIN_UPGRADE_CHALKBOARD = './Chalkboard Sign.png';
+export const PUMPKIN_UPGRADE_HAYRIDE = './Hayride.png';
+export const PUMPKIN_UPGRADE_FORTUNE_TELLER = './Fortune Teller.png';
+export const PUMPKIN_UPGRADE_HARVEST_DISPLAY = './Harvest Display.png';
 
 // Helper function to get vegetable image by name
 export function getVeggieImage(veggieName: string): string {
@@ -174,6 +224,7 @@ export function getAutoPurchaserImage(name: string): string {
 export const ALL_IMAGES = [
   // Tab and UI icons
   ICON_GROWING,
+  ICON_COFFEE,
   ICON_CANNING,
   ICON_PLOTS,
   ICON_MONEY,
@@ -283,4 +334,49 @@ export const ALL_IMAGES = [
   BEE_BEEKEEPER_UPGRADE,
   BEE_HONEY_PRODUCTION,
   BEE_CROP_YIELD,
+
+  // Fall Pumpkin Rush
+  PUMPKIN_SUGAR_PIE,
+  PUMPKIN_CARVER,
+  PUMPKIN_GIANT,
+  PUMPKIN_SPROUT,
+  PUMPKIN_CARVED,
+  PUMPKIN_CANDLELIT,
+  PUMPKIN_LANTERN,
+  PUMPKIN_SEEDS,
+  PUMPKIN_PULP,
+  PUMPKIN_VINES,
+  PUMPKIN_PIE,
+  PUMPKIN_CANDLE,
+  PUMPKIN_STENCIL,
+  ICON_CANDY_CORN,
+  PUMPKIN_SCARECROW,
+  PUMPKIN_COUNTY_FAIR,
+  PUMPKIN_SCALE,
+  RIBBON_FIRST,
+  RIBBON_SECOND,
+  RIBBON_THIRD,
+  RIBBON_BLUE,
+  PUMPKIN_PATCH,
+  PUMPKIN_BARN,
+  PUMPKIN_STAND,
+  PUMPKIN_UPGRADE_SUGAR_PIE_SEEDS,
+  PUMPKIN_UPGRADE_CARVER_SEEDS,
+  PUMPKIN_UPGRADE_GIANT_SEEDS,
+  PUMPKIN_UPGRADE_COMPOST_HEAP,
+  PUMPKIN_UPGRADE_PATCH_EXPANSION,
+  PUMPKIN_UPGRADE_PRIZE_SEEDS,
+  PUMPKIN_UPGRADE_VINE_TONIC,
+  PUMPKIN_UPGRADE_WHEELBARROW,
+  PUMPKIN_UPGRADE_SEED_DRILL,
+  PUMPKIN_UPGRADE_STENCIL_TABLE,
+  PUMPKIN_UPGRADE_SPOOKY_PATTERNS,
+  PUMPKIN_UPGRADE_SCARECROW_CREW,
+  PUMPKIN_UPGRADE_BUSY_SCARECROWS,
+  PUMPKIN_UPGRADE_GLOWING_LANTERNS,
+  PUMPKIN_UPGRADE_BUNTING,
+  PUMPKIN_UPGRADE_CHALKBOARD,
+  PUMPKIN_UPGRADE_HAYRIDE,
+  PUMPKIN_UPGRADE_FORTUNE_TELLER,
+  PUMPKIN_UPGRADE_HARVEST_DISPLAY,
 ];

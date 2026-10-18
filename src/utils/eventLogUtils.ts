@@ -89,6 +89,7 @@ export function getCategoryIcon(category: EventCategory): string {
     milestone: ICON_MILESTONE,
     bees: ICON_BEE,
     christmas: '🎄', // Using emoji for christmas tree
+    pumpkin: '🎃',
     upgrade: '⬆️' // Using emoji for upgrades
   };
   return icons[category];
@@ -121,6 +122,7 @@ export function getCategoryColor(category: EventCategory): string {
     milestone: '#E91E63',   // Pink
     bees: '#FFA500',        // Orange/Amber (bee/honey color)
     christmas: '#C41E3A',   // Christmas Red
+    pumpkin: '#E8711A',     // Pumpkin orange
     upgrade: '#00BCD4'      // Cyan (upgrade color)
   };
   return colors[category];
@@ -458,6 +460,7 @@ export function countEventsByCategory(
     milestone: 0,
     bees: 0,
     christmas: 0,
+    pumpkin: 0,
     upgrade: 0
   };
   

@@ -191,6 +191,12 @@ describe('getVeggieGrowthBonus', () => {
     const result = getVeggieGrowthBonus(veggie, 'Winter', 'Snow', false, false);
     expect(result).toBeGreaterThanOrEqual(0.01);
   });
+
+  it('handles a spring or fall heatwave for crops with no season entry, such as fruit', () => {
+    const fruit = createTestVeggie({ name: 'Strawberry', growthRate: 1.0 });
+    expect(getVeggieGrowthBonus(fruit, 'Spring', 'Heatwave', false, false)).toBeCloseTo(0.7);
+    expect(getVeggieGrowthBonus(fruit, 'Fall', 'Heatwave', false, false)).toBeCloseTo(0.7);
+  });
 });
 
 describe('calculateExpRequirement', () => {

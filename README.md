@@ -121,6 +121,16 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 - Auto-Canning system with intelligent recipe selection
 - Earn money, experience, AND knowledge from completed recipes
 
+### 🎃 Fall Pumpkin Rush Event (Seasonal: Sep 22 - Oct 31)
+- **Four Activity Tabs**: Pumpkin Patch, Carving Barn, Farm Stand and County Fair
+- **Pumpkin Growing**: Plant Sugar Pie, Carver and Atlantic Giant pumpkins; Prize Seeds grow Blue Ribbon pumpkins worth double
+- **Materials and Crafting**: Harvests give Seeds, Pulp and Vines for pies, candles and carving stencils
+- **Carving**: A stencil carves a pumpkin, a candle lights it, and both make a Jack-o'-Lantern at triple value
+- **Candy Corn**: Event currency from sales, harvests, the Hayride and Archie; demand doubles by Halloween
+- **County Fair Weigh-Off**: Once a game year, enter an Atlantic Giant against three rivals for ribbons and Candy Corn
+- **Automation**: The Scarecrow Crew crafts supplies and finishes pumpkins for you
+- **Art**: Pumpkin items use emoji until images are added; see PUMPKIN_ART in src/data/pumpkinEventData.ts
+
 ### 🎄 Christmas Tree Shop Event (Seasonal: Nov 1 - Dec 25)
 - **Three Activity Tabs**: Tree Farm, Workshop, Shopfront - each with unique mechanics
 - **Tree Growing**: Plant and harvest Pine, Spruce, and Fir trees with quality variations
@@ -195,6 +205,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 
 ### 🎯 Current Features (v0.8.0)
 - ✅ **Christmas Tree Shop Event**: Complete seasonal event system with farming, crafting, and sales
+- ✅ **Fall Pumpkin Rush**: Pumpkin growing, carving, a farm stand and a County Fair weigh-off
 - ✅ **Achievement System**: Event milestones with permanent rewards
 - ✅ **Offline Progression**: Full support across all game systems
 - ✅ **Toast Notifications**: Visual feedback for bonuses and events
@@ -202,7 +213,6 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 ### 🔮 Future Seasonal Events
 - **Spring Farmer's Market**: Flowers and Herbs
 - **Summer Watermelon Festival**: Competitive growing challenges
-- **Fall Pumpkin Rush**: Harvest competition with decorating
 
 ### 🌟 Planned Features
 - **Guilds**: 
@@ -225,7 +235,7 @@ The game features two complete gameplay systems (Growing & Canning), persistent 
 7. **Sell Strategy**: Use 💰/🚫 toggles to stockpile valuable vegetables for canning while auto-selling cheaper ones
 8. **Upgrade Timing**: Major upgrades like Greenhouse scale with farm size - plan purchases carefully
 9. **Canning Strategy**: Once unlocked, balance selling raw vegetables vs. processing them for higher profits
-10. **Christmas Event**: Available Nov 1-Dec 25! Complete separate farming system with permanent reward unlocks
+10. **Seasonal Events**: The Pumpkin Rush runs Sep 22-Oct 31 and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
 11. **Archie Hunting**: Keep an eye out for the rare Archie character - clicking gives bonus money and builds streaks!
 12. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
 13. **Save Management**: Use the Settings panel to export saves regularly as backups

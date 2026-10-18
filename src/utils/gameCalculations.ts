@@ -104,7 +104,7 @@ export function getVeggieGrowthBonus(
     if (season === 'Summer') {
       growthAmount *= 0.7; // 30% penalty
     } else if (season === 'Spring' || season === 'Fall') {
-      growthAmount *= veggieSeasonBonuses[v.name].includes('Summer') ? 1.1 : 0.7; // 10% bonus for summer veggies, else 30% penalty
+      growthAmount *= bonusSeasons.includes('Summer') ? 1.1 : 0.7; // 10% bonus for summer veggies, else 30% penalty
     } else {
       growthAmount *= 1.2; // 20% bonus in winter
     }

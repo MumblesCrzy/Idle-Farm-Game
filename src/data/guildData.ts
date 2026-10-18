@@ -4,13 +4,25 @@
  * Contains guild definitions, upgrades, and configuration.
  */
 
-import type { Guild, GuildType, GuildUpgrade } from '../types/guilds';
+import type { Guild, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
+import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS } from '../config/assetPaths';
 
 /** Maximum number of upgrades a player can sample from each guild before committing */
 export const MAX_SAMPLED_UPGRADES_PER_GUILD = 2;
 
 /** Farm tier required to unlock the Guilds system */
 export const GUILDS_UNLOCK_TIER = 5;
+
+/**
+ * Guild Tokens earned before committing: `tokens` for every `every` of the source.
+ * The label reads after the count, as in "+1 per 5 canned goods".
+ */
+export const GUILD_TOKEN_SOURCES: Record<GuildTokenSource, { tokens: number; every: number; label: string }> = {
+  manualHarvest: { tokens: 1, every: 1, label: 'manual harvest' },
+  cannedGoods: { tokens: 1, every: 5, label: 'canned goods' },
+  beeHives: { tokens: 2, every: 1, label: 'bee hive harvest' },
+  autoHarvests: { tokens: 1, every: 10, label: 'auto harvests' }
+};
 
 /**
  * Growers Guild Upgrades
@@ -307,7 +319,7 @@ export const GUILDS: Guild[] = [
       background: '#1a3318',
       border: '#3d6b37'
     },
-    emblem: './Guild_Growers.png',
+    emblem: GUILD_GROWERS,
     upgrades: GROWERS_UPGRADES,
     passiveBonuses: [
       {
@@ -376,7 +388,7 @@ export const GUILDS: Guild[] = [
       background: '#3d2314',
       border: '#6b3410'
     },
-    emblem: './Guild_Preservers.png',
+    emblem: GUILD_PRESERVERS,
     upgrades: PRESERVERS_UPGRADES,
     passiveBonuses: [
       {
@@ -413,7 +425,7 @@ export const GUILDS: Guild[] = [
       background: '#1a2a4a',
       border: '#3454b4'
     },
-    emblem: './Guild_Engineers.png',
+    emblem: GUILD_ENGINEERS,
     upgrades: ENGINEERS_UPGRADES,
     passiveBonuses: [
       {
@@ -450,7 +462,7 @@ export const GUILDS: Guild[] = [
       background: '#2d1a47',
       border: '#581c87'
     },
-    emblem: './Guild_Merchants.png',
+    emblem: GUILD_MERCHANTS,
     upgrades: MERCHANTS_UPGRADES,
     passiveBonuses: [
       {

@@ -58,6 +58,25 @@ describe('calculateOfflineProgress', () => {
     expect(offline.day).toBe(1 + seconds);
   });
 
+  it('counts the auto harvests, which pay Guild Tokens', () => {
+    const veggies = farmWithHarvester();
+    const seconds = 200;
+
+    const offline = calculateOfflineProgress(seconds * 1000, offlineState(veggies));
+
+    let live = veggies;
+    let harvests = 0;
+    for (let i = 0; i < seconds; i++) {
+      live = processVeggieGrowth(live, getSeason(1 + i), 'Clear', false, false).veggies;
+      const harvest = processAutoHarvest(live, 0, 1, 0);
+      harvests += harvest.harvestedVeggies.length;
+      if (harvest.needsUpdate) live = harvest.veggies;
+    }
+
+    expect(harvests).toBeGreaterThan(0);
+    expect(offline.autoHarvests).toBe(harvests);
+  });
+
   it('wraps the day at 365 like the live game, so seasons keep cycling', () => {
     const result = calculateOfflineProgress(3 * 1000, offlineState(farmWithHarvester(), { day: 364 }));
 

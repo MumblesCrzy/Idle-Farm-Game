@@ -105,6 +105,11 @@ export interface GuildTradeOff {
 }
 
 /**
+ * Ways to earn Guild Tokens before committing to a guild
+ */
+export type GuildTokenSource = 'manualHarvest' | 'cannedGoods' | 'beeHives' | 'autoHarvests';
+
+/**
  * Player's guild state
  */
 export interface GuildState {
@@ -118,6 +123,8 @@ export interface GuildState {
   sampledUpgrades: Record<GuildType, string[]>;
   /** Guild tokens earned before committing (converted to guild currency on commitment) */
   guildTokens: number;
+  /** Counts toward the next Guild Token for sources that pay every few actions (missing in older saves) */
+  tokenProgress?: Partial<Record<GuildTokenSource, number>>;
   /** Guild-specific currencies earned */
   guildCurrencies: Record<GuildType, number>;
   /** Purchased upgrade IDs */

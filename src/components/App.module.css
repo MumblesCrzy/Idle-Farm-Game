@@ -189,6 +189,59 @@
   cursor: not-allowed;
 }
 
+.tabButtonPumpkin {
+  composes: tabButton;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tabButtonPumpkinActive {
+  composes: tabButtonPumpkin;
+  composes: tabButtonActive;
+  background: #B8520F;
+  color: #FFF4E0;
+}
+
+.tabEmoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Pumpkin Rush Sub-Tabs */
+.pumpkinSubTabList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #E8D5B5;
+  padding-bottom: 0.5rem;
+}
+
+.pumpkinSubTab {
+  padding: 0.75rem 1.5rem;
+  background: #FFF4E0;
+  color: #6B3E1F;
+  border: none;
+  border-radius: 6px;
+  font-weight: normal;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pumpkinSubTab:hover {
+  filter: brightness(0.95);
+}
+
+.pumpkinSubTabActive {
+  composes: pumpkinSubTab;
+  background: #B8520F;
+  color: #FFF4E0;
+  font-weight: bold;
+}
+
 .tabButtonGuilds {
   composes: tabButton;
   flex-direction: column;

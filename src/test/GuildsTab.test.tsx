@@ -109,6 +109,15 @@ describe('GuildsTab', () => {
       await waitFor(() => expect(within(dialog).getByRole('button', { name: 'I Understand' })).toHaveFocus());
     });
 
+    it('lists every way to earn Guild Tokens', () => {
+      renderTab({ introShown: false });
+
+      const dialog = screen.getByRole('dialog', { name: 'Choose Your Path' });
+      for (const line of ['+1 per manual harvest', '+1 per 5 canned goods', '+2 per bee hive harvest', '+1 per 10 auto harvests']) {
+        expect(within(dialog).getByText(line)).toBeInTheDocument();
+      }
+    });
+
     it('closes on Escape', async () => {
       const user = userEvent.setup();
       const props = renderTab({ introShown: false });

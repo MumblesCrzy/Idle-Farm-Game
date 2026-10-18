@@ -1,0 +1,156 @@
+/* Sales milestones for the seasonal events. Each theme sets the colors. */
+
+.autumn {
+  --ms-panel: #FFF4E0;
+  --ms-accent: #5B2A6E;
+  --ms-accent-dark: #6B3E1F;
+  --ms-accent-text: #FFF4E0;
+  --ms-border: #D9A33A;
+  --ms-reached: #E8711A;
+  --ms-reached-glow: rgba(232, 113, 26, 0.25);
+  --ms-reward: #B8520F;
+  --ms-claimed: #F6E2BE;
+}
+
+.christmas {
+  --ms-panel: #ECEDE8;
+  --ms-accent: #175034;
+  --ms-accent-dark: #23705D;
+  --ms-accent-text: #FFFFFF;
+  --ms-border: #D0A93D;
+  --ms-reached: #B80000;
+  --ms-reached-glow: rgba(184, 0, 0, 0.2);
+  --ms-reward: #7D0000;
+  --ms-claimed: #DCE7DF;
+}
+
+.milestones {
+  background: var(--ms-panel);
+  border: 3px solid var(--ms-accent);
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.title {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ms-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.summary {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.milestone {
+  background: #FFFFFF;
+  border: 2px solid var(--ms-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reached {
+  border-color: var(--ms-reached);
+  box-shadow: 0 0 0 2px var(--ms-reached-glow);
+}
+
+.claimed {
+  background: var(--ms-claimed);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.reward {
+  color: var(--ms-reward);
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.description {
+  font-size: 0.8rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.6rem;
+}
+
+.progress {
+  font-size: 0.8rem;
+}
+
+.claimButton {
+  padding: 0.25rem 0.75rem;
+  background: var(--ms-accent);
+  color: var(--ms-accent-text);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.claimButton:hover {
+  background: var(--ms-accent-dark);
+  transform: translateY(-1px);
+}
+
+.claimButton:focus-visible {
+  outline: 2px solid var(--ms-accent);
+  outline-offset: 2px;
+}
+
+.claimedBadge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--ms-accent-dark);
+  color: var(--ms-accent-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claimButton {
+    transition: none;
+  }
+
+  .claimButton:hover {
+    transform: none;
+  }
+}

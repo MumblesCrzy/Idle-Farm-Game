@@ -22,13 +22,19 @@ describe('Christmas tree pricing', () => {
     expect(getTreePrice('fir_perfect_plain', none, 1)).toBe(40);
     expect(getTreePrice('fir_normal_ornamented', none, 1)).toBe(21); // +5%
     expect(getTreePrice('fir_normal_candled', none, 1)).toBe(23);    // +15%
-    expect(getTreePrice('pine_normal_luxury', none, 1)).toBe(30);    // triple
+    expect(getTreePrice('pine_normal_luxury', none, 1)).toBe(20);    // double
     expect(getTreePrice('pine_normal_plain', none, 2.5)).toBe(25);
+  });
+
+  it('triples luxury trees with the Star Forge', () => {
+    expect(getTreePrice('pine_normal_luxury', upgradesOwning('star_forge'), 1)).toBe(30);
+    expect(getTreePrice('pine_normal_candled', upgradesOwning('star_forge'), 1)).toBe(11);
+    expect(getTreePrice('pine_normal_luxury', upgradesOwning('star_forge', 'fireplace_display'), 1)).toBe(45);
   });
 
   it('applies Fireplace Display to luxury trees only', () => {
     const fireplace = upgradesOwning('fireplace_display');
-    expect(getTreePrice('pine_normal_luxury', fireplace, 1)).toBe(45);
+    expect(getTreePrice('pine_normal_luxury', fireplace, 1)).toBe(30);
     expect(getTreePrice('pine_normal_candled', fireplace, 1)).toBe(11);
   });
 

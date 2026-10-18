@@ -1,0 +1,503 @@
+/* Farm Stand Tab Styles */
+/*
+ * Fall Pumpkin Rush Color Palette:
+ * Pumpkin Orange: #E8711A - Accents, progress, highlights
+ * Deep Orange: #B8520F - Sell All, prices, borders
+ * Bark Brown: #6B3E1F - Text, primary buttons
+ * Harvest Gold: #D9A33A - Secondary borders, highlights
+ * Cream: #FFF4E0 - Backgrounds, light text
+ * Purple: #5B2A6E - Blue Ribbons, claims, Hayride
+ */
+
+.container {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0.75rem;
+  color: #6B3E1F;
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #FFF4E0, #D9A33A);
+  border: 3px solid #B8520F;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* The shared upgrades panel title is themed for Christmas; recolor it here */
+.rightColumn h2 {
+  color: #6B3E1F;
+}
+
+.currencyIcon {
+  margin: 0 2px;
+}
+
+/* =================================================================== */
+/* DEMAND BANNER */
+/* =================================================================== */
+
+.demandBanner {
+  background: linear-gradient(135deg, #B8520F 0%, #6B3E1F 100%);
+  border: 3px solid #6B3E1F;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #FFF4E0;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(184, 82, 15, 0.3);
+}
+
+.demandLabel {
+  font-size: 1rem;
+}
+
+.demandMultiplier {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #FFF4E0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.demandHint {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* PRICE CARDS */
+/* =================================================================== */
+
+.priceCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.6rem;
+}
+
+.priceCard {
+  background: #FFF4E0;
+  border: 3px solid #B8520F;
+  border-radius: 8px;
+  padding: 0.6rem;
+  transition: all 0.2s;
+}
+
+.priceCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 82, 15, 0.3);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #D9A33A;
+}
+
+.cardArt {
+  filter: drop-shadow(0 1px 2px rgba(107, 62, 31, 0.3));
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.pumpkinName {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6B3E1F;
+}
+
+.stockBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.qualityChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #F6E2BE;
+  color: #6B3E1F;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.blueRibbonChip {
+  background: #5B2A6E;
+  color: #FFF4E0;
+}
+
+.priceLabel {
+  color: #6B3E1F;
+}
+
+.priceValue {
+  color: #B8520F;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* =================================================================== */
+/* SELL CONTROLS */
+/* =================================================================== */
+
+.sellControls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sellSlider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #D9A33A;
+  accent-color: #B8520F;
+  outline: none;
+  cursor: pointer;
+}
+
+.sellSlider:focus-visible {
+  outline: 2px solid #5B2A6E;
+  outline-offset: 4px;
+}
+
+.sellSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #E8711A;
+  cursor: pointer;
+  border: 2px solid #FFF4E0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sellSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #E8711A;
+  cursor: pointer;
+  border: 2px solid #FFF4E0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sliderLabel {
+  font-size: 0.85rem;
+  color: #6B3E1F;
+  text-align: center;
+}
+
+.totalValue {
+  color: #B8520F;
+  font-weight: 600;
+}
+
+.sellButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sellButton,
+.sellAllButton {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sellButton {
+  background: #6B3E1F;
+  color: #FFF4E0;
+}
+
+.sellButton:hover:not(:disabled) {
+  background: #5B2A6E;
+  transform: translateY(-1px);
+}
+
+.sellAllButton {
+  background: #B8520F;
+  color: #FFF4E0;
+  animation: pulseOrange 2s ease-in-out infinite;
+}
+
+.sellAllButton:hover:not(:disabled) {
+  background: #6B3E1F;
+  transform: translateY(-1px);
+  animation: none;
+}
+
+.sellButton:disabled,
+.sellAllButton:disabled {
+  background: #A08F7C;
+  color: #FFF4E0;
+  cursor: not-allowed;
+  transform: none;
+  animation: none;
+}
+
+.sellButton:focus-visible,
+.sellAllButton:focus-visible,
+.sellEverythingButton:focus-visible,
+.claimButton:focus-visible {
+  outline: 2px solid #5B2A6E;
+  outline-offset: 2px;
+}
+
+@keyframes pulseOrange {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(232, 113, 26, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(232, 113, 26, 0.7), 0 0 20px rgba(232, 113, 26, 0.4);
+  }
+}
+
+.sellEverythingButton {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1.25rem;
+  background: linear-gradient(135deg, #B8520F, #6B3E1F);
+  color: #FFF4E0;
+  border: 2px solid #6B3E1F;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sellEverythingButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 82, 15, 0.4);
+}
+
+/* =================================================================== */
+/* EMPTY STATE */
+/* =================================================================== */
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  background: #FFF4E0;
+  border: 2px dashed #B8520F;
+  border-radius: 8px;
+  color: #6B3E1F;
+}
+
+.emptyState p {
+  margin: 0.25rem 0;
+}
+
+.emptyStateTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* =================================================================== */
+/* GOODS */
+/* =================================================================== */
+
+.goodsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.goodSection {
+  background: linear-gradient(135deg, #F6E2BE, #FFF4E0);
+  border: 2px solid #D9A33A;
+  border-radius: 6px;
+  padding: 0.4rem;
+}
+
+.goodTitle {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.9rem;
+  color: #6B3E1F;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.goodCard {
+  background: #FFF4E0;
+  border: 2px solid #D9A33A;
+  border-radius: 4px;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.goodInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.goodStock {
+  color: #6B3E1F;
+  font-size: 0.85rem;
+}
+
+.goodPrice {
+  color: #B8520F;
+  font-size: 0.9rem;
+}
+
+.goodHint {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #6B3E1F;
+}
+
+.goodButtons {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* DAILY BONUS */
+/* =================================================================== */
+
+.dailyBonus {
+  background: #FFF4E0;
+  border: 3px solid #B8520F;
+  border-radius: 8px;
+  padding: 0.6rem;
+}
+
+.bonusTitle {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #B8520F;
+  text-align: center;
+}
+
+.bonusDescription {
+  font-size: 0.85rem;
+  color: #6B3E1F;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+}
+
+.claimButton {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.5rem;
+  background: #B8520F;
+  color: #FFF4E0;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.claimButton:hover:not(:disabled) {
+  background: #6B3E1F;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 82, 15, 0.3);
+}
+
+.claimButton:disabled {
+  background: #A08F7C;
+  cursor: not-allowed;
+}
+
+.bonusClaimed {
+  margin: 0.4rem 0 0 0;
+  font-size: 0.8rem;
+  text-align: center;
+  font-style: italic;
+  color: #6B3E1F;
+}
+
+/* =================================================================== */
+/* HAYRIDE INCOME */
+/* =================================================================== */
+
+.passiveIncome {
+  background: linear-gradient(135deg, #5B2A6E 0%, #6B3E1F 100%);
+  border: 3px solid #5B2A6E;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+  color: #FFF4E0;
+  box-shadow: 0 2px 8px rgba(91, 42, 110, 0.3);
+}
+
+.passiveTitle {
+  margin: 0 0 0.35rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.passiveValue {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.passiveHint {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sellAllButton {
+    animation: none;
+  }
+
+  .priceCard,
+  .priceCard:hover {
+    transition: none;
+    transform: none;
+  }
+}

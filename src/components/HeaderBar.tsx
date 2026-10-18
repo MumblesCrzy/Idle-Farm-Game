@@ -1,6 +1,6 @@
 import InlineIcon from './InlineIcon';
 import { memo, type FC } from 'react';
-import { ICON_TROPHY, ICON_SCROLL } from '../config/assetPaths';
+import { ICON_TROPHY, ICON_SCROLL, ICON_COFFEE } from '../config/assetPaths';
 import styles from './HeaderBar.module.css';
 
 interface HeaderBarProps {
@@ -75,6 +75,16 @@ const HeaderBar: FC<HeaderBarProps> = memo(({
         >
           Settings
         </button>
+        <a
+          href="https://buymeacoffee.com/MumblesCrzy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.coffeeButton}
+          title="Buy me a coffee"
+          aria-label="Buy me a coffee (opens in a new tab)"
+        >
+          <InlineIcon src={ICON_COFFEE} size={20} />
+        </a>
       </div>
     </>
   );

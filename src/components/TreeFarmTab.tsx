@@ -495,7 +495,8 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
             title="Farming Upgrades"
             category="farming"
             upgrades={upgrades}
-            holidayCheer={holidayCheer}
+            currency="cheer"
+            balance={holidayCheer}
             purchaseUpgrade={purchaseUpgrade}
             formatNumber={formatNumber}
           />

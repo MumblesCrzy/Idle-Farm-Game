@@ -20,6 +20,7 @@ import type {
 import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
 import { useGameTick } from '../hooks/useGameClock';
+import { useLatestRef } from '../hooks/useLatestRef';
 
 // Import constants
 const BEE_CONSTANTS_IMPL = {
@@ -52,6 +53,7 @@ interface BeeProviderProps {
     }
   ) => void; // Callback to add event log entries
   isPaused?: boolean; // Whether the game is paused
+  onHivesHarvested?: (count: number) => void; // Called for each harvested box (pays Guild Tokens)
 }
 
 /**
@@ -132,7 +134,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   initialState,
   onStateChange,
   addEventLogEntry,
-  isPaused = false
+  isPaused = false,
+  onHivesHarvested
 }) => {
   // Core state - initialize from saved state if available
   const [unlocked, setUnlocked] = useState(initialState?.unlocked ?? false);
@@ -308,6 +311,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     return multiplier;
   }, [upgrades]);
 
+  const onHivesHarvestedRef = useLatestRef(onHivesHarvested);
+
   /**
    * Harvest honey from a specific bee box
    */
@@ -360,8 +365,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       return updated;
     });
 
+    onHivesHarvestedRef.current?.(1);
     return production;
-  }, [boxes, calculateGoldenHoneyChance, calculateHoneyProductionMultiplier]);
+  }, [boxes, calculateGoldenHoneyChance, calculateHoneyProductionMultiplier, onHivesHarvestedRef]);
 
   /**
    * Harvest all ready bee boxes

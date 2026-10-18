@@ -3,7 +3,7 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
-import { applyGuildPriceBonuses, getUpgradeLevel, isCommittedTo } from '../utils/guildCalculations';
+import { applyGuildPriceBonuses, awardGuildTokens, getUpgradeLevel, isCommittedTo } from '../utils/guildCalculations';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { useLatestRef } from './useLatestRef';
@@ -196,10 +196,7 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
           }));
         } else {
           // Before commitment: award generic guild tokens
-          setGuildState(prev => ({
-            ...prev,
-            guildTokens: prev.guildTokens + 1
-          }));
+          setGuildState(prev => awardGuildTokens(prev, 'manualHarvest', 1, farmTier));
         }
       }
 

@@ -323,6 +323,9 @@ export const ARCHIE_STREAK_KEY = 'archieClickStreak';
 export const ARCHIE_LAST_CLICK_KEY = 'archieLastClickTime';
 export const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
+/** Longest absence the game credits: the offline and hidden-tab catch-ups stop at 8 hours */
+export const MAX_OFFLINE_MS = 8 * 60 * 60 * 1000;
+
 // ============================================================================
 // UI & GAMEPLAY
 // ============================================================================

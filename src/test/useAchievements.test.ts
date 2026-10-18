@@ -113,3 +113,29 @@ describe('useAchievements checks', () => {
     expect(onUnlock).not.toHaveBeenCalled();
   });
 });
+
+describe('Pumpkin Rush sales achievements', () => {
+  const pumpkinIds = ['pumpkin_first_sale', 'pumpkin_50_sold', 'pumpkin_250_sold', 'pumpkin_1000_sold', 'pumpkin_2500_sold'];
+
+  it('unlock from pumpkins sold, with progress toward the next', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    for (let i = 0; i < 5; i++) {
+      act(() => {
+        result.current.checkAchievements(gameState({ pumpkinsSold: 60 }));
+      });
+    }
+
+    const unlocked = onUnlock.mock.calls.map(([achievement]) => achievement.id).filter(id => pumpkinIds.includes(id));
+    expect(unlocked).toEqual(['pumpkin_first_sale', 'pumpkin_50_sold']);
+    expect(result.current.achievements.find(a => a.id === 'pumpkin_250_sold')?.progress).toEqual({ current: 60, goal: 250 });
+  });
+
+  it('pay Candy Corn and a farm reward', () => {
+    for (const id of pumpkinIds) {
+      const reward = INITIAL_ACHIEVEMENTS.find(a => a.id === id)?.reward;
+      expect(reward?.candyCorn).toBeGreaterThan(0);
+      expect((reward?.money ?? 0) + (reward?.knowledge ?? 0)).toBeGreaterThan(0);
+    }
+  });
+});

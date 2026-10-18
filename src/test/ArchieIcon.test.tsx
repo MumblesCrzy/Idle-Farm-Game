@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import ArchieIcon from '../components/ArchieIcon'
 import { ArchieProvider } from '../context/ArchieContext'
+import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES } from '../config/assetPaths'
 
 // Mock RandomIcon component
 vi.mock('../components/RandomIcon', () => ({
@@ -177,7 +178,7 @@ describe('ArchieIcon', () => {
     expect(randomIcon).toBeInTheDocument()
     
     const image = screen.getByAltText('Archie')
-    expect(image).toHaveAttribute('src', './Archie.png')
+    expect(image).toHaveAttribute('src', SPECIAL_ARCHIE)
   })
 
   it('should call handleArchieAppear when onAppear is triggered', async () => {
@@ -227,13 +228,13 @@ describe('ArchieIcon', () => {
     renderArchieIcon()
     
     const img = screen.getByAltText('Archie')
-    expect(img).toHaveAttribute('src', './Archie Pinecones.png')
+    expect(img).toHaveAttribute('src', SPECIAL_ARCHIE_PINECONES)
   })
 
   it('should use default image when Christmas event is inactive', () => {
     renderArchieIcon({ isChristmasEventActive: false })
     
     const img = screen.getByAltText('Archie')
-    expect(img).toHaveAttribute('src', './Archie.png')
+    expect(img).toHaveAttribute('src', SPECIAL_ARCHIE)
   })
 })

@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLatestRef } from './useLatestRef';
-import { getEventUpgradeCost } from '../utils/christmasUpgrades';
+import { getEventUpgradeCost } from '../utils/eventUpgrades';
 import { floorCheer, getTreePrice, getSaleCheerMultiplier, parseTreeKey, rollRegisterTips } from '../utils/christmasTreePricing';
 import type {
   ChristmasEventState,
@@ -404,6 +404,14 @@ export function useChristmasEvent({
       return { ...baseUpgrade };
     });
     
+    // Milestones come from code; only whether each was claimed comes from the save
+    const savedMilestones = new Map((mergedState.milestones ?? []).map(m => [m.id, m]));
+    mergedState.milestones = EVENT_MILESTONES.map(milestone => ({
+      ...milestone,
+      reward: { ...milestone.reward },
+      claimed: savedMilestones.get(milestone.id)?.claimed ?? false,
+    }));
+
     // Migrate passive income: if player owns golden bell but passiveCheerPerSecond is 0, set it
     const goldenBell = mergedState.upgrades.find(u => u.id === 'golden_bell_counter');
     if (goldenBell?.owned && mergedState.passiveCheerPerSecond === 0 && goldenBell.passiveIncome) {
@@ -1034,15 +1042,16 @@ export function useChristmasEvent({
   const updatePassiveIncome = useCallback((deltaTime: number) => {
     // Use functional pattern to avoid stale closure on passiveCheerPerSecond
     setEventState(prev => {
-      if (prev.passiveCheerPerSecond > 0) {
-        const cheerGained = prev.passiveCheerPerSecond * (deltaTime / 1000);
-        return {
-          ...prev,
-          holidayCheer: prev.holidayCheer + Math.floor(cheerGained),
-          totalCheerEarned: prev.totalCheerEarned + Math.floor(cheerGained),
-        };
-      }
-      return prev;
+      if (prev.passiveCheerPerSecond <= 0 || deltaTime <= 0) return prev;
+      // Keep the fraction, so 0.1 per second pays 1 every 10 seconds
+      const total = (prev.passiveRemainder ?? 0) + prev.passiveCheerPerSecond * (deltaTime / 1000);
+      const whole = Math.floor(total + 1e-9);
+      return {
+        ...prev,
+        holidayCheer: prev.holidayCheer + whole,
+        totalCheerEarned: prev.totalCheerEarned + whole,
+        passiveRemainder: Math.max(0, total - whole),
+      };
     });
   }, []);
   

@@ -10,10 +10,11 @@
  */
 
 import { memo, useCallback, useMemo, useState, type FC, type ChangeEvent } from 'react';
-import type { TreeInventory, EventUpgrade, CraftingMaterials } from '../types/christmasEvent';
+import type { TreeInventory, EventUpgrade, CraftingMaterials, EventMilestone } from '../types/christmasEvent';
 import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER } from '../config/assetPaths';
 import BaseTab from './BaseTab';
 import EventUpgradesPanel from './EventUpgradesPanel';
+import EventMilestones, { type EventMilestoneView } from './EventMilestones';
 import { getTreePrice, getTreeSaleCheer, parseTreeKey } from '../utils/christmasTreePricing';
 import styles from './ShopfrontTab.module.css';
 
@@ -39,6 +40,9 @@ interface ShopfrontTabProps {
   upgrades: EventUpgrade[];
   formatNumber: (num: number, decimalPlaces?: number) => string;
   purchaseUpgrade: (upgradeId: string) => void;
+  milestones: EventMilestone[];
+  totalTreesSold: number;
+  claimMilestone: (milestoneId: string) => unknown;
 }
 
 /** A price card: one tree type with one decoration, across all qualities */
@@ -236,7 +240,20 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
   upgrades,
   formatNumber,
   purchaseUpgrade,
+  milestones,
+  totalTreesSold,
+  claimMilestone,
 }) => {
+  const milestoneViews = useMemo<EventMilestoneView[]>(() => milestones.map(milestone => ({
+    id: milestone.id,
+    name: milestone.name,
+    description: milestone.description,
+    requirement: milestone.requirement,
+    claimed: milestone.claimed,
+    rewardAmount: milestone.reward.cheerAmount ?? 0,
+    rewardDescription: milestone.reward.description,
+  })), [milestones]);
+
   const stockByVariant = useMemo(() => groupStockByVariant(treeInventory), [treeInventory]);
 
   // Sells lower qualities first, one inventory key at a time
@@ -361,6 +378,18 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
           </div>
         </div>
         </div>
+
+        {/* Sales milestones */}
+        <EventMilestones
+          milestones={milestoneViews}
+          sold={totalTreesSold}
+          soldLabel="Trees sold"
+          currencyIcon={<img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />}
+          titleIcon={<img src={TREE_DECORATED} alt="" className={styles.cheerIcon} />}
+          theme="christmas"
+          onClaim={claimMilestone}
+          formatNumber={formatNumber}
+        />
       </div>
       
       {/* Right Column: Customer Feed & Bonuses */}
@@ -370,7 +399,8 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
           title="Shopfront Upgrades"
           category="shopfront"
           upgrades={upgrades}
-          holidayCheer={holidayCheer}
+          currency="cheer"
+          balance={holidayCheer}
           purchaseUpgrade={purchaseUpgrade}
           formatNumber={formatNumber}
         />

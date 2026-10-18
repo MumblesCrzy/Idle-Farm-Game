@@ -2,8 +2,10 @@ import type { CanningState, LeanCanningProgress } from '../types/canning';
 import type { Veggie, EventLogState } from '../types/game';
 import type { BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 import type { ChristmasEventState } from '../types/christmasEvent';
+import type { PumpkinEventState } from '../types/pumpkinEvent';
 import type { AchievementState } from '../types/achievements';
 import { INITIAL_RECIPES } from '../data/recipes';
+import { PERMANENT_BONUS_ACHIEVEMENTS } from '../data/achievements';
 import type { AutoCanningConfig } from '../utils/canningAutoPurchase';
 import { CANNING_AUTO_PURCHASERS, DEFAULT_AUTO_CANNING_CONFIG } from '../utils/canningAutoPurchase';
 import {
@@ -288,6 +290,7 @@ export interface ExtendedGameState {
   
   // Christmas event state
   christmasEventState?: ChristmasEventState;
+  pumpkinEventState?: PumpkinEventState;
   
   // Bee system state
   beeState?: SavedBeeState;
@@ -330,17 +333,17 @@ function backupRawSave(raw: string): void {
 }
 
 /**
- * Restores permanent bonuses that achievements grant.
+ * Restores permanent bonuses that achievements grant (Frost Fertilizer, Harvest Moon).
  * Saves made before October 2026 left out permanentBonuses, so a player who had earned
  * Frost Fertilizer lost the bonus on the next reload and could never earn it again.
  */
 function restoreAchievementBonuses(state: ExtendedGameState): void {
   const bonuses = state.permanentBonuses ?? [];
-  const frostFertilizerEarned =
-    state.achievementState?.achievements?.some(a => a.id === 'frost_fertilizer' && a.unlocked);
-  state.permanentBonuses = frostFertilizerEarned && !bonuses.includes('frost_fertilizer')
-    ? [...bonuses, 'frost_fertilizer']
-    : bonuses;
+  const missing = Object.entries(PERMANENT_BONUS_ACHIEVEMENTS)
+    .filter(([achievementId, bonus]) => !bonuses.includes(bonus) &&
+      state.achievementState?.achievements?.some(a => a.id === achievementId && a.unlocked))
+    .map(([, bonus]) => bonus);
+  state.permanentBonuses = missing.length > 0 ? [...bonuses, ...missing] : bonuses;
 }
 
 /**

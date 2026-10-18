@@ -1,7 +1,7 @@
 import { memo, useCallback, type FC } from 'react';
 import UpgradeButton from './UpgradeButton';
-import type { EventUpgrade, EventUpgradeCategory } from '../types/christmasEvent';
-import { getEventUpgradeCost, getMissingPrerequisite, isEventUpgradeAtMaxLevel } from '../utils/christmasUpgrades';
+import type { EventCurrency, EventUpgrade, EventUpgradeCategory } from '../types/eventUpgrades';
+import { getEventUpgradeCost, getMissingPrerequisite, isEventUpgradeAtMaxLevel } from '../utils/eventUpgrades';
 import styles from './EventUpgradesPanel.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
@@ -10,7 +10,8 @@ interface EventUpgradeItemProps {
   upgrade: EventUpgrade;
   /** Name of the upgrade to buy first, or null */
   missingPrerequisite: string | null;
-  holidayCheer: number;
+  currency: EventCurrency;
+  balance: number;
   onPurchase: (upgradeId: string) => unknown;
   formatNumber: FormatNumber;
 }
@@ -18,7 +19,8 @@ interface EventUpgradeItemProps {
 const EventUpgradeItem: FC<EventUpgradeItemProps> = memo(({
   upgrade,
   missingPrerequisite,
-  holidayCheer,
+  currency,
+  balance,
   onPurchase,
   formatNumber
 }) => {
@@ -35,9 +37,9 @@ const EventUpgradeItem: FC<EventUpgradeItemProps> = memo(({
         imageSrc={upgrade.icon}
         imageAlt={upgrade.name}
         buttonText={upgrade.name}
-        holidayCheer={holidayCheer}
+        eventCurrency={balance}
         cost={getEventUpgradeCost(upgrade)}
-        currencyType="cheer"
+        currencyType={currency}
         onClick={handleClick}
         disabled={missingPrerequisite !== null}
         isOwned={upgrade.owned && !isRepeatable}
@@ -56,17 +58,21 @@ interface EventUpgradesPanelProps {
   title: string;
   category: EventUpgradeCategory;
   upgrades: EventUpgrade[];
-  holidayCheer: number;
+  /** Currency the upgrades cost */
+  currency: EventCurrency;
+  /** How much of it the player has */
+  balance: number;
   purchaseUpgrade: (upgradeId: string) => unknown;
   formatNumber: FormatNumber;
 }
 
-/** Holiday Cheer upgrades for one Christmas Tree Shop tab */
+/** Upgrades for one tab of a seasonal event */
 const EventUpgradesPanel: FC<EventUpgradesPanelProps> = memo(({
   title,
   category,
   upgrades,
-  holidayCheer,
+  currency,
+  balance,
   purchaseUpgrade,
   formatNumber
 }) => (
@@ -85,7 +91,8 @@ const EventUpgradesPanel: FC<EventUpgradesPanelProps> = memo(({
               key={upgrade.id}
               upgrade={upgrade}
               missingPrerequisite={missingPrerequisite}
-              holidayCheer={holidayCheer}
+              currency={currency}
+              balance={balance}
               onPurchase={purchaseUpgrade}
               formatNumber={formatNumber}
             />

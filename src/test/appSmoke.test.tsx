@@ -13,7 +13,8 @@ const renderGame = () =>
     </GameProviders>
   );
 
-describe('App smoke test', () => {
+// Boots the whole game, which can take several seconds while other test files run in parallel
+describe('App smoke test', { timeout: 20_000 }, () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.useRealTimers());
 

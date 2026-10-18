@@ -45,7 +45,11 @@ export function getTreePrice(
   const { treeType, quality, decoration } = parseTreeKey(treeKey);
   const basePrice = (TREE_DEFINITIONS[treeType as TreeType] ?? TREE_DEFINITIONS.pine).baseValue;
   const qualityMultiplier = QUALITY_MULTIPLIERS[quality as TreeQuality] ?? 1;
-  const decorationMultiplier = DECORATION_MULTIPLIERS[decoration] ?? 1;
+  // The Star Forge replaces the luxury multiplier with its own
+  const starForge = upgrades.find(u => u.id === 'star_forge');
+  const decorationMultiplier = decoration === 'luxury' && starForge?.owned
+    ? starForge.multiplier ?? DECORATION_MULTIPLIERS.luxury
+    : DECORATION_MULTIPLIERS[decoration] ?? 1;
   // Fireplace Display raises the value of luxury trees
   const upgradeMultiplier = decoration === 'luxury' ? 1 + ownedBonus(upgrades, 'fireplace_display') : 1;
 

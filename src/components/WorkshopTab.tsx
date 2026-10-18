@@ -369,7 +369,8 @@ const WorkshopTab: FC<WorkshopTabProps> = ({
           title="Workshop Upgrades"
           category="workshop"
           upgrades={upgrades}
-          holidayCheer={holidayCheer}
+          currency="cheer"
+          balance={holidayCheer}
           purchaseUpgrade={purchaseUpgrade}
           formatNumber={formatNumber}
         />

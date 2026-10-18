@@ -3,11 +3,15 @@ import './index.css'
 import App from './App.tsx'
 import { GameProviders } from './GameProviders.tsx'
 import { PerformanceWrapper } from './components/PerformanceWrapper.tsx'
+import ErrorBoundary from './components/ErrorBoundary.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <PerformanceWrapper id="App-Root">
-    <GameProviders>
-      <App />
-    </GameProviders>
+    {/* Last line of defence: a crash in the game state shows the error and a reload, not a blank page */}
+    <ErrorBoundary onReset={() => window.location.reload()}>
+      <GameProviders>
+        <App />
+      </GameProviders>
+    </ErrorBoundary>
   </PerformanceWrapper>
 )

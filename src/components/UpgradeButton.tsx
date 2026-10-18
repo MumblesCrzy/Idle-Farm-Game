@@ -11,7 +11,7 @@ export interface UpgradeButtonProps {
   money?: number;
   knowledge?: number;
   cost: number;
-  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney' | 'cheer';
+  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney' | 'cheer' | 'candyCorn';
   onClick: () => void;
   disabled?: boolean;
   isOwned?: boolean;
@@ -23,7 +23,7 @@ export interface UpgradeButtonProps {
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
   regularHoney?: number; // Honey currency for bee upgrades
   goldenHoney?: number; // Golden honey currency for bee upgrades
-  holidayCheer?: number; // Holiday Cheer for Christmas event upgrades
+  eventCurrency?: number; // Holiday Cheer or Candy Corn, for seasonal event upgrades
   formatNumber: (num: number, decimalPlaces?: number) => string;
   // Togglable support - for items that become on/off toggles after purchase
   isTogglable?: boolean;
@@ -50,7 +50,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
   knowledgeCost,
   regularHoney = 0,
   goldenHoney = 0,
-  holidayCheer = 0,
+  eventCurrency = 0,
   formatNumber,
   isTogglable = false,
   isActive = true,
@@ -68,7 +68,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
       case 'goldenHoney':
         return goldenHoney >= cost;
       case 'cheer':
-        return holidayCheer >= cost;
+      case 'candyCorn':
+        return eventCurrency >= cost;
       default:
         return false;
     }
@@ -87,6 +88,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
         return <InlineIcon src={ICON_GOLDEN_HONEY} alt="Golden Honey" size={14} />;
       case 'cheer':
         return 'Cheer';
+      case 'candyCorn':
+        return 'Candy Corn';
       default:
         return '';
     }
@@ -196,6 +199,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
               ? `Costs ${formatNumber(cost, 1)} golden honey`
               : currencyType === 'cheer'
                 ? `Costs ${formatNumber(cost, 1)} Holiday Cheer`
+                : currencyType === 'candyCorn'
+                ? `Costs ${formatNumber(cost, 1)} Candy Corn`
                 : `Costs ${formatNumber(cost, 1)} knowledge`;
       label += `. ${costText}`;
       if (!canAfford) {

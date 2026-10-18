@@ -42,6 +42,13 @@ export const FEATURE_FLAG_DEFINITIONS: Record<string, FeatureFlagDefinition> = {
     category: 'event',
     userConfigurable: false,
   },
+  pumpkinEvent: {
+    name: 'Pumpkin Rush',
+    defaultValue: true,
+    description: 'Enable the Fall Pumpkin Rush event (Sep 22 through Thanksgiving)',
+    category: 'event',
+    userConfigurable: false,
+  },
   
   // Features
   beeSystem: {

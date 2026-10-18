@@ -33,6 +33,9 @@ export interface EventLogCallbacks {
   onItemCrafted: (itemName: string, quantity: number) => void;
   onUpgradePurchased: (upgradeName: string, cost: number) => void;
   onMilestoneClaimed: (milestoneName: string) => void;
+
+  // Fall Pumpkin Rush: one line for the log, with optional details
+  onPumpkinEvent: (message: string, details?: string) => void;
   
   // Register callbacks (used by SaveLoadSystem component)
   registerCallbacks: (callbacks: Partial<EventLogCallbacks>) => void;
@@ -131,6 +134,13 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     []
   );
   
+  const onPumpkinEvent = useCallback<EventLogCallbacks['onPumpkinEvent']>(
+    (message, details) => {
+      callbacksRef.current.onPumpkinEvent?.(message, details);
+    },
+    []
+  );
+
   const value: EventLogCallbacks = {
     onHarvest,
     onAutoPurchase,
@@ -143,6 +153,7 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     onItemCrafted,
     onUpgradePurchased,
     onMilestoneClaimed,
+    onPumpkinEvent,
     registerCallbacks,
   };
   
