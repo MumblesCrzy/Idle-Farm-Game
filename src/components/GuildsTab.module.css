@@ -1,17 +1,10 @@
 /**
  * Guilds Tab Styles
- * 
- * Styling for the guild system UI including:
- * - Guild selection cards
- * - Upgrade panels
- * - Theming support for each guild
+ *
+ * Every state fits a 1600x1000 window and holds still as the player clicks: guild cards
+ * share one size, the picked guild shows in a panel of fixed height, upgrade rows share one
+ * height, and Guild Tokens, Guild Status and the Legacy sit in the sidebar.
  */
-
-/* Selection Container */
-.selectionContainer {
-  padding: 0.75rem;
-  position: relative;
-}
 
 /* Intro Overlay - first time popup */
 .introOverlay {
@@ -98,105 +91,72 @@
   transform: scale(1.05);
 }
 
-/* Guild Grid */
+/* Selection page: four guild cards of one size, then the picked guild's panel */
+.selectionContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .guildGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-/* Guild Card */
+/* A guild card: the same size and content for every guild, picked or not */
 .guildCard {
-  background: linear-gradient(135deg, var(--guild-background) 0%, #1a1a1a 100%);
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 136px;
+  margin: 0;
+  padding: 0.75rem 0.5rem;
   border: 2px solid var(--guild-border);
   border-radius: 10px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* The clickable part of the card. It carries the card's padding and fills the
-   card, with browser and global button styles reset so it looks like plain content. */
-.guildCardSelect {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0;
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
+  background: linear-gradient(135deg, var(--guild-background) 0%, #1a1a1a 100%);
+  color: #fff;
   font: inherit;
-  letter-spacing: inherit;
-  text-align: inherit;
+  text-align: center;
   cursor: pointer;
-}
-
-/* When the commit button follows, it supplies the bottom padding */
-.guildCardSelect:not(:last-child) {
-  padding-bottom: 0;
-}
-
-.guildCardSelect:focus {
-  outline: none;
-}
-
-.guildCardSelect:focus-visible {
-  outline: 2px solid var(--guild-accent);
-  outline-offset: -2px;
-}
-
-/* Wraps the card content so its margins lay out as in a plain block */
-.guildCardBody {
-  display: block;
-}
-
-.guildCardActions {
-  padding: 0 1rem 1rem;
-}
-
-.guildCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--guild-primary), var(--guild-accent));
-  opacity: 0;
-  transition: opacity 0.3s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .guildCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.guildCard:hover::before {
-  opacity: 1;
-}
-
-.guildCardSelected {
   border-color: var(--guild-accent);
-  box-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
 }
 
-.guildCardSelected::before {
-  opacity: 1;
+.guildCard:focus {
+  outline: none;
 }
 
-.guildEmblem {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.5rem;
+.guildCard:focus-visible {
+  outline: 2px solid var(--guild-accent);
+  outline-offset: 2px;
+}
+
+/* The picked card: a bright edge, and a notch pointing at the panel below */
+.guildCardSelected,
+.guildCardSelected:hover {
+  border-color: var(--guild-accent);
+  box-shadow: 0 0 0 1px var(--guild-accent), 0 0 18px rgba(201, 162, 39, 0.3);
+}
+
+.guildCardSelected::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--guild-accent);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .guildEmblemImage {
@@ -207,119 +167,105 @@
 }
 
 .guildName {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #fff;
-  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
-.guildPhilosophy {
-  text-align: center;
-  font-style: italic;
-  color: #aaa;
+.guildCardStatus {
+  color: var(--guild-accent);
   font-size: 0.8rem;
-  margin-bottom: 0.5rem;
-  min-height: 2.4em;
+}
+
+.guildCardJoin {
+  color: #aaa;
+  font-size: 0.7rem;
+}
+
+/* The picked guild in full. Its height never changes, whichever guild is picked;
+   anything taller than the panel scrolls inside it */
+.detailPanel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* At least this tall, and taller when the sidebar beside it is */
+  flex: 1 0 auto;
+  height: 392px;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--guild-border, #444);
+  border-radius: 10px;
+  background: linear-gradient(160deg, var(--guild-background, #2d2d2d) 0%, #1c1c1c 100%);
+  color: #fff;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--guild-border);
+}
+
+.detailEmblem {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
+.detailTitleArea {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detailTitle {
+  margin: 0;
+  color: var(--guild-accent);
+  font-size: 1.15rem;
+}
+
+.detailPhilosophy {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .guildFocuses {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  justify-content: center;
-  margin-bottom: 0.5rem;
+  gap: 0.3rem;
 }
 
 .guildFocus {
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
   background: var(--guild-primary);
   color: #fff;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
-.guildSampleCount {
-  text-align: center;
-  color: var(--guild-accent);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-/* Sampling Progress */
-.samplingProgress {
-  text-align: center;
-  color: var(--guild-accent);
-  font-size: 0.85rem;
-  margin: 0.75rem 0;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-/* Card Benefits & Trade-offs */
-.cardBenefits,
-.cardTradeoffs {
-  margin: 0.5rem 0;
-  padding: 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-}
-
-.cardBenefits {
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-}
-
-.cardTradeoffs {
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid rgba(255, 152, 0, 0.2);
-}
-
-.cardBenefitsTitle,
-.cardTradeoffsTitle {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.8rem;
-}
-
-.cardBenefitsTitle {
-  color: #81c784;
-}
-
-.cardTradeoffsTitle {
-  color: #ffcc80;
-}
-
-.cardBenefitsList,
-.cardTradeoffsList {
-  margin: 0;
-  padding-left: 1.25rem;
-}
-
-.cardBenefitItem,
-.cardTradeoffItem {
-  margin-bottom: 0.25rem;
-  line-height: 1.3;
-}
-
-.cardBenefitItem {
-  color: #a5d6a7;
-}
-
-.cardTradeoffItem {
-  color: #ffe0b2;
+.detailAction {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  width: 200px;
 }
 
 .commitButton {
   width: 100%;
-  padding: 0.75rem;
-  background: var(--guild-primary);
-  color: #fff;
+  padding: 0.6rem 0.75rem;
   border: none;
   border-radius: 6px;
-  font-size: 1rem;
+  background: var(--guild-primary);
+  color: #fff;
+  font-size: 0.95rem;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: filter 0.2s;
 }
 
 .commitButton:hover:not(:disabled) {
@@ -331,62 +277,118 @@
   cursor: not-allowed;
 }
 
-/* Sampling Section */
-.samplingSection {
-  background: #2d2d2d;
-  border-radius: 10px;
-  padding: 1rem;
-  margin-top: 1rem;
-}
-
-.samplingTitle {
-  color: #ffd700;
-  margin-bottom: 0.35rem;
-  font-size: 1rem;
-}
-
-.samplingHint {
-  color: #888;
+.comingLater {
+  padding: 0.45rem 0.6rem;
+  border: 1px dashed #777;
+  border-radius: 6px;
+  color: #bbb;
   font-size: 0.8rem;
-  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
-/* Soft Cap Warning */
-.softCapWarning {
+.detailBody {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.detailColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.detailCaption {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 152, 0, 0.15);
-  border: 1px solid rgba(255, 152, 0, 0.3);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.75rem;
+  margin: 0;
+  color: var(--guild-accent);
+  font-size: 0.85rem;
 }
 
-.softCapIcon {
-  flex-shrink: 0;
+.sampleCount {
+  margin-left: auto;
+  color: #ccc;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0 0 0.35rem;
+  padding-left: 1.1rem;
+  color: #ddd;
+  font-size: 0.8rem;
+}
+
+.detailTradeoffs {
+  color: #ffab91;
 }
 
 .softCapText {
+  margin: 0;
   color: #ffcc80;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 
 .softCapText strong {
   color: #ffa726;
 }
 
-/* Sampling Effects Preview */
+/* With no guild picked, the panel explains the choice instead */
+.detailPanelEmpty {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.detailEmptyIcon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.detailEmptyTitle {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.15rem;
+}
+
+.detailEmptyList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #ccc;
+  font-size: 0.85rem;
+}
+
+.samplingUpgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* What the sampled upgrades do now; it always holds its line */
 .samplingEffects {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  background: rgba(76, 175, 80, 0.1);
+  gap: 0.4rem;
+  min-height: 2rem;
+  margin-top: auto;
+  padding: 0.3rem 0.6rem;
   border: 1px solid rgba(76, 175, 80, 0.2);
   border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.75rem;
+  background: rgba(76, 175, 80, 0.1);
 }
 
 .samplingEffectsTitle {
@@ -395,31 +397,34 @@
 }
 
 .samplingEffect {
-  color: #4caf50;
-  font-weight: bold;
-  font-size: 0.8rem;
-  background: rgba(76, 175, 80, 0.15);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+  font-size: 0.8rem;
+  font-weight: bold;
 }
 
-.samplingUpgrades {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.samplingNone {
+  color: #9e9e9e;
+  font-size: 0.78rem;
+  font-style: italic;
 }
 
-/* Upgrade Row */
+/* Upgrade row: one height for every upgrade, so lists and grids hold still. The
+   description is in the tooltip. */
 .upgradeRow {
-  display: flex;
-  justify-content: space-between;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  background: #333;
-  border-radius: 4px;
-  padding: 0.35rem 0.5rem;
+  gap: 0.6rem;
+  height: 64px;
+  padding: 0.35rem 0.6rem;
   border-left: 3px solid;
-  transition: all 0.2s;
-  gap: 0.35rem;
+  border-radius: 4px;
+  background: #333;
+  transition: background 0.2s;
 }
 
 .upgradeRow:hover {
@@ -427,32 +432,28 @@
 }
 
 .upgradeInfo {
-  flex: 1;
   min-width: 0;
 }
 
 .upgradeName {
-  color: #fff;
-  margin: 0 0 0.1rem 0;
-  font-size: 0.8rem;
-}
-
-.upgradeDescription {
-  color: #aaa;
-  margin: 0 0 0.1rem 0;
-  font-size: 0.7rem;
-  white-space: nowrap;
+  margin: 0 0 0.15rem;
   overflow: hidden;
+  color: #fff;
+  font-size: 0.85rem;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+/* At most two lines; the tooltip has all of it */
 .upgradeEffect {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   color: #4caf50;
   font-size: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.2rem;
+  line-height: 1.3;
 }
 
 .currentEffect {
@@ -465,34 +466,35 @@
 }
 
 .maxedEffect {
+  margin-left: 0.35em;
   color: #a5d6a7;
   font-style: italic;
 }
 
 .upgradeActions {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 
 .upgradeLevel {
-  color: #888;
-  font-size: 0.8rem;
+  color: #999;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
 .upgradeBuyButton {
+  min-width: 76px;
   padding: 0.25rem 0.5rem;
-  background: #4caf50;
-  color: #fff;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  min-width: 60px;
+  background: #4caf50;
+  color: #fff;
   font-size: 0.75rem;
-  transition: all 0.2s;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter 0.2s;
 }
 
 .upgradeBuyButton:hover:not(:disabled) {
@@ -581,24 +583,30 @@
   filter: brightness(1.2);
 }
 
-/* Committed Panel */
+/* Committed Panel: the header, a band of effects and trade-offs, then every upgrade */
 .committedPanel {
-  padding: 0.5rem;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-radius: 10px;
   /* Its own dark background: the page behind is white when the system uses light mode */
   background: var(--guild-background, #2d2d2d);
-  border-radius: 10px;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  color: #fff;
 }
 
 .committedHeader {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--guild-border);
+}
+
+.committedEmblemImage {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
 }
 
 .committedEmblem {
@@ -662,31 +670,36 @@
   letter-spacing: 0.5px;
 }
 
-/* Two-column layout for committed panel content */
-.committedContent {
+/* Active effects beside the trade-offs, in one band above the upgrades */
+.effectsBar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0.6rem;
 }
 
-.committedLeftColumn,
-.committedRightColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Bonuses & Trade-offs Sections */
 .bonusesSection,
 .tradeoffsSection,
 .upgradesSection {
-  margin-bottom: 0;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  padding: 0.35rem 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* The upgrades box takes any extra height, so the panel lines up with the sidebar */
+.upgradesSection {
+  flex: 1;
+}
+
+/* Two upgrades to a row; a list longer than the window scrolls inside */
+.upgradesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  max-height: 412px;
+  overflow-y: auto;
 }
 
 .sectionTitle {
@@ -697,11 +710,14 @@
   padding-bottom: 0.2rem;
 }
 
+/* Room for two lines of chips, so buying the first upgrades doesn't push the page */
 .bonusesList,
 .tradeoffsList {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem 0.35rem;
+  align-content: flex-start;
+  gap: 0.3rem 0.4rem;
+  min-height: 3.5rem;
 }
 
 .bonusItem,
@@ -740,13 +756,34 @@
   font-weight: bold;
 }
 
-/* Sidebar */
+/* The main box and the sidebar side by side. A grid row takes the taller one's height and
+   both fill it, so their bottoms always line up. */
+.guildsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 334px;
+  gap: 2rem;
+  align-items: stretch;
+}
+
+/* The sidebar's box; the member page gives it the guild's colors */
+.sidebarBox {
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #2d2d2d;
+}
+
+/* Sidebar: Guild Tokens before joining, Guild Status after, and the Legacy below either */
 .sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   color: #fff;
 }
 
 .sidebarTitle {
-  margin: 0 0 1rem 0;
+  margin: 0;
   color: #ffd700;
   font-size: 1.1rem;
 }
@@ -754,15 +791,16 @@
 .sidebarContent {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .statusItem {
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.6rem;
   border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
 }
 
 .statusLabel {
@@ -771,4 +809,124 @@
 
 .statusValue {
   font-weight: bold;
+}
+
+.tokenBalance {
+  display: flex;
+  align-items: center;
+  color: #ffd700;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.sidebarNote {
+  margin: 0;
+  color: #ccc;
+  font-size: 0.8rem;
+}
+
+.sidebarCaption {
+  margin: 0.2rem 0 0;
+  color: #aaa;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tokenSources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #ddd;
+  font-size: 0.8rem;
+}
+
+/* Levels kept from earlier Legacies, beside an upgrade's level */
+.legacyMark {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f5ca84;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* The locked tab for a player carrying a Legacy: the Legacy box first, then a short lock notice */
+.legacyLockedLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.legacyLockedLayout > :first-child {
+  margin-top: 0;
+}
+
+.lockedNote {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  background: #2d2d2d;
+  color: #e6e6e6;
+}
+
+.lockedNoteTitle {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 18px;
+  color: #ffd700;
+}
+
+.lockedNoteText {
+  margin: 0;
+  font-size: 13px;
+  color: #cfcfcf;
+}
+
+.lockedNoteGuilds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.lockedNoteGuilds li {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The way out of a guild, in the Guild Status sidebar */
+.legacyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  margin-top: 0;
+  border: 1px solid #f5ca84;
+  border-radius: 8px;
+  background: transparent;
+  color: #f5ca84;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.legacyButton:hover:not(:disabled) {
+  background: rgba(245, 202, 132, 0.12);
+}
+
+.legacyButton:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

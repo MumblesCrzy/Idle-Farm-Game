@@ -1,5 +1,7 @@
 import type { Recipe } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
+import type { GuildState } from '../types/guilds';
+import { getPressureCannerJars, getRecipeValueMultiplier } from './guildCalculations';
 
 export type VeggieContext = {
   name: string;
@@ -11,7 +13,12 @@ export type RecipeValueContext = {
   veggies: VeggieContext[];
   heirloomOwned: boolean;
   efficiencyMultiplier?: number;
+  /** Guild rules on canning value and jars; leave out for none */
+  guildState?: GuildState;
 };
+
+/** The Preservers upgrade that opens the Cellar recipes */
+export const CELLAR_RECIPES_UPGRADE = 'preservers_cellar_recipes';
 
 export const filterRecipesByCategory = (
   recipes: Recipe[],
@@ -43,6 +50,9 @@ export const filterRecipesByCategory = (
     case 'honey':
       filtered = filtered.filter(recipe => !!recipe.honeyRequirement);
       break;
+    case 'cellar':
+      filtered = filtered.filter(recipe => recipe.requiredGuildUpgrade === CELLAR_RECIPES_UPGRADE);
+      break;
     default:
       break;
   }
@@ -65,12 +75,18 @@ export const getBetterSeedsMultiplier = (
   return Math.pow(context.heirloomOwned ? 1.5 : 1.25, averageBetterSeedsLevel);
 };
 
+/**
+ * What one batch sells for: price, Family Recipe, Better Seeds, the guild's value rules and
+ * the Pressure Canner's jars. Heirloom Touch's chance of a bonus jar and Prize Jars are left out.
+ */
 export const getEffectiveSalePrice = (
   recipe: Recipe,
   context: RecipeValueContext
 ): number => {
   const efficiencyMultiplier = context.efficiencyMultiplier ?? 1;
-  return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe, context);
+  const jars = context.guildState ? getPressureCannerJars(context.guildState) : 1;
+  return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe, context)
+    * getRecipeValueMultiplier(context.guildState, recipe) * jars;
 };
 
 export const getRawIngredientValue = (

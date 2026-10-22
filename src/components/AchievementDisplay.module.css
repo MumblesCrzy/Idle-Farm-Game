@@ -98,6 +98,12 @@
   padding-right: 8px;
 }
 
+/* The list takes focus so the keyboard can scroll it; the ring sits inside its edge */
+.content:focus-visible {
+  outline: 3px solid #2e7d32;
+  outline-offset: -3px;
+}
+
 .categorySection {
   margin-bottom: 24px;
 }

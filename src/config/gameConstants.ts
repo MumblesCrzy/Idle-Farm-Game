@@ -262,8 +262,7 @@ export const BEE_CONSTANTS = {
   MAX_BEE_BOXES: 30,
   
   // Yield bonuses
-  BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% per box
-  MAX_YIELD_BONUS: 1.0, // 100% max yield bonus from bees
+  BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% per box, with no cap on the total
   
   // Unlock requirements
   UNLOCK_FARM_TIER: 4,
@@ -301,6 +300,9 @@ export const BEE_UPGRADE_COSTS = {
   // Advanced upgrades
   winterHardiness: 45, // 3 * 15 (golden honey)
   nectarEfficiency: 30, // 2 * 15 (golden honey)
+
+  // Kitchen
+  honeyJars: 1000, // Opens the honey jar recipes
 } as const;
 
 // ============================================================================

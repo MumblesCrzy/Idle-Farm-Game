@@ -33,16 +33,33 @@ export interface GuildUpgrade {
   baseCost: number;
   /** Cost scaling per level (multiplier) */
   costScaling: number;
-  /** Currency type for purchase */
+  /**
+   * Currency type for purchase. 'guildCurrency' is the upgrade's own guild's currency
+   * (Wax Seals for the Preservers); 'sigils' is the same for the Growers.
+   */
   currencyType: 'money' | 'knowledge' | 'experience' | 'guildCurrency' | 'sigils' | 'guildTokens';
   /** Effect value per level */
   effectPerLevel: number;
   /** Effect description template (use {value} for calculated effect) */
   effectTemplate: string;
+  /** How {value} shows: effect x 100 as a percentage (the default), or the plain number */
+  effectDisplay?: 'percent' | 'number';
   /** Whether this upgrade is purchased (for one-time) */
   purchased: boolean;
   /** Icon path for the upgrade */
   icon?: string;
+}
+
+/**
+ * A guild's own currency, earned after committing
+ */
+export interface GuildCurrency {
+  /** Plural name, as in "238 Wax Seals" */
+  name: string;
+  /** Icon path */
+  icon: string;
+  /** How members earn it, for tooltips */
+  earnedFrom: string;
 }
 
 /**
@@ -66,6 +83,10 @@ export interface Guild {
   };
   /** Icon/emblem path */
   emblem: string;
+  /** The currency members earn and spend on guild upgrades */
+  currency: GuildCurrency;
+  /** Whether players can commit to this guild yet */
+  joinable: boolean;
   /** Upgrades available for this guild */
   upgrades: GuildUpgrade[];
   /** Passive bonuses when committed to this guild */
@@ -105,6 +126,51 @@ export interface GuildTradeOff {
 }
 
 /**
+ * Dunkin, the Preservers' Glutton: what the save keeps about his visits
+ */
+export interface GluttonRecord {
+  /** Times he was clicked away, at any stage */
+  shoos: number;
+  /** Times he was shooed before his first bite */
+  earlyShoos: number;
+  /** Times a stuffed Dunkin was sent home to the vet */
+  vetBills: number;
+  /** A stuffed Dunkin still waiting to be sent home, so a reload keeps him */
+  stuffed?: { eaten: Record<string, number> };
+}
+
+/**
+ * One ended Legacy
+ */
+export interface LegacyEntry {
+  /** The guild the player belonged to */
+  guild: GuildType;
+  /** When it ended, in ms since the epoch */
+  endedAt: number;
+  /** Game days it lasted */
+  days: number;
+  /** The one-time upgrade kept, if any */
+  unlock: string | null;
+  /** Levels added to the kept levels by this ending */
+  levelsKept: number;
+}
+
+/**
+ * What carries over from one Legacy to the next: the guild benefits a player keeps when
+ * they end a Legacy and start the farm over
+ */
+export interface LegacyRecord {
+  /** Legacies ended so far; the current one is count + 1 */
+  count: number;
+  /** Levels kept per leveled upgrade id, added to levels bought in the current Legacy */
+  keptLevels: Record<string, number>;
+  /** One-time upgrade ids kept for good */
+  keptUnlocks: string[];
+  /** Every ended Legacy, oldest first */
+  history: LegacyEntry[];
+}
+
+/**
  * Ways to earn Guild Tokens before committing to a guild
  */
 export type GuildTokenSource = 'manualHarvest' | 'cannedGoods' | 'beeHives' | 'autoHarvests';
@@ -121,10 +187,14 @@ export interface GuildState {
   commitmentDay: number | null;
   /** Sampled upgrades from each guild before commitment (max 2-3 per guild) */
   sampledUpgrades: Record<GuildType, string[]>;
-  /** Guild tokens earned before committing (converted to guild currency on commitment) */
+  /** Guild tokens earned before committing, for starter upgrades. They don't carry over: joining clears them */
   guildTokens: number;
   /** Counts toward the next Guild Token for sources that pay every few actions (missing in older saves) */
   tokenProgress?: Partial<Record<GuildTokenSource, number>>;
+  /** Dunkin's visits to committed Preservers (missing in older saves) */
+  glutton?: GluttonRecord;
+  /** Benefits kept from earlier Legacies (missing until the first Legacy ends) */
+  legacy?: LegacyRecord;
   /** Guild-specific currencies earned */
   guildCurrencies: Record<GuildType, number>;
   /** Purchased upgrade IDs */

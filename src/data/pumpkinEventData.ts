@@ -485,6 +485,11 @@ export const PUMPKIN_EVENT_CONSTANTS = {
   GIANT_TONIC_PER_LEVEL: 0.10,
   POUNDS_PER_CANDY_CORN: 40,   // Farm Stand price for a giant
   MAX_GIANT_SHELF: 12,
+  // Champion seeds: seeds saved from County Fair winners grow heavier giants
+  CHAMPION_SEED_BONUS_PER_WIN: 0.05, // +5% giant weight per first place
+  CHAMPION_SEED_MAX_BONUS: 0.4,      // up to +40%, reached at eight wins
+  /** The real Atlantic Giant world record, in pounds; beating it earns a hidden achievement */
+  WORLD_RECORD_WEIGHT: 3156,
 
   // County Fair weigh-off
   FAIR_INTERVAL_DAYS: 365,    // once a game year, about six real minutes

@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode, type SetStateAction } from 'react';
 import ArchieIcon from './components/ArchieIcon';
+import GluttonVisitor from './components/GluttonVisitor';
+import LiveAnnouncer from './components/LiveAnnouncer';
+import { useGluttonVisits } from './hooks/useGluttonVisits';
+import { GLUTTON_NAME, describeEaten, gluttonLook, recordShoo, recordStuffed, vetBill, type GluttonOutcome } from './utils/glutton';
+import { SPECIAL_GLUTTON, SPECIAL_GLUTTON_SWEATER, SPECIAL_GLUTTON_VAMPIRE } from './config/assetPaths';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
@@ -34,7 +39,9 @@ import { ICON_BEE, ICON_GUILDS } from './config/assetPaths';
 // Guild system imports
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
-import { awardGuildTokens } from './utils/guildCalculations';
+import { awardGuildTokens, awardWaxSeals, commitToGuild, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
+import { legacyResetSummary } from './utils/legacy';
+import { endLegacy } from './utils/legacyReset';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
 
 // Module-level bee context reference for dev tools
@@ -70,7 +77,7 @@ import AchievementNotification from './components/AchievementNotification';
 const DevTools = lazy(() => import('./components/DevTools'));
 import { PerformanceWrapper } from './components/PerformanceWrapper';
 import { useArchie } from './context/ArchieContext';
-import { BeeProvider, useBees } from './context/BeeContext';
+import { BeeProvider, useBees, type HoneySetters } from './context/BeeContext';
 import { useCanningSystem } from './hooks/useCanningSystem';
 import { GameContext } from './context/GameContext';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
@@ -95,7 +102,7 @@ import { PERMANENT_BONUS_ACHIEVEMENTS } from './data/achievements';
 import { PUMPKIN_ART } from './data/pumpkinEventData';
 import { loadGameStateWithCanning, startNewGame, type ExtendedGameState } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
-import type { Veggie, GameState, EventCategory } from './types/game';
+import type { Veggie, GameState, EventCategory, RecipeFilter } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
 import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
@@ -623,11 +630,12 @@ function useGame() {
  */
 interface BeesTabWrapperProps {
   farmTier: number;
-  season: string;
+  /** Day of the year */
+  day: number;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
-const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumber }) => {
+const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, day, formatNumber }) => {
   const beeContext = useBees();
   
   // Store bee context globally for dev tools access
@@ -642,7 +650,7 @@ const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, season, formatNumbe
     <BeesTab
       beeContext={beeContext}
       farmTier={farmTier}
-      season={season}
+      day={day}
       formatNumber={formatNumber}
     />
   );
@@ -769,15 +777,15 @@ function App() {
 
   // Load and manage UI preferences (uses pre-loaded state)
   const [uiPreferences, setUiPreferences] = useState<{
-    canningRecipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    canningRecipeFilter: RecipeFilter;
     canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
     canningCanMakeOnly: boolean;
   }>(() => {
     // Handle legacy saves that may have 'available' as the filter value
     const legacyFilter = loadedGameState?.uiPreferences?.canningRecipeFilter as string | undefined;
     const wasAvailable = legacyFilter === 'available';
-    const validFilters = ['all', 'simple', 'complex', 'gourmet', 'honey'];
-    const filter = (validFilters.includes(legacyFilter || '') ? legacyFilter : 'all') as 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    const validFilters: string[] = ['all', 'simple', 'complex', 'gourmet', 'honey', 'cellar'];
+    const filter = (validFilters.includes(legacyFilter || '') ? legacyFilter : 'all') as RecipeFilter;
     
     return {
       canningRecipeFilter: filter,
@@ -787,7 +795,7 @@ function App() {
   });
 
   // Handlers for updating UI preferences
-  const setCanningRecipeFilter = useCallback((filter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey') => {
+  const setCanningRecipeFilter = useCallback((filter: RecipeFilter) => {
     setUiPreferences(prev => ({ ...prev, canningRecipeFilter: filter }));
   }, []);
 
@@ -804,41 +812,24 @@ function App() {
   const goldenHoney = beeState?.goldenHoney || 0;
   const totalHoneyCollected = beeState?.totalHoneyCollected || 0;
 
-  // Setters for honey that update bee state
-  const createBeeStateUpdater = useCallback(
-    (key: 'regularHoney' | 'goldenHoney') =>
-      (value: number | ((prev: number) => number)) => {
-        setBeeState((prev: BeeState | null) => {
-          if (!prev) return prev;
-          const currentValue = typeof prev[key] === 'number' ? prev[key] : 0;
-          const nextValue = typeof value === 'function' ? (value as (prev: number) => number)(currentValue) : value;
-          return { ...prev, [key]: nextValue };
-        });
-      },
-    []
-  );
+  // Honey the Kitchen spends comes off the bees' own totals, through the bee provider's
+  // setters; the copy above then follows from the bees' next update
+  const beeHoneyRef = useRef<HoneySetters | null>(null);
+  const setRegularHoney = useCallback((value: SetStateAction<number>) => beeHoneyRef.current?.setRegularHoney(value), []);
+  const setGoldenHoney = useCallback((value: SetStateAction<number>) => beeHoneyRef.current?.setGoldenHoney(value), []);
 
-  const setRegularHoney = useMemo(() => createBeeStateUpdater('regularHoney'), [createBeeStateUpdater]);
-  const setGoldenHoney = useMemo(() => createBeeStateUpdater('goldenHoney'), [createBeeStateUpdater]);
+  // The bee upgrades owned, for the Kitchen's honey jars
+  const ownedBeeUpgrades = useMemo(
+    () => (beeState?.upgrades ?? []).filter(upgrade => upgrade.purchased).map(upgrade => upgrade.id),
+    [beeState?.upgrades]
+  );
 
   const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
 
   // Guild system handlers (needs day from useGame)
   const handleCommitToGuild = useCallback((guildId: GuildType) => {
-    setGuildState(prev => ({
-      ...prev,
-      committedGuild: guildId,
-      status: 'committed',
-      commitmentDay: day,
-      // Convert guild tokens to the committed guild's currency
-      guildCurrencies: {
-        ...prev.guildCurrencies,
-        [guildId]: prev.guildCurrencies[guildId] + prev.guildTokens
-      },
-      // Clear guild tokens after conversion
-      guildTokens: 0
-    }));
+    setGuildState(prev => commitToGuild(prev, guildId, day));
   }, [day, setGuildState]);
 
   const handlePurchaseGuildUpgrade = useCallback((upgradeId: string) => {
@@ -855,13 +846,12 @@ function App() {
     }
     
     // Calculate the cost based on current level
-    const currentLevel = guildState.upgradeLevels[upgradeId] ?? 0;
-    const cost = upgrade.baseCost * Math.pow(upgrade.costScaling, currentLevel);
-    
+    // Levels bought this Legacy plus levels kept from earlier ones
+    const currentLevel = getUpgradeLevel(guildState, upgradeId);
+    const cost = getGuildUpgradeCost(upgrade, currentLevel);
+
     // Check if already maxed
-    const isMaxed = upgrade.isOneTime 
-      ? guildState.purchasedUpgrades.includes(upgradeId)
-      : currentLevel >= upgrade.maxLevel;
+    const isMaxed = isGuildUpgradeMaxed(guildState, upgrade);
     
     if (isMaxed) {
       return;
@@ -869,8 +859,8 @@ function App() {
     
     // Check if player can afford it based on currency type
     let canAfford = false;
-    if (upgrade.currencyType === 'sigils') {
-      // Sigils are stored in guildCurrencies for the specific guild
+    if (upgrade.currencyType === 'sigils' || upgrade.currencyType === 'guildCurrency') {
+      // A guild's own currency (Sigils, Wax Seals) is stored in guildCurrencies
       const guildId = upgrade.guild;
       canAfford = guildState.guildCurrencies[guildId] >= cost;
     } else if (upgrade.currencyType === 'guildTokens') {
@@ -887,7 +877,7 @@ function App() {
     }
     
     // Deduct the cost based on currency type
-    if (upgrade.currencyType === 'sigils') {
+    if (upgrade.currencyType === 'sigils' || upgrade.currencyType === 'guildCurrency') {
       const guildId = upgrade.guild;
       setGuildState(prev => ({
         ...prev,
@@ -939,7 +929,7 @@ function App() {
         upgradeLevels: newLevels
       };
     });
-  }, [guildState.upgradeLevels, guildState.purchasedUpgrades, guildState.guildCurrencies, guildState.guildTokens, setGuildState, money, knowledge, setMoney, setKnowledge]);
+  }, [guildState, setGuildState, money, knowledge, setMoney, setKnowledge]);
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -1009,6 +999,10 @@ function App() {
   const handleHivesHarvested = useCallback((count: number) => {
     setGuildState(prev => awardGuildTokens(prev, 'beeHives', count, farmTier));
   }, [setGuildState, farmTier]);
+  // Finished batches pay committed Preservers their Wax Seals
+  const handleBatchesFinished = useCallback((batches: BatchCount) => {
+    setGuildState(prev => awardWaxSeals(prev, batches));
+  }, [setGuildState]);
 
   // Initialize canning system
   const {
@@ -1017,7 +1011,8 @@ function App() {
     completeCanning: _completeCanning, // Used internally by useCanningSystem for auto-collection
     purchaseUpgrade,
     canMakeRecipe,
-    toggleAutoCanning
+    toggleAutoCanning,
+    rushBatches
   } = useCanningSystem(
     // experience parameter removed - unused
     veggies, 
@@ -1038,8 +1033,27 @@ function App() {
     unlockedAchievementIds,
     guildState,
     isPaused,
-    handleGoodsCanned
+    handleGoodsCanned,
+    handleBatchesFinished,
+    ownedBeeUpgrades
   );
+
+  // Rush Batch: committed Preservers spend Wax Seals to finish every running batch now
+  const runningBatches = canningState.activeProcesses.filter(process => !process.completed).length;
+  const rushBatchCost = getRushBatchCost(runningBatches);
+  const rushBatchOwned = isCommittedTo(guildState, 'preservers') && hasRushBatch(guildState);
+  const canRushBatches = rushBatchOwned && runningBatches > 0 && guildState.guildCurrencies.preservers >= rushBatchCost;
+  const handleRushBatches = useCallback(() => {
+    if (!canRushBatches) return;
+    setGuildState(prev => ({
+      ...prev,
+      guildCurrencies: { ...prev.guildCurrencies, preservers: prev.guildCurrencies.preservers - rushBatchCost }
+    }));
+    rushBatches();
+  }, [canRushBatches, rushBatchCost, setGuildState, rushBatches]);
+  const rushBatch = useMemo(() => (
+    rushBatchOwned ? { cost: rushBatchCost, canRush: canRushBatches, onRush: handleRushBatches } : undefined
+  ), [rushBatchOwned, rushBatchCost, canRushBatches, handleRushBatches]);
 
   // Check if canning is unlocked (requires Farm Tier 3)
   // Memoized to prevent recalculation on every render
@@ -1145,6 +1159,46 @@ function App() {
     };
   }, [eventLogCallbacks, addEvent]);
 
+  // Dunkin, the Preservers' Glutton: visits committed Preservers and eats from the stash
+  const handleGluttonStuffed = useCallback((eaten: Record<string, number>) => {
+    setGuildState(prev => recordStuffed(prev, eaten));
+    addEvent('canning', `${GLUTTON_NAME} ate too much and won't leave`, {
+      details: `He ate ${describeEaten(eaten)}. Click him to send him home to the vet.`,
+      priority: 'important',
+      icon: SPECIAL_GLUTTON
+    });
+  }, [setGuildState, addEvent]);
+  const handleGluttonShoo = useCallback((outcome: GluttonOutcome) => {
+    if (outcome.vetBill > 0) setMoney(m => Math.max(0, m - outcome.vetBill));
+    setGuildState(prev => recordShoo(prev, outcome));
+    const ate = outcome.early ? 'He left before taking a bite.' : `He ate ${describeEaten(outcome.eaten)}.`;
+    addEvent('canning', outcome.stage === 'stuffed' ? `Sent ${GLUTTON_NAME} home to the vet` : `Shooed ${GLUTTON_NAME} out of the kitchen`, {
+      details: outcome.stage === 'stuffed'
+        ? `${ate} Vet bill $${formatNumber(outcome.vetBill)}, +${outcome.seals} Wax Seals`
+        : `${ate} +${outcome.seals} Wax Seals`,
+      icon: SPECIAL_GLUTTON
+    });
+  }, [setMoney, setGuildState, addEvent]);
+  const { visit: gluttonVisit, shoo: shooGlutton } = useGluttonVisits({
+    active: isCommittedTo(guildState, 'preservers'),
+    isPaused,
+    pantryLocked: hasPantryLock(guildState),
+    savedStuffed: guildState.glutton?.stuffed?.eaten,
+    crops: veggies,
+    setCrops: setVeggies,
+    money,
+    onStuffed: handleGluttonStuffed,
+    onShoo: handleGluttonShoo
+  });
+  const gluttonImage = {
+    sweater: SPECIAL_GLUTTON_SWEATER,
+    vampire: SPECIAL_GLUTTON_VAMPIRE,
+    everyday: SPECIAL_GLUTTON
+  }[gluttonLook({
+    christmasActive: christmasEvent?.isEventActive ?? false,
+    pumpkinActive: pumpkinEventEnabled && pumpkinEvent.isEventActive
+  })];
+
   // Everything that goes into a save. Autosave and export both use this, so an
   // exported file holds the full game, including guilds and achievements.
   const buildSaveState = useCallback((): ExtendedGameState | null => {
@@ -1192,12 +1246,37 @@ function App() {
   // Saves at most every 30 seconds, and always on page unload
   useAutoSave({ getGameState: buildSaveState });
 
+  // Legacy: what the End Legacy dialog shows, and the ending itself
+  const legacyReset = useMemo(() => legacyResetSummary({
+    farmTier,
+    maxPlots,
+    money,
+    knowledge,
+    experience,
+    daysThisLegacy: totalDaysElapsed,
+    cropsUnlocked: veggies.filter(v => v.unlocked).length,
+    recipesUnlocked: canningState?.recipes.filter(r => r.unlocked).length ?? 0,
+    canningUpgradeLevels: canningState?.upgrades.reduce((sum, u) => sum + u.level, 0) ?? 0,
+    canningExperience: canningState?.canningExperience ?? 0,
+    hives: beeState?.boxes.length ?? 0,
+    honey: beeState?.regularHoney ?? 0,
+    goldenHoney: beeState?.goldenHoney ?? 0,
+    beeUpgrades: beeState?.upgrades.filter(u => u.purchased || u.level > 0).length ?? 0,
+    achievements,
+    guildState
+  }), [farmTier, maxPlots, money, knowledge, experience, totalDaysElapsed, veggies, canningState, beeState, achievements, guildState]);
+  const handleEndLegacy = useCallback((pickedUnlock: string | null) => {
+    const current = buildSaveState();
+    if (current) endLegacy(current, pickedUnlock);
+  }, [buildSaveState]);
+
   // Check achievements periodically
   useEffect(() => {
     const veggiesUnlocked = veggies.filter(v => v.unlocked).length;
     const canningItemsTotal = canningState?.totalItemsCanned || 0;
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
     const pumpkinsSold = pumpkinEvent?.totalPumpkinsSold || 0;
+    const heaviestGiant = pumpkinEvent?.eventState.weighOff.personalBest ?? 0;
 
     checkAchievements({
       money,
@@ -1209,18 +1288,22 @@ function App() {
       totalHarvests,
       christmasTreesSold,
       pumpkinsSold,
+      heaviestGiant,
       beeState,
-      canningState
+      canningState,
+      guildState
     });
-  }, [veggies, canningState, christmasEvent, pumpkinEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState]);
+  }, [veggies, canningState, christmasEvent, pumpkinEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, guildState]);
 
   // A tab that's locked or out of season falls back to Growing: after a reset, when an
   // event ends, or when the tab remembered across a reload isn't open any more
+  // The Guilds tab opens at Tier 5, and earlier for a player carrying a Legacy, who has a Legacy box to see
+  const guildsTabOpen = farmTier >= GUILDS_UNLOCK_TIER || (guildState.legacy?.count ?? 0) > 0;
   const activeTabOpen = {
     growing: true,
     canning: canningUnlocked,
     bees: beeSystemEnabled && farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER,
-    guilds: farmTier >= GUILDS_UNLOCK_TIER,
+    guilds: guildsTabOpen,
     christmas: christmasEventEnabled && !!christmasEvent?.isEventActive,
     pumpkin: pumpkinEventEnabled && pumpkinEvent.isEventActive
   }[activeTab];
@@ -1323,16 +1406,11 @@ function App() {
     }
   }, [season, currentWeather, eventLog]);
   
-  const v = veggies[activeVeggie];
-  const growthMultiplier = getVeggieGrowthBonus(
-    v,
-    season,
-    currentWeather,
-    greenhouseOwned,
-    irrigationOwned,
-    guildState
+  // How fast each crop grows today, for the days to grow on the Growing tab's rows
+  const growthMultiplierOf = useCallback(
+    (crop: Veggie) => getVeggieGrowthBonus(crop, season, currentWeather, greenhouseOwned, irrigationOwned, guildState),
+    [season, currentWeather, greenhouseOwned, irrigationOwned, guildState]
   );
-  const daysToGrow = growthMultiplier > 0 ? Math.ceil(100 / growthMultiplier) : 0;
 
   // Track last seen timestamp to only show new bonuses
   const lastBonusTimestamp = useRef(0);
@@ -1402,6 +1480,7 @@ function App() {
       addEventLogEntry={eventLog.addEvent}
       isPaused={isPaused}
       onHivesHarvested={handleHivesHarvested}
+      honeySettersRef={beeHoneyRef}
     >
     <>
     {archieCharacterEnabled && (
@@ -1419,6 +1498,15 @@ function App() {
         isPaused={isPaused}
       />
     )}
+    {/* Screen readers hear toasts, unlocks and Dunkin from here */}
+    <LiveAnnouncer />
+    <GluttonVisitor
+      visit={gluttonVisit}
+      image={gluttonImage}
+      vetBill={vetBill(money)}
+      onShoo={shooGlutton}
+      formatNumber={formatNumber}
+    />
     <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
     {/* Skip link for keyboard navigation */}
     <a href="#main-content" className={styles.skipLink}>
@@ -1500,6 +1588,11 @@ function App() {
                 <img src={ICON_CANNING} alt="" aria-hidden="true" className={canningUnlocked ? styles.tabIcon : styles.tabIconFaded} />
                 Canning
               </div>
+              {!canningUnlocked && (
+                <div className={styles.tabUnlockHint}>
+                  Req: Tier 3
+                </div>
+              )}
             </button>
             {beeSystemEnabled && (
               <button
@@ -1536,17 +1629,17 @@ function App() {
               id="tab-guilds"
               aria-selected={activeTab === 'guilds'}
               aria-controls="panel-guilds"
-              aria-disabled={farmTier < GUILDS_UNLOCK_TIER}
-              onClick={() => farmTier >= GUILDS_UNLOCK_TIER ? setActiveTab('guilds') : null}
-              disabled={farmTier < GUILDS_UNLOCK_TIER}
+              aria-disabled={!guildsTabOpen}
+              onClick={() => guildsTabOpen ? setActiveTab('guilds') : null}
+              disabled={!guildsTabOpen}
               className={
-                farmTier < GUILDS_UNLOCK_TIER
+                !guildsTabOpen
                   ? styles.tabButtonGuildsLocked
                   : activeTab === 'guilds'
                     ? styles.tabButtonGuildsActive
                     : styles.tabButtonGuilds
               }
-              title={farmTier >= GUILDS_UNLOCK_TIER ? 'Guild System' : `Guilds unlock at Farm Tier ${GUILDS_UNLOCK_TIER}`}
+              title={farmTier >= GUILDS_UNLOCK_TIER ? 'Guild System' : guildsTabOpen ? `Your Legacy; the guilds unlock at Farm Tier ${GUILDS_UNLOCK_TIER}` : `Guilds unlock at Farm Tier ${GUILDS_UNLOCK_TIER}`}
             >
               <div className={styles.tabButtonContent}>
                 <img src={ICON_GUILDS} alt="" aria-hidden="true" className={farmTier >= GUILDS_UNLOCK_TIER ? styles.tabIcon : styles.tabIconFaded} />
@@ -1627,8 +1720,7 @@ function App() {
                 globalAutoPurchaseTimer={globalAutoPurchaseTimer}
                 heirloomOwned={heirloomOwned}
                 beeYieldBonus={beeYieldBonus}
-                daysToGrow={daysToGrow}
-                growthMultiplier={growthMultiplier}
+                growthMultiplierOf={growthMultiplierOf}
                 setActiveVeggie={setActiveVeggie}
                 handleHarvest={handleHarvest}
                 handleToggleSell={handleToggleSell}
@@ -1695,6 +1787,8 @@ function App() {
             canMakeRecipe={canMakeRecipe}
             purchaseUpgrade={purchaseUpgrade}
             toggleAutoCanning={toggleAutoCanning}
+            guildState={guildState}
+            rushBatch={rushBatch}
             recipeFilter={uiPreferences.canningRecipeFilter}
             recipeSort={uiPreferences.canningRecipeSort}
             canMakeOnly={uiPreferences.canningCanMakeOnly}
@@ -1714,7 +1808,7 @@ function App() {
           className={activeTab !== 'bees' ? styles.tabPanelHidden : undefined}
         >
         <PerformanceWrapper id="BeesTab">
-          <BeesTabWrapper farmTier={farmTier} season={season} formatNumber={formatNumber} />
+          <BeesTabWrapper farmTier={farmTier} day={day} formatNumber={formatNumber} />
         </PerformanceWrapper>
         </div>
       )}
@@ -1738,6 +1832,8 @@ function App() {
             onDismissIntro={handleDismissGuildIntro}
             onCommitToGuild={handleCommitToGuild}
             onPurchaseUpgrade={handlePurchaseGuildUpgrade}
+            onEndLegacy={handleEndLegacy}
+            legacyReset={legacyReset}
             formatNumber={formatNumber}
           />
         </PerformanceWrapper>

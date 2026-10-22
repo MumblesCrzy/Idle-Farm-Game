@@ -88,7 +88,7 @@ describe('getBatchRewards', () => {
 
   it('pays the sale price, two knowledge and ten experience per ingredient', () => {
     expect(getBatchRewards(radish, false, [], crops, false, undefined, () => 0.99))
-      .toEqual({ money: 5, knowledge: 2, experience: 10, items: 1 });
+      .toEqual({ money: 5, knowledge: 2, experience: 10, items: 1, prize: false });
   });
 
   it('gives a tenth of the knowledge and experience for batches the Canner started', () => {
@@ -99,7 +99,7 @@ describe('getBatchRewards', () => {
 
   it('doubles everything when Heirloom Touch adds a bonus item', () => {
     const rewards = getBatchRewards(radish, false, [upgrade('preservation_mastery', 50)], crops, false, undefined, () => 0.1);
-    expect(rewards).toEqual({ money: 10, knowledge: 4, experience: 20, items: 2 });
+    expect(rewards).toEqual({ money: 10, knowledge: 4, experience: 20, items: 2, prize: false });
   });
 
   it('raises the price with Family Recipe and the ingredients\' Better Seeds', () => {

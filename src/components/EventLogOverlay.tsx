@@ -226,8 +226,8 @@ const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
           </button>
         </div>
 
-        {/* Event List */}
-        <div className={styles.eventList} ref={logListRef} role="log" aria-live="polite">
+        {/* Event List: it takes focus, so the keyboard can scroll it */}
+        <div className={styles.eventList} ref={logListRef} role="log" aria-live="polite" aria-label="Events" tabIndex={0}>
           {filteredEntries.length === 0 ? (
             <div className={styles.emptyState}>
               {hasActiveFilters ? (

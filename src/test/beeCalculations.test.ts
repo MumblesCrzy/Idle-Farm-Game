@@ -1,404 +1,150 @@
 /**
  * Bee System Calculation Tests
- * 
- * Tests for bee system calculations including crop yield bonus,
- * honey production rates, and upgrade effects.
+ *
+ * The bee rules the game runs on, from utils/beeProduction.ts: the crop bonus, how long a
+ * batch takes, how much honey it holds, the Golden Honey chance, and hive prices; plus the
+ * upgrade list and the bee constants.
  */
 
 import { describe, it, expect } from 'vitest';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
+import { BEE_CONSTANTS } from '../config/gameConstants';
+import { batchDays, beeLevels, cropBonus, goldenChance, hivePrice, lbsPerBatch } from '../utils/beeProduction';
 import type { BeeUpgrade } from '../types/bees';
 
-// Bee system constants (mirrored from BeeContext)
-const BEE_CONSTANTS = {
-  BASE_PRODUCTION_TIME: 132,
-  STARTING_BEE_BOXES: 2,
-  MAX_BEE_BOXES: 30,
-  BASE_YIELD_BONUS_PER_BOX: 0.005,
-  MAX_YIELD_BONUS: 1.0,
-  UNLOCK_FARM_TIER: 4,
-  BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4,
-} as const;
+/** The upgrade list with levels: a number for a repeatable upgrade, true for a bought one */
+const withLevels = (levels: Record<string, number | boolean>): BeeUpgrade[] => createInitialBeeUpgrades().map(upgrade => {
+  const value = levels[upgrade.id];
+  if (value === undefined) return upgrade;
+  return typeof value === 'number' ? { ...upgrade, level: value, purchased: value > 0 } : { ...upgrade, purchased: value };
+});
 
-// Pure calculation functions (extracted from BeeContext for testing)
-
-/**
- * Calculate total crop yield bonus from bee boxes
- */
-function calculateYieldBonus(boxCount: number, upgrades: BeeUpgrade[]): number {
-  let bonus = boxCount * BEE_CONSTANTS.BASE_YIELD_BONUS_PER_BOX;
-
-  // Apply Meadow Magic upgrade (+0.5% per level per box)
-  const meadowMagic = upgrades.find(u => u.id === 'meadow_magic');
-  if (meadowMagic && meadowMagic.level > 0) {
-    const additionalBonusPerBox = meadowMagic.level * 0.005; // 0.5% per level
-    bonus += boxCount * additionalBonusPerBox;
-  }
-
-  // Apply Flower Power upgrade (+0.2% per box)
-  const flowerPower = upgrades.find(u => u.id === 'flower_power');
-  if (flowerPower && flowerPower.purchased) {
-    bonus += boxCount * 0.002; // +0.2% per box
-  }
-
-  return bonus;
-}
-
-/**
- * Calculate honey production time considering upgrades
- */
-function calculateProductionTime(upgrades: BeeUpgrade[]): number {
-  let time = BEE_CONSTANTS.BASE_PRODUCTION_TIME;
-
-  // Apply Busy Bees upgrade (-1% per level)
-  const busyBees = upgrades.find(u => u.id === 'busy_bees');
-  if (busyBees && busyBees.level > 0) {
-    const reduction = busyBees.level * 0.01; // 1% per level
-    time *= (1 - reduction);
-  }
-
-  // Apply Nectar Efficiency upgrade (-10%)
-  const nectarEfficiency = upgrades.find(u => u.id === 'nectar_efficiency');
-  if (nectarEfficiency && nectarEfficiency.purchased) {
-    time *= 0.9; // 10% reduction
-  }
-
-  // Apply Swift Gatherers upgrade (-15%)
-  const swiftGatherers = upgrades.find(u => u.id === 'swift_gatherers');
-  if (swiftGatherers && swiftGatherers.purchased) {
-    time *= 0.85; // 15% reduction
-  }
-
-  return Math.max(time, 10); // Minimum 10 second production time
-}
-
-/**
- * Calculate golden honey chance
- */
-function calculateGoldenHoneyChance(upgrades: BeeUpgrade[]): number {
-  // Start with 1% base chance
-  let chance = 0.01;
-
-  // Check for Royal Jelly upgrade (+1%)
-  const royalJelly = upgrades.find(u => u.id === 'royal_jelly' && u.purchased);
-  if (royalJelly) {
-    chance += 0.01;
-  }
-
-  // Check for Queen's Blessing upgrade (+3%)
-  const queensBlessing = upgrades.find(u => u.id === 'queens_blessing' && u.purchased);
-  if (queensBlessing) {
-    chance += 0.03;
-  }
-
-  // Check for Hexcomb Engineering upgrade (+2%)
-  const hexcombEngineering = upgrades.find(u => u.id === 'hexcomb_engineering' && u.purchased);
-  if (hexcombEngineering) {
-    chance += 0.02;
-  }
-
-  // Check for Golden Touch upgrade (+5%)
-  const goldenTouch = upgrades.find(u => u.id === 'golden_touch' && u.purchased);
-  if (goldenTouch) {
-    chance += 0.05;
-  }
-
-  return chance;
-}
-
-/**
- * Calculate bee box purchase cost with tiered scaling
- * Cost increases more significantly every 5 boxes
- */
-function calculateBeeBoxCost(boxCount: number): number {
-  const baseCost = 150;
-  const baseIncrement = 75;
-  
-  // Calculate which tier (0-4 = tier 0, 5-9 = tier 1, etc.)
-  const tier = Math.floor(boxCount / 5);
-  
-  // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
-  const tierMultiplier = Math.pow(2, tier);
-  
-  // Calculate cost with tier-based scaling
-  // Within each tier, cost still increases linearly, but the increment grows with tier
-  const withinTierIndex = boxCount % 5;
-  
-  // Sum up costs from previous tiers
-  let totalCost = baseCost;
-  for (let t = 0; t < tier; t++) {
-    const prevTierMultiplier = Math.pow(2, t);
-    // Each tier has 5 boxes worth of increments
-    totalCost += baseIncrement * prevTierMultiplier * 5;
-  }
-  
-  // Add current tier's partial increment
-  totalCost += baseIncrement * tierMultiplier * withinTierIndex;
-  
-  return Math.floor(totalCost);
-}
+const levelsOf = (levels: Record<string, number | boolean> = {}) => beeLevels(withLevels(levels));
 
 describe('Bee System Calculations', () => {
   describe('createInitialBeeUpgrades', () => {
-    it('should create all bee upgrades with default values', () => {
+    it('creates every bee upgrade unbought', () => {
       const upgrades = createInitialBeeUpgrades();
-      
-      expect(upgrades.length).toBeGreaterThan(0);
-      expect(upgrades.every(u => u.purchased === false || u.level === 0)).toBe(true);
+      expect(upgrades).toHaveLength(11);
+      expect(upgrades.every(u => !u.purchased && u.level === 0)).toBe(true);
     });
 
-    it('should include production upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const productionUpgrades = upgrades.filter(u => u.category === 'production');
-      
-      expect(productionUpgrades.length).toBeGreaterThan(0);
-      expect(productionUpgrades.some(u => u.id === 'busy_bees')).toBe(true);
-    });
-
-    it('should include yield upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const yieldUpgrades = upgrades.filter(u => u.category === 'yield');
-      
-      expect(yieldUpgrades.length).toBeGreaterThan(0);
-      expect(yieldUpgrades.some(u => u.id === 'meadow_magic')).toBe(true);
-    });
-
-    it('should include quality upgrades for golden honey', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const qualityUpgrades = upgrades.filter(u => u.category === 'quality');
-      
-      expect(qualityUpgrades.length).toBeGreaterThan(0);
-      expect(qualityUpgrades.some(u => u.id === 'royal_jelly')).toBe(true);
+    it('includes the production, yield and Golden Honey upgrades', () => {
+      const ids = createInitialBeeUpgrades().map(u => u.id);
+      expect(ids).toEqual(expect.arrayContaining(['busy_bees', 'meadow_magic', 'royal_jelly', 'golden_touch', 'nectar_efficiency', 'swift_gatherers']));
     });
   });
 
-  describe('calculateYieldBonus', () => {
-    it('should return 0 with no boxes', () => {
-      const upgrades = createInitialBeeUpgrades();
-      expect(calculateYieldBonus(0, upgrades)).toBe(0);
+  describe('cropBonus', () => {
+    it('is 0 with no hives', () => {
+      expect(cropBonus(0, levelsOf())).toBe(0);
     });
 
-    it('should calculate base yield bonus correctly', () => {
-      const upgrades = createInitialBeeUpgrades();
-      
-      // 1 box = 0.5% bonus
-      expect(calculateYieldBonus(1, upgrades)).toBeCloseTo(0.005);
-      
-      // 10 boxes = 5% bonus
-      expect(calculateYieldBonus(10, upgrades)).toBeCloseTo(0.05);
-      
-      // 20 boxes = 10% bonus
-      expect(calculateYieldBonus(20, upgrades)).toBeCloseTo(0.1);
+    it('gives 0.5% a hive', () => {
+      expect(cropBonus(1, levelsOf())).toBeCloseTo(0.005);
+      expect(cropBonus(20, levelsOf())).toBeCloseTo(0.1);
     });
 
-    it('should include Meadow Magic upgrade bonus', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const meadowMagic = upgrades.find(u => u.id === 'meadow_magic')!;
-      meadowMagic.level = 5; // +0.5% per level per box
-
-      // 10 boxes: base 5% + meadow magic (5 levels × 0.5% × 10 boxes) = 5% + 25% = 30%
-      expect(calculateYieldBonus(10, upgrades)).toBeCloseTo(0.30);
+    it('adds 0.5% a hive for each level of Meadow Magic, and 0.2% a hive for Flower Power', () => {
+      expect(cropBonus(10, levelsOf({ meadow_magic: 2 }))).toBeCloseTo(0.15);
+      expect(cropBonus(10, levelsOf({ flower_power: true }))).toBeCloseTo(0.07);
+      expect(cropBonus(10, levelsOf({ meadow_magic: 2, flower_power: true }))).toBeCloseTo(0.17);
     });
 
-    it('should include Flower Power upgrade bonus', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const flowerPower = upgrades.find(u => u.id === 'flower_power')!;
-      flowerPower.purchased = true;
-
-      // 10 boxes: base 5% + flower power (10 × 0.2%) = 5% + 2% = 7%
-      expect(calculateYieldBonus(10, upgrades)).toBeCloseTo(0.07);
-    });
-
-    it('should combine multiple upgrade bonuses', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const meadowMagic = upgrades.find(u => u.id === 'meadow_magic')!;
-      const flowerPower = upgrades.find(u => u.id === 'flower_power')!;
-      
-      meadowMagic.level = 5;
-      flowerPower.purchased = true;
-
-      // 10 boxes: base 5% + meadow magic 25% + flower power 2% = 32%
-      expect(calculateYieldBonus(10, upgrades)).toBeCloseTo(0.32);
+    it('has no ceiling: 30 hives reach +321% with Meadow Magic 20 and Flower Power', () => {
+      expect(cropBonus(30, levelsOf({ meadow_magic: 11, flower_power: true }))).toBeCloseTo(1.86);
+      expect(cropBonus(30, levelsOf({ meadow_magic: 20, flower_power: true }))).toBeCloseTo(3.21);
     });
   });
 
-  describe('calculateProductionTime', () => {
-    it('should return base production time with no upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      expect(calculateProductionTime(upgrades)).toBe(BEE_CONSTANTS.BASE_PRODUCTION_TIME);
+  describe('batchDays', () => {
+    it('is 132 days with no upgrades', () => {
+      expect(batchDays(levelsOf(), 0)).toBe(BEE_CONSTANTS.BASE_PRODUCTION_TIME);
     });
 
-    it('should apply Busy Bees upgrade reduction', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const busyBees = upgrades.find(u => u.id === 'busy_bees')!;
-      busyBees.level = 10; // -10% time
-
-      const expectedTime = BEE_CONSTANTS.BASE_PRODUCTION_TIME * 0.9;
-      expect(calculateProductionTime(upgrades)).toBeCloseTo(expectedTime);
+    it('is 1% faster a level of Busy Bees', () => {
+      expect(batchDays(levelsOf({ busy_bees: 10 }), 0)).toBeCloseTo(120);
     });
 
-    it('should apply Nectar Efficiency upgrade', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const nectarEfficiency = upgrades.find(u => u.id === 'nectar_efficiency')!;
-      nectarEfficiency.purchased = true;
-
-      const expectedTime = BEE_CONSTANTS.BASE_PRODUCTION_TIME * 0.9;
-      expect(calculateProductionTime(upgrades)).toBeCloseTo(expectedTime);
+    it('takes 15% less time with Swift Gatherers', () => {
+      expect(batchDays(levelsOf({ swift_gatherers: true }), 0)).toBeCloseTo(112.2);
     });
 
-    it('should apply Swift Gatherers upgrade', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const swiftGatherers = upgrades.find(u => u.id === 'swift_gatherers')!;
-      swiftGatherers.purchased = true;
-
-      const expectedTime = BEE_CONSTANTS.BASE_PRODUCTION_TIME * 0.85;
-      expect(calculateProductionTime(upgrades)).toBeCloseTo(expectedTime);
+    it('is faster again while the Beekeeper works', () => {
+      expect(batchDays(levelsOf(), 0.2)).toBeCloseTo(110);
     });
 
-    it('should stack multiple production upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const busyBees = upgrades.find(u => u.id === 'busy_bees')!;
-      const nectarEfficiency = upgrades.find(u => u.id === 'nectar_efficiency')!;
-      const swiftGatherers = upgrades.find(u => u.id === 'swift_gatherers')!;
-      
-      busyBees.level = 20; // -20%
-      nectarEfficiency.purchased = true; // -10%
-      swiftGatherers.purchased = true; // -15%
-
-      // 132 * 0.8 * 0.9 * 0.85 = 80.78
-      const expectedTime = BEE_CONSTANTS.BASE_PRODUCTION_TIME * 0.8 * 0.9 * 0.85;
-      expect(calculateProductionTime(upgrades)).toBeCloseTo(expectedTime);
-    });
-
-    it('should enforce minimum production time of 10 seconds', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const busyBees = upgrades.find(u => u.id === 'busy_bees')!;
-      busyBees.level = 100; // Would be -100%, but should be capped
-
-      expect(calculateProductionTime(upgrades)).toBe(10);
+    it('stacks all three', () => {
+      // 132 ÷ 1.32 × 0.85 ÷ 1.40
+      expect(batchDays(levelsOf({ busy_bees: 32, swift_gatherers: true }), 0.4)).toBeCloseTo(60.71, 2);
     });
   });
 
-  describe('calculateGoldenHoneyChance', () => {
-    it('should have 1% base chance with no upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      expect(calculateGoldenHoneyChance(upgrades)).toBe(0.01);
+  describe('lbsPerBatch', () => {
+    it('is 15 lbs, 5% more a level of Super Frames, rounded', () => {
+      expect(lbsPerBatch(levelsOf())).toBe(15);
+      expect(lbsPerBatch(levelsOf({ hexcomb_engineering: 2 }))).toBe(17);
     });
 
-    it('should add Royal Jelly bonus (+1%)', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const royalJelly = upgrades.find(u => u.id === 'royal_jelly')!;
-      royalJelly.purchased = true;
-
-      expect(calculateGoldenHoneyChance(upgrades)).toBe(0.02);
-    });
-
-    it('should add Queen\'s Blessing bonus (+3%)', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const queensBlessing = upgrades.find(u => u.id === 'queens_blessing')!;
-      queensBlessing.purchased = true;
-
-      expect(calculateGoldenHoneyChance(upgrades)).toBe(0.04);
-    });
-
-    it('should add Hexcomb Engineering bonus (+2%)', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const hexcombEngineering = upgrades.find(u => u.id === 'hexcomb_engineering')!;
-      hexcombEngineering.purchased = true;
-
-      expect(calculateGoldenHoneyChance(upgrades)).toBe(0.03);
-    });
-
-    it('should add Golden Touch bonus (+5%)', () => {
-      const upgrades = createInitialBeeUpgrades();
-      const goldenTouch = upgrades.find(u => u.id === 'golden_touch')!;
-      goldenTouch.purchased = true;
-
-      expect(calculateGoldenHoneyChance(upgrades)).toBeCloseTo(0.06);
-    });
-
-    it('should stack all golden honey upgrades', () => {
-      const upgrades = createInitialBeeUpgrades();
-      
-      const royalJelly = upgrades.find(u => u.id === 'royal_jelly')!;
-      const queensBlessing = upgrades.find(u => u.id === 'queens_blessing')!;
-      const hexcombEngineering = upgrades.find(u => u.id === 'hexcomb_engineering')!;
-      const goldenTouch = upgrades.find(u => u.id === 'golden_touch')!;
-      
-      royalJelly.purchased = true;
-      queensBlessing.purchased = true;
-      hexcombEngineering.purchased = true;
-      goldenTouch.purchased = true;
-
-      // 1% base + 1% + 3% + 2% + 5% = 12%
-      expect(calculateGoldenHoneyChance(upgrades)).toBeCloseTo(0.12);
+    it('holds 10% more with Nectar Efficiency', () => {
+      expect(lbsPerBatch(levelsOf({ nectar_efficiency: true }))).toBe(17);
+      expect(lbsPerBatch(levelsOf({ hexcomb_engineering: 14, nectar_efficiency: true }))).toBe(27);
     });
   });
 
-  describe('calculateBeeBoxCost', () => {
-    it('should calculate first box cost correctly', () => {
-      expect(calculateBeeBoxCost(0)).toBe(150);
+  describe('goldenChance', () => {
+    it('is 1% with no upgrades', () => {
+      expect(goldenChance(levelsOf())).toBe(0.01);
     });
 
-    it('should calculate tier 0 costs correctly (boxes 0-4)', () => {
-      expect(calculateBeeBoxCost(0)).toBe(150);  // Base cost
-      expect(calculateBeeBoxCost(1)).toBe(225);  // 150 + 75*1
-      expect(calculateBeeBoxCost(2)).toBe(300);  // 150 + 75*2
-      expect(calculateBeeBoxCost(3)).toBe(375);  // 150 + 75*3
-      expect(calculateBeeBoxCost(4)).toBe(450);  // 150 + 75*4
+    it('is 2% with Royal Jelly', () => {
+      expect(goldenChance(levelsOf({ royal_jelly: true }))).toBe(0.02);
     });
 
-    it('should jump costs at tier 1 (boxes 5-9)', () => {
-      // Tier 1: base + tier0 sum (75*5=375) + tier1 increment (150 per box)
-      expect(calculateBeeBoxCost(5)).toBe(525);  // 150 + 375 + 0
-      expect(calculateBeeBoxCost(6)).toBe(675);  // 150 + 375 + 150*1
-      expect(calculateBeeBoxCost(7)).toBe(825);  // 150 + 375 + 150*2
-      expect(calculateBeeBoxCost(8)).toBe(975);  // 150 + 375 + 150*3
-      expect(calculateBeeBoxCost(9)).toBe(1125); // 150 + 375 + 150*4
+    it('doubles with Queen\'s Blessing', () => {
+      expect(goldenChance(levelsOf({ royal_jelly: true, queens_blessing: true }))).toBe(0.04);
     });
 
-    it('should have larger jumps at higher tiers', () => {
-      // Tier 2: base + tier0 sum (375) + tier1 sum (150*5=750) + tier2 increment (300 per box)
-      expect(calculateBeeBoxCost(10)).toBe(1275); // 150 + 375 + 750 + 0
-      expect(calculateBeeBoxCost(15)).toBe(2775); // Start of tier 3 (increment 600)
-      expect(calculateBeeBoxCost(20)).toBe(5775); // Start of tier 4 (increment 1200)
-      expect(calculateBeeBoxCost(25)).toBe(11775); // Start of tier 5 (increment 2400)
+    it('adds 2% with Golden Touch, after the doubling', () => {
+      expect(goldenChance(levelsOf({ royal_jelly: true, queens_blessing: true, golden_touch: true }))).toBeCloseTo(0.06);
+    });
+  });
+
+  describe('hivePrice', () => {
+    it('starts at 150 honey and rises 75 a hive through the first five', () => {
+      expect([0, 1, 2, 3, 4].map(hivePrice)).toEqual([150, 225, 300, 375, 450]);
     });
 
-    it('should scale cost exponentially by tier', () => {
-      // Difference between tier boundaries shows increasing costs
-      const tier0End = calculateBeeBoxCost(4);
-      const tier1Start = calculateBeeBoxCost(5);
-      const tier1End = calculateBeeBoxCost(9);
-      const tier2Start = calculateBeeBoxCost(10);
-      
-      // Jump from tier 0 to tier 1
-      expect(tier1Start - tier0End).toBe(75);
-      // Jump from tier 1 to tier 2
-      expect(tier2Start - tier1End).toBe(150);
+    it('rises 150 a hive through the next five', () => {
+      expect([5, 6, 7, 8, 9].map(hivePrice)).toEqual([525, 675, 825, 975, 1125]);
+    });
+
+    it('doubles its step with each set of five', () => {
+      expect(hivePrice(10)).toBe(1275);
+      expect(hivePrice(15)).toBe(2775);
+      expect(hivePrice(20)).toBe(5775);
+      expect(hivePrice(25)).toBe(11775);
+      expect(hivePrice(29)).toBe(21375);
     });
   });
 
   describe('Bee Constants', () => {
-    it('should have reasonable base production time', () => {
-      expect(BEE_CONSTANTS.BASE_PRODUCTION_TIME).toBeGreaterThan(60);
-      expect(BEE_CONSTANTS.BASE_PRODUCTION_TIME).toBeLessThan(300);
+    it('makes a batch every 132 days', () => {
+      expect(BEE_CONSTANTS.BASE_PRODUCTION_TIME).toBe(132);
     });
 
-    it('should start with 2 bee boxes', () => {
+    it('starts with 2 hives and allows 30', () => {
       expect(BEE_CONSTANTS.STARTING_BEE_BOXES).toBe(2);
-    });
-
-    it('should have max 30 bee boxes', () => {
       expect(BEE_CONSTANTS.MAX_BEE_BOXES).toBe(30);
     });
 
-    it('should unlock at farm tier 4', () => {
+    it('opens bees at Farm Tier 4, and the Beekeeper at 4 hives', () => {
       expect(BEE_CONSTANTS.UNLOCK_FARM_TIER).toBe(4);
+      expect(BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES).toBe(4);
     });
 
-    it('should unlock beekeeper assistant at 4 boxes', () => {
-      expect(BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES).toBe(4);
+    it('has no cap on the crop bonus', () => {
+      expect('MAX_YIELD_BONUS' in BEE_CONSTANTS).toBe(false);
     });
   });
 });

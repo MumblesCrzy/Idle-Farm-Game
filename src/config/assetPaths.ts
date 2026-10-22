@@ -24,6 +24,7 @@ export const ICON_DETAIL = './Detail.png';
 export const ICON_COFFEE = './Coffee Mug.png';
 export const ICON_FARM_TIER = './Farm Tier.png';
 export const ICON_SIGIL = './Sigil.png'; // Growers Guild currency
+export const ICON_WAX_SEAL = './Wax Seal.png'; // Preservers Guild currency
 export const ICON_GUILD_TOKEN = './Guild Token.png'; // Earned before committing to a guild
 export const ICON_RITUAL_HARVEST = './Ritual Harvest.png';
 export const ICON_BLESSED_CROP = './Blessed Crop.png';
@@ -164,9 +165,14 @@ export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer 256.png';
 export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater 256.png';
 export const SPECIAL_ARCHIE_FALL_SWEATER = './Archie Fall Sweater 256.png';
 export const SPECIAL_ARCHIE_WARLOCK = './Archie Warlock Costume 256.png';
-// Art for the itch.io page, not the game: the build leaves both out of dist
+// Dunkin, the Preservers' Glutton: 256 px copies of the user's art, like Archie's
+export const SPECIAL_GLUTTON = './Glutton 256.png';
+export const SPECIAL_GLUTTON_SWEATER = './Glutton Sweater 256.png';
+export const SPECIAL_GLUTTON_VAMPIRE = './Glutton Halloween Vampire 256.png';
+// Art for the itch.io page, not the game: the build leaves these out of dist
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
+export const SPECIAL_BANNER = './Banner.png'; // The page banner, set in itch's Edit Theme
 
 // Bee System Upgrade Icons
 export const BEE_BUSY_BEES = './Busy Bees.png';
@@ -361,10 +367,14 @@ export const ALL_IMAGES = [
   SPECIAL_ARCHIE_SWEATER,
   SPECIAL_ARCHIE_FALL_SWEATER,
   SPECIAL_ARCHIE_WARLOCK,
+  SPECIAL_GLUTTON,
+  SPECIAL_GLUTTON_SWEATER,
+  SPECIAL_GLUTTON_VAMPIRE,
 
   // Farm and guild icons
   ICON_FARM_TIER,
   ICON_SIGIL,
+  ICON_WAX_SEAL,
   ICON_GUILD_TOKEN,
   ICON_RITUAL_HARVEST,
   ICON_BLESSED_CROP,

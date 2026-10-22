@@ -76,7 +76,7 @@ const DEFAULT_CANNING_UPGRADES = [
     baseCost: 500,
     upgradeCostScaling: 1.5,
     costCurrency: 'money' as const,
-    maxLevel: 14,
+    maxLevel: 15,
     effect: 1,
     unlocked: true
   },

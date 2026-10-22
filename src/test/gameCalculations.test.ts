@@ -55,6 +55,15 @@ describe('formatNumber', () => {
     expect(formatNumber(1234567, 3)).toBe('1.235M');
   });
 
+  it('keeps the zeros of a whole number when there are no decimal places', () => {
+    expect(formatNumber(50000, 0)).toBe('50K');
+    expect(formatNumber(110000, 0)).toBe('110K');
+    expect(formatNumber(10000, 0)).toBe('10K');
+    expect(formatNumber(100000, 0)).toBe('100K');
+    expect(formatNumber(60363460, 0)).toBe('60M');
+    expect(formatNumber(20, 0)).toBe('20');
+  });
+
   it('should remove trailing zeros', () => {
     expect(formatNumber(1000)).toBe('1K');
     expect(formatNumber(5000000)).toBe('5M');

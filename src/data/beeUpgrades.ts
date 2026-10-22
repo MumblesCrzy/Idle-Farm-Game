@@ -16,7 +16,8 @@ import {
   BEE_GOLDEN_TOUCH,
   BEE_NECTAR_EFFICIENCY,
   BEE_FLOWER_POWER,
-  BEE_SWIFT_GATHERERS
+  BEE_SWIFT_GATHERERS,
+  ICON_CANNING
 } from '../config/assetPaths';
 import { BEE_UPGRADE_COSTS } from '../config/gameConstants';
 
@@ -203,6 +204,21 @@ export const INITIAL_BEE_UPGRADES: Omit<BeeUpgrade, 'purchased' | 'level' | 'eff
     unlocked: false,
     requiredUpgrades: ['busy_bees'],
     requiredBoxes: 30,
+  },
+
+  {
+    id: 'honey_jars',
+    name: 'Honey Jars',
+    description: 'Jar honey straight from the hive. The Kitchen can make Jars of Honey and Jars of Golden Honey.',
+    category: 'kitchen',
+    icon: ICON_CANNING,
+    cost: BEE_UPGRADE_COSTS.honeyJars,
+    baseCost: BEE_UPGRADE_COSTS.honeyJars,
+    costCurrency: 'regularHoney',
+    effectType: 'kitchenRecipes',
+    effectValue: 0,
+    repeatable: false,
+    unlocked: true,
   },
 ];
 

@@ -16,7 +16,7 @@ import ProgressBar from './ProgressBar';
 import type { UsePumpkinEventReturn } from '../hooks/usePumpkinEvent';
 import type { FairPlacing, GiantPumpkin, WeighOffResult } from '../types/pumpkinEvent';
 import { PUMPKIN_ART, PUMPKIN_EVENT_CONSTANTS, PUMPKIN_VARIETIES } from '../data/pumpkinEventData';
-import { floorCandyCorn, getGiantPrice, getSaleMultiplier, ownsUpgrade, rivalBaseWeight } from '../utils/pumpkinPricing';
+import { championSeedBonus, floorCandyCorn, getGiantPrice, getSaleMultiplier, ownsUpgrade, rivalBaseWeight } from '../utils/pumpkinPricing';
 import styles from './CountyFairTab.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
@@ -316,6 +316,13 @@ const CountyFairTab: FC<CountyFairTabProps> = memo(({ event, formatNumber }) => 
             <div className={`${styles.trophyStat} ${styles.trophyStatWide}`}>
               <dt>Personal best</dt>
               <dd>{weighOff.personalBest > 0 ? formatPounds(weighOff.personalBest) : '-'}</dd>
+            </div>
+            <div
+              className={`${styles.trophyStat} ${styles.trophyStatWide}`}
+              title={`Seeds saved from your winners. Each first place adds ${Math.round(C.CHAMPION_SEED_BONUS_PER_WIN * 100)}% to the weight of future Atlantic Giants, up to ${Math.round(C.CHAMPION_SEED_MAX_BONUS * 100)}%.`}
+            >
+              <dt>Champion seeds</dt>
+              <dd>+{Math.round(championSeedBonus(ribbons.first) * 100)}% giant weight</dd>
             </div>
             <div className={styles.trophyStat}>
               <dt>Fairs entered</dt>

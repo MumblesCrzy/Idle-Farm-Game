@@ -145,8 +145,26 @@ describe('FarmStandTab', () => {
     fireEvent.click(claim);
 
     expect(candyCorn()).toBe(PUMPKIN_EVENT_CONSTANTS.DAILY_BONUS);
-    expect(screen.getByRole('button', { name: /Claim daily bonus/ })).toBeDisabled();
-    expect(screen.getByText(/Come back tomorrow/)).toBeInTheDocument();
+    // The button stays, disabled, and says when to come back
+    expect(screen.queryByRole('button', { name: /Claim daily bonus/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Claimed. Come back tomorrow!' })).toBeDisabled();
+  });
+
+  it('keeps the Hayride and the daily bonus in the bar above the pumpkins', () => {
+    render(
+      <Harness
+        initialState={{
+          upgrades: upgradesOwning('chalkboard_sign', 'hayride'),
+          inventory: { sugarPie_normal_plain: 3, carver_normal_lantern: 2 },
+        }}
+      />
+    );
+    const firstCard = screen.getByRole('region', { name: 'Sugar Pie Pumpkin' });
+    for (const name of ['Hayride income', 'Daily bonus']) {
+      // Above the price cards, so it stays in view however many kinds of pumpkin are for sale
+      const bonus = screen.getByRole('region', { name });
+      expect(bonus.compareDocumentPosition(firstCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 
   it('shows Hayride income once the Hayride is owned', () => {

@@ -121,14 +121,21 @@
   font-weight: bold;
 }
 
+/* The open tab keeps its color on hover, so its text keeps its contrast */
+.tabButtonActive:hover:not(:disabled) {
+  filter: none;
+}
+
 .tabButtonGrowing {
   composes: tabButton;
 }
 
+/* Bright tabs take dark text and deep ones light text, at 4.5:1 or more */
 .tabButtonGrowingActive {
   composes: tabButtonGrowing;
   composes: tabButtonActive;
   background: #4caf50;
+  color: #0f2410;
 }
 
 .tabButtonCanning {
@@ -141,6 +148,7 @@
   composes: tabButtonCanning;
   composes: tabButtonActive;
   background: #ff8503;
+  color: #3d2314;
 }
 
 .tabButtonCanningLocked {
@@ -160,6 +168,7 @@
   composes: tabButtonBees;
   composes: tabButtonActive;
   background: #f39c12;
+  color: #3a2a00;
 }
 
 .tabButtonBeesLocked {
@@ -240,6 +249,11 @@
   background: #B8520F;
   color: #FFF4E0;
   font-weight: bold;
+}
+
+/* As with the main tabs, the open one keeps its contrast on hover */
+.pumpkinSubTabActive:hover {
+  filter: none;
 }
 
 .tabButtonGuilds {

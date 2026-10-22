@@ -1,0 +1,231 @@
+/* The apiary's honeycomb: 30 cells that keep their places */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 14px;
+  border: 1px solid #5c4a26;
+  border-radius: 10px;
+  background: #2b2418;
+  color: #f6eedc;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.count {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.note {
+  color: #cdbd98;
+  font-size: 12px;
+}
+
+/* Five cells a row; odd rows sit half a cell over so the rows interlock. Centered in the panel. */
+.comb {
+  position: relative;
+  width: 502px;
+  height: 495px;
+  margin: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.cell {
+  position: absolute;
+  width: 88px;
+  height: 100px;
+}
+
+/* A cell's box stays square for focus; its edge and fill are cut to the hexagon */
+.hex {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 88px;
+  height: 100px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+button.hex {
+  cursor: pointer;
+}
+
+button.hex:disabled {
+  cursor: not-allowed;
+}
+
+.edge,
+.fill {
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.edge {
+  inset: 0;
+  background: #6b5630;
+}
+
+.fill {
+  inset: 2px;
+  background: #352c1c;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.hiveArt {
+  width: 30px;
+  height: 30px;
+}
+
+.dayPill,
+.readyPill,
+.restPill {
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: #1d170f;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.dayPill {
+  color: #e6d6b0;
+  font-size: 10px;
+}
+
+.readyPill {
+  color: #f5b82e;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.restPill {
+  color: #cfe2ff;
+  font-size: 10px;
+}
+
+/* Honey waiting: a gold edge, and the cell collects when clicked */
+.waiting .edge {
+  background: #f5b82e;
+}
+
+.waiting:hover .edge {
+  background: #ffd36b;
+}
+
+.resting .edge {
+  background: #5b7290;
+}
+
+/* The next hive to buy */
+.next .edge {
+  background: #f5b82e;
+}
+
+.next:hover .edge {
+  background: #ffd36b;
+}
+
+.nextShort .edge {
+  background: #8a7448;
+}
+
+.next .fill,
+.nextShort .fill {
+  background: #2b2418;
+}
+
+.addArt {
+  width: 24px;
+  height: 24px;
+}
+
+.price {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.price img {
+  width: 14px;
+  height: 14px;
+}
+
+.priceNote {
+  color: #cdbd98;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Room for more hives */
+.room .edge {
+  background: #4d3f22;
+}
+
+.room .fill {
+  background: #262016;
+}
+
+.milestoneArt {
+  width: 24px;
+  height: 24px;
+  opacity: 0.6;
+}
+
+.milestoneLabel {
+  color: #cdbd98;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* A ring drawn around the hexagon itself, which an outline would cut square */
+button.hex:focus {
+  outline: none;
+}
+
+button.hex:focus-visible {
+  outline: none;
+  filter: drop-shadow(2px 0 0 #ffffff) drop-shadow(-2px 0 0 #ffffff) drop-shadow(0 2px 0 #ffffff) drop-shadow(0 -2px 0 #ffffff);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: #cdbd98;
+  font-size: 11px;
+}

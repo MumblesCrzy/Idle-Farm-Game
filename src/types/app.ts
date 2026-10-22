@@ -5,7 +5,7 @@
  * globalBeeContext, and other App-level types.
  */
 
-import type { Veggie, WeatherType, SeasonType, EventPriority } from './game';
+import type { Veggie, WeatherType, SeasonType, EventPriority, RecipeFilter } from './game';
 import type { BeeState, BeeContextValue } from './bees';
 import type { ChristmasEventState } from './christmasEvent';
 import type { Achievement, AchievementState } from './achievements';
@@ -126,7 +126,7 @@ export interface EventLogCallbacks {
  * UI preferences for recipe filtering/sorting
  */
 export interface UIPreferences {
-  canningRecipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+  canningRecipeFilter: RecipeFilter;
   canningRecipeSort: 'name' | 'profit' | 'time' | 'difficulty';
   canningCanMakeOnly: boolean;
 }

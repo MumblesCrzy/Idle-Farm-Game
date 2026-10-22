@@ -1,7 +1,15 @@
 import { useEffect, memo, type FC } from 'react';
 import type { Achievement } from '../types/achievements';
 import { ICON_TROPHY } from '../config/assetPaths';
+import { announce } from '../utils/announcer';
 import styles from './AchievementNotification.module.css';
+
+/** What a screen reader says for an unlock: its name, what it took and its reward */
+const announcement = (achievement: Achievement): string =>
+  [`Achievement unlocked: ${achievement.name}`, achievement.description, achievement.reward?.message]
+    .filter((part): part is string => Boolean(part))
+    .map(part => (/[.!?]$/.test(part) ? part : `${part}.`))
+    .join(' ');
 
 interface AchievementNotificationProps {
   achievement: Achievement | null;
@@ -22,6 +30,11 @@ const AchievementNotification: FC<AchievementNotificationProps> = memo(({
     }
   }, [achievement, onClose]);
 
+  // Screen readers hear the unlock; the card shows for only 5 seconds
+  useEffect(() => {
+    if (achievement) announce(announcement(achievement));
+  }, [achievement]);
+
   if (!achievement) return null;
 
   return (
@@ -39,7 +52,7 @@ const AchievementNotification: FC<AchievementNotificationProps> = memo(({
           <div className={styles.titleContainer}>
             <img
               src={achievement.icon}
-              alt={achievement.name}
+              alt=""
               className={styles.achievementIcon}
             />
             <h3 className={styles.title}>
@@ -62,6 +75,7 @@ const AchievementNotification: FC<AchievementNotificationProps> = memo(({
           onClick={onClose}
           className={styles.closeButton}
           title="Dismiss"
+          aria-label="Dismiss"
         >
           ×
         </button>

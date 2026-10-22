@@ -37,7 +37,27 @@ describe('App smoke test', { timeout: 20_000 }, () => {
     renderGame();
 
     expect(screen.getByRole('tab', { name: /growing/i })).toBeInTheDocument();
+    // Locked tabs say which farm tier opens them
+    expect(screen.getByRole('tab', { name: /canning/i })).toHaveTextContent('Req: Tier 3');
+    expect(screen.getByRole('tab', { name: /guilds/i })).toHaveTextContent('Req: Tier 5');
     expect(screen.queryByText(/encountered an error/i)).not.toBeInTheDocument();
+  });
+
+  it('starts when the browser refuses storage, as for the game on itch.io in a private window', () => {
+    const refuse = () => {
+      throw new DOMException('Access is denied for this document.', 'SecurityError');
+    };
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(refuse);
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(refuse);
+    try {
+      renderGame();
+
+      expect(screen.getByRole('tab', { name: /growing/i })).toBeInTheDocument();
+      expect(screen.queryByText(/encountered an error/i)).not.toBeInTheDocument();
+    } finally {
+      getItem.mockRestore();
+      setItem.mockRestore();
+    }
   });
 
   it('loads a saved game that was last saved ten minutes ago', () => {

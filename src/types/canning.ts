@@ -25,6 +25,8 @@ export type Recipe = {
   baseSalePrice: number; // Original sale price (for upgrade calculations)
   experienceRequired: number; // Experience needed to unlock this recipe
   requiredAchievementId?: string; // Achievement ID that must be unlocked to unlock this recipe
+  requiredGuildUpgrade?: string; // Guild upgrade that must be owned for the recipe to appear (Cellar recipes)
+  requiredBeeUpgrade?: string; // Bee upgrade that must be owned for the recipe to appear (the honey jars)
   unlocked: boolean; // Whether player has unlocked this recipe
   timesCompleted: number; // Track how many times player has made this recipe
 };
@@ -78,6 +80,13 @@ export type CanningState = {
   };
 };
 
+// Rush Batch (Preservers Guild): what the Canning tab needs to show and use the button
+export type RushBatchControl = {
+  cost: number; // Wax Seals one rush costs now
+  canRush: boolean; // Whether a rush is possible now: batches running and Seals enough
+  onRush: () => void;
+};
+
 // Canning-related upgrade types for individual veggies
 export type VeggieCanningUpgrade = {
   // Per-veggie upgrades that affect canning
@@ -112,6 +121,8 @@ export type RecipeConfig = {
   baseSalePrice: number;
   experienceRequired: number;
   requiredAchievementId?: string; // Achievement ID that must be unlocked to unlock this recipe
+  requiredGuildUpgrade?: string; // Guild upgrade that must be owned for the recipe to appear (Cellar recipes)
+  requiredBeeUpgrade?: string; // Bee upgrade that must be owned for the recipe to appear (the honey jars)
   category: 'simple' | 'complex' | 'gourmet'; // Difficulty categories
 };
 

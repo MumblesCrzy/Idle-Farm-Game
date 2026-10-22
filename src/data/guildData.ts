@@ -5,13 +5,23 @@
  */
 
 import type { Guild, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
-import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS } from '../config/assetPaths';
+import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS, ICON_GUILDS, ICON_SIGIL, ICON_WAX_SEAL } from '../config/assetPaths';
 
 /** Maximum number of upgrades a player can sample from each guild before committing */
 export const MAX_SAMPLED_UPGRADES_PER_GUILD = 2;
 
 /** Farm tier required to unlock the Guilds system */
 export const GUILDS_UNLOCK_TIER = 5;
+
+/** Rush Batch costs one Wax Seal per running batch, and never less than this */
+export const RUSH_BATCH_MIN_COST = 5;
+
+/** Recipe Mastery from the Family Cookbook: batches of one recipe and the value they add, highest first */
+export const RECIPE_MASTERY_STAGES: ReadonlyArray<{ batches: number; bonus: number }> = [
+  { batches: 500, bonus: 0.5 },
+  { batches: 100, bonus: 0.25 },
+  { batches: 25, bonus: 0.1 }
+];
 
 /**
  * Guild Tokens earned before committing: `tokens` for every `every` of the source.
@@ -20,7 +30,7 @@ export const GUILDS_UNLOCK_TIER = 5;
 export const GUILD_TOKEN_SOURCES: Record<GuildTokenSource, { tokens: number; every: number; label: string }> = {
   manualHarvest: { tokens: 1, every: 1, label: 'manual harvest' },
   cannedGoods: { tokens: 1, every: 5, label: 'canned goods' },
-  beeHives: { tokens: 2, every: 1, label: 'bee hive harvest' },
+  beeHives: { tokens: 2, every: 1, label: 'batch of honey' },
   autoHarvests: { tokens: 1, every: 10, label: 'auto harvests' }
 };
 
@@ -87,11 +97,12 @@ export const GROWERS_UPGRADES: GuildUpgrade[] = [
     level: 0,
     maxLevel: 1,
     isOneTime: true,
-    baseCost: 350,
+    baseCost: 1000, // The strongest upgrade a Legacy can keep, so it costs the most
     costScaling: 1,
     currencyType: 'sigils',
     effectPerLevel: 10,
     effectTemplate: '{value}× multiplier to all crop sale prices (scales with Better Seeds)',
+    effectDisplay: 'number',
     purchased: false
   },
   {
@@ -194,39 +205,204 @@ export const GROWERS_UPGRADES: GuildUpgrade[] = [
 ];
 
 /**
- * Placeholder upgrades for other guilds (to be implemented later)
+ * Preservers Guild Upgrades. The two sampling upgrades keep their old ids, so saves that
+ * sampled the earlier placeholders keep their levels.
  */
 export const PRESERVERS_UPGRADES: GuildUpgrade[] = [
+  // Tier 1 - Available before commitment (sampling)
   {
-    id: 'preservers_efficient_canning',
-    name: 'Efficient Canning',
-    description: 'Reduce resources needed for canning',
+    id: 'preservers_shelf_life',
+    name: 'Tight Lids',
+    description: 'Well-sealed jars keep their flavor and sell for more',
     guild: 'preservers',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 1000,
+    baseCost: 30,
     costScaling: 1.5,
-    currencyType: 'money',
-    effectPerLevel: 0.05,
-    effectTemplate: '-{value}% canning ingredient cost',
+    currencyType: 'guildTokens',
+    effectPerLevel: 0.02,
+    effectTemplate: '+{value}% canned goods value',
     purchased: false
   },
   {
-    id: 'preservers_shelf_life',
-    name: 'Extended Shelf Life',
-    description: 'Preserved goods sell for more',
+    id: 'preservers_efficient_canning',
+    name: 'Rolling Boil',
+    description: 'A hotter kettle finishes every batch sooner',
     guild: 'preservers',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 500,
+    baseCost: 50,
     costScaling: 1.5,
-    currencyType: 'knowledge',
+    currencyType: 'guildTokens',
+    effectPerLevel: 0.03,
+    effectTemplate: '-{value}% canning time',
+    purchased: false
+  },
+  // Tier 2 - Post-commitment
+  {
+    id: 'preservers_cellar_recipes',
+    name: 'Cellar Recipes',
+    description: 'Old family recipes for pickles, jams and relishes',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 200,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Unlocks 10 Cellar recipes, made from vegetables',
+    purchased: false
+  },
+  {
+    id: 'preservers_cellar_aging',
+    name: 'Cellar Aging',
+    description: 'Jars rested in a cool cellar sell for more',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 75,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
     effectPerLevel: 0.03,
     effectTemplate: '+{value}% canned goods value',
+    purchased: false
+  },
+  {
+    id: 'preservers_copper_kettles',
+    name: 'Copper Kettles',
+    description: 'Even heat from copper shortens every batch',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 100,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.02,
+    effectTemplate: '-{value}% canning time',
+    purchased: false
+  },
+  {
+    id: 'preservers_pressure_canner',
+    name: 'Pressure Canner',
+    description: 'A sealed pot cans more jars from the same ingredients',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 5,
+    isOneTime: false,
+    baseCost: 200,
+    costScaling: 2.2,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Jars per batch: +{value}',
+    effectDisplay: 'number',
+    purchased: false
+  },
+  {
+    id: 'preservers_honey_glaze',
+    name: 'Honey Glaze',
+    description: 'A brush of honey makes honey recipes shine',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 5,
+    isOneTime: false,
+    baseCost: 120,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.05,
+    effectTemplate: '+{value}% value on honey recipes',
+    purchased: false
+  },
+  {
+    id: 'preservers_family_cookbook',
+    name: 'Family Cookbook',
+    description: 'Recipes you make often become house specialties',
+    guild: 'preservers',
+    tier: 2,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 350,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Recipe Mastery: +10%, +25% and +50% value after 25, 100 and 500 batches of a recipe',
+    purchased: false
+  },
+  // Tier 3 - Advanced post-commitment
+  {
+    id: 'preservers_seal_of_quality',
+    name: 'Seal of Quality',
+    description: 'Some batches come out perfect and sell as Prize Jars',
+    guild: 'preservers',
+    tier: 3,
+    level: 0,
+    maxLevel: 5,
+    isOneTime: false,
+    baseCost: 250,
+    costScaling: 2,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.05,
+    effectTemplate: '{value}% chance of a Prize Jar: double money, and +1 Wax Seal on batches you start',
+    purchased: false
+  },
+  {
+    id: 'preservers_rush_batch',
+    name: 'Rush Batch',
+    description: 'Stoke the fire to finish every running batch at once',
+    guild: 'preservers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 150,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Rush Batch: spend 1 Wax Seal per running batch, at least 5, to finish them all now',
+    purchased: false
+  },
+  {
+    id: 'preservers_trusted_apprentice',
+    name: 'Trusted Apprentice',
+    description: 'Teach the Canner your tricks',
+    guild: 'preservers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 600,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Canner batches give half the knowledge and canning experience instead of a tenth',
+    purchased: false
+  },
+  {
+    id: 'preservers_pantry_lock',
+    name: 'Pantry Lock',
+    description: 'A sturdy latch keeps hungry noses out',
+    guild: 'preservers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 300,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Dunkin the Glutton can no longer reach the pantry',
     purchased: false
   }
 ];
@@ -320,6 +496,8 @@ export const GUILDS: Guild[] = [
       border: '#3d6b37'
     },
     emblem: GUILD_GROWERS,
+    currency: { name: 'Sigils', icon: ICON_SIGIL, earnedFrom: 'Earned from manual harvests and blessed crops' },
+    joinable: true,
     upgrades: GROWERS_UPGRADES,
     passiveBonuses: [
       {
@@ -389,14 +567,24 @@ export const GUILDS: Guild[] = [
       border: '#6b3410'
     },
     emblem: GUILD_PRESERVERS,
+    currency: { name: 'Wax Seals', icon: ICON_WAX_SEAL, earnedFrom: 'Earned from batches you start yourself and from shooing Dunkin' },
+    joinable: true,
     upgrades: PRESERVERS_UPGRADES,
     passiveBonuses: [
       {
         id: 'preservers_canning_bonus',
         name: 'Master Preserver',
-        description: '+20% canning output value',
+        description: '+20% canned goods value',
         type: 'price',
         value: 0.2,
+        target: 'canning'
+      },
+      {
+        id: 'preservers_wax_seals',
+        name: 'Sealed Jars',
+        description: 'Earn a Wax Seal for every batch you start yourself; the Canner earns none',
+        type: 'special',
+        value: 1,
         target: 'canning'
       }
     ],
@@ -408,6 +596,14 @@ export const GUILDS: Guild[] = [
         type: 'price',
         value: 0.1,
         target: 'raw_crops'
+      },
+      {
+        id: 'preservers_glutton',
+        name: 'The Glutton',
+        description: 'Dunkin the bulldog raids the pantry: shoo him early or pay the vet',
+        type: 'special',
+        value: 0,
+        target: 'pantry'
       }
     ]
   },
@@ -426,6 +622,8 @@ export const GUILDS: Guild[] = [
       border: '#3454b4'
     },
     emblem: GUILD_ENGINEERS,
+    currency: { name: 'Guild Currency', icon: ICON_GUILDS, earnedFrom: 'Coming in a future update' },
+    joinable: false,
     upgrades: ENGINEERS_UPGRADES,
     passiveBonuses: [
       {
@@ -463,6 +661,8 @@ export const GUILDS: Guild[] = [
       border: '#581c87'
     },
     emblem: GUILD_MERCHANTS,
+    currency: { name: 'Guild Currency', icon: ICON_GUILDS, earnedFrom: 'Coming in a future update' },
+    joinable: false,
     upgrades: MERCHANTS_UPGRADES,
     passiveBonuses: [
       {

@@ -25,6 +25,7 @@ import {
   parsePumpkinKey,
   pumpkinGrowthSpeed,
   pumpkinKey,
+  championSeedBonus,
   rollGiantWeight,
   upgradeLevel
 } from '../utils/pumpkinPricing';
@@ -289,7 +290,12 @@ function applyHarvest(state: PumpkinEventState, plotIndex: number, weightRoll: n
   let weight: number | undefined;
 
   if (variety === 'giant') {
-    weight = rollGiantWeight(quality, upgradeLevel(state.upgrades, 'giant_vine_tonic'), weightRoll);
+    weight = rollGiantWeight(
+      quality,
+      upgradeLevel(state.upgrades, 'giant_vine_tonic'),
+      weightRoll,
+      championSeedBonus(state.weighOff.ribbons.first)
+    );
     weighOff = { ...weighOff, personalBest: Math.max(weighOff.personalBest, weight), giantsGrown: weighOff.giantsGrown + 1 };
     if (giantShelf.length < C.MAX_GIANT_SHELF) {
       giantShelf = [...giantShelf, { id: `giant_${weighOff.giantsGrown}`, weight, quality }];

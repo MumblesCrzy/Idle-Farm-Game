@@ -1,0 +1,165 @@
+/* The bee upgrades by what they improve. Rows that can be bought are a little taller. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid #5c4a26;
+  border-radius: 10px;
+  background: #2b2418;
+  color: #f6eedc;
+}
+
+.title {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.groupTitle {
+  margin: 4px 0 0;
+  color: #cdbd98;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 9px;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 8px;
+  border: 1px solid #4d3f22;
+  border-radius: 8px;
+  background: #352c1c;
+}
+
+.quiet {
+  height: 36px;
+  background: #2b2418;
+}
+
+.icon {
+  width: 30px;
+  height: 30px;
+}
+
+.quiet .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.info {
+  min-width: 0;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.level {
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #1d170f;
+  color: #e6d6b0;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.effect {
+  overflow: hidden;
+  color: #cdbd98;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.buy,
+.buyGold,
+.buyShort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 30px;
+  min-width: 70px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font: 800 12px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.buy {
+  border: 0;
+  background: #f5b82e;
+  color: #2a1a00;
+  cursor: pointer;
+}
+
+.buyGold {
+  border: 0;
+  background: #ffd54a;
+  color: #2a1a00;
+  cursor: pointer;
+}
+
+.buy:hover,
+.buyGold:hover {
+  background: #ffe08a;
+}
+
+.buyShort {
+  border: 1px solid #5c4a26;
+  background: #3d3322;
+  color: #cdbd98;
+  cursor: not-allowed;
+}
+
+.buy img,
+.buyGold img,
+.buyShort img {
+  width: 15px;
+  height: 15px;
+}
+
+.status {
+  padding: 0 6px;
+  color: #cdbd98;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #cdbd98;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lock img {
+  width: 14px;
+  height: 14px;
+}

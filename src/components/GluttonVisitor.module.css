@@ -1,0 +1,87 @@
+/* Dunkin, sitting wherever he showed up */
+.visitor {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  animation: pop-in 0.3s ease-out;
+}
+
+.visitor:focus-visible {
+  outline: 3px solid #f5c040;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.bubble {
+  padding: 2px 9px;
+  border: 2px solid #3d2314;
+  border-radius: 10px;
+  background: #fff;
+  color: #3d2314;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dog {
+  width: 96px;
+  height: 96px;
+  filter: drop-shadow(0 0 8px rgba(139, 69, 19, 0.7));
+  transition: transform 0.2s;
+}
+
+.visitor:hover .dog {
+  transform: scale(1.08);
+}
+
+.belly {
+  width: 80px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid #3d2314;
+  border-radius: 4px;
+  background: #e6dccf;
+}
+
+.bellyFill {
+  display: block;
+  height: 100%;
+  background: #e07a2a;
+  transition: width 0.3s;
+}
+
+.sniffing .bellyFill {
+  background: #628c3e;
+}
+
+/* Stuffed: wider, tipped over, too full to move */
+.stuffed .dog,
+.stuffed:hover .dog {
+  transform: scaleX(1.2) rotate(-8deg);
+}
+
+.stuffed .bellyFill {
+  background: #aa1f22;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .eating .dog {
+    animation: chomp 0.5s infinite alternate ease-in-out;
+  }
+}
+
+@keyframes chomp {
+  from {
+    transform: rotate(-4deg);
+  }
+  to {
+    transform: rotate(4deg) translateY(2px);
+  }
+}

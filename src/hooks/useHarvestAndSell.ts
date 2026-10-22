@@ -75,7 +75,8 @@ export interface UseHarvestAndSellReturn {
   ) => void;
 
   /** Handles manual harvest of the active veggie */
-  handleHarvest: () => void;
+  /** Harvests the crop at this index, or the picked crop */
+  handleHarvest: (cropIndex?: number) => void;
 
   /** Growers Guild Ritual Circles: spend sigils to harvest every ready crop */
   handleRitualHarvestAll: () => void;
@@ -182,19 +183,20 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       // Award guild currency on harvest once guilds unlock:
       // - Manual harvests always earn 1 currency
       // - Blessed crop (Soilbound Pact) triggers earn 1 currency (even on auto-harvest)
+      // Members of other guilds earn their currency elsewhere (Preservers: canning).
       const earnCurrency = !isAutoHarvest || blessedCropTriggered;
       if (earnCurrency && farmTier >= GUILDS_UNLOCK_TIER) {
         const committedGuild = guildStateRef.current.committedGuild;
-        if (committedGuild !== null) {
-          // After commitment: award guild-specific currency (sigils for Growers)
+        if (committedGuild === 'growers') {
+          // After commitment: Growers earn Sigils
           setGuildState(prev => ({
             ...prev,
             guildCurrencies: {
               ...prev.guildCurrencies,
-              [committedGuild]: prev.guildCurrencies[committedGuild] + 1
+              growers: prev.guildCurrencies.growers + 1
             }
           }));
-        } else {
+        } else if (committedGuild === null) {
           // Before commitment: award generic guild tokens
           setGuildState(prev => awardGuildTokens(prev, 'manualHarvest', 1, farmTier));
         }
@@ -292,10 +294,11 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
 
   /**
    * Manual harvest button handler.
-   * Harvests the currently active veggie with event logging.
+   * Harvests the crop at cropIndex, or the active veggie, with event logging. Anything but a
+   * number (a click event, say) means the active veggie.
    */
-  const handleHarvest = useCallback(() => {
-    harvestVeggie(activeVeggie, false, logHarvest);
+  const handleHarvest = useCallback((cropIndex?: number) => {
+    harvestVeggie(typeof cropIndex === 'number' ? cropIndex : activeVeggie, false, logHarvest);
   }, [harvestVeggie, activeVeggie, logHarvest]);
 
   /**

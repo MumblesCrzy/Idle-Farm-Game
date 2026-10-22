@@ -38,9 +38,11 @@ export function formatNumber(num: number, decimalPlaces: number = 1): string {
     unitIndex++;
   }
   
-  // For values >= 1000, always show at least 1 decimal place unless it's a whole number
+  // Drop zeros after the decimal point (1.50K reads 1.5K), but never a whole number's own
+  // zeros, so 50K stays 50K with no decimal places
   const formatted = value.toFixed(decimalPlaces);
-  return `${formatted.replace(/\.?0+$/, '')}${units[unitIndex]}`;
+  const trimmed = formatted.includes('.') ? formatted.replace(/\.?0+$/, '') : formatted;
+  return `${trimmed}${units[unitIndex]}`;
 }
 
 /**

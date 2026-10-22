@@ -98,8 +98,8 @@ const AchievementDisplay: FC<AchievementDisplayProps> = memo(({
           />
         </div>
 
-        {/* Achievements List */}
-        <div className={styles.content}>
+        {/* Achievements List: it takes focus, so the keyboard can scroll it */}
+        <div className={styles.content} tabIndex={0} role="region" aria-label="Achievement list">
           {categories.map(category => {
             const categoryAchievements = achievementsByCategory[category.key]?.filter(a => !a.hidden || a.unlocked) || [];
             if (categoryAchievements.length === 0) return null;

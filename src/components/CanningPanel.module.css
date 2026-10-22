@@ -1,139 +1,99 @@
-.lockedContainer {
+.panel {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 12px;
+  border-bottom: 1px solid #e2d6ca;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.filter {
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.filter[aria-pressed='true'] {
+  border-bottom-color: #c0392b;
+  opacity: 1;
+}
+
+.filter:focus-visible {
+  outline: 2px solid #f5c040;
+  outline-offset: -2px;
+}
+
+.option {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 400px;
-  background-color: #f9f9f9;
+  gap: 5px;
+  padding-bottom: 6px;
+  font-size: 12px;
+}
+
+.select {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.recipes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #fff;
+  list-style: none;
+}
+
+.empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f9f9f9;
+  color: #555;
+  text-align: center;
+}
+
+.locked {
+  padding: 24px;
   border-radius: 12px;
-  padding: 40px;
+  background: #f9f9f9;
+  color: #555;
   text-align: center;
 }
 
 .lockedTitle {
-  color: #666;
-  margin-bottom: 8px;
-}
-
-.lockedDescription {
-  color: #888;
-  margin-bottom: 16px;
-  max-width: 300px;
+  margin: 0 0 8px;
+  color: #700e01;
 }
 
 .lockedRequirement {
-  font-size: 14px;
-  color: #666;
-  padding: 8px 16px;
-  background-color: #e3f2fd;
+  display: inline-block;
+  padding: 6px 12px;
   border-radius: 6px;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  padding: 8px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-}
-
-.headerTitle {
-  margin: 0 0 2px 0;
-  font-size: 16px;
-  color: #333;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.headerIcon {
-  width: 20px;
-  height: 20px;
-}
-
-.headerUnlockCount {
-  font-size: 11px;
-  color: #666;
-  text-align: left;
-}
-
-.headerStats {
-  font-size: 10px;
-  color: #2e7d2e;
-  margin-top: 2px;
-}
-
-.controls {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #333;
-  cursor: pointer;
-  padding: 3px 6px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  user-select: none;
-}
-
-.checkboxLabel:hover {
-  border-color: #bbb;
-  background-color: #f5f5f5;
-}
-
-.checkbox {
-  margin: 0;
-  cursor: pointer;
-}
-
-.select {
-  padding: 3px 6px;
-  border-radius: 3px;
-  border: 1px solid #ddd;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.select:hover {
-  border-color: #bbb;
-}
-
-.content {
-  flex: 1;
-}
-
-.emptyState {
-  text-align: center;
-  padding: 20px;
-  color: #888;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  margin: 6px;
-}
-
-.emptyStateHint {
-  font-size: 11px;
-  margin-top: 6px;
-}
-
-.recipesGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-  padding: 0 18px 0 0;
+  background: #e3f2fd;
+  color: #1a4d80;
+  font-weight: 600;
 }

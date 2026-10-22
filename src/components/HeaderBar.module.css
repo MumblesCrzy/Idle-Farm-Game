@@ -4,11 +4,19 @@
   margin-bottom: 0.5rem;
 }
 
+/* In a frame, such as the itch.io page, that site's 217 px toolbar floats over the top-right
+   corner, so the buttons stay clear of it. The dev Itch.io Viewport preview shows the same. */
+:global(body.in-frame) .header,
+:global(body.itch-viewport) .header {
+  padding-right: 240px;
+}
+
 .button {
   font-size: 0.85rem;
   padding: 2px 10px;
   margin-left: auto;
-  background: #28a745;
+  /* A shade darker than Bootstrap's green and teal, so white text reaches 4.5:1 */
+  background: #1e7e34;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -18,7 +26,7 @@
 }
 
 .button:hover {
-  background: #218838;
+  background: #19692c;
 }
 
 .achievementsButton {
@@ -42,7 +50,7 @@
   font-size: 0.85rem;
   padding: 2px 10px;
   margin-left: 0.5rem;
-  background: #17a2b8;
+  background: #117a8b;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -53,7 +61,7 @@
 }
 
 .eventLogButton:hover {
-  background: #138496;
+  background: #0e6674;
 }
 
 .badge {

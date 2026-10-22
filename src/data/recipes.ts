@@ -229,7 +229,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     name: 'Honey Radish Medley',
     description: 'Tender radishes preserved in golden honey brine.',
     ingredients: [{ veggieName: 'Radish', quantity: 6 }],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier1',
     baseProcessingTime: 50,
     baseSalePrice: 35,
@@ -242,7 +242,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     name: 'Sweet Pickled Cucumbers',
     description: 'Crispy pickles with a delightful golden honey sweetness.',
     ingredients: [{ veggieName: 'Cucumbers', quantity: 5 }],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier1',
     baseProcessingTime: 60,
     baseSalePrice: 65,
@@ -255,7 +255,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     name: 'Honey-Glazed Carrots',
     description: 'Sweet glazed carrots with rich golden honey coating.',
     ingredients: [{ veggieName: 'Carrots', quantity: 4 }],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier1',
     baseProcessingTime: 55,
     baseSalePrice: 55,
@@ -274,7 +274,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Lettuce', quantity: 2 },
       { veggieName: 'Green Beans', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier2',
     baseProcessingTime: 75,
     baseSalePrice: 48,
@@ -290,7 +290,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Zucchini', quantity: 3 },
       { veggieName: 'Peppers', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier2',
     baseProcessingTime: 80,
     baseSalePrice: 70,
@@ -307,7 +307,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Green Beans', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.03125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier2',
     baseProcessingTime: 85,
     baseSalePrice: 75,
@@ -325,7 +325,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Onions', quantity: 3 },
       { veggieName: 'Carrots', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.0625 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier3',
     baseProcessingTime: 100,
     baseSalePrice: 120,
@@ -341,7 +341,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Peppers', quantity: 4 },
       { veggieName: 'Tomatoes', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.0625 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier3',
     baseProcessingTime: 95,
     baseSalePrice: 130,
@@ -358,7 +358,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Radish', quantity: 3 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.0625 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier3',
     baseProcessingTime: 105,
     baseSalePrice: 125,
@@ -378,7 +378,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.09375 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier4',
     baseProcessingTime: 130,
     baseSalePrice: 185,
@@ -395,7 +395,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Carrots', quantity: 3 },
       { veggieName: 'Onions', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.09375 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier4',
     baseProcessingTime: 125,
     baseSalePrice: 175,
@@ -414,7 +414,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Tomatoes', quantity: 2 },
       { veggieName: 'Broccoli', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.09375 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier4',
     baseProcessingTime: 140,
     baseSalePrice: 195,
@@ -430,7 +430,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Carrots', quantity: 3 },
       { veggieName: 'Tomatoes', quantity: 3 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier4',
     baseProcessingTime: 90,
     baseSalePrice: 200,
@@ -456,7 +456,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
       { veggieName: 'Broccoli', quantity: 2 },
       { veggieName: 'Onions', quantity: 2 }
     ],
-    honeyRequirement: { regular: 0, golden: 0.15625 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier5',
     baseProcessingTime: 240,
     baseSalePrice: 500,
@@ -469,7 +469,7 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     name: "Canner's Cocoa (Honey Edition)",
     description: 'Rich cocoa infused with sweet honey - a masterful creation that grants bonus experience.',
     ingredients: [],
-    honeyRequirement: { regular: 0, golden: 0.125 },
+    honeyRequirement: { regular: 0, golden: 1 },
     tier: 'tier5',
     baseProcessingTime: 120,
     baseSalePrice: 250,
@@ -493,6 +493,184 @@ export const INITIAL_RECIPES: RecipeConfig[] = [
     baseSalePrice: 350,
     honeyCollectedRequired: 80,
     experienceRequired: 70000,
+    category: 'gourmet'
+  },
+
+  // ===== HONEY JARS (Honey Jars, a Bees tab upgrade) =====
+  // Honey alone, no vegetables. The Canner leaves them to the player, so it never spends the
+  // honey saved for hives and upgrades.
+  {
+    id: 'jar_of_honey',
+    name: 'Jar of Honey',
+    description: 'Wildflower honey, straight from the hive into the jar.',
+    ingredients: [],
+    honeyRequirement: { regular: 10, golden: 0 },
+    baseProcessingTime: 45,
+    baseSalePrice: 250,
+    experienceRequired: 0,
+    requiredBeeUpgrade: 'honey_jars',
+    category: 'simple'
+  },
+  {
+    id: 'jar_of_golden_honey',
+    name: 'Jar of Golden Honey',
+    description: 'Rare Golden Honey, jarred to shine on the shelf.',
+    ingredients: [],
+    honeyRequirement: { regular: 0, golden: 5 },
+    baseProcessingTime: 90,
+    baseSalePrice: 750,
+    experienceRequired: 0,
+    requiredBeeUpgrade: 'honey_jars',
+    category: 'simple'
+  },
+
+  // ===== CELLAR RECIPES (Preservers Guild) =====
+  // Appear once a Preserver buys Cellar Recipes, then unlock with canning experience.
+  // Vegetables only: fruit belongs to the Growers. Long batches with a little more margin.
+
+  {
+    id: 'cellar_dilly_beans',
+    name: "Dilly Beans",
+    description: "Crisp green beans pickled with dill and garlic.",
+    ingredients: [
+      { veggieName: 'Green Beans', quantity: 6 },
+      { veggieName: 'Cucumbers', quantity: 2 }
+    ],
+    baseProcessingTime: 90,
+    baseSalePrice: 60,
+    experienceRequired: 20000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_bread_butter_pickles',
+    name: "Bread and Butter Pickles",
+    description: "Sweet, tangy cucumber slices with onion.",
+    ingredients: [
+      { veggieName: 'Cucumbers', quantity: 6 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    baseProcessingTime: 100,
+    baseSalePrice: 105,
+    experienceRequired: 24000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_zucchini_butter',
+    name: "Zucchini Butter",
+    description: "Zucchini cooked down slowly into a golden spread.",
+    ingredients: [
+      { veggieName: 'Zucchini', quantity: 8 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    baseProcessingTime: 100,
+    baseSalePrice: 110,
+    experienceRequired: 28000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_tomato_jam',
+    name: "Tomato Jam",
+    description: "Sweet and savory, perfect on toast.",
+    ingredients: [
+      { veggieName: 'Tomatoes', quantity: 8 },
+      { veggieName: 'Onions', quantity: 1 }
+    ],
+    baseProcessingTime: 110,
+    baseSalePrice: 125,
+    experienceRequired: 32000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_pepper_jelly',
+    name: "Pepper Jelly",
+    description: "Bright, sweet heat in a jar.",
+    ingredients: [
+      { veggieName: 'Peppers', quantity: 8 }
+    ],
+    baseProcessingTime: 120,
+    baseSalePrice: 120,
+    experienceRequired: 36000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_marinara',
+    name: "Marinara",
+    description: "A rich red sauce for the long winter.",
+    ingredients: [
+      { veggieName: 'Tomatoes', quantity: 6 },
+      { veggieName: 'Onions', quantity: 2 },
+      { veggieName: 'Peppers', quantity: 2 }
+    ],
+    baseProcessingTime: 120,
+    baseSalePrice: 150,
+    experienceRequired: 42000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'complex'
+  },
+  {
+    id: 'cellar_onion_marmalade',
+    name: "Onion Marmalade",
+    description: "Onions caramelized for hours until jammy.",
+    ingredients: [
+      { veggieName: 'Onions', quantity: 8 }
+    ],
+    baseProcessingTime: 130,
+    baseSalePrice: 170,
+    experienceRequired: 48000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'simple'
+  },
+  {
+    id: 'cellar_radish_kimchi',
+    name: "Radish Kimchi",
+    description: "Spicy fermented radish that gets better every week.",
+    ingredients: [
+      { veggieName: 'Radish', quantity: 10 },
+      { veggieName: 'Onions', quantity: 2 },
+      { veggieName: 'Peppers', quantity: 1 }
+    ],
+    baseProcessingTime: 180,
+    baseSalePrice: 90,
+    experienceRequired: 55000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'complex'
+  },
+  {
+    id: 'cellar_giardiniera',
+    name: "Giardiniera",
+    description: "A crunchy Italian medley of pickled vegetables.",
+    ingredients: [
+      { veggieName: 'Carrots', quantity: 3 },
+      { veggieName: 'Peppers', quantity: 3 },
+      { veggieName: 'Broccoli', quantity: 3 },
+      { veggieName: 'Onions', quantity: 2 }
+    ],
+    baseProcessingTime: 150,
+    baseSalePrice: 200,
+    experienceRequired: 65000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
+    category: 'complex'
+  },
+  {
+    id: 'cellar_pantry_keepers_reserve',
+    name: "Pantry Keeper's Reserve",
+    description: "The Preservers' prized blend, saved for special occasions.",
+    ingredients: [
+      { veggieName: 'Cucumbers', quantity: 5 },
+      { veggieName: 'Carrots', quantity: 5 },
+      { veggieName: 'Peppers', quantity: 5 },
+      { veggieName: 'Onions', quantity: 5 },
+      { veggieName: 'Broccoli', quantity: 5 }
+    ],
+    baseProcessingTime: 420,
+    baseSalePrice: 650,
+    experienceRequired: 100000,
+    requiredGuildUpgrade: 'preservers_cellar_recipes',
     category: 'gourmet'
   }
 ];

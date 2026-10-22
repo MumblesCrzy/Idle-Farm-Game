@@ -16,6 +16,23 @@ export { LAST_ACTIVE_KEY };
 /** Shorter gaps are ignored, so quick tab switches don't trigger a catch-up */
 const MIN_CATCH_UP_MS = 1000;
 
+// When the tab was last active. Storage can be refused outright, as for the game in itch.io's
+// frame in a private window; then there is no hidden-tab catch-up, but the game still runs.
+const readLastActive = (): string | null => {
+  try {
+    return localStorage.getItem(LAST_ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+};
+const markActive = (): void => {
+  try {
+    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+  } catch {
+    // Storage refused: see readLastActive
+  }
+};
+
 /**
  * Current game values the catch-up simulates from
  */
@@ -180,12 +197,12 @@ export function useOfflineProgress(deps: UseOfflineProgressDeps): void {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+        markActive();
         return;
       }
 
-      const lastActiveTime = localStorage.getItem(LAST_ACTIVE_KEY);
-      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      const lastActiveTime = readLastActive();
+      markActive();
       if (!lastActiveTime) return;
 
       const timeElapsed = Date.now() - parseInt(lastActiveTime, 10);
@@ -202,7 +219,7 @@ export function useOfflineProgress(deps: UseOfflineProgressDeps): void {
     };
 
     // Start the hidden-time clock from page load
-    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+    markActive();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {

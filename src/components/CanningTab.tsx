@@ -1,10 +1,20 @@
-import { memo, type FC } from 'react';
+/**
+ * The Canning tab, laid out as a kitchen from left to right: the pantry of raw crops, the
+ * stove and recipe book, then upgrades, the Preservers' Wax Seals and the kitchen's stats.
+ */
+import { memo, useMemo, type FC } from 'react';
 import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
+import PantryPanel from './PantryPanel';
+import InlineIcon from './InlineIcon';
+import type { CanningState, Recipe, RushBatchControl } from '../types/canning';
+import type { GuildState } from '../types/guilds';
+import type { RecipeFilter, RecipeSort, Veggie } from '../types/game';
+import { formatNumber } from '../utils/gameCalculations';
+import { getPreserversValueBonus, isCommittedTo } from '../utils/guildCalculations';
+import { GUILD_PRESERVERS, ICON_WAX_SEAL } from '../config/assetPaths';
 import styles from './CanningTab.module.css';
-import type { CanningState, Recipe } from '../types/canning';
-import type { Veggie } from '../types/game';
 
 interface CanningTabProps {
   canningState: CanningState;
@@ -19,11 +29,15 @@ interface CanningTabProps {
   canMakeRecipe: (recipe: Recipe) => boolean;
   purchaseUpgrade: (upgradeId: string) => boolean;
   toggleAutoCanning: () => void;
-  recipeFilter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
-  recipeSort: 'name' | 'profit' | 'time' | 'difficulty';
+  /** Guild rules on recipe value and time */
+  guildState?: GuildState;
+  /** Rush Batch, for Preservers who own it */
+  rushBatch?: RushBatchControl;
+  recipeFilter: RecipeFilter;
+  recipeSort: RecipeSort;
   canMakeOnly: boolean;
-  onRecipeFilterChange: (filter: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey') => void;
-  onRecipeSortChange: (sort: 'name' | 'profit' | 'time' | 'difficulty') => void;
+  onRecipeFilterChange: (filter: RecipeFilter) => void;
+  onRecipeSortChange: (sort: RecipeSort) => void;
   onCanMakeOnlyChange: (value: boolean) => void;
 }
 
@@ -40,6 +54,8 @@ const CanningTab: FC<CanningTabProps> = memo(({
   canMakeRecipe,
   purchaseUpgrade,
   toggleAutoCanning,
+  guildState,
+  rushBatch,
   recipeFilter,
   recipeSort,
   canMakeOnly,
@@ -47,50 +63,88 @@ const CanningTab: FC<CanningTabProps> = memo(({
   onRecipeSortChange,
   onCanMakeOnlyChange
 }) => {
-  // Main canning content
+  const recipes = canningState?.recipes;
+
+  // The pantry lists the crops recipes use that the farm grows or has on hand
+  const pantryCrops = useMemo(() => {
+    const used = new Set((recipes ?? []).flatMap(recipe => recipe.ingredients.map(ingredient => ingredient.veggieName)));
+    return veggies.filter(veggie => used.has(veggie.name) && (veggie.unlocked || veggie.stash > 0));
+  }, [recipes, veggies]);
+  const showHoney = (recipes ?? []).some(recipe => recipe.unlocked && !!recipe.honeyRequirement);
+
+  const unlockedCount = (recipes ?? []).filter(recipe => recipe.unlocked).length;
+  // The next experience goal; recipes held back by an achievement don't count
+  const canningExperience = canningState?.canningExperience ?? 0;
+  const nextRecipe = (recipes ?? [])
+    .filter(recipe => !recipe.unlocked && recipe.experienceRequired > canningExperience)
+    .sort((a, b) => a.experienceRequired - b.experienceRequired)[0];
+  const preserver = !!guildState && isCommittedTo(guildState, 'preservers');
+
   const mainContent = (
-    <div className={styles.container}>
-      <div className={styles.content}>
-        <CanningPanel
+    <div className={styles.kitchen}>
+      <PantryPanel
+        crops={pantryCrops}
+        showHoney={showHoney}
+        regularHoney={regularHoney}
+        goldenHoney={goldenHoney}
+        formatNumber={formatNumber}
+      />
+
+      <CanningPanel
+        canningState={canningState}
+        veggies={veggies}
+        heirloomOwned={heirloomOwned}
+        regularHoney={regularHoney}
+        goldenHoney={goldenHoney}
+        onStartCanning={startCanning}
+        canMakeRecipe={canMakeRecipe}
+        guildState={guildState}
+        rushBatch={rushBatch}
+        recipeFilter={recipeFilter}
+        recipeSort={recipeSort}
+        canMakeOnly={canMakeOnly}
+        onRecipeFilterChange={onRecipeFilterChange}
+        onRecipeSortChange={onRecipeSortChange}
+        onCanMakeOnlyChange={onCanMakeOnlyChange}
+      />
+
+      <div className={styles.side}>
+        <CanningUpgradesPanel
+          upgrades={canningState?.upgrades}
+          money={money}
+          knowledge={knowledge}
+          onPurchaseUpgrade={purchaseUpgrade}
           canningState={canningState}
-          veggies={veggies}
-          heirloomOwned={heirloomOwned}
-          regularHoney={regularHoney}
-          goldenHoney={goldenHoney}
-          onStartCanning={startCanning}
-          canMakeRecipe={canMakeRecipe}
-          recipeFilter={recipeFilter}
-          recipeSort={recipeSort}
-          canMakeOnly={canMakeOnly}
-          onRecipeFilterChange={onRecipeFilterChange}
-          onRecipeSortChange={onRecipeSortChange}
-          onCanMakeOnlyChange={onCanMakeOnlyChange}
+          onToggleAutoCanning={toggleAutoCanning}
         />
+
+        {preserver && guildState && (
+          <section className={styles.guild} aria-label="Preservers Guild">
+            <div className={styles.guildHeader}>
+              <img src={GUILD_PRESERVERS} alt="" className={styles.guildEmblem} />
+              <span className={styles.guildName}>Preservers Guild</span>
+              <span className={styles.seals} title="Wax Seals: earned from batches you start yourself and from shooing Dunkin">
+                <InlineIcon src={ICON_WAX_SEAL} size={22} gap={4} />
+                {formatNumber(guildState.guildCurrencies.preservers)}
+              </span>
+            </div>
+            <p className={styles.guildNote}>
+              Jars +{formatNumber(getPreserversValueBonus(guildState) * 100, 0)}%. Raw crops -10%.
+            </p>
+          </section>
+        )}
+
+        <section className={styles.stats} aria-label="Kitchen stats">
+          <div className={styles.stat}><span>Recipes</span><b>{unlockedCount} of {recipes?.length ?? 0}</b></div>
+          <div className={styles.stat}><span>Jars canned</span><b>{formatNumber(canningState?.totalItemsCanned ?? 0)}</b></div>
+          <div className={styles.stat}><span>Canning experience</span><b>{formatNumber(canningExperience)}</b></div>
+          {nextRecipe && (
+            <div className={styles.stat}><span>Next recipe at</span><b>{formatNumber(nextRecipe.experienceRequired)} exp</b></div>
+          )}
+        </section>
       </div>
     </div>
   );
-
-  // Canning upgrades sidebar
-  const sidebarContent = (
-    <>
-      <h2 className={styles.title}>Upgrades</h2>
-      <CanningUpgradesPanel
-        upgrades={canningState?.upgrades}
-        money={money}
-        knowledge={knowledge}
-        onPurchaseUpgrade={purchaseUpgrade}
-        canningState={canningState}
-        onToggleAutoCanning={toggleAutoCanning}
-      />
-    </>
-  );
-
-  // Custom sidebar styling for canning tab
-  const sidebarStyle = {
-    background: '#ff8503',
-    border: '1px solid #e68900',
-    boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
-  };
 
   return (
     <BaseTab
@@ -98,8 +152,6 @@ const CanningTab: FC<CanningTabProps> = memo(({
       isLoading={canningUnlocked && !canningState}
       loadingMessage="Loading canning system..."
       mainContent={mainContent}
-      sidebarContent={sidebarContent}
-      sidebarStyle={sidebarStyle}
     />
   );
 });

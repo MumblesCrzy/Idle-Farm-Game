@@ -132,7 +132,7 @@ function createTestUpgrades(): CanningUpgrade[] {
       baseCost: 500,
       upgradeCostScaling: 2.0,
       costCurrency: 'money',
-      maxLevel: 14,
+      maxLevel: 15,
       effect: 1,
       unlocked: true
     },

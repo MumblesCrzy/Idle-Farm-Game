@@ -127,7 +127,7 @@ export interface GameState {
   setActiveVeggie: (i: number) => void;
   
   // Core Actions
-  handleHarvest: () => void;
+  handleHarvest: (cropIndex?: number) => void;
   handleToggleSell: (index: number) => void;
   handleToggleAutoHarvester: (index: number) => void;
   handleSell: () => void;
@@ -221,9 +221,9 @@ export interface BaseTabProps {
   active: boolean;
 }
 
-export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'pumpkin' | 'bees';
+export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'pumpkin' | 'bees' | 'guilds';
 
-export type RecipeFilter = 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+export type RecipeFilter = 'all' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'cellar';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
 
 // ============================================================================

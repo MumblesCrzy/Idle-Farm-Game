@@ -1,4 +1,4 @@
-import type { Achievement } from '../types/achievements';
+import type { Achievement, AchievementGameState } from '../types/achievements';
 import { 
   VEGGIE_CARROT, 
   ICON_PLOTS, 
@@ -18,8 +18,28 @@ import {
   PUMPKIN_SUGAR_PIE,
   PUMPKIN_LANTERN,
   PUMPKIN_GIANT,
-  RIBBON_BLUE
+  PUMPKIN_SCALE,
+  RIBBON_BLUE,
+  SPECIAL_GLUTTON,
+  ICON_SCROLL
 } from '../config/assetPaths';
+import { PUMPKIN_EVENT_CONSTANTS } from './pumpkinEventData';
+import { INITIAL_BEE_UPGRADES } from './beeUpgrades';
+
+/** The real Atlantic Giant world record, in pounds */
+const WORLD_RECORD = PUMPKIN_EVENT_CONSTANTS.WORLD_RECORD_WEIGHT;
+
+/** Every bee upgrade, and the Beekeeper Assistant */
+const ALL_BEE_UPGRADES = INITIAL_BEE_UPGRADES.length + 1;
+
+/** Bee upgrades bought at least once, counting the Beekeeper Assistant once hired */
+const beeUpgradesPurchased = (beeState: AchievementGameState['beeState']): number => {
+  if (!beeState) return 0;
+  const bought = INITIAL_BEE_UPGRADES.filter(definition =>
+    beeState.upgrades.some(upgrade => upgrade.id === definition.id && upgrade.purchased)
+  ).length;
+  return bought + (beeState.beekeeperAssistant?.unlocked ? 1 : 0);
+};
 
 /** Achievements that add a permanent bonus, by the id they add to permanentBonuses */
 export const PERMANENT_BONUS_ACHIEVEMENTS: Record<string, string> = {
@@ -239,6 +259,92 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     },
     hidden: true
   },
+
+  // Preservers Guild: Dunkin the Glutton
+  {
+    id: 'glutton_first_shoo',
+    name: 'Get out of the kitchen Dunkin!',
+    description: 'Shoo Dunkin out of the kitchen',
+    icon: SPECIAL_GLUTTON,
+    category: 'canning',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.guildState?.glutton?.shoos ?? 0) >= 1
+    },
+    reward: {
+      knowledge: 50,
+      message: 'And stay out! +50 knowledge'
+    }
+  },
+  {
+    id: 'glutton_pantry_guardian',
+    name: 'Pantry Guardian',
+    description: 'Shoo Dunkin before his first bite 25 times',
+    icon: SPECIAL_GLUTTON,
+    category: 'canning',
+    requirement: {
+      type: 'custom',
+      value: 25,
+      customCheck: (gameState) => (gameState.guildState?.glutton?.earlyShoos ?? 0) >= 25,
+      getProgress: (gameState) => gameState.guildState?.glutton?.earlyShoos ?? 0
+    },
+    reward: {
+      knowledge: 150,
+      money: 5000,
+      message: 'Not a crumb lost! +150 knowledge and $5,000'
+    }
+  },
+  {
+    id: 'glutton_vet_bills',
+    name: "Vet's Best Customer",
+    description: 'Send a stuffed Dunkin to the vet 10 times',
+    icon: SPECIAL_GLUTTON,
+    category: 'canning',
+    requirement: {
+      type: 'custom',
+      value: 10,
+      customCheck: (gameState) => (gameState.guildState?.glutton?.vetBills ?? 0) >= 10,
+      getProgress: (gameState) => gameState.guildState?.glutton?.vetBills ?? 0
+    },
+    reward: {
+      knowledge: 100,
+      message: 'The vet sends a thank-you card. +100 knowledge'
+    },
+    hidden: true
+  },
+
+  // Legacy: special, so they survive the reset they celebrate
+  {
+    id: 'legacy_first',
+    name: 'Turning the Page',
+    description: 'End your first Legacy',
+    icon: ICON_SCROLL,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.guildState?.legacy?.count ?? 0) >= 1
+    },
+    reward: {
+      knowledge: 100,
+      money: 1000,
+      message: 'A new chapter begins. +100 knowledge and $1,000'
+    }
+  },
+  {
+    id: 'legacy_two_trades',
+    name: 'Two Trades',
+    description: 'Hold kept unlocks from two different guilds',
+    icon: ICON_SCROLL,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => new Set((gameState.guildState?.legacy?.keptUnlocks ?? []).map(id => id.split('_')[0])).size >= 2
+    },
+    reward: {
+      knowledge: 250,
+      message: 'Skills from two guilds, one farm. +250 knowledge'
+    }
+  },
   
   // Farm Tier Achievements
   {
@@ -448,6 +554,25 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       message: 'Harvest Moon: permanent +5% fall crop yield, and Archie gets a Warlock Costume! +4,000 Candy Corn and 200 knowledge'
     }
   },
+  {
+    id: 'pumpkin_world_record',
+    name: 'New World Record',
+    description: `Grow an Atlantic Giant heavier than the ${WORLD_RECORD.toLocaleString('en-US')} lb world record`,
+    icon: PUMPKIN_SCALE,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      value: WORLD_RECORD + 1,
+      customCheck: (gameState) => (gameState.heaviestGiant ?? 0) > WORLD_RECORD,
+      getProgress: (gameState) => gameState.heaviestGiant ?? 0
+    },
+    reward: {
+      candyCorn: 5000,
+      knowledge: 250,
+      message: 'The record books need a new page! +5,000 Candy Corn and 250 knowledge'
+    },
+    hidden: true
+  },
 
   // Bee System Achievements
   {
@@ -582,23 +707,15 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
   {
     id: 'queens_court',
     name: 'Queen\'s Court',
-    description: 'Unlock all bee upgrades',
+    description: 'Purchase all bee upgrades and the Beekeeper',
     icon: ICON_BEE,
     category: 'bees',
     requirement: {
       type: 'custom',
-      customCheck: (gameState) => {
-        const upgrades = gameState.beeState?.upgrades || [];
-        if (upgrades.length === 0) return false;
-        
-        // Check if all upgrades are unlocked (purchased at least once)
-        // There are 5 unique upgrades: Busy Bees, Royal Jelly, Hexcomb Engineering, Meadow Magic, Queen's Blessing
-        const uniqueUpgrades = ['busy_bees', 'royal_jelly', 'hexcomb_engineering', 'meadow_magic', 'queens_blessing'];
-        return uniqueUpgrades.every(upgradeId => {
-          const upgrade = upgrades.find((u) => u.id === upgradeId);
-          return upgrade && upgrade.purchased;
-        });
-      }
+      value: ALL_BEE_UPGRADES,
+      // Each upgrade bought at least once: leveled upgrades don't need their top level
+      customCheck: (gameState) => beeUpgradesPurchased(gameState.beeState) >= ALL_BEE_UPGRADES,
+      getProgress: (gameState) => beeUpgradesPurchased(gameState.beeState)
     },
     reward: {
       knowledge: 100,

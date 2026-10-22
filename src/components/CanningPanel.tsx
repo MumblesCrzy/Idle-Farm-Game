@@ -1,12 +1,18 @@
+/**
+ * The middle of the Kitchen: the stove on top, then the recipe book in two columns with its
+ * filters. A recipe's name opens its details.
+ */
 import { useState, useCallback, useMemo, memo, type FC } from 'react';
-import RecipeCard from './RecipeCard';
-import CanningProcessDisplay from './CanningProcessDisplay';
+import CanningStove from './CanningStove';
+import RecipeRow from './RecipeRow';
 import RecipeDetailsModal from './RecipeDetailsModal';
-import type { Recipe, CanningState } from '../types/canning';
+import type { Recipe, CanningState, RushBatchControl } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import { formatNumber } from '../utils/gameCalculations';
-import { ICON_CANNING } from '../config/assetPaths';
-import { filterRecipesByCategory, sortRecipesByPreference, type RecipeValueContext } from '../utils/recipeHelpers';
+import { getPreserversTimeMultiplier, getPressureCannerJars, getRecipeMasteryBonus } from '../utils/guildCalculations';
+import { filterRecipesByCategory, getEffectiveSalePrice, sortRecipesByPreference, type RecipeValueContext } from '../utils/recipeHelpers';
+import { RIBBON_FIRST, RIBBON_SECOND, RIBBON_THIRD } from '../config/assetPaths';
 import styles from './CanningPanel.module.css';
 
 interface CanningPanelProps {
@@ -17,58 +23,65 @@ interface CanningPanelProps {
   goldenHoney?: number;
   onStartCanning: (recipeId: string) => boolean;
   canMakeRecipe: (recipe: Recipe) => boolean;
-  recipeFilter?: RecipeFilter;
-  recipeSort?: RecipeSort;
-  canMakeOnly?: boolean;
-  onRecipeFilterChange?: (filter: RecipeFilter) => void;
-  onRecipeSortChange?: (sort: RecipeSort) => void;
-  onCanMakeOnlyChange?: (value: boolean) => void;
+  /** Guild rules on recipe value, time and jars */
+  guildState?: GuildState;
+  /** Rush Batch, for Preservers who own it */
+  rushBatch?: RushBatchControl;
+  recipeFilter: RecipeFilter;
+  recipeSort: RecipeSort;
+  canMakeOnly: boolean;
+  onRecipeFilterChange: (filter: RecipeFilter) => void;
+  onRecipeSortChange: (sort: RecipeSort) => void;
+  onCanMakeOnlyChange: (value: boolean) => void;
 }
+
+const FILTERS: Array<{ id: RecipeFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'simple', label: 'Simple' },
+  { id: 'complex', label: 'Complex' },
+  { id: 'gourmet', label: 'Gourmet' },
+  { id: 'honey', label: 'Honey' },
+  { id: 'cellar', label: 'Cellar' }
+];
+
+/** Recipe Mastery ribbons from the Family Cookbook, by the value they add */
+const MASTERY_RIBBONS: Record<number, { image: string; label: string }> = {
+  0.5: { image: RIBBON_FIRST, label: 'Made 500 times: +50% value' },
+  0.25: { image: RIBBON_SECOND, label: 'Made 100 times: +25% value' },
+  0.1: { image: RIBBON_THIRD, label: 'Made 25 times: +10% value' }
+};
 
 const CanningPanel: FC<CanningPanelProps> = memo(({
   canningState,
   veggies,
   heirloomOwned,
-  regularHoney,
-  goldenHoney,
+  regularHoney = 0,
+  goldenHoney = 0,
   onStartCanning,
   canMakeRecipe,
-  recipeFilter: propRecipeFilter,
-  recipeSort: propRecipeSort,
-  canMakeOnly: propCanMakeOnly,
+  guildState,
+  rushBatch,
+  recipeFilter,
+  recipeSort,
+  canMakeOnly,
   onRecipeFilterChange,
   onRecipeSortChange,
   onCanMakeOnlyChange
 }) => {
-  // Calculate efficiency multiplier from canning upgrades
-  const efficiencyUpgrade = canningState.upgrades.find(u => u.id === 'canning_efficiency');
-  const efficiencyMultiplier = efficiencyUpgrade?.effect || 1;
-
-  // Calculate speed multiplier from canning upgrades
-  const speedUpgrade = canningState.upgrades.find(u => u.id === 'canning_speed');
-  const speedMultiplier = speedUpgrade?.effect || 1;
+  const efficiencyMultiplier = canningState.upgrades.find(u => u.id === 'canning_efficiency')?.effect || 1;
+  // Quick Hands and the Preservers' time upgrades together
+  const speedMultiplier = (canningState.upgrades.find(u => u.id === 'canning_speed')?.effect || 1)
+    * (guildState ? getPreserversTimeMultiplier(guildState) : 1);
+  const jarsPerBatch = guildState ? getPressureCannerJars(guildState) : 1;
 
   const recipeValueContext = useMemo<RecipeValueContext>(() => ({
     veggies,
     heirloomOwned,
-    efficiencyMultiplier
-  }), [veggies, heirloomOwned, efficiencyMultiplier]);
+    efficiencyMultiplier,
+    guildState
+  }), [veggies, heirloomOwned, efficiencyMultiplier, guildState]);
 
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  
-  // Use props for filter state, fallback to local state if props not provided
-  const [localRecipeFilter, setLocalRecipeFilter] = useState<RecipeFilter>('all');
-  const [localRecipeSort, setLocalRecipeSort] = useState<RecipeSort>('profit');
-  const [localCanMakeOnly, setLocalCanMakeOnly] = useState(false);
-  
-  const recipeFilter = propRecipeFilter ?? localRecipeFilter;
-  const recipeSort = propRecipeSort ?? localRecipeSort;
-  const canMakeOnly = propCanMakeOnly ?? localCanMakeOnly;
-  
-  const setRecipeFilter = onRecipeFilterChange ?? setLocalRecipeFilter;
-  const setRecipeSort = onRecipeSortChange ?? setLocalRecipeSort;
-  const setCanMakeOnly = onCanMakeOnlyChange ?? setLocalCanMakeOnly;
+  const stash = useMemo(() => new Map(veggies.map(veggie => [veggie.name, veggie.stash])), [veggies]);
 
   // Filtered and sorted once per change of recipes, filters or values
   const sortedRecipes = useMemo(() => sortRecipesByPreference(
@@ -77,165 +90,113 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
     recipeValueContext
   ), [canningState.recipes, recipeFilter, canMakeRecipe, canMakeOnly, recipeSort, recipeValueContext]);
 
-  const handleShowDetails = useCallback((recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setShowModal(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setShowModal(false);
-    setSelectedRecipe(null);
-  }, []);
-
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const handleShowDetails = useCallback((recipe: Recipe) => setSelectedRecipe(recipe), []);
+  const handleCloseModal = useCallback(() => setSelectedRecipe(null), []);
   const handleStartCanning = useCallback((recipeId: string) => {
-    const success = onStartCanning(recipeId);
-    if (success) {
-      // Close modal if open
-      if (showModal) {
-        handleCloseModal();
-      }
-    }
-    return success;
-  }, [onStartCanning, showModal, handleCloseModal]);
+    const started = onStartCanning(recipeId);
+    if (started) setSelectedRecipe(null);
+    return started;
+  }, [onStartCanning]);
 
-  const unlockedCount = canningState.recipes.filter(r => r.unlocked).length;
-  
-  // Find the next locked recipe (the one with the lowest experienceRequired above current experience)
-  const nextLockedRecipe = canningState.recipes
-    .filter(r => !r.unlocked)
-    .sort((a, b) => a.experienceRequired - b.experienceRequired)[0];
+  const stoveFull = canningState.activeProcesses.length >= canningState.maxSimultaneousProcesses;
+  // The Cellar filter shows once the Cellar recipes are open
+  const filters = canningState.recipes.some(recipe => !!recipe.requiredGuildUpgrade)
+    ? FILTERS
+    : FILTERS.filter(filter => filter.id !== 'cellar');
 
-  const nextRecipeExperience = nextLockedRecipe?.experienceRequired ?? 0;
-
-  const totalRecipes = canningState.recipes.length;
-
-  if (unlockedCount === 0) {
+  if (!canningState.recipes.some(recipe => recipe.unlocked)) {
     return (
-      <div className={styles.lockedContainer}>
+      <div className={styles.locked}>
         <h2 className={styles.lockedTitle}>Canning System Locked</h2>
-        <p className={styles.lockedDescription}>
-          You need more experience to unlock canning recipes. Keep growing and harvesting vegetables!
-        </p>
-        <div className={styles.lockedRequirement}>
-          Canning unlocks at Farm Tier 3
-        </div>
+        <p>You need more experience to unlock canning recipes. Keep growing and harvesting vegetables!</p>
+        <p className={styles.lockedRequirement}>Canning unlocks at Farm Tier 3</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      {/* Header with filters and stats - condensed */}
-      <div className={styles.header}>
-        <div>
-          <h2 className={styles.headerTitle}>
-            <img src={ICON_CANNING} alt="" aria-hidden="true" className={styles.headerIcon} />
-            Canning Recipes
-          </h2>
-          <div className={styles.headerUnlockCount}>
-            {unlockedCount} of {totalRecipes} recipes unlocked
-          </div>
-          {canningState.totalItemsCanned > 0 && (
-              <div className={styles.headerStats}>
-              Items Canned: {canningState.totalItemsCanned} | Experience: {canningState.canningExperience} 
-              {nextRecipeExperience > 0 && (
-                <span> | Next Recipe at {nextRecipeExperience} exp</span>
-              )}
-              </div>
-          )}
+    <div className={styles.panel}>
+      <CanningStove
+        processes={canningState.activeProcesses}
+        recipes={canningState.recipes}
+        slots={canningState.maxSimultaneousProcesses}
+        jarsPerBatch={jarsPerBatch}
+        rushBatch={rushBatch}
+      />
+
+      <div className={styles.toolbar}>
+        <div className={styles.filters} role="group" aria-label="Recipe categories">
+          {filters.map(filter => (
+            <button
+              key={filter.id}
+              type="button"
+              className={styles.filter}
+              aria-pressed={recipeFilter === filter.id}
+              onClick={() => onRecipeFilterChange(filter.id)}
+            >
+              {filter.label}
+            </button>
+          ))}
         </div>
-        
-        <div className={styles.controls}>
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={canMakeOnly}
-              onChange={(e) => setCanMakeOnly(e.target.checked)}
-              className={styles.checkbox}
-            />
-            Can Make
-          </label>
-          
-          <select
-            value={recipeFilter}
-            onChange={(e) => setRecipeFilter(e.target.value as RecipeFilter)}
-            className={styles.select}
-            aria-label="Filter recipes by category"
-          >
-            <option value="all">All Recipes</option>
-            <option value="simple">Simple</option>
-            <option value="complex">Complex</option>
-            <option value="gourmet">Gourmet</option>
-            <option value="honey">Honey Recipes</option>
+        <label className={styles.option}>
+          <input type="checkbox" checked={canMakeOnly} onChange={e => onCanMakeOnlyChange(e.target.checked)} />
+          Can make
+        </label>
+        <label className={styles.option}>
+          Sort
+          <select value={recipeSort} onChange={e => onRecipeSortChange(e.target.value as RecipeSort)} className={styles.select}>
+            <option value="profit">Profit</option>
+            <option value="name">Name</option>
+            <option value="time">Time</option>
+            <option value="difficulty">Ingredients</option>
           </select>
-          
-          <select
-            value={recipeSort}
-            onChange={(e) => setRecipeSort(e.target.value as RecipeSort)}
-            className={styles.select}
-            aria-label="Sort recipes by"
-          >
-            <option value="profit">By Profit</option>
-            <option value="name">By Name</option>
-            <option value="time">By Time</option>
-            <option value="difficulty">By Difficulty</option>
-          </select>
-        </div>
+        </label>
       </div>
 
-      {/* Recipe grid - condensed */}
-      <div className={styles.content}>       
-        {sortedRecipes.length === 0 ? (
-          <div className={styles.emptyState}>
-            No recipes match the current filter.
-            {canMakeOnly && (
-              <div className={styles.emptyStateHint}>
-                Try growing more vegetables to unlock ingredients!
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={styles.recipesGrid}>
-            {sortedRecipes.map(recipe => (
-              <RecipeCard
+      {sortedRecipes.length === 0 ? (
+        <p className={styles.empty}>
+          No recipes match these filters.
+          {canMakeOnly && ' Harvest more crops to make more recipes.'}
+        </p>
+      ) : (
+        <ul className={styles.recipes} aria-label="Recipes">
+          {sortedRecipes.map(recipe => {
+            const mastery = guildState ? MASTERY_RIBBONS[getRecipeMasteryBonus(guildState, recipe.timesCompleted)] : undefined;
+            return (
+              <RecipeRow
                 key={recipe.id}
                 recipe={recipe}
                 canMake={canMakeRecipe(recipe)}
-                onStartCanning={handleStartCanning}
-                onShowDetails={handleShowDetails}
-                veggies={veggies}
+                value={getEffectiveSalePrice(recipe, recipeValueContext)}
+                seconds={Math.ceil(recipe.baseProcessingTime * speedMultiplier)}
+                stash={stash}
                 regularHoney={regularHoney}
                 goldenHoney={goldenHoney}
-                efficiencyMultiplier={efficiencyMultiplier}
-                speedMultiplier={speedMultiplier}
-                heirloomOwned={heirloomOwned}
+                mastery={mastery}
+                stoveFull={stoveFull}
+                onStart={handleStartCanning}
+                onShowDetails={handleShowDetails}
                 formatNumber={formatNumber}
               />
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </ul>
+      )}
 
-      {/* Active processes - moved below recipes */}
-      <CanningProcessDisplay
-        processes={canningState.activeProcesses}
-        recipes={canningState.recipes}
-        maxSimultaneousProcesses={canningState.maxSimultaneousProcesses}
-      />
-
-      {/* Recipe details modal */}
       <RecipeDetailsModal
         recipe={selectedRecipe}
-        isVisible={showModal}
+        isVisible={selectedRecipe !== null}
         onClose={handleCloseModal}
         onStartCanning={handleStartCanning}
         veggies={veggies}
         regularHoney={regularHoney}
         goldenHoney={goldenHoney}
-        canMake={selectedRecipe ? canMakeRecipe(selectedRecipe) : false}
+        canMake={selectedRecipe ? canMakeRecipe(selectedRecipe) && !stoveFull : false}
         efficiencyMultiplier={efficiencyMultiplier}
         speedMultiplier={speedMultiplier}
         heirloomOwned={heirloomOwned}
+        guildState={guildState}
         formatNumber={formatNumber}
       />
     </div>

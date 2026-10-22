@@ -1,5 +1,6 @@
 import InlineIcon from './InlineIcon';
 import { ICON_IDEA } from '../config/assetPaths';
+import { announce } from '../utils/announcer';
 import { useEffect, memo, type FC } from 'react';
 import styles from './Toast.module.css';
 
@@ -30,6 +31,11 @@ const Toast: FC<ToastProps> = memo(({
       return () => clearTimeout(timer);
     }
   }, [visible, duration, onClose]);
+
+  // Screen readers hear each toast as it appears
+  useEffect(() => {
+    if (visible && message) announce(message);
+  }, [visible, message]);
   
   if (!visible) return null;
   

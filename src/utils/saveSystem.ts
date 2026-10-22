@@ -1,5 +1,5 @@
 import type { CanningState, LeanCanningProgress } from '../types/canning';
-import type { Veggie, EventLogState } from '../types/game';
+import type { Veggie, EventLogState, RecipeFilter } from '../types/game';
 import type { BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 import type { ChristmasEventState } from '../types/christmasEvent';
 import type { PumpkinEventState } from '../types/pumpkinEvent';
@@ -131,7 +131,7 @@ function _leanProgressToCanningState(progress: LeanCanningProgress, veggies: any
       baseCost: 500,
       upgradeCostScaling: 1.7,
       costCurrency: 'money' as const,
-      maxLevel: 14,
+      maxLevel: 15,
       effect: 1,
       unlocked: true
     },
@@ -277,7 +277,7 @@ export interface ExtendedGameState {
   
   // UI preferences
   uiPreferences?: {
-    canningRecipeFilter?: 'all' | 'simple' | 'complex' | 'gourmet' | 'honey';
+    canningRecipeFilter?: RecipeFilter;
     canningCanMakeOnly?: boolean;
     canningRecipeSort?: 'name' | 'profit' | 'time' | 'difficulty';
   };
@@ -594,7 +594,7 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
           baseCost: 500,
           upgradeCostScaling: 1.5,
           costCurrency: 'money',
-          maxLevel: 14,
+          maxLevel: 15,
           effect: 1,
           unlocked: true
         },

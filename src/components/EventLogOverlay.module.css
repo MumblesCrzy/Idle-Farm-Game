@@ -234,6 +234,12 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* The list takes focus so the keyboard can scroll it; the ring sits inside its edge */
+.eventList:focus-visible {
+  outline: 2px solid #4CAF50;
+  outline-offset: -2px;
+}
+
 .eventList::-webkit-scrollbar {
   width: 8px;
 }

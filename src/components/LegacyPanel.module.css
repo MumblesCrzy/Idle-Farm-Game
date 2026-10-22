@@ -1,0 +1,102 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 2px solid #6b3410;
+  border-radius: 10px;
+  background: #2b1d14;
+  color: #f3e6d4;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 16px;
+  color: #f5ca84;
+}
+
+.badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f5ca84;
+  color: #2b1d14;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.caption {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c9a98a;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid #6b3410;
+  border-radius: 8px;
+  background: #3d2314;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.none {
+  font-size: 12px;
+  color: #c9a98a;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: #d9c7b5;
+}
+
+.history {
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  list-style: none;
+  font-size: 12px;
+  color: #d9c7b5;
+}
+
+.history b {
+  color: #f3e6d4;
+}
+
+/* The narrow version in the Guilds sidebar: smaller, and a long record scrolls inside */
+.compact {
+  margin-top: 0;
+  padding: 10px 12px;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.compact .title {
+  font-size: 15px;
+}
+
+.compact .chip {
+  padding: 3px 7px;
+  font-size: 11px;
+}

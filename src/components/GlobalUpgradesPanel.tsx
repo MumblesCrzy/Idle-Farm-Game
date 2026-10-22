@@ -1,13 +1,15 @@
-import type { FC } from 'react';
-import UpgradeButton from './UpgradeButton';
-import ProgressBar from './ProgressBar';
+/**
+ * Farm-wide upgrades, in the Growing tab's tool shed under the picked crop's upgrades: one
+ * compact row each, with the Merchant's countdown on its row once hired.
+ */
+import type { FC, ReactNode } from 'react';
 import styles from './GlobalUpgradesPanel.module.css';
-import { 
-  UPGRADE_FARMERS_ALMANAC, 
-  UPGRADE_IRRIGATION, 
-  UPGRADE_MERCHANT, 
-  UPGRADE_GREENHOUSE, 
-  UPGRADE_HEIRLOOM_SEEDS 
+import {
+  UPGRADE_FARMERS_ALMANAC,
+  UPGRADE_IRRIGATION,
+  UPGRADE_MERCHANT,
+  UPGRADE_GREENHOUSE,
+  UPGRADE_HEIRLOOM_SEEDS
 } from '../config/assetPaths';
 import {
   MERCHANT_DAYS,
@@ -20,6 +22,8 @@ import {
 } from '../config/gameConstants';
 import { VEGGIE_CONFIGS } from '../data/veggieConfigs';
 import { FRUIT_CONFIGS } from '../data/fruitConfigs';
+
+type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
 /** Crop names in game order: vegetables, then fruits */
 const CROP_NAMES = [...VEGGIE_CONFIGS, ...FRUIT_CONFIGS].map(config => config.name);
@@ -45,8 +49,75 @@ interface GlobalUpgradesPanelProps {
   handleBuyAutoSell: () => void;
   handleBuyGreenhouse: () => void;
   handleBuyHeirloom: () => void;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
+  formatNumber: FormatNumber;
 }
+
+interface FarmUpgradeRowProps {
+  icon: string;
+  name: string;
+  /** The level badge, for the Almanac */
+  level?: number;
+  effect: string;
+  /** A one-time upgrade already bought shows Owned instead of a price */
+  owned?: boolean;
+  cost: number;
+  knowledgeCost?: number;
+  money: number;
+  knowledge: number;
+  title: string;
+  onBuy: () => void;
+  /** Drawn under the effect, as the Merchant's countdown is */
+  footer?: ReactNode;
+  formatNumber: FormatNumber;
+}
+
+const FarmUpgradeRow: FC<FarmUpgradeRowProps> = ({
+  icon,
+  name,
+  level,
+  effect,
+  owned = false,
+  cost,
+  knowledgeCost = 0,
+  money,
+  knowledge,
+  title,
+  onBuy,
+  footer,
+  formatNumber
+}) => {
+  const canAfford = money >= cost && knowledge >= knowledgeCost;
+  const price = knowledgeCost > 0
+    ? `$${formatNumber(cost, 1)} · ${formatNumber(knowledgeCost, 1)} Kn`
+    : `$${formatNumber(cost, 1)}`;
+
+  return (
+    <div className={styles.row} title={title}>
+      <img src={icon} alt="" aria-hidden="true" className={styles.icon} />
+      <div className={styles.info}>
+        <span className={styles.name}>
+          {name}
+          {level !== undefined && <span className={styles.level}>Lv {level}</span>}
+        </span>
+        <span className={styles.effect}>{effect}</span>
+        {footer}
+      </div>
+      {owned ? (
+        <span className={styles.owned}>Owned</span>
+      ) : (
+        <button
+          type="button"
+          className={canAfford ? styles.buyAfford : styles.buyShort}
+          onClick={onBuy}
+          disabled={!canAfford}
+          aria-label={`Buy ${name} for ${price}`}
+        >
+          {price}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   money,
@@ -71,128 +142,79 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   handleBuyHeirloom,
   formatNumber
 }) => {
+  const merchantDay = day % MERCHANT_DAYS;
+  const shared = { money, knowledge, formatNumber };
+
   return (
-    <>
-      <h2 className={styles.title}>Upgrades</h2>
-      
-      <div className={styles.upgradesContainer}>
-        {/* Farmer's Almanac */}
-        <div>
-          <UpgradeButton
-            title="Each level increases knowledge gained by 10%"
-            imageSrc={UPGRADE_FARMERS_ALMANAC}
-            imageAlt="Farmer's Almanac"
-            buttonText="Almanac"
-            money={money}
-            knowledge={knowledge}
-            cost={almanacCost}
-            currencyType="money"
-            onClick={handleBuyAlmanac}
-            disabled={money < almanacCost}
-            level={almanacLevel}
-            effect={almanacLevel > 0 ? `Knowledge gain: +${(almanacLevel * 10)}%` : '+0%'}
-            formatNumber={formatNumber}
-          />
-        </div>
+    <section className={styles.panel} aria-labelledby="farm-upgrades-title">
+      <h3 id="farm-upgrades-title" className={styles.title}>Farm Upgrades</h3>
 
-        {/* Irrigation */}
-        <div>
-          <UpgradeButton
-            title="Negates drought penalty and provides +15% growth rate bonus."
-            imageSrc={UPGRADE_IRRIGATION}
-            imageAlt="Irrigation"
-            buttonText="Irrigation"
-            money={money}
-            knowledge={knowledge}
-            cost={irrigationCost}
-            currencyType="money"
-            knowledgeCost={irrigationKnCost}
-            onClick={handleBuyIrrigation}
-            disabled={irrigationOwned || money < irrigationCost || knowledge < irrigationKnCost}
-            isOwned={irrigationOwned}
-            effect="+15% growth rate, drought immunity"
-            formatNumber={formatNumber}
-          />
-        </div>
+      <FarmUpgradeRow
+        {...shared}
+        icon={UPGRADE_FARMERS_ALMANAC}
+        name="Almanac"
+        level={almanacLevel}
+        effect={`Knowledge +${almanacLevel * 10}%`}
+        cost={almanacCost}
+        title="Each level increases knowledge gained by 10%"
+        onBuy={handleBuyAlmanac}
+      />
 
-        {/* Merchant */}
-        <div>
-          <UpgradeButton
-            title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
-            imageSrc={UPGRADE_MERCHANT}
-            imageAlt="Merchant"
-            buttonText="Merchant"
-            money={money}
-            knowledge={knowledge}
-            cost={MERCHANT_COST}
-            currencyType="money"
-            knowledgeCost={MERCHANT_KN_COST}
-            onClick={handleBuyAutoSell}
-            disabled={autoSellOwned || money < MERCHANT_COST || knowledge < MERCHANT_KN_COST}
-            isOwned={autoSellOwned}
-            effect={`Auto-sells every ${MERCHANT_DAYS} days`}
-            formatNumber={formatNumber}
-          />
-        </div>
+      <FarmUpgradeRow
+        {...shared}
+        icon={UPGRADE_IRRIGATION}
+        name="Irrigation"
+        effect="+15% growth, no drought"
+        owned={irrigationOwned}
+        cost={irrigationCost}
+        knowledgeCost={irrigationKnCost}
+        title="Negates drought penalty and provides +15% growth rate bonus."
+        onBuy={handleBuyIrrigation}
+      />
 
-        {/* Greenhouse */}
-        <div>
-          <UpgradeButton
-            title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} & ${maxPlots} x ${formatNumber(GREENHOUSE_KN_COST_PER_PLOT, 1)} Kn).`}
-            imageSrc={UPGRADE_GREENHOUSE}
-            imageAlt="Greenhouse"
-            buttonText="Greenhouse"
-            money={money}
-            knowledge={knowledge}
-            cost={GREENHOUSE_COST_PER_PLOT * maxPlots}
-            currencyType="money"
-            knowledgeCost={GREENHOUSE_KN_COST_PER_PLOT * maxPlots}
-            onClick={handleBuyGreenhouse}
-            disabled={greenhouseOwned || money < (GREENHOUSE_COST_PER_PLOT * maxPlots) || knowledge < (GREENHOUSE_KN_COST_PER_PLOT * maxPlots)}
-            isOwned={greenhouseOwned}
-            effect={'Winter immunity'}
-            formatNumber={formatNumber}
-          />
-        </div>
+      <FarmUpgradeRow
+        {...shared}
+        icon={UPGRADE_MERCHANT}
+        name="Merchant"
+        effect={autoSellOwned
+          ? `Next sale in ${MERCHANT_DAYS - merchantDay} days`
+          : `Sells the stash every ${MERCHANT_DAYS} days`}
+        owned={autoSellOwned}
+        cost={MERCHANT_COST}
+        knowledgeCost={MERCHANT_KN_COST}
+        title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
+        onBuy={handleBuyAutoSell}
+        footer={autoSellOwned ? (
+          <span className={styles.merchantBar} aria-hidden="true">
+            <span style={{ width: `${(merchantDay / MERCHANT_DAYS) * 100}%` }} />
+          </span>
+        ) : undefined}
+      />
 
-        {/* Heirloom Seeds */}
-        <div>
-          <UpgradeButton
-            title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${CROP_NAMES[highestUnlockedVeggie] ?? 'Radish'} (${highestUnlockedVeggie + 1} × $${formatNumber(HEIRLOOM_COST_PER_VEGGIE, 1)} & ${highestUnlockedVeggie + 1} × ${formatNumber(HEIRLOOM_KN_PER_VEGGIE, 1)} Kn).`}
-            imageSrc={UPGRADE_HEIRLOOM_SEEDS}
-            imageAlt="Heirloom Seeds"
-            buttonText="Heirloom Seeds"
-            money={money}
-            knowledge={knowledge}
-            cost={heirloomMoneyCost}
-            currencyType="money"
-            knowledgeCost={heirloomKnowledgeCost}
-            onClick={handleBuyHeirloom}
-            disabled={heirloomOwned || money < heirloomMoneyCost || knowledge < heirloomKnowledgeCost}
-            isOwned={heirloomOwned}
-            effect={'Doubles the effect of Better Seeds'}
-            formatNumber={formatNumber}
-          />
-        </div>
+      <FarmUpgradeRow
+        {...shared}
+        icon={UPGRADE_GREENHOUSE}
+        name="Greenhouse"
+        effect="No winter slowdown"
+        owned={greenhouseOwned}
+        cost={GREENHOUSE_COST_PER_PLOT * maxPlots}
+        knowledgeCost={GREENHOUSE_KN_COST_PER_PLOT * maxPlots}
+        title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} & ${maxPlots} x ${formatNumber(GREENHOUSE_KN_COST_PER_PLOT, 1)} Kn).`}
+        onBuy={handleBuyGreenhouse}
+      />
 
-        {/* Merchant Progress Bar */}
-        {autoSellOwned && (
-          <div className={styles.progressSection}>
-            <div className={styles.progressContainer}>
-              <span className={styles.progressText}>
-                Merchant: Next sale in {MERCHANT_DAYS - (day % MERCHANT_DAYS)} days
-              </span>
-              <div className={styles.progressBarWrapper}>
-                <ProgressBar value={day % MERCHANT_DAYS} max={MERCHANT_DAYS} height={12} color="#ffb300" />
-                <span className={styles.progressLabel}>
-                  {Math.floor((day % MERCHANT_DAYS) / MERCHANT_DAYS * 100)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+      <FarmUpgradeRow
+        {...shared}
+        icon={UPGRADE_HEIRLOOM_SEEDS}
+        name="Heirloom Seeds"
+        effect="Doubles Better Seeds"
+        owned={heirloomOwned}
+        cost={heirloomMoneyCost}
+        knowledgeCost={heirloomKnowledgeCost}
+        title={`Doubles the effect of Better Seeds. Cost is based on your highest unlocked veggie ever: ${CROP_NAMES[highestUnlockedVeggie] ?? 'Radish'} (${highestUnlockedVeggie + 1} × $${formatNumber(HEIRLOOM_COST_PER_VEGGIE, 1)} & ${highestUnlockedVeggie + 1} × ${formatNumber(HEIRLOOM_KN_PER_VEGGIE, 1)} Kn).`}
+        onBuy={handleBuyHeirloom}
+      />
+    </section>
   );
 };
 

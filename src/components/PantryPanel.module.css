@@ -1,0 +1,59 @@
+.pantry {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d9bf9c;
+  border-radius: 10px;
+  background: #f3e6d4;
+  color: #3d2a1c;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #5a2a00;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.honey {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #d9bf9c;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 7px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.icon {
+  width: 26px;
+  height: 26px;
+}
+
+.name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.count {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.empty {
+  color: #b3261e;
+}
+
+.empty .icon {
+  opacity: 0.45;
+}

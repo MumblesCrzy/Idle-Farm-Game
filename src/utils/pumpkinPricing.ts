@@ -162,14 +162,24 @@ export function archieCandyCornReward(pumpkinsSold: number, streak: number): num
 // ============================================================================
 
 /**
+ * Extra Atlantic Giant weight from champion seeds, saved from County Fair winners:
+ * 5% for each first place, up to 40%
+ */
+export function championSeedBonus(firstPlaces: number): number {
+  const c = PUMPKIN_EVENT_CONSTANTS;
+  return Math.min(c.CHAMPION_SEED_MAX_BONUS, Math.max(0, firstPlaces) * c.CHAMPION_SEED_BONUS_PER_WIN);
+}
+
+/**
  * Weight of a newly harvested Atlantic Giant, in pounds.
  * @param roll - A random number from 0 to 1
+ * @param seedBonus - The champion seed bonus, from championSeedBonus
  */
-export function rollGiantWeight(quality: PumpkinQuality, tonicLevel: number, roll: number): number {
+export function rollGiantWeight(quality: PumpkinQuality, tonicLevel: number, roll: number, seedBonus = 0): number {
   const c = PUMPKIN_EVENT_CONSTANTS;
   const base = c.GIANT_MIN_WEIGHT + roll * c.GIANT_WEIGHT_RANGE;
   const qualityMultiplier = quality === 'blueRibbon' ? c.GIANT_BLUE_RIBBON_WEIGHT : 1;
-  return Math.round(base * qualityMultiplier * (1 + tonicLevel * c.GIANT_TONIC_PER_LEVEL));
+  return Math.round(base * qualityMultiplier * (1 + tonicLevel * c.GIANT_TONIC_PER_LEVEL) * (1 + seedBonus));
 }
 
 /** Typical rival weight at the next fair; rivals grow with each fair entered */

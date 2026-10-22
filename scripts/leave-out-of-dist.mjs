@@ -10,9 +10,14 @@ const NOT_SHIPPED = [
   'Archie Sweater.png',
   'Archie Fall Sweater.png',
   'Archie Warlock Costume.png',
+  // The Glutton's full-size originals: the game loads the 256 px copies
+  'Glutton.png',
+  'Glutton Sweater.png',
+  'Glutton Halloween Vampire.png',
   // Art for the itch.io page
   'Background_spring.png',
   'Cover Image.png',
+  'Banner.png',
 ];
 
 let removed = 0;

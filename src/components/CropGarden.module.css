@@ -1,0 +1,541 @@
+/* The garden on the Growing tab: a raised bed per crop, five to a row, every bed the same size */
+
+.garden {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #47663a;
+  border-radius: 12px;
+  background: repeating-linear-gradient(135deg, #24361f 0 14px, #26391f 14px 28px);
+  color: #f6eedc;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 34px;
+}
+
+/* Vegetables or Fruits, on a wooden switch */
+.groupSwitch {
+  display: inline-flex;
+  border: 2px solid #7a5434;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #3a2a1b;
+}
+
+.groupSwitch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f1e3c8;
+  font: 700 13px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.groupSwitch button:hover {
+  background: #4a3624;
+}
+
+.groupSwitch button[aria-pressed='true'] {
+  background: #8a6239;
+  color: #ffffff;
+}
+
+/* Before fruits open: the same sign, with nothing to switch */
+.groupTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 34px;
+  margin: 0;
+  padding: 0 13px;
+  border: 2px solid #7a5434;
+  border-radius: 9px;
+  background: #8a6239;
+  color: #ffffff;
+  font: 700 13px system-ui, sans-serif;
+}
+
+.groupSwitch img,
+.groupTitle img {
+  width: 20px;
+  height: 20px;
+}
+
+.count {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hint {
+  color: #d9e6d2;
+  font-size: 12px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #e3eedc;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.timer img {
+  width: 18px;
+  height: 18px;
+}
+
+.miniBar {
+  display: inline-block;
+  width: 70px;
+  height: 8px;
+  border-radius: 4px;
+  background: #14200f;
+  overflow: hidden;
+}
+
+.miniBar > span {
+  display: block;
+  height: 8px;
+  background: #6fbf5f;
+}
+
+/* Two rows of five, each bed the same height whatever it holds */
+.beds {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: 256px;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A raised bed: a wooden frame around rows of soil. A click anywhere on it picks the crop */
+.bed {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 6px 6px 7px;
+  border: 4px solid #7a5434;
+  border-radius: 14px;
+  background: repeating-linear-gradient(180deg, #4a3424 0 12px, #3f2c1e 12px 16px);
+  box-shadow: inset 0 0 0 2px #4e3520;
+  color: #fff6e6;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fruitBed {
+  border-color: #7a4a6a;
+  box-shadow: inset 0 0 0 2px #4d2c42;
+}
+
+/* Ready to harvest: a gold frame */
+.ripeBed {
+  border-color: #f5c040;
+  box-shadow: inset 0 0 0 2px #8a6a1e, 0 0 14px rgba(245, 192, 64, 0.35);
+}
+
+/* The picked crop, whose upgrades the shed shows */
+.pickedBed {
+  outline: 3px solid #ffe08a;
+  outline-offset: 3px;
+}
+
+/* The sign: the crop's name, and how long it takes to grow */
+.sign {
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  padding: 0 8px;
+  border: 2px solid #5a3d22;
+  border-radius: 7px;
+  background: #8a6239;
+  color: #fff6e6;
+  font: inherit;
+  line-height: 26px;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 0 #4e3520;
+  cursor: pointer;
+}
+
+.sign b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.sign small {
+  margin-left: 2px;
+  color: #ffeccd;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Pointing anywhere at a bed lights up its sign, since a click there picks the crop */
+.bed:hover .sign:not([aria-pressed='true']) {
+  border-color: #e9c27a;
+}
+
+.sign[aria-pressed='true'] {
+  border-color: #ffe08a;
+}
+
+/* The crop in its growth ring */
+.plant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.ring > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: #2b1d12;
+}
+
+.ring img {
+  width: 48px;
+  height: 48px;
+}
+
+.growthChip,
+.ripeChip {
+  height: 17px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.growthChip {
+  background: #241811;
+  color: #e9f3dc;
+  font-weight: 700;
+}
+
+.ripeChip {
+  background: #f5c040;
+  color: #2a1a00;
+  font-weight: 800;
+}
+
+/* Sell or Hold, and the Auto Harvester */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+}
+
+.sellPill,
+.holdPill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 13px;
+  font: 800 12px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.sellPill img,
+.holdPill img {
+  width: 15px;
+  height: 15px;
+}
+
+.sellPill {
+  border: 1px solid #6fbf5f;
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.holdPill {
+  border: 1px solid #c58a3a;
+  background: #5a3d14;
+  color: #ffe2b0;
+}
+
+.sellPill:hover {
+  border-color: #a5e3a0;
+}
+
+.holdPill:hover {
+  border-color: #f0c070;
+}
+
+.harvester {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: #e8dcc6;
+  font-size: 11px;
+}
+
+.harvester img {
+  width: 16px;
+  height: 16px;
+}
+
+.harvester em {
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.harvester .paused {
+  font-style: italic;
+  font-weight: 600;
+}
+
+.harvesterBar {
+  flex: 1;
+  height: 7px;
+  border-radius: 4px;
+  background: #1a120c;
+  overflow: hidden;
+}
+
+.harvesterBar > span {
+  display: block;
+  height: 7px;
+  background: #6f8fd8;
+}
+
+.buyHarvester {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #f5c040;
+  border-radius: 7px;
+  background: #3b6e1e;
+  color: #ffffff;
+  font: 800 11px system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.buyHarvester img {
+  width: 15px;
+  height: 15px;
+}
+
+.buyHarvester:hover:not(:disabled) {
+  border-color: #ffe08a;
+}
+
+.buyHarvester:disabled {
+  border-color: #5c4630;
+  background: #2b2015;
+  color: #d4c3a3;
+}
+
+/* Upgrade levels, each with a dot for its auto-buyer */
+.tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  height: 20px;
+}
+
+.tool {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 3px;
+  border-radius: 6px;
+  background: #241811;
+  color: #f3e3c8;
+  font-size: 10.5px;
+}
+
+.tool img {
+  width: 13px;
+  height: 13px;
+}
+
+.tool b {
+  font-weight: 800;
+}
+
+.tool .levelMax {
+  color: #f5c040;
+}
+
+.dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.tool .dot {
+  margin-left: 2px;
+}
+
+.dotOn {
+  background: #6fdc74;
+}
+
+.dotPaused {
+  background: #9aa596;
+}
+
+.dotNone {
+  border: 1px solid #9aa596;
+}
+
+.harvestReady,
+.harvestGrowing {
+  height: 32px;
+  margin: 0;
+  border-radius: 8px;
+  font: 800 14px system-ui, sans-serif;
+}
+
+.harvestReady {
+  border: 0;
+  background: #4caf50;
+  color: #0f2410;
+  box-shadow: 0 0 10px rgba(139, 212, 143, 0.45);
+  cursor: pointer;
+}
+
+.harvestReady:hover {
+  background: #5cc160;
+}
+
+.harvestGrowing {
+  border: 1px solid #5c4630;
+  background: #241811;
+  color: #cdbd98;
+}
+
+/* A button that can't act lets a click through to its bed, which picks the crop */
+.bed button:disabled {
+  pointer-events: none;
+}
+
+/* A bed still to open: a dashed frame, the crop's shadow, and a post saying what it needs */
+.lockedBed {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding-top: 12px;
+  border-style: dashed;
+  border-color: #5f6e50;
+  background: repeating-linear-gradient(180deg, #2e3324 0 12px, #292d20 12px 16px);
+  box-shadow: none;
+  cursor: default;
+}
+
+.lockedSign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid #3e3021;
+  border-radius: 7px;
+  background: #5d4a33;
+  color: #fff6e6;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ghost {
+  width: 56px;
+  height: 56px;
+  margin-top: 14px;
+  opacity: 0.28;
+}
+
+.post {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 150px;
+  padding: 6px 9px;
+  border: 2px solid #4e3520;
+  border-radius: 7px;
+  background: #7a5636;
+  color: #fff6e6;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.post img {
+  flex: 0 0 15px;
+  width: 15px;
+  height: 15px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 18px;
+  color: #e3eedc;
+  font-size: 11px;
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}

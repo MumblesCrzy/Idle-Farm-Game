@@ -1,17 +1,29 @@
+/**
+ * Tests for the Growing tab's garden: a bed per crop with its own controls, the picked crop's
+ * upgrades in the tool shed, and fruits behind their own switch.
+ */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ArchieProvider } from '../context/ArchieContext';
 import GrowingTab from '../components/GrowingTab';
 import { createAllCrops, formatNumber } from '../utils/gameCalculations';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
+import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
 import type { Veggie } from '../types/game';
 
+/** Every crop, with the first three vegetables open */
 const crops = (change: (crops: Veggie[]) => Veggie[] = c => c): Veggie[] => {
   const all = createAllCrops().map((crop, i) => ({ ...crop, unlocked: i < 3 }));
   return change(all);
 };
 
-const renderTab = (veggies: Veggie[], activeVeggie = 0) => {
+interface Options {
+  guildState?: GuildState;
+  totalPlotsUsed?: number;
+  maxPlots?: number;
+}
+
+const renderTab = (veggies: Veggie[], activeVeggie = 0, options: Options = {}) => {
   const handlers = {
     setActiveVeggie: vi.fn(),
     handleHarvest: vi.fn(),
@@ -26,56 +38,199 @@ const renderTab = (veggies: Veggie[], activeVeggie = 0) => {
     handleBuyHarvesterSpeed: vi.fn(),
     buyAutoPurchaser: vi.fn()
   };
-  render(
+  const { container } = render(
     <ArchieProvider>
       <GrowingTab
         veggies={veggies}
         activeVeggie={activeVeggie}
-        totalPlotsUsed={3}
-        maxPlots={10}
+        totalPlotsUsed={options.totalPlotsUsed ?? 3}
+        maxPlots={options.maxPlots ?? 10}
         money={1_000_000}
         knowledge={1_000_000}
         experience={100}
         globalAutoPurchaseTimer={0}
         heirloomOwned={false}
         beeYieldBonus={0}
-        daysToGrow={5}
-        growthMultiplier={1}
+        growthMultiplierOf={() => 20}
         {...handlers}
         handleBuyAutoPurchaser={(id: string) => (index: number) => handlers.buyAutoPurchaser(id, index)}
         formatNumber={formatNumber}
+        guildState={options.guildState}
         upgradesSidebar={<div>Farm upgrades here</div>}
       />
     </ArchieProvider>
   );
-  return handlers;
+  return { handlers, container };
+};
+
+/** A crop's sign, the button that picks it: its name, then how long it takes to grow */
+const signOf = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name} ~`) });
+
+/** The bed a crop's sign stands in */
+const bedOf = (name: string) => signOf(name).closest('li') as HTMLElement;
+
+const shedOf = (name: string) => screen.getByRole('region', { name: `${name} upgrades` });
+
+/** A Grower with Fruit Cultivation, so the garden can switch to fruits */
+const fruitGrower: GuildState = {
+  ...DEFAULT_GUILD_STATE,
+  status: 'committed',
+  committedGuild: 'growers',
+  purchasedUpgrades: ['growers_fruit_cultivation'],
+  upgradeLevels: { growers_fruit_cultivation: 1 }
 };
 
 describe('GrowingTab', () => {
-  it('renders the sidebar it is given', () => {
+  it('shows the farm upgrades it is given', () => {
     renderTab(crops());
-    expect(screen.getByText('Farm upgrades here')).toBeTruthy();
+    expect(screen.getByText('Farm upgrades here')).toBeInTheDocument();
   });
 
-  it('selects a crop by its index', () => {
+  it('gives every vegetable a bed, and says what a locked one needs', () => {
     const veggies = crops();
-    const handlers = renderTab(veggies);
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${veggies[2].name}\\. Growth`) }));
+    const vegetables = veggies.filter(v => v.cropType !== 'fruit');
+    renderTab(veggies);
+
+    const beds = screen.getByRole('list', { name: 'Vegetables' });
+    expect(within(beds).getAllByRole('listitem')).toHaveLength(vegetables.length);
+    expect(screen.getByText(`Unlocks at ${formatNumber(veggies[3].experienceToUnlock, 2)} Growing Experience`)).toBeInTheDocument();
+  });
+
+  it('asks for a larger farm when no plot is free', () => {
+    renderTab(crops(), 0, { totalPlotsUsed: 10, maxPlots: 10 });
+    expect(screen.getAllByText(/^Needs a larger farm/)).toHaveLength(7);
+  });
+
+  it('picks a crop from its sign, and marks the picked one', () => {
+    const veggies = crops();
+    const { handlers } = renderTab(veggies, 1);
+
+    expect(signOf(veggies[1].name)).toHaveAttribute('aria-pressed', 'true');
+    expect(signOf(veggies[0].name)).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(signOf(veggies[2].name));
     expect(handlers.setActiveVeggie).toHaveBeenCalledWith(2);
+    expect(handlers.setActiveVeggie).toHaveBeenCalledTimes(1);
   });
 
-  it('only allows a harvest when the crop is grown', () => {
-    renderTab(crops(c => c.map((crop, i) => i === 1 ? { ...crop, growth: 100 } : crop)), 0);
-    const harvest = screen.getByRole('button', { name: /^Harvest / }) as HTMLButtonElement;
-    expect(harvest.disabled).toBe(true);
+  it('picks a crop with a click anywhere on its bed, while its buttons keep their own jobs', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 2 ? { ...crop, growth: 100 } : crop));
+    const { handlers } = renderTab(veggies, 0);
+    const bed = bedOf(veggies[2].name);
+
+    fireEvent.click(within(bed).getByText('Ripe!'));
+    fireEvent.click(bed);
+    expect(handlers.setActiveVeggie).toHaveBeenCalledTimes(2);
+    expect(handlers.setActiveVeggie).toHaveBeenLastCalledWith(2);
+
+    handlers.setActiveVeggie.mockClear();
+    fireEvent.click(within(bed).getByRole('button', { name: `Harvest ${veggies[2].name}` }));
+    fireEvent.click(within(bed).getByRole('button', { name: `${veggies[2].name}: Sell. Click to Hold` }));
+    expect(handlers.handleHarvest).toHaveBeenCalledWith(2);
+    expect(handlers.handleToggleSell).toHaveBeenCalledWith(2);
+    expect(handlers.setActiveVeggie).not.toHaveBeenCalled();
+
+    // A button that can't act passes the click on to its bed
+    fireEvent.click(within(bedOf(veggies[1].name)).getByRole('button', { name: `${veggies[1].name} is growing` }));
+    expect(handlers.setActiveVeggie).toHaveBeenCalledWith(1);
   });
 
-  it('buys upgrades for the selected crop', () => {
-    const handlers = renderTab(crops(), 1);
-    fireEvent.click(screen.getByRole('button', { name: /^Fertilizer/ }));
+  it('leaves a locked bed unpicked', () => {
+    const veggies = crops();
+    const { handlers } = renderTab(veggies);
+    fireEvent.click(screen.getByText(veggies[3].name).closest('li') as HTMLElement);
+    expect(handlers.setActiveVeggie).not.toHaveBeenCalled();
+  });
+
+  it('shows how long a crop takes to grow on its sign', () => {
+    const veggies = crops();
+    renderTab(veggies);
+    expect(signOf(veggies[0].name)).toHaveAccessibleName(`${veggies[0].name} ~5 days`);
+    expect(within(signOf(veggies[0].name)).getByText('~5 days')).toBeInTheDocument();
+  });
+
+  it('harvests a ripe crop from its own bed', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 1 ? { ...crop, growth: 100 } : crop));
+    const { handlers } = renderTab(veggies, 0);
+
+    expect(within(bedOf(veggies[1].name)).getByText('Ripe!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `${veggies[0].name} is growing` })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: `Harvest ${veggies[1].name}` }));
+    expect(handlers.handleHarvest).toHaveBeenCalledWith(1);
+  });
+
+  it('switches a crop between Sell and Hold', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 2 ? { ...crop, sellEnabled: false } : crop));
+    const { handlers } = renderTab(veggies);
+
+    fireEvent.click(within(bedOf(veggies[1].name)).getByRole('button', { name: `${veggies[1].name}: Sell. Click to Hold` }));
+    expect(handlers.handleToggleSell).toHaveBeenCalledWith(1);
+    expect(within(bedOf(veggies[2].name)).getByRole('button', { name: `${veggies[2].name}: Hold. Click to Sell` })).toBeInTheDocument();
+  });
+
+  it('buys an Auto Harvester from the bed', () => {
+    const veggies = crops();
+    const { handlers } = renderTab(veggies);
+    fireEvent.click(within(bedOf(veggies[2].name)).getByRole('button', {
+      name: `Auto Harvester for ${veggies[2].name}: Buy · $${formatNumber(veggies[2].harvesterCost, 1)}`
+    }));
+    expect(handlers.handleBuyHarvester).toHaveBeenCalledWith(2);
+  });
+
+  it('keeps the stash and price off the beds, and shows them in the shed', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 0 ? { ...crop, stash: 142, salePrice: 7.77 } : crop));
+    renderTab(veggies);
+
+    const bed = bedOf(veggies[0].name);
+    expect(bed.textContent).not.toContain('142');
+    expect(bed.textContent).not.toContain('in stash');
+    expect(bed.textContent).not.toContain(`$${formatNumber(veggies[0].salePrice, 2)}`);
+
+    const shed = shedOf(veggies[0].name);
+    expect(within(shed).getByText(`$${formatNumber(veggies[0].salePrice, 2)} each`)).toBeInTheDocument();
+    expect(within(shed).getByText(/142 in stash/)).toBeInTheDocument();
+    // How long it takes to grow is on the sign, not in the shed
+    expect(within(shed).queryByText(/days/)).toBeNull();
+  });
+
+  it('shows each upgrade as its level alone, with a dot for its auto-buyer', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 0 ? {
+      ...crop,
+      additionalPlotLevel: 2,
+      autoPurchasers: crop.autoPurchasers.map(ap =>
+        ap.id === 'assistant' ? { ...ap, owned: true, active: true }
+          : ap.id === 'cultivator' ? { ...ap, owned: true, active: false }
+            : ap)
+    } : crop));
+    renderTab(veggies);
+    const bed = bedOf(veggies[0].name);
+
+    expect(within(bed).getByTitle(/^Fertilizer: level 0.*auto-buyer on$/)).toBeInTheDocument();
+    expect(within(bed).getByTitle(/^Better Seeds: level 0, auto-buyer paused$/)).toBeInTheDocument();
+    const plots = within(bed).getByTitle('Additional Plot: level 2, no auto-buyer');
+    expect(plots.querySelector('b')).toHaveTextContent(/^2$/);
+    expect(bed.textContent).not.toMatch(/\d\/\d/);
+  });
+
+  it('locks Harvester Speed until the crop has an Auto Harvester', () => {
+    const veggies = crops();
+    renderTab(veggies);
+
+    const speed = within(bedOf(veggies[0].name)).getByTitle('Harvester Speed: needs an Auto Harvester');
+    expect(speed.querySelector('b')).toHaveTextContent('-');
+    const shed = shedOf(veggies[0].name);
+    expect(within(shed).getByRole('button', { name: 'Harvester Speed: Locked until the crop has an Auto Harvester' })).toBeDisabled();
+    expect(within(shed).getByRole('button', { name: /^Buy the Auto Harvester/ })).toBeEnabled();
+  });
+
+  it('buys upgrades for the picked crop in the shed', () => {
+    const veggies = crops();
+    const { handlers } = renderTab(veggies, 1);
+    const shed = shedOf(veggies[1].name);
+
+    fireEvent.click(within(shed).getByRole('button', { name: /^Buy Fertilizer/ }));
     expect(handlers.handleBuyFertilizer).toHaveBeenCalledWith(1);
 
-    fireEvent.click(screen.getByTitle(/^Assistant:/));
+    fireEvent.click(within(shed).getByTitle(/^Assistant:/));
     expect(handlers.buyAutoPurchaser).toHaveBeenCalledWith('assistant', 1);
   });
 
@@ -84,7 +239,7 @@ describe('GrowingTab', () => {
       ...crop,
       autoPurchasers: crop.autoPurchasers.filter(ap => ap.id !== 'assistant')
     }))));
-    expect(screen.getByRole('button', { name: /^Fertilizer/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Buy Fertilizer/ })).toBeInTheDocument();
     expect(screen.queryByTitle(/^Assistant:/)).toBeNull();
   });
 
@@ -92,9 +247,54 @@ describe('GrowingTab', () => {
     const veggies = crops(c => c.map((crop, i) => i === 0
       ? { ...crop, harvesterOwned: true, autoHarvesterEnabled: true, harvesterSpeedLevel: 4 }
       : crop));
-    renderTab(veggies);
+    const { handlers } = renderTab(veggies);
     const interval = getHarvesterInterval(veggies[0]);
     expect(interval).toBe(Math.round(50 / 1.2));
-    expect(screen.getByRole('button', { name: /^Harvester Speed/ }).textContent).toContain(`Harvest time: ${interval}s`);
+
+    expect(within(bedOf(veggies[0].name)).getByText(`${interval} s`)).toBeInTheDocument();
+    const shed = shedOf(veggies[0].name);
+    expect(within(shed).getByText(`Harvests every ${interval} s`)).toBeInTheDocument();
+
+    fireEvent.click(within(shed).getByRole('button', { name: /^Buy Harvester Speed/ }));
+    expect(handlers.handleBuyHarvesterSpeed).toHaveBeenCalledWith(0);
+    fireEvent.click(within(shed).getByRole('button', { name: `Auto Harvester for ${veggies[0].name}: On` }));
+    expect(handlers.handleToggleAutoHarvester).toHaveBeenCalledWith(0);
+  });
+
+  it('keeps fruits behind their own switch once Fruit Cultivation opens them', () => {
+    const plain = crops();
+    const firstFruit = plain.findIndex(v => v.cropType === 'fruit');
+    const veggies = plain.map((crop, i) => i === firstFruit ? { ...crop, unlocked: true } : crop);
+
+    const { handlers } = renderTab(veggies, 0, { guildState: fruitGrower });
+    expect(screen.queryByRole('button', { name: new RegExp(`^${veggies[firstFruit].name} ~`) })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Fruits/ }));
+    expect(handlers.setActiveVeggie).toHaveBeenCalledWith(firstFruit);
+    expect(screen.getByRole('list', { name: 'Fruits' })).toBeInTheDocument();
+    expect(signOf(veggies[firstFruit].name)).toBeInTheDocument();
+  });
+
+  it('shows the unlock experience of each locked fruit', () => {
+    renderTab(crops(), 0, { guildState: fruitGrower });
+    fireEvent.click(screen.getByRole('button', { name: /^Fruits/ }));
+
+    expect(screen.getByText('Unlocks at 50K Growing Experience')).toBeInTheDocument();
+    expect(screen.getByText('Unlocks at 110K Growing Experience')).toBeInTheDocument();
+    expect(screen.getByText('Unlocks at 532.4K Growing Experience')).toBeInTheDocument();
+    expect(screen.getByText('Unlocks at 60.36M Growing Experience')).toBeInTheDocument();
+  });
+
+  it('has no fruit switch before Fruit Cultivation', () => {
+    renderTab(crops());
+    expect(screen.queryByRole('button', { name: /^Fruits/ })).toBeNull();
+  });
+
+  it('points the first-harvest tutorial at the picked crop only', () => {
+    const veggies = crops(c => c.map((crop, i) => i === 1 ? { ...crop, growth: 100 } : crop));
+    const { container } = renderTab(veggies, 1);
+    const marked = container.querySelectorAll('[data-tutorial="harvest-button"]');
+    expect(marked).toHaveLength(1);
+    expect(marked[0]).toHaveAccessibleName(`Harvest ${veggies[1].name}`);
   });
 });

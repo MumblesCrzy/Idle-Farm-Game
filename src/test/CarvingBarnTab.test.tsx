@@ -173,4 +173,14 @@ describe('CarvingBarnTab', () => {
     expect(screen.queryByRole('img', { name: 'Scarecrow Crew is working on this' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Barn Upgrades' })).toBeInTheDocument();
   });
+
+  it('shows the Scarecrow Crew under the materials, above the recipes', () => {
+    render(<BarnHarness initialState={{ upgrades: owning(['scarecrow_crew']) }} />);
+
+    const crew = screen.getByRole('region', { name: 'Scarecrow Crew' });
+    const materials = screen.getByRole('list', { name: 'Materials' });
+    const recipes = screen.getByRole('heading', { name: 'Recipes' });
+    expect(materials.compareDocumentPosition(crew) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(crew.compareDocumentPosition(recipes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

@@ -5,7 +5,7 @@
  * upgrades, and the Beekeeper Assistant automation.
  */
 
-import { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { 
   BeeBox, 
   BeeUpgrade,
@@ -21,17 +21,20 @@ import type { EventCategory, EventPriority } from '../types/game';
 import { createInitialBeeUpgrades } from '../data/beeUpgrades';
 import { useGameTick } from '../hooks/useGameClock';
 import { useLatestRef } from '../hooks/useLatestRef';
-
-// Import constants
-const BEE_CONSTANTS_IMPL = {
-  BASE_PRODUCTION_TIME: 132, // Reduced from 182 to account for 50-day winter pause (maintains 2 harvests/year)
-  STARTING_BEE_BOXES: 2,
-  MAX_BEE_BOXES: 30,
-  BASE_YIELD_BONUS_PER_BOX: 0.005,
-  MAX_YIELD_BONUS: 1.0,
-  UNLOCK_FARM_TIER: 4,
-  BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4,
-} as const;
+import {
+  advanceBox,
+  batchDays,
+  beeLevels,
+  collectBatches,
+  cropBonus,
+  goldenChance,
+  hivePrice,
+  honeyMultiplier,
+  normalizeBox,
+  productiveSeconds,
+  storedBatches
+} from '../utils/beeProduction';
+import { BEE_CONSTANTS } from '../config/gameConstants';
 
 // Context definition
 const BeeContext = createContext<BeeContextValue | undefined>(undefined);
@@ -53,7 +56,15 @@ interface BeeProviderProps {
     }
   ) => void; // Callback to add event log entries
   isPaused?: boolean; // Whether the game is paused
-  onHivesHarvested?: (count: number) => void; // Called for each harvested box (pays Guild Tokens)
+  onHivesHarvested?: (count: number) => void; // Called with the batches each collected hive held (pays Guild Tokens)
+  /** Receives the honey setters, so honey spent elsewhere, like in the Kitchen, comes off the bees' own totals */
+  honeySettersRef?: RefObject<HoneySetters | null>;
+}
+
+/** The bees' own honey setters, for honey spent outside the Bees tab */
+export interface HoneySetters {
+  setRegularHoney: Dispatch<SetStateAction<number>>;
+  setGoldenHoney: Dispatch<SetStateAction<number>>;
 }
 
 /**
@@ -70,10 +81,11 @@ const createBeeBox = (): BeeBox => ({
   id: generateBoxId(),
   active: true,
   productionTimer: 0,
-  productionTime: BEE_CONSTANTS_IMPL.BASE_PRODUCTION_TIME,
+  productionTime: BEE_CONSTANTS.BASE_PRODUCTION_TIME,
   honeyProduced: 0,
   lastHarvestTime: Date.now(),
   harvestReady: false,
+  storedBatches: 0,
 });
 
 /**
@@ -95,37 +107,6 @@ const createBeekeeperAssistant = (): BeekeeperAssistant => ({
 /**
  * BeeProvider component - manages all bee system state
  */
-/**
- * Calculate bee box cost with tiered scaling.
- * Cost increases more significantly every 5 boxes.
- */
-function calculateBeeBoxCost(boxCount: number): number {
-  const baseCost = 150;
-  const baseIncrement = 75;
-
-  // Calculate which tier (0-4 = tier 0, 5-9 = tier 1, etc.)
-  const tier = Math.floor(boxCount / 5);
-
-  // Tier multipliers: 1x, 2x, 4x, 8x, 16x, 32x
-  const tierMultiplier = Math.pow(2, tier);
-
-  // Within each tier, cost still increases linearly, but the increment grows with tier
-  const withinTierIndex = boxCount % 5;
-
-  // Sum up costs from previous tiers
-  let totalCost = baseCost;
-  for (let t = 0; t < tier; t++) {
-    const prevTierMultiplier = Math.pow(2, t);
-    // Each tier has 5 boxes worth of increments
-    totalCost += baseIncrement * prevTierMultiplier * 5;
-  }
-
-  // Add current tier's partial increment
-  totalCost += baseIncrement * tierMultiplier * withinTierIndex;
-
-  return Math.floor(totalCost);
-}
-
 export const BeeProvider: React.FC<BeeProviderProps> = ({ 
   children, 
   farmTier = 1,
@@ -135,12 +116,14 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   onStateChange,
   addEventLogEntry,
   isPaused = false,
-  onHivesHarvested
+  onHivesHarvested,
+  honeySettersRef
 }) => {
   // Core state - initialize from saved state if available
   const [unlocked, setUnlocked] = useState(initialState?.unlocked ?? false);
   const [firstTimeSetup, setFirstTimeSetup] = useState(initialState?.firstTimeSetup ?? false);
-  const [boxes, setBoxes] = useState<BeeBox[]>(initialState?.boxes ?? []);
+  // Hives from saves made before stockpiling hold their ready batch as one stored batch
+  const [boxes, setBoxes] = useState<BeeBox[]>(() => (initialState?.boxes ?? []).map(normalizeBox));
   const [regularHoney, setRegularHoney] = useState(initialState?.regularHoney ?? 0);
   const [goldenHoney, setGoldenHoney] = useState(initialState?.goldenHoney ?? 0);
   const [totalHoneyCollected, setTotalHoneyCollected] = useState(initialState?.totalHoneyCollected ?? 0);
@@ -192,20 +175,32 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   // Use ref for lastUpdateTime to avoid re-renders every second
   const lastUpdateTimeRef = useRef(initialState?.lastUpdateTime ?? Date.now());
 
+  // Honey spent elsewhere, like the Kitchen's honey recipes, goes through these setters. A copy
+  // of the totals kept outside would be overwritten by the bees' next update.
+  useEffect(() => {
+    if (!honeySettersRef) return;
+    honeySettersRef.current = { setRegularHoney, setGoldenHoney };
+    return () => {
+      honeySettersRef.current = null;
+    };
+  }, [honeySettersRef]);
+
   // Refs for tracking
   const previousYieldBonus = useRef(0);
 
   /**
-   * Initialize bee system when player reaches Tier 3
+   * Initialize bee system when player reaches Tier 4
    */
   const initializeBeeSystem = useCallback(() => {
-    if (farmTier >= BEE_CONSTANTS_IMPL.UNLOCK_FARM_TIER && !unlocked) {
+    if (farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER && !unlocked) {
       setUnlocked(true);
+      // The hives' clock starts now, so time spent before the unlock makes no honey
+      lastUpdateTimeRef.current = Date.now();
       
       // Give starting bee boxes if this is first time setup
       if (!firstTimeSetup && boxes.length === 0) {
         const startingBoxes: BeeBox[] = [];
-        for (let i = 0; i < BEE_CONSTANTS_IMPL.STARTING_BEE_BOXES; i++) {
+        for (let i = 0; i < BEE_CONSTANTS.STARTING_BEE_BOXES; i++) {
           startingBoxes.push(createBeeBox());
         }
         setBoxes(startingBoxes);
@@ -234,13 +229,13 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    * Add a new bee hive (purchase)
    */
   const addBeeBox = useCallback((): boolean => {
-    if (boxes.length >= BEE_CONSTANTS_IMPL.MAX_BEE_BOXES) {
+    if (boxes.length >= BEE_CONSTANTS.MAX_BEE_BOXES) {
       console.warn('Maximum bee boxes reached');
       return false;
     }
 
     // Charge the same tiered price the purchase panel shows
-    const cost = calculateBeeBoxCost(boxes.length);
+    const cost = hivePrice(boxes.length);
 
     if (regularHoney < cost) {
       console.warn('Not enough honey to purchase bee box');
@@ -277,136 +272,71 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   /**
    * Calculate if Golden Honey should be produced based on upgrades
    */
-  const calculateGoldenHoneyChance = useCallback((): number => {
-    // Start with 1% base chance for all players
-    let chance = 0.01;
-
-    // Check for Royal Jelly upgrade (adds 1% more)
-    const royalJelly = upgrades.find(u => u.id === 'royal_jelly' && u.purchased);
-    if (royalJelly) {
-      chance += 0.01;
-    }
-
-    // Check for Queen's Blessing (doubles chance)
-    const queensBlessing = upgrades.find(u => u.id === 'queens_blessing' && u.purchased);
-    if (queensBlessing && chance > 0) {
-      chance *= 2;
-    }
-
-    return chance;
-  }, [upgrades]);
+  const calculateGoldenHoneyChance = useCallback((): number => goldenChance(beeLevels(upgrades)), [upgrades]);
 
   /**
    * Calculate honey production multiplier from upgrades
    */
-  const calculateHoneyProductionMultiplier = useCallback((): number => {
-    let multiplier = 1;
-
-    // Apply Hexcomb Engineering upgrade (+5% per level)
-    const hexcomb = upgrades.find(u => u.id === 'hexcomb_engineering');
-    if (hexcomb && hexcomb.level > 0) {
-      multiplier += hexcomb.level * 0.05;
-    }
-
-    return multiplier;
-  }, [upgrades]);
+  const calculateHoneyProductionMultiplier = useCallback((): number => honeyMultiplier(beeLevels(upgrades)), [upgrades]);
 
   const onHivesHarvestedRef = useLatestRef(onHivesHarvested);
 
   /**
-   * Harvest honey from a specific bee box
+   * Collect every batch stored in one hive. Each batch is golden by its own roll. The bees
+   * keep working, so the timer toward the next batch carries on.
    */
-  const harvestHoney = useCallback((boxId: string): HoneyProduction | null => {
-    const boxIndex = boxes.findIndex(b => b.id === boxId);
-    if (boxIndex === -1) {
+  const harvestHoney = useCallback((boxId: string): HoneyProduction[] => {
+    const box = boxes.find(b => b.id === boxId);
+    if (!box) {
       console.warn('Bee box not found:', boxId);
-      return null;
+      return [];
     }
+    const batches = storedBatches(box);
+    if (batches === 0) return [];
 
-    const box = boxes[boxIndex];
-    if (!box.harvestReady) {
-      console.warn('Bee box not ready for harvest');
-      return null;
+    // Each batch is 15 lbs, raised by Super Frames
+    const honeyPerBatch = Math.round(15 * calculateHoneyProductionMultiplier());
+    const { regular, golden } = collectBatches(batches, { honeyPerBatch, goldenChance: calculateGoldenHoneyChance() });
+
+    if (regular > 0) {
+      setRegularHoney(prev => prev + regular);
+      setTotalHoneyCollected(prev => prev + regular);
     }
-
-    // Determine if Golden Honey is produced
-    const goldenChance = calculateGoldenHoneyChance();
-    const isGolden = Math.random() < goldenChance;
-
-    // Calculate honey amount with production multiplier (base 15 lbs per harvest)
-    const productionMultiplier = calculateHoneyProductionMultiplier();
-    const honeyAmount = Math.round(15 * productionMultiplier);
-
-    const production: HoneyProduction = {
-      type: isGolden ? 'golden' : 'regular',
-      amount: honeyAmount,
-      boxId: box.id,
-    };
-
-    // Update honey inventory
-    if (isGolden) {
-      setGoldenHoney(prev => prev + honeyAmount);
-      setTotalGoldenHoneyCollected(prev => prev + honeyAmount);
-    } else {
-      setRegularHoney(prev => prev + honeyAmount);
-      setTotalHoneyCollected(prev => prev + honeyAmount);
+    if (golden > 0) {
+      setGoldenHoney(prev => prev + golden);
+      setTotalGoldenHoneyCollected(prev => prev + golden);
     }
+    setBoxes(prev => prev.map(b => (b.id === boxId
+      ? { ...b, storedBatches: 0, harvestReady: false, lastHarvestTime: Date.now(), honeyProduced: b.honeyProduced + regular + golden }
+      : b)));
 
-    // Reset box production
-    setBoxes(prev => {
-      const updated = [...prev];
-      updated[boxIndex] = {
-        ...box,
-        productionTimer: 0,
-        harvestReady: false,
-        lastHarvestTime: Date.now(),
-        honeyProduced: box.honeyProduced + honeyAmount,
-      };
-      return updated;
-    });
-
-    onHivesHarvestedRef.current?.(1);
-    return production;
+    onHivesHarvestedRef.current?.(batches);
+    const productions: HoneyProduction[] = [];
+    if (regular > 0) productions.push({ type: 'regular', amount: regular, boxId });
+    if (golden > 0) productions.push({ type: 'golden', amount: golden, boxId });
+    return productions;
   }, [boxes, calculateGoldenHoneyChance, calculateHoneyProductionMultiplier, onHivesHarvestedRef]);
 
   /**
-   * Harvest all ready bee boxes
+   * Collect the honey stored in every hive
    */
   const harvestAllHoney = useCallback((): HoneyProduction[] => {
-    const readyBoxes = boxes.filter(b => b.harvestReady);
-    const productions: HoneyProduction[] = [];
+    const fullBoxes = boxes.filter(box => storedBatches(box) > 0);
+    const productions = fullBoxes.flatMap(box => harvestHoney(box.id));
 
-    for (const box of readyBoxes) {
-      const production = harvestHoney(box.id);
-      if (production) {
-        productions.push(production);
-      }
-    }
-
-    if (productions.length > 0) {
-      // Log harvest with summary
-      if (addEventLogEntry) {
-        const regularCount = productions.filter(p => p.type === 'regular').length;
-        const goldenCount = productions.filter(p => p.type === 'golden').length;
-        const totalAmount = productions.reduce((sum, p) => sum + p.amount, 0);
-        
-        let message = `Harvested ${totalAmount} honey from ${productions.length} ${productions.length === 1 ? 'box' : 'boxes'}`;
-        let details = '';
-        if (goldenCount > 0) {
-          message += ` (${goldenCount} golden!)`;
-          details = `Regular: ${regularCount}, Golden: ${goldenCount}`;
+    if (productions.length > 0 && addEventLogEntry) {
+      const total = productions.reduce((sum, p) => sum + p.amount, 0);
+      const golden = productions.filter(p => p.type === 'golden').reduce((sum, p) => sum + p.amount, 0);
+      const boxWord = fullBoxes.length === 1 ? 'box' : 'boxes';
+      addEventLogEntry(
+        'bees',
+        `Harvested ${total} honey from ${fullBoxes.length} ${boxWord}${golden > 0 ? ` (${golden} golden!)` : ''}`,
+        {
+          priority: golden > 0 ? 'important' : 'normal',
+          details: golden > 0 ? `Regular: ${total - golden}, Golden: ${golden}` : undefined,
+          icon: golden > 0 ? '✨' : '🍯'
         }
-        
-        addEventLogEntry(
-          'bees',
-          message,
-          {
-            priority: goldenCount > 0 ? 'important' : 'normal',
-            details: details || undefined,
-            icon: goldenCount > 0 ? '✨' : '🍯'
-          }
-        );
-      }
+      );
     }
 
     return productions;
@@ -415,73 +345,31 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   /**
    * Calculate production time with speed bonuses
    */
-  const calculateProductionTime = useCallback((): number => {
-    let baseTime = BEE_CONSTANTS_IMPL.BASE_PRODUCTION_TIME;
-
-    // Apply Busy Bees upgrade (+1% speed per level)
-    const busyBees = upgrades.find(u => u.id === 'busy_bees');
-    if (busyBees && busyBees.level > 0) {
-      const speedBonus = busyBees.level * 0.01; // 1% per level
-      baseTime = baseTime / (1 + speedBonus);
-    }
-
-    // Apply Beekeeper Assistant bonus
-    if (beekeeperAssistant.active && beekeeperAssistant.productionSpeedBonus > 0) {
-      baseTime = baseTime / (1 + beekeeperAssistant.productionSpeedBonus);
-    }
-
-    return baseTime;
-  }, [upgrades, beekeeperAssistant]);
+  const calculateProductionTime = useCallback((): number => batchDays(
+    beeLevels(upgrades),
+    beekeeperAssistant.active ? beekeeperAssistant.productionSpeedBonus : 0
+  ), [upgrades, beekeeperAssistant]);
 
   /**
-   * Update production timers based on elapsed time
+   * Advance every hive by elapsed time. Finished batches are stored and the bees go on to the
+   * next; winter stops them unless they have Winter Hardiness. Long gaps (time away, a hidden
+   * tab) are capped at 8 hours and count the warm share of the year.
    */
   const updateProduction = useCallback((deltaTime: number, currentSeason?: string) => {
-    // Check if production is halted due to winter (unless Winter Hardiness upgrade is owned)
-    const winterHardinessUpgrade = upgrades.find(u => u.id === 'winter_hardiness');
-    const hasWinterHardiness = winterHardinessUpgrade?.purchased || false;
-    const isWinter = currentSeason === 'Winter';
-    
-    // If it's winter and we don't have Winter Hardiness, don't update production
-    if (isWinter && !hasWinterHardiness) {
-      return;
-    }
+    const winterHardiness = upgrades.find(u => u.id === 'winter_hardiness')?.purchased || false;
+    const seconds = productiveSeconds(deltaTime, { winter: currentSeason === 'Winter', winterHardiness });
+    if (seconds <= 0) return;
 
     const productionTime = calculateProductionTime();
     // Count from current state. A count set inside the updater below may not
     // exist yet when it is read, because React can run the updater later.
     const newlyReadyCount = boxes.filter(box =>
-      box.active && !box.harvestReady && box.productionTimer + deltaTime >= productionTime
+      storedBatches(box) === 0 && box.productionTimer + seconds >= productionTime
     ).length;
 
-    setBoxes(prev => {
-      let changed = false;
-      const updated = prev.map(box => {
-        if (!box.active || box.harvestReady) return box;
+    setBoxes(prev => prev.map(box => advanceBox(box, seconds, productionTime)));
 
-        const newTimer = Math.min(box.productionTimer + deltaTime, productionTime);
-        if (newTimer === box.productionTimer) return box;
-        changed = true;
-
-        // Check if production is complete
-        if (newTimer >= productionTime) {
-          return {
-            ...box,
-            productionTimer: productionTime,
-            harvestReady: true,
-          };
-        }
-
-        return {
-          ...box,
-          productionTimer: newTimer,
-        };
-      });
-
-      return changed ? updated : prev;
-    });
-
-    // Log when boxes become ready for harvest
+    // Log when boxes first have honey waiting
     if (newlyReadyCount > 0 && addEventLogEntry) {
       const boxWord = newlyReadyCount === 1 ? 'box is' : 'boxes are';
       addEventLogEntry(
@@ -496,10 +384,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
 
     // Auto-collect if Beekeeper Assistant is active
     if (beekeeperAssistant.active && beekeeperAssistant.autoCollectEnabled) {
-      // Check for ready boxes and harvest them
       setTimeout(() => {
-        const readyBoxes = boxes.filter(b => b.harvestReady);
-        if (readyBoxes.length > 0) {
+        if (boxes.some(box => storedBatches(box) > 0)) {
           harvestAllHoney();
         }
       }, 0);
@@ -510,7 +396,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    * Check which boxes are ready to harvest
    */
   const checkReadyBoxes = useCallback((): string[] => {
-    return boxes.filter(b => b.harvestReady).map(b => b.id);
+    return boxes.filter(b => storedBatches(b) > 0).map(b => b.id);
   }, [boxes]);
 
   /**
@@ -614,8 +500,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       return false;
     }
 
-    if (boxes.length < BEE_CONSTANTS_IMPL.BEEKEEPER_ASSISTANT_UNLOCK_BOXES) {
-      console.warn(`Need ${BEE_CONSTANTS_IMPL.BEEKEEPER_ASSISTANT_UNLOCK_BOXES} boxes to unlock assistant`);
+    if (boxes.length < BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES) {
+      console.warn(`Need ${BEE_CONSTANTS.BEEKEEPER_ASSISTANT_UNLOCK_BOXES} boxes to unlock assistant`);
       return false;
     }
 
@@ -724,24 +610,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   /**
    * Calculate total crop yield bonus from bee boxes
    */
-  const calculateYieldBonus = useCallback((): number => {
-    let bonus = boxes.length * BEE_CONSTANTS_IMPL.BASE_YIELD_BONUS_PER_BOX;
-
-    // Apply Meadow Magic upgrade (+0.5% per level per box)
-    const meadowMagic = upgrades.find(u => u.id === 'meadow_magic');
-    if (meadowMagic && meadowMagic.level > 0) {
-      const additionalBonusPerBox = meadowMagic.level * 0.005; // 0.5% per level
-      bonus += boxes.length * additionalBonusPerBox;
-    }
-
-    // Apply Flower Power upgrade (+0.2% per box)
-    const flowerPower = upgrades.find(u => u.id === 'flower_power');
-    if (flowerPower && flowerPower.purchased) {
-      bonus += boxes.length * 0.002; // +0.2% per box
-    }
-
-    return bonus;
-  }, [boxes.length, upgrades]);
+  const calculateYieldBonus = useCallback((): number => cropBonus(boxes.length, beeLevels(upgrades)), [boxes.length, upgrades]);
 
   /**
    * Calculate current honey production rate (honey per second)
@@ -760,7 +629,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    */
   const getBeeStats = useCallback((): BeeStats => {
     const activeBoxes = boxes.filter(b => b.active).length;
-    const readyBoxes = boxes.filter(b => b.harvestReady).length;
+    const readyBoxes = boxes.filter(b => storedBatches(b) > 0).length;
     const honeyPerSecond = calculateProductionRate();
     const productionTime = calculateProductionTime();
 
@@ -781,17 +650,17 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    * Get bee box purchase information
    */
   const getBeeBoxPurchaseInfo = useCallback((): BeeBoxPurchaseInfo => {
-    const cost = calculateBeeBoxCost(boxes.length);
+    const cost = hivePrice(boxes.length);
     const canAfford = regularHoney >= cost;
-    const atMaxCapacity = boxes.length >= BEE_CONSTANTS_IMPL.MAX_BEE_BOXES;
-    const yieldBonusGain = BEE_CONSTANTS_IMPL.BASE_YIELD_BONUS_PER_BOX;
+    const atMaxCapacity = boxes.length >= BEE_CONSTANTS.MAX_BEE_BOXES;
+    const yieldBonusGain = BEE_CONSTANTS.BASE_YIELD_BONUS_PER_BOX;
 
     return {
       cost,
       canAfford,
       atMaxCapacity,
       currentCount: boxes.length,
-      maxCount: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
+      maxCount: BEE_CONSTANTS.MAX_BEE_BOXES,
       yieldBonusGain,
     };
   }, [boxes.length, regularHoney]);
@@ -822,13 +691,12 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
    * Dev tool: Instantly complete all box production
    */
   const devCompleteAllBoxes = useCallback(() => {
-    const productionTime = calculateProductionTime();
     setBoxes(prev => prev.map(box => ({
       ...box,
-      productionTimer: productionTime,
+      storedBatches: storedBatches(box) + 1,
       harvestReady: true,
     })));
-  }, [calculateProductionTime]);
+  }, []);
 
   /**
    * Reset bee system to initial state
@@ -889,7 +757,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     };
   }, [upgrades]);
 
-  // Initialize system when first reaching Tier 3 (only runs once)
+  // Initialize system when first reaching Tier 4 (only runs once)
   useEffect(() => {
     initializeBeeSystem();
   }, [initializeBeeSystem]);
@@ -913,9 +781,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   // Production, one game step per second. It uses real elapsed time, so the first
   // step after the tab was hidden credits the hidden time.
   useGameTick(() => {
-    if (!unlocked || boxes.length === 0) return;
-    if (isPaused) {
-      // Paused time doesn't count toward production
+    // Time while locked, without hives or paused makes no honey. The clock keeps up with it,
+    // or the first step after would credit all of that time to the hives.
+    if (!unlocked || boxes.length === 0 || isPaused) {
       lastUpdateTimeRef.current = Date.now();
       return;
     }
@@ -965,7 +833,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
       unlocked,
       firstTimeSetup,
       boxes,
-      maxBoxes: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
+      maxBoxes: BEE_CONSTANTS.MAX_BEE_BOXES,
       regularHoney,
       goldenHoney,
       totalHoneyCollected,
@@ -1003,7 +871,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     unlocked,
     firstTimeSetup,
     boxes,
-    maxBoxes: BEE_CONSTANTS_IMPL.MAX_BEE_BOXES,
+    maxBoxes: BEE_CONSTANTS.MAX_BEE_BOXES,
     regularHoney,
     goldenHoney,
     totalHoneyCollected,

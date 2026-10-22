@@ -2,9 +2,9 @@
  * Carving Barn Tab Component
  *
  * Fall Pumpkin Rush crafting: bake pies, make candles and cut stencils, then
- * carve and light plain pumpkins. Mirrors the Christmas Workshop tab: recipe
- * cards, a decorating station, the Scarecrow Crew's status and Barn upgrades
- * on the right.
+ * carve and light plain pumpkins. Mirrors the Christmas Workshop tab: the
+ * Scarecrow Crew's status in a slim bar under the materials, recipe cards, a
+ * decorating station and Barn upgrades on the right, all within a 1600x1000 window.
  */
 
 import InlineIcon from './InlineIcon';
@@ -307,25 +307,25 @@ interface ScarecrowCrewPanelProps {
   action?: ScarecrowCrewAction;
 }
 
+/** The crew's status in one line, fixed-width parts first so the bar holds still as jobs change */
 const ScarecrowCrewPanel: FC<ScarecrowCrewPanelProps> = memo(({ owned, jobsPerSecond, action }) => (
-  <section className={styles.crewPanel} aria-label="Scarecrow Crew">
-    <h3
-      className={styles.sectionTitle}
-      title={owned ? 'Each job, the crew makes candles, then vine stencils, then pies, then seed stencils, and carves or lights plain pumpkins when nothing is left to craft. Harvested pumpkins are finished with the best decorations available.' : undefined}
-    >
-      <EventArt art={PUMPKIN_ART.scarecrow} size={20} /> Scarecrow Crew{owned ? ' (Active)' : ''}
+  <section
+    className={owned ? `${styles.crewBar} ${styles.crewActive}` : styles.crewBar}
+    aria-label="Scarecrow Crew"
+    title={owned ? 'Each job, the crew makes candles, then vine stencils, then pies, then seed stencils, and carves or lights plain pumpkins when nothing is left to craft. Harvested pumpkins are finished with the best decorations available.' : undefined}
+  >
+    <h3 className={styles.crewTitle}>
+      <EventArt art={PUMPKIN_ART.scarecrow} size={22} /> Scarecrow Crew{owned ? ' (Active)' : ''}
     </h3>
     {owned ? (
-      <div className={styles.crewStatus}>
+      <>
+        <p className={styles.crewRate}>
+          {jobsPerSecond} job{jobsPerSecond === 1 ? '' : 's'} per second
+        </p>
         <p className={styles.crewNow}>
           Now: <strong>{crewActionText(action)}</strong>
         </p>
-        <p className={styles.crewLine}>
-          {jobsPerSecond} job{jobsPerSecond === 1 ? '' : 's'} per second
-        </p>
-        <p className={styles.crewLine}>✓ Crafts candles, stencils and pies</p>
-        <p className={styles.crewLine}>✓ Carves and lights pumpkins as they are harvested</p>
-      </div>
+      </>
     ) : (
       <p className={styles.lockedMessage}>
         Buy the Scarecrow Crew upgrade to automate crafting, carving and lighting!
@@ -357,7 +357,7 @@ const CarvingBarnTab: FC<CarvingBarnTabProps> = ({ event, formatNumber }) => {
 
   const mainContent = (
     <div className={styles.container}>
-      {/* Left column: materials, recipes, carving and the crew */}
+      {/* Left column: materials, the crew, recipes and carving */}
       <div className={styles.leftColumn}>
         <div className={styles.headerRow}>
           <h2 className={styles.barnTitle}>
@@ -373,6 +373,12 @@ const CarvingBarnTab: FC<CarvingBarnTabProps> = ({ event, formatNumber }) => {
             ))}
           </ul>
         </div>
+
+        <ScarecrowCrewPanel
+          owned={crewOwned}
+          jobsPerSecond={jobsPerSecond}
+          action={currentCrewAction}
+        />
 
         <section className={styles.craftingSection} aria-labelledby={recipesTitleId}>
           <div className={styles.sectionHeader}>
@@ -416,11 +422,6 @@ const CarvingBarnTab: FC<CarvingBarnTabProps> = ({ event, formatNumber }) => {
           onDecorate={decoratePumpkin}
         />
 
-        <ScarecrowCrewPanel
-          owned={crewOwned}
-          jobsPerSecond={jobsPerSecond}
-          action={currentCrewAction}
-        />
       </div>
 
       {/* Right column: Barn upgrades */}

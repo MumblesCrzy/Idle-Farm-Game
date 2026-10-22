@@ -1,122 +1,108 @@
-/* Canning Upgrades Panel Styles */
-
-/* Base styles */
-.upgradesContainer {
+.panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.button {
-  padding: 0.4rem 0.6rem;
-  border: none;
-  border-radius: 3px;
-  cursor: default;
-  width: 100%;
-  min-height: 45px;
-  display: flex;
-  align-items: center;
   gap: 6px;
-  transition: all 0.2s;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #e68900;
+  border-radius: 10px;
+  background: #ff8503;
 }
 
-.imageWrapper {
-  width: 2.5em;
-  height: 2.5em;
-  display: flex;
+.title {
+  margin: 0;
+  font-size: 16px;
+  color: #5a1a00;
+}
+
+.upgrade {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.image {
-  width: 2.5em;
-  height: 2.5em;
-  object-fit: contain;
-}
-
-.content {
-  flex: 1;
+  column-gap: 7px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  padding: 5px 7px;
+  /* Slate until the player can afford it, as the old panel and the Growing tab do */
+  border: 2px solid #6b7280;
+  border-radius: 7px;
+  background: #4a5568;
+  color: #fff;
+  font: inherit;
   text-align: left;
+  cursor: pointer;
+}
+
+.upgrade:disabled {
+  cursor: default;
+}
+
+.upgrade:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.affordable {
+  border-color: #f5c040;
+  background: #6b300c;
+  box-shadow: 0 0 6px rgba(245, 192, 64, 0.6);
+}
+
+.affordable:hover {
+  background: #7d3a10;
+}
+
+.maxed {
+  border-color: #9cbf72;
+}
+
+.on {
+  border-color: #9cbf72;
+  background: #2e5b22;
+}
+
+.off {
+  border-color: #b0a8a0;
+  background: #4b4146;
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .name {
-  font-weight: bold;
-  font-size: 14px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .level {
-  font-weight: normal;
-  margin-left: 4px;
-  font-size: 14px;
+  margin-left: 2px;
+  color: #ffe5ab;
+  font-weight: 400;
 }
 
-.description {
+.effect {
+  overflow: hidden;
+  color: #f5e6d3;
   font-size: 11px;
-  margin-top: 2px;
-}
-
-.effect {
-  font-size: 12px;
-  margin-top: 4px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cost {
+  color: #ffe5ab;
   font-size: 12px;
-  margin-top: 4px;
-}
-
-/* Color overrides for Canning theme */
-
-.button {
-  background: #4a5568;
-  color: white;
-}
-
-.button.canAfford {
-  background: #703c01ff;
-  border: 2px solid #ffeb3b;
-  cursor: pointer;
-  box-shadow: 0 0 6px 1px #ffe066;
-}
-
-.button.canAfford:hover {
-  background: #8a4c01;
-  box-shadow: 0 0 8px 2px #ffe066;
-}
-
-.button.disabled {
-  background: #4a5568;
-  cursor: not-allowed;
-}
-
-.button.maxLevel {
-  background: #4a5568;
-  cursor: default;
-}
-
-.button.toggleOff {
-  background: #4a5568;
-  border: 2px solid #6b7280;
-  cursor: pointer;
-}
-
-.button.toggleOff:hover {
-  background: #5a6578;
-}
-
-.level {
-  color: #ccc;
-}
-
-.description {
-  color: #ccc;
-}
-
-.effect {
-  color: #fff;
-}
-
-.cost {
-  color: #ccc;
+  font-weight: 700;
+  white-space: nowrap;
 }

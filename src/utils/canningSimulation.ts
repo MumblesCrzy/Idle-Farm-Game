@@ -5,7 +5,14 @@
  */
 import type { CanningProcess, CanningState, CanningUpgrade, Recipe } from '../types/canning';
 import type { GuildState } from '../types/guilds';
-import { getGrowerCanningProfitMultiplier } from './guildCalculations';
+import {
+  getCannerRewardDivisor,
+  getPreserversTimeMultiplier,
+  getPressureCannerJars,
+  getPrizeJarChance,
+  getRecipeValueMultiplier,
+  type BatchCount
+} from './guildCalculations';
 
 /** The parts of a crop that canning reads */
 export interface CanningCrop {
@@ -25,16 +32,24 @@ export interface BatchRewards {
   money: number;
   knowledge: number;
   experience: number;
+  /** Jars made, which count as canned goods */
   items: number;
+}
+
+/** What one finished batch pays */
+export interface OneBatchRewards extends BatchRewards {
+  /** Whether Seal of Quality made it a Prize Jar */
+  prize: boolean;
 }
 
 /** Game steps between the Canner's attempts to start a batch */
 export const CANNER_INTERVAL_STEPS = 10;
 
-/** Seconds a batch takes, with Quick Hands */
-export function getBatchTime(recipe: Recipe, upgrades: CanningUpgrade[]): number {
+/** Seconds a batch takes, with Quick Hands and the Preservers' time upgrades */
+export function getBatchTime(recipe: Recipe, upgrades: CanningUpgrade[], guildState?: GuildState): number {
   const speed = upgrades.find(u => u.id === 'canning_speed')?.effect || 1;
-  return Math.ceil(recipe.baseProcessingTime * speed);
+  const guild = guildState ? getPreserversTimeMultiplier(guildState) : 1;
+  return Math.ceil(recipe.baseProcessingTime * speed * guild);
 }
 
 /** Whether the stash, and the honey for honey recipes, covers one batch */
@@ -47,16 +62,35 @@ export function hasIngredients(recipe: Recipe, crops: CanningCrop[], honey: Hone
   return honey.regular >= recipe.honeyRequirement.regular && honey.golden >= recipe.honeyRequirement.golden;
 }
 
-/** The recipe the Canner starts: the first unlocked one, in the player's order, the stash covers */
+/** A honey jar: one of the recipes of honey alone that the Bees tab's Honey Jars opens */
+export function isHoneyJar(recipe: Pick<Recipe, 'requiredBeeUpgrade'>): boolean {
+  return recipe.requiredBeeUpgrade === 'honey_jars';
+}
+
+/**
+ * The ingredients a batch's knowledge and canning experience count. A recipe of honey alone,
+ * like a honey jar or Canner's Cocoa, counts as one, so it teaches like a one-crop recipe.
+ */
+export function rewardIngredients(recipe: Pick<Recipe, 'ingredients'>): number {
+  return Math.max(1, recipe.ingredients.length);
+}
+
+/**
+ * The recipe the Canner starts: the first unlocked one, in the player's order, the stash
+ * covers. It leaves honey jars to the player, so it never spends the honey saved for hives.
+ */
 export function pickRecipeToStart(sortedRecipes: Recipe[], crops: CanningCrop[], honey: HoneyStock): Recipe | undefined {
-  return sortedRecipes.find(recipe => recipe.unlocked && hasIngredients(recipe, crops, honey));
+  return sortedRecipes.find(recipe => recipe.unlocked && !isHoneyJar(recipe) && hasIngredients(recipe, crops, honey));
 }
 
 /**
  * What a finished batch pays. Family Recipe raises the price, Better Seeds on the
  * ingredients raise it further (1.25x per average level, 1.5x with Heirloom Seeds),
- * Heirloom Touch may add a bonus item, and committed Growers earn less. Batches the
- * Canner started give a tenth of the knowledge and canning experience.
+ * and guilds change it: committed Growers earn less, the Preservers more (see
+ * getRecipeValueMultiplier). The Pressure Canner makes more jars and Heirloom Touch may
+ * add one; each jar sells. A Prize Jar from Seal of Quality doubles the money. Knowledge
+ * and canning experience come per batch, doubled by Heirloom Touch's bonus jar; batches
+ * the Canner started give a tenth of them, or half with Trusted Apprentice.
  */
 export function getBatchRewards(
   recipe: Recipe,
@@ -66,7 +100,7 @@ export function getBatchRewards(
   heirloomOwned: boolean,
   guildState: GuildState | undefined,
   random: () => number = Math.random
-): BatchRewards {
+): OneBatchRewards {
   const efficiency = upgrades.find(u => u.id === 'canning_efficiency')?.effect || 1;
   const bonusChance = upgrades.find(u => u.id === 'preservation_mastery')?.effect || 0;
 
@@ -77,16 +111,21 @@ export function getBatchRewards(
     seedsMultiplier = Math.pow(heirloomOwned ? 1.5 : 1.25, totalSeedsLevel / recipe.ingredients.length);
   }
 
-  const items = 1 + (random() * 100 < bonusChance ? 1 : 0);
-  const guildMultiplier = guildState ? getGrowerCanningProfitMultiplier(guildState) : 1;
-  const knowledge = recipe.ingredients.length * 2 * items;
-  const experience = recipe.ingredients.length * 10 * items;
+  const bonusJar = random() * 100 < bonusChance ? 1 : 0;
+  const jars = (guildState ? getPressureCannerJars(guildState) : 1) + bonusJar;
+  // Rolled only when the chance exists, so batches without it use one random number
+  const prizeChance = guildState ? getPrizeJarChance(guildState) : 0;
+  const prize = prizeChance > 0 && random() < prizeChance;
+  const knowledge = rewardIngredients(recipe) * 2 * (1 + bonusJar);
+  const experience = rewardIngredients(recipe) * 10 * (1 + bonusJar);
+  const cannerDivisor = getCannerRewardDivisor(guildState);
 
   return {
-    money: recipe.baseSalePrice * efficiency * seedsMultiplier * items * guildMultiplier,
-    knowledge: automated ? Math.ceil(knowledge / 10) : knowledge,
-    experience: automated ? Math.ceil(experience / 10) : experience,
-    items
+    money: recipe.baseSalePrice * efficiency * seedsMultiplier * getRecipeValueMultiplier(guildState, recipe) * jars * (prize ? 2 : 1),
+    knowledge: automated ? Math.ceil(knowledge / cannerDivisor) : knowledge,
+    experience: automated ? Math.ceil(experience / cannerDivisor) : experience,
+    items: jars,
+    prize
   };
 }
 
@@ -108,6 +147,8 @@ export interface CanningCatchUp {
   rewards: BatchRewards;
   /** Finished batches by recipe */
   finished: FinishedBatches[];
+  /** Finished batches by who started them, and Prize Jars, for Wax Seals */
+  batchCount: BatchCount;
 }
 
 export interface CanningCatchUpInput {
@@ -137,6 +178,7 @@ export function simulateCanning(steps: number, input: CanningCatchUpInput): Cann
   const honeyUsed: HoneyStock = { regular: 0, golden: 0 };
   const rewards: BatchRewards = { money: 0, knowledge: 0, experience: 0, items: 0 };
   const finished = new Map<string, FinishedBatches>();
+  const batchCount: BatchCount = { manual: 0, automated: 0, prizes: 0 };
   let processes = state.activeProcesses;
 
   for (let step = 1; step <= steps; step++) {
@@ -158,6 +200,8 @@ export function simulateCanning(steps: number, input: CanningCatchUpInput): Cann
       rewards.knowledge += batch.knowledge;
       rewards.experience += batch.experience;
       rewards.items += batch.items;
+      batchCount[automated ? 'automated' : 'manual'] += 1;
+      if (batch.prize && !automated) batchCount.prizes += 1;
       const key = `${recipe.id}:${automated}`;
       const entry = finished.get(key) ?? { recipe, automated, batches: 0, money: 0, knowledge: 0, items: 0 };
       entry.batches += 1;
@@ -183,7 +227,7 @@ export function simulateCanning(steps: number, input: CanningCatchUpInput): Cann
       honeyUsed.regular += recipe.honeyRequirement.regular;
       honeyUsed.golden += recipe.honeyRequirement.golden;
     }
-    const time = getBatchTime(recipe, state.upgrades);
+    const time = getBatchTime(recipe, state.upgrades, guildState);
     processes = [...processes, {
       recipeId: recipe.id,
       startTime: Date.now(),
@@ -194,7 +238,7 @@ export function simulateCanning(steps: number, input: CanningCatchUpInput): Cann
     }];
   }
 
-  return { activeProcesses: processes, cropsUsed, honeyUsed, rewards, finished: [...finished.values()] };
+  return { activeProcesses: processes, cropsUsed, honeyUsed, rewards, finished: [...finished.values()], batchCount };
 }
 
 /**

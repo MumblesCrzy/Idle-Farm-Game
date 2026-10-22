@@ -2,6 +2,9 @@ import InlineIcon from './InlineIcon';
 import { ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
 import { memo, type FC, type ReactNode } from 'react';
 import type { Recipe } from '../types/canning';
+import type { GuildState } from '../types/guilds';
+import { getPressureCannerJars, getRecipeValueMultiplier } from '../utils/guildCalculations';
+import { rewardIngredients } from '../utils/canningSimulation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './RecipeDetailsModal.module.css';
 
@@ -17,6 +20,8 @@ interface RecipeDetailsModalProps {
   canMake: boolean;
   efficiencyMultiplier?: number;
   speedMultiplier?: number;
+  /** Guild rules on value and jars */
+  guildState?: GuildState;
   formatNumber: (num: number, decimalPlaces?: number) => string;
 }
 
@@ -64,6 +69,7 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
   canMake,
   efficiencyMultiplier = 1,
   speedMultiplier = 1,
+  guildState,
   formatNumber
 }) => {
   const { containerRef, handleTabKey } = useFocusTrap(isVisible, onClose);
@@ -96,14 +102,16 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
     (total, row) => total + (row.veggie?.salePrice || 0) * row.ingredient.quantity,
     0
   );
-  const effectiveSalePrice = recipe.salePrice * efficiencyMultiplier * betterSeedsMultiplier;
+  const jars = guildState ? getPressureCannerJars(guildState) : 1;
+  const effectiveSalePrice = recipe.salePrice * efficiencyMultiplier * betterSeedsMultiplier
+    * getRecipeValueMultiplier(guildState, recipe) * jars;
   const effectiveProcessingTime = Math.ceil(recipe.baseProcessingTime * speedMultiplier);
   const profit = effectiveSalePrice - rawValue;
   const profitMargin = rawValue === 0 ? 0 : (profit / rawValue) * 100;
 
   // Rewards for manual canning; automatic canning earns a tenth, rounded up
-  const knowledgeReward = ingredientCount * 2;
-  const canningExperienceReward = ingredientCount * 10;
+  const knowledgeReward = rewardIngredients(recipe) * 2;
+  const canningExperienceReward = rewardIngredients(recipe) * 10;
 
   const missingIngredientNames = ingredientRows
     .filter(row => !row.hasEnough)

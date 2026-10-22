@@ -221,6 +221,21 @@ describe('usePumpkinEvent', () => {
     expect(result.current.eventState.inventory).toEqual({});
   });
 
+  it('grows giants heavier with champion seeds from County Fair wins', () => {
+    const initial = createInitialPumpkinState();
+    const plots = initial.plots.map((p, i) => i === 0 ? readyPlot('giant') : p);
+    const weighOff = { ...initial.weighOff, ribbons: { first: 4, second: 0, third: 0 } };
+    const { result } = renderHook(() => usePumpkinEvent({ initialState: startWith({ plots, weighOff }, 'unlock_giant') }));
+
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    act(() => {
+      result.current.harvestPumpkin(0);
+    });
+
+    // 550 lb, and 20% more from four wins
+    expect(result.current.giantShelf[0].weight).toBe(660);
+  });
+
   it('lets the Scarecrow Crew finish pumpkins at harvest', () => {
     const plots = createInitialPumpkinState().plots.map((p, i) => i === 0 ? readyPlot('sugarPie') : p);
     const materials = { ...createInitialPumpkinState().materials, stencils: 1, candles: 1 };

@@ -1,16 +1,73 @@
-.title {
-  text-align: center;
-  color: #700e01;
-  margin-bottom: 1rem;
+/* Pantry, stove and recipes, then upgrades and stats: a kitchen from left to right */
+.kitchen {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 270px;
+  align-items: start;
+  gap: 14px;
 }
 
-.container {
-  margin-bottom: 0.75rem;
+.side {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 8px;
 }
 
-.content {
-  flex: 1;
+.guild {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #6b3410;
+  border-radius: 8px;
+  background: #3d2314;
+  color: #ecd4b4;
+}
+
+.guildHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.guildEmblem {
+  width: 26px;
+  height: 26px;
+}
+
+.guildName {
+  margin-right: auto;
+  color: #f5ca84;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.seals {
+  display: inline-flex;
+  align-items: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.guildNote {
+  margin: 0;
+  font-size: 12px;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #d9bf9c;
+  border-radius: 8px;
+  background: #f3e6d4;
+  color: #3d2a1c;
+  font-size: 12px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
 }

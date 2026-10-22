@@ -1,0 +1,309 @@
+/* The Honey House: honey on hand, what's waiting, what the bees give, and the Beekeeper */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid #5c4a26;
+  border-radius: 10px;
+  background: #2b2418;
+  color: #f6eedc;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.stock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.jar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #4d3f22;
+  border-radius: 9px;
+  background: #352c1c;
+}
+
+.jar img {
+  width: 44px;
+  height: 44px;
+}
+
+.jar b {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.jar small {
+  display: block;
+  color: #cdbd98;
+  font-size: 12px;
+}
+
+.waiting {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #4d3f22;
+  border-radius: 9px;
+  background: #352c1c;
+}
+
+.label {
+  margin: 0;
+  color: #cdbd98;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.amount {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hint {
+  margin: 0;
+  color: #cdbd98;
+  font-size: 12px;
+}
+
+.collect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #f5b82e;
+  color: #2a1a00;
+  font: 800 15px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.collect:hover:not(:disabled) {
+  background: #ffc94d;
+}
+
+.collect:disabled {
+  border: 1px solid #5c4a26;
+  background: #3d3322;
+  color: #cdbd98;
+  cursor: default;
+}
+
+.collect img {
+  width: 22px;
+  height: 22px;
+}
+
+/* One row tall either way, so the card keeps its size */
+.keeperRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+}
+
+.keeperRow > img {
+  width: 30px;
+  height: 30px;
+}
+
+.keeperText {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.keeperHint {
+  color: #cdbd98;
+  font-size: 12px;
+}
+
+.toggleOn,
+.toggleOff {
+  height: 32px;
+  min-width: 56px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font: 800 13px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.toggleOn {
+  border: 2px solid #6fbf5f;
+  background: #2e7d32;
+  color: #ffffff;
+}
+
+.toggleOff {
+  border: 2px solid #5b626b;
+  background: #3a3f45;
+  color: #e5e7eb;
+}
+
+.toggleOn:hover,
+.toggleOff:hover {
+  border-color: #cfe3cb;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+}
+
+.fact img {
+  width: 32px;
+  height: 32px;
+}
+
+.fact b {
+  display: block;
+  font-size: 14px;
+}
+
+.fact small {
+  display: block;
+  margin-top: 1px;
+  color: #cdbd98;
+  font-size: 11px;
+}
+
+.keeper {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid #4d3f22;
+  border-radius: 9px;
+  background: #352c1c;
+}
+
+.keeperArt {
+  width: 48px;
+  height: 48px;
+}
+
+.keeperInfo {
+  min-width: 0;
+}
+
+.keeperName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.level {
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #1d170f;
+  color: #e6d6b0;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.keeperLine {
+  color: #cdbd98;
+  font-size: 11px;
+}
+
+.need {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: #cdbd98;
+  font-size: 11px;
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #1d170f;
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 6px;
+  background: #f5b82e;
+}
+
+.buy,
+.buyShort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 32px;
+  min-width: 72px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font: 800 12px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.buy {
+  border: 0;
+  background: #f5b82e;
+  color: #2a1a00;
+  cursor: pointer;
+}
+
+.buy:hover {
+  background: #ffc94d;
+}
+
+.buyShort {
+  border: 1px solid #5c4a26;
+  background: #3d3322;
+  color: #cdbd98;
+  cursor: not-allowed;
+}
+
+.buy img,
+.buyShort img {
+  width: 15px;
+  height: 15px;
+}
+
+.top {
+  color: #cdbd98;
+  font-size: 11px;
+  font-weight: 700;
+}

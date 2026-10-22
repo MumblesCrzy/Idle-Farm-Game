@@ -1,27 +1,39 @@
-import InlineIcon from './InlineIcon';
-import { memo, type FC, type ReactNode } from 'react';
+/**
+ * Growing Tab: the garden.
+ *
+ * A plank along the top holds Growing Experience, the Growers' bonuses, Ritual Harvest and Sell
+ * All. Below it every crop of a kind (vegetables, or fruits once the Growers' Fruit Cultivation
+ * opens them) has a raised bed with its growth, Sell or Hold, the Auto Harvester, upgrade levels
+ * with their auto-buyers, and Harvest. The tool shed on the right holds the picked crop's
+ * upgrades and the farm upgrades. The tab fits a 1600x1000 window, and nothing changes size as
+ * you click around.
+ */
+import { memo, useCallback, useState, type FC, type ReactNode } from 'react';
 import BaseTab from './BaseTab';
-import ProgressBar from './ProgressBar';
-import CropSelector from './CropSelector';
-import CropHeader from './CropHeader';
-import CropUpgradesGrid from './CropUpgradesGrid';
+import InlineIcon from './InlineIcon';
+import CropGarden, { type CropGroup } from './CropGarden';
+import CropUpgradesPanel from './CropUpgradesPanel';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { ICON_EXPERIENCE, GUILD_GROWERS } from '../config/assetPaths';
-import { AUTO_PURCHASER_CYCLE_DAYS, GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
+import { GUILD_GROWERS, ICON_EXPERIENCE, ICON_MONEY, ICON_RITUAL_HARVEST, ICON_SIGIL } from '../config/assetPaths';
+import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import {
-  getGrowersGrowthBonus,
-  getGrowersPriceBonus,
-  isCommittedTo,
-  getGrowersManualHarvestBonus,
+  applyGuildPriceBonuses,
   getBlessedCropChance,
   getGrowersBeePollinationBonus,
-  applyGuildPriceBonuses,
-  hasFruitCultivation
+  getGrowersGrowthBonus,
+  getGrowersManualHarvestBonus,
+  getGrowersPriceBonus,
+  getUpgradeLevel,
+  hasFruitCultivation,
+  isCommittedTo
 } from '../utils/guildCalculations';
 import styles from './GrowingTab.module.css';
 
 type CropHandler = (index: number) => void;
+
+/** Sigils spent by one Ritual Harvest */
+const RITUAL_HARVEST_COST = 5;
 
 interface GrowingTabProps {
   veggies: Veggie[];
@@ -34,10 +46,11 @@ interface GrowingTabProps {
   globalAutoPurchaseTimer: number;
   heirloomOwned: boolean;
   beeYieldBonus: number;
-  daysToGrow: number;
-  growthMultiplier: number;
+  /** How fast a crop grows today, in growth points per game day */
+  growthMultiplierOf: (crop: Veggie) => number;
   setActiveVeggie: (index: number) => void;
-  handleHarvest: () => void;
+  /** Harvests the crop at this index */
+  handleHarvest: (cropIndex?: number) => void;
   handleToggleSell: CropHandler;
   handleToggleAutoHarvester: CropHandler;
   handleSell: () => void;
@@ -50,16 +63,9 @@ interface GrowingTabProps {
   handleBuyAutoPurchaser: (autoPurchaseId: string) => CropHandler;
   formatNumber: (num: number, decimalPlaces?: number) => string;
   guildState?: GuildState;
-  /** Farm-wide upgrades, shown in the sidebar */
+  /** Farm-wide upgrades, shown in the shed under the picked crop's upgrades */
   upgradesSidebar: ReactNode;
 }
-
-/** Sidebar colors for the growing tab */
-const SIDEBAR_STYLE = {
-  background: '#81b886ff',
-  border: '1px solid #cceccc',
-  boxShadow: '0 2px 8px #e0ffe0'
-};
 
 /** Growers Guild bonuses, shown while committed to the guild */
 const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
@@ -70,35 +76,23 @@ const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
   const beeBonus = getGrowersBeePollinationBonus(guildState);
 
   return (
-    <div className={styles.guildBonusesIndicator}>
-      <span className={styles.guildBonusesTitle}><InlineIcon src={GUILD_GROWERS} size={18} gap={4} />Growers Guild</span>
-      <div className={styles.guildBonusesList}>
-        {growthBonus > 0 && (
-          <span className={styles.guildBonus} title="Growth Speed Bonus from Guild Upgrades">
-            +{Math.round(growthBonus * 100)}% Growth
-          </span>
-        )}
-        {priceBonus > 0 && (
-          <span className={styles.guildBonus} title="Sale Price Bonus from Guild Upgrades">
-            +{Math.round(priceBonus * 100)}% Price
-          </span>
-        )}
-        {manualBonus > 0 && (
-          <span className={styles.guildBonus} title="Manual Harvest Bonus">
-            +{manualBonus} Manual
-          </span>
-        )}
-        {blessedChance > 0 && (
-          <span className={styles.guildBonus} title="Blessed Crop Chance (Double Yield)">
-            {Math.round(blessedChance * 100)}% Blessed
-          </span>
-        )}
-        {beeBonus > 0 && (
-          <span className={styles.guildBonus} title="Bee Pollination Synergy">
-            +{Math.round(beeBonus * 100)}% Bees
-          </span>
-        )}
-      </div>
+    <div className={styles.guildBonuses} role="group" aria-label="Growers Guild bonuses">
+      <img src={GUILD_GROWERS} alt="" aria-hidden="true" title="Growers Guild" className={styles.guildEmblem} />
+      {growthBonus > 0 && (
+        <span className={styles.chip} title="Growth Speed Bonus from Guild Upgrades">+{Math.round(growthBonus * 100)}% Growth</span>
+      )}
+      {priceBonus > 0 && (
+        <span className={styles.chip} title="Sale Price Bonus from Guild Upgrades">+{Math.round(priceBonus * 100)}% Price</span>
+      )}
+      {manualBonus > 0 && (
+        <span className={styles.chip} title="Manual Harvest Bonus">+{manualBonus} Manual</span>
+      )}
+      {blessedChance > 0 && (
+        <span className={styles.chip} title="Blessed Crop Chance (Double Yield)">{Math.round(blessedChance * 100)}% Blessed</span>
+      )}
+      {beeBonus > 0 && (
+        <span className={styles.chip} title="Bee Pollination Synergy">+{Math.round(beeBonus * 100)}% Bees</span>
+      )}
     </div>
   );
 };
@@ -114,8 +108,7 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
   globalAutoPurchaseTimer,
   heirloomOwned,
   beeYieldBonus,
-  daysToGrow,
-  growthMultiplier,
+  growthMultiplierOf,
   setActiveVeggie,
   handleHarvest,
   handleToggleSell,
@@ -132,108 +125,123 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
   guildState,
   upgradesSidebar
 }) => {
-  const crop = veggies[activeVeggie];
+  const crop: Veggie | undefined = veggies[activeVeggie];
   const farmFull = totalPlotsUsed >= maxPlots;
-  const hasReadyCrops = veggies.some(v => v.growth >= GROWTH_COMPLETE_THRESHOLD);
-  const hasActiveAutoPurchasers = crop.autoPurchasers.some(ap => ap.owned && ap.active);
+  const fruitsOpen = !!guildState && hasFruitCultivation(guildState);
 
-  const salePrice = (v: Veggie) => guildState ? applyGuildPriceBonuses(v.salePrice, guildState, false) : v.salePrice;
+  // The kind of crop on show: the picked crop's at first, then whichever the player chooses
+  const [shownGroup, setShownGroup] = useState<CropGroup>(crop?.cropType === 'fruit' ? 'fruits' : 'vegetables');
+  const group: CropGroup = fruitsOpen ? shownGroup : 'vegetables';
+
+  const showGroup = useCallback((next: CropGroup) => {
+    setShownGroup(next);
+    // Pick that kind's first open crop, so the shed matches the beds on show
+    const pickedIsFruit = veggies[activeVeggie]?.cropType === 'fruit';
+    if (pickedIsFruit !== (next === 'fruits')) {
+      const first = veggies.findIndex(v => v.unlocked && (v.cropType === 'fruit') === (next === 'fruits'));
+      if (first >= 0) setActiveVeggie(first);
+    }
+  }, [veggies, activeVeggie, setActiveVeggie]);
+
+  const salePriceOf = useCallback(
+    (v: Veggie) => guildState ? applyGuildPriceBonuses(v.salePrice, guildState, false) : v.salePrice,
+    [guildState]
+  );
   const hasSellable = veggies.some(v => v.sellEnabled && v.stash > 0);
-  const sellAllValue = veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * salePrice(v) : sum, 0);
+  const sellAllValue = veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * salePriceOf(v) : sum, 0);
+
+  const ritualUnlocked = !!guildState && isCommittedTo(guildState, 'growers')
+    && getUpgradeLevel(guildState, 'growers_ritual_circles') > 0;
+  const sigils = guildState?.guildCurrencies?.growers ?? 0;
+  const hasReadyCrops = veggies.some(v => v.growth >= GROWTH_COMPLETE_THRESHOLD);
+  const canRitualHarvest = ritualUnlocked && sigils >= RITUAL_HARVEST_COST && hasReadyCrops;
 
   const mainContent = (
-    <>
-      {/* Experience Display */}
-      <div className={styles.experienceDisplay}>
-        <img src={ICON_EXPERIENCE} alt="" aria-hidden="true" className={styles.experienceIcon} />
-        <span className={styles.experienceText}>
-          Growing Experience: {formatNumber(experience, 2)}
+    <div className={styles.layout}>
+      <div className={styles.plank}>
+        <img src={ICON_EXPERIENCE} alt="" aria-hidden="true" className={styles.plankIcon} />
+        <span className={styles.experience}>
+          <b>{formatNumber(experience, 2)}</b>
+          <small>Growing Experience</small>
         </span>
-      </div>
-
-      {guildState && isCommittedTo(guildState, 'growers') && (
-        <GrowersBonuses guildState={guildState} />
-      )}
-
-      <CropSelector
-        veggies={veggies}
-        activeVeggie={activeVeggie}
-        farmFull={farmFull}
-        showFruits={!!guildState && hasFruitCultivation(guildState)}
-        onSelect={setActiveVeggie}
-        formatNumber={formatNumber}
-      />
-      <div className={styles.spacer} />
-
-      <div className="veggie-panel">
-        <CropHeader
-          crop={crop}
-          cropIndex={activeVeggie}
-          hasReadyCrops={hasReadyCrops}
-          guildState={guildState}
-          beeYieldBonus={beeYieldBonus}
-          daysToGrow={daysToGrow}
-          growthMultiplier={growthMultiplier}
-          onHarvest={handleHarvest}
-          onRitualHarvestAll={handleRitualHarvestAll}
-          onToggleSell={handleToggleSell}
-          formatNumber={formatNumber}
-        />
-
-        <br />
-
-        <CropUpgradesGrid
-          crop={crop}
-          cropIndex={activeVeggie}
-          money={money}
-          knowledge={knowledge}
-          heirloomOwned={heirloomOwned}
-          farmFull={farmFull}
-          onBuyFertilizer={handleBuyFertilizer}
-          onBuyBetterSeeds={handleBuyBetterSeeds}
-          onBuyAdditionalPlot={handleBuyAdditionalPlot}
-          onBuyHarvester={handleBuyHarvester}
-          onToggleAutoHarvester={handleToggleAutoHarvester}
-          onBuyHarvesterSpeed={handleBuyHarvesterSpeed}
-          onBuyAutoPurchaser={handleBuyAutoPurchaser}
-          formatNumber={formatNumber}
-        />
-      </div>
-
-      {/* Auto-purchase progress and Sell All */}
-      <div className={styles.autoPurchaseSection}>
-        {hasActiveAutoPurchasers && (
-          <div className={styles.autoPurchaseProgressContainer}>
-            <span className={styles.autoPurchaseLabel}>
-              Auto-Purchase: {AUTO_PURCHASER_CYCLE_DAYS - globalAutoPurchaseTimer} days
-            </span>
-            <div className={styles.autoPurchaseProgressWrapper}>
-              <ProgressBar value={globalAutoPurchaseTimer} max={AUTO_PURCHASER_CYCLE_DAYS} height={12} color="#4caf50" />
-              <span className={styles.autoPurchaseProgressLabel}>
-                {Math.floor((globalAutoPurchaseTimer / AUTO_PURCHASER_CYCLE_DAYS) * 100)}%
-              </span>
-            </div>
-          </div>
+        {guildState && isCommittedTo(guildState, 'growers') && <GrowersBonuses guildState={guildState} />}
+        <span className={styles.spacer} />
+        {ritualUnlocked && (
+          <button
+            type="button"
+            className={styles.ritualButton}
+            onClick={handleRitualHarvestAll}
+            disabled={!canRitualHarvest}
+            title={canRitualHarvest
+              ? `Ritual Harvest: Spend ${RITUAL_HARVEST_COST} sigils to harvest all ready crops`
+              : sigils < RITUAL_HARVEST_COST
+                ? `Need ${RITUAL_HARVEST_COST} sigils (you have ${sigils})`
+                : 'No crops are ready to harvest'}
+          >
+            <InlineIcon src={ICON_RITUAL_HARVEST} size={20} gap={6} />Ritual Harvest · {RITUAL_HARVEST_COST}
+            <InlineIcon src={ICON_SIGIL} size={16} gap={0} /><span className="sr-only"> sigils</span>
+          </button>
         )}
-
         <button
+          type="button"
           className={styles.sellAllButton}
           onClick={handleSell}
           disabled={!hasSellable}
-          aria-label="Sell all veggies (only those marked for selling)"
+          title="Sells every crop marked Sell. Crops on Hold stay in the stash"
         >
-          {hasSellable ? 'Sell All' : 'No sellable veggies'}  (${formatNumber(sellAllValue, 2)})
+          <InlineIcon src={ICON_MONEY} size={22} gap={8} />
+          {hasSellable ? `Sell All · $${formatNumber(sellAllValue, 2)}` : 'Nothing to sell'}
         </button>
       </div>
-    </>
+
+      <CropGarden
+        veggies={veggies}
+        group={group}
+        fruitsOpen={fruitsOpen}
+        onShowGroup={showGroup}
+        activeVeggie={activeVeggie}
+        farmFull={farmFull}
+        money={money}
+        globalAutoPurchaseTimer={globalAutoPurchaseTimer}
+        growthMultiplierOf={growthMultiplierOf}
+        onSelect={setActiveVeggie}
+        onHarvest={handleHarvest}
+        onToggleSell={handleToggleSell}
+        onBuyHarvester={handleBuyHarvester}
+        formatNumber={formatNumber}
+      />
+
+      <div className={styles.shed}>
+        {crop && (
+          <CropUpgradesPanel
+            crop={crop}
+            cropIndex={activeVeggie}
+            money={money}
+            knowledge={knowledge}
+            heirloomOwned={heirloomOwned}
+            farmFull={farmFull}
+            salePrice={salePriceOf(crop)}
+            beeYieldBonus={beeYieldBonus}
+            guildState={guildState}
+            onBuyFertilizer={handleBuyFertilizer}
+            onBuyBetterSeeds={handleBuyBetterSeeds}
+            onBuyAdditionalPlot={handleBuyAdditionalPlot}
+            onBuyHarvester={handleBuyHarvester}
+            onToggleAutoHarvester={handleToggleAutoHarvester}
+            onBuyHarvesterSpeed={handleBuyHarvesterSpeed}
+            onBuyAutoPurchaser={handleBuyAutoPurchaser}
+            formatNumber={formatNumber}
+          />
+        )}
+        {upgradesSidebar}
+      </div>
+    </div>
   );
 
   return (
     <BaseTab
       isUnlocked={true} // Growing tab is always unlocked
       mainContent={mainContent}
-      sidebarContent={upgradesSidebar}
-      sidebarStyle={SIDEBAR_STYLE}
     />
   );
 });

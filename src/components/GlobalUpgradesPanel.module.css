@@ -1,55 +1,125 @@
-/* Global Upgrades Panel Styles */
+/* Farm-wide upgrades, at the foot of the Growing tab's tool shed: one compact row each */
 
-/* Base styles */
-.upgradesContainer {
+.panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
+  color: #f6eedc;
 }
-
-/* Color overrides for Growing theme */
 
 .title {
-  text-align: center;
-  color: #2e7d32;
-  margin-bottom: 1rem;
+  margin: 6px 0 1px;
+  color: #d4c3a3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.progressSection {
-  margin-top: 1rem;
+.row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 9px;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid #5c4630;
+  border-radius: 8px;
+  background: #3a2c1d;
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+}
+
+.info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+  color: #fff6e6;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.progressContainer {
-  width: 100%;
-  margin-bottom: 0.25rem;
+.level {
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #1f160e;
+  color: #efe0c2;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
 }
 
-.progressText {
-  color: #2e7d32;
-  font-weight: bold;
-  font-size: 0.85rem;
+.effect {
+  overflow: hidden;
+  color: #d4c3a3;
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.progressBarWrapper {
-  position: relative;
-  width: 100%;
-  height: 12px;
-  margin-top: 0.1rem;
+.owned {
+  padding: 5px 9px;
+  border: 1px solid #6b7280;
+  border-radius: 7px;
+  background: #3a3f45;
+  color: #e5e7eb;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.progressLabel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 0.6rem;
-  font-weight: bold;
-  color: #333;
-  pointer-events: none;
-  z-index: 1;
-  text-shadow: 0 0 2px white, 0 0 2px white, 0 0 2px white;
+.buyAfford,
+.buyShort {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font: 800 11px system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Affordable buys glow gold, as on the other tabs */
+.buyAfford {
+  border: 2px solid #f5c040;
+  background: #3b6e1e;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(245, 192, 64, 0.25);
+}
+
+.buyAfford:hover {
+  border-color: #ffe08a;
+}
+
+.buyShort {
+  border: 2px solid #5c4630;
+  background: #2b2015;
+  color: #d4c3a3;
+  cursor: not-allowed;
+}
+
+/* The Merchant's countdown, under its effect */
+.merchantBar {
+  display: block;
+  height: 3px;
+  margin-top: 3px;
+  border-radius: 2px;
+  background: #1f160e;
+  overflow: hidden;
+}
+
+.merchantBar > span {
+  display: block;
+  height: 3px;
+  background: #f5a623;
 }

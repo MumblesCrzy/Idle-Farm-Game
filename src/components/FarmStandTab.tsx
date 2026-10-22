@@ -6,7 +6,8 @@
  * - Price cards for each pumpkin variety and finish, across qualities
  * - Sell sliders and buttons, priced by the shared pricing module
  * - Pies, candles and stencils sold on their own
- * - Daily bonus (Chalkboard Sign) and Hayride income
+ * - A bar with the market demand, the daily bonus (Chalkboard Sign) and Hayride income,
+ *   so the tab fits a 1600x1000 window
  */
 
 import { memo, useCallback, useMemo, useState, type ChangeEvent, type FC } from 'react';
@@ -36,11 +37,16 @@ import {
   ownsUpgrade,
   parsePumpkinKey
 } from '../utils/pumpkinPricing';
+import { PUMPKIN_UPGRADE_CHALKBOARD, PUMPKIN_UPGRADE_HAYRIDE } from '../config/assetPaths';
 import styles from './FarmStandTab.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
 const C = PUMPKIN_EVENT_CONSTANTS;
+
+/** The Chalkboard Sign and Hayride upgrades' art, shown on the stand's bar */
+const CHALKBOARD_ART: EventArtSource = { image: PUMPKIN_UPGRADE_CHALKBOARD, emoji: '🪧' };
+const HAYRIDE_ART: EventArtSource = { image: PUMPKIN_UPGRADE_HAYRIDE, emoji: '🛻' };
 
 /** Small Candy Corn icon that screen readers read as the currency name */
 const CandyCorn: FC<{ size?: number }> = ({ size = 16 }) => (
@@ -74,6 +80,20 @@ function variantName(variety: PumpkinVariety, finish: PumpkinFinish): string {
   if (finish === 'plain') return definition.displayName;
   if (finish === 'lantern') return `${definition.name} ${PUMPKIN_FINISH_NAMES.lantern}`;
   return `${PUMPKIN_FINISH_NAMES[finish]} ${definition.displayName}`;
+}
+
+/** A card name with "Jack-o'-Lantern" kept on one line, so it never breaks at a hyphen */
+function unbrokenName(name: string) {
+  const lantern = PUMPKIN_FINISH_NAMES.lantern;
+  const at = name.indexOf(lantern);
+  if (at < 0) return name;
+  return (
+    <>
+      {name.slice(0, at)}
+      <span className={styles.unbroken}>{lantern}</span>
+      {name.slice(at + lantern.length)}
+    </>
+  );
 }
 
 /** Every carvable variety in every finish, in display order */
@@ -198,9 +218,9 @@ const PriceCard: FC<PriceCardProps> = memo(({ variant, stock, upgrades, demandMu
   return (
     <section className={styles.priceCard} aria-label={variant.name}>
       <div className={styles.cardHeader}>
-        <EventArt art={variant.art} size={40} className={styles.cardArt} />
+        <EventArt art={variant.art} size={32} className={styles.cardArt} />
         <div className={styles.cardTitle}>
-          <h3 className={styles.pumpkinName}>{variant.name}</h3>
+          <h3 className={styles.pumpkinName}>{unbrokenName(variant.name)}</h3>
           <div className={styles.stockBreakdown}>
             {stock.map(entry => {
               const quality = parsePumpkinKey(entry.key).quality;
@@ -216,8 +236,8 @@ const PriceCard: FC<PriceCardProps> = memo(({ variant, stock, upgrades, demandMu
             })}
           </div>
         </div>
-        <span className={styles.priceLabel}>Price:</span>
         <span className={styles.priceValue} title={priceTitle}>
+          <span className="sr-only">Price: </span>
           {highestPrice > lowestPrice ? `${lowestPrice}-${highestPrice}` : lowestPrice} <CandyCorn />
         </span>
       </div>
@@ -296,36 +316,36 @@ const GoodCard: FC<GoodCardProps> = memo(({ definition, stock, onSell, formatNum
 
   return (
     <section className={styles.goodSection} aria-label={definition.name}>
-      <h3 className={styles.goodTitle}>
-        <EventArt art={definition.art} size={24} />
-        {definition.name}
-      </h3>
-      <div className={styles.goodCard}>
-        <div className={styles.goodInfo}>
-          <span className={styles.goodStock}>In Stock: {formatNumber(stock, 1)}</span>
-          <span className={styles.goodPrice}>{price} <CandyCorn /> each</span>
-        </div>
-        <div className={styles.goodHint}>{definition.hint}</div>
-        <div className={styles.goodButtons}>
-          <button
-            type="button"
-            className={styles.sellButton}
-            onClick={() => onSell(definition.good, 1)}
-            disabled={stock < 1}
-            aria-label={`Sell 1 ${definition.singular} for ${price} Candy Corn`}
-          >
-            Sell 1
-          </button>
-          <button
-            type="button"
-            className={styles.sellAllButton}
-            onClick={() => onSell(definition.good, stock)}
-            disabled={stock < 1}
-            aria-label={`Sell All: ${stock} ${definition.name} for ${formatNumber(totalValue, 1)} Candy Corn`}
-          >
-            Sell All ({formatNumber(totalValue, 1)} <CandyCorn />)
-          </button>
-        </div>
+      <div className={styles.goodHeader}>
+        <h3 className={styles.goodTitle}>
+          <EventArt art={definition.art} size={22} />
+          {definition.name}
+        </h3>
+        <span className={styles.goodPrice}>{price} <CandyCorn /> each</span>
+      </div>
+      <div className={styles.goodInfo}>
+        <span className={styles.goodStock}>In Stock: {formatNumber(stock, 1)}</span>
+        <span className={styles.goodHint}>{definition.hint}</span>
+      </div>
+      <div className={styles.goodButtons}>
+        <button
+          type="button"
+          className={styles.sellButton}
+          onClick={() => onSell(definition.good, 1)}
+          disabled={stock < 1}
+          aria-label={`Sell 1 ${definition.singular} for ${price} Candy Corn`}
+        >
+          Sell 1
+        </button>
+        <button
+          type="button"
+          className={styles.sellAllButton}
+          onClick={() => onSell(definition.good, stock)}
+          disabled={stock < 1}
+          aria-label={`Sell All: ${stock} ${definition.name} for ${formatNumber(totalValue, 1)} Candy Corn`}
+        >
+          Sell All ({formatNumber(totalValue, 1)} <CandyCorn />)
+        </button>
       </div>
     </section>
   );
@@ -386,15 +406,54 @@ const FarmStandTab: FC<FarmStandTabProps> = memo(({ event, formatNumber }) => {
 
   const mainContent = (
     <div className={styles.container}>
-      {/* Left Column: Price Cards and Goods */}
+      {/* Left Column: the stand's bar, price cards and goods */}
       <div className={styles.leftColumn}>
-        <div className={styles.demandBanner}>
-          <EventArt art={PUMPKIN_ART.stand} size={24} />
-          <span className={styles.demandLabel}>Market Demand:</span>
-          <span className={styles.demandMultiplier}>×{demandMultiplier.toFixed(2)}</span>
-          <span className={styles.demandHint}>
-            {demandMultiplier >= PUMPKIN_EVENT_CONSTANTS.MAX_DEMAND_MULTIPLIER ? '(holds until Thanksgiving)' : '(rises toward Halloween)'}
-          </span>
+        {/* Market demand, then the Hayride and the Chalkboard Special once they are owned */}
+        <div className={styles.standBar}>
+          <div className={styles.demand}>
+            <EventArt art={PUMPKIN_ART.stand} size={24} />
+            <span className={styles.demandLabel}>Market Demand:</span>
+            <span className={styles.demandMultiplier}>×{demandMultiplier.toFixed(2)}</span>
+            <span className={styles.demandHint}>
+              {demandMultiplier >= PUMPKIN_EVENT_CONSTANTS.MAX_DEMAND_MULTIPLIER ? '(holds until Thanksgiving)' : '(rises toward Halloween)'}
+            </span>
+          </div>
+
+          {passiveCandyCornPerSecond > 0 && (
+            <section className={styles.hayride} aria-label="Hayride income">
+              <EventArt art={HAYRIDE_ART} size={32} />
+              <div className={styles.barText}>
+                <h3 className={styles.barTitle}>
+                  Hayride: +{formatNumber(passiveCandyCornPerSecond, 2)} <CandyCorn /> per second
+                </h3>
+                <p className={styles.barHint}>
+                  {passiveCandyCornPerSecond < 1
+                    ? `1 Candy Corn every ${formatNumber(1 / passiveCandyCornPerSecond, 1)} seconds`
+                    : 'Visitors ride around the patch while you farm'}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {hasChalkboardSign && (
+            <section className={styles.chalkboard} aria-label="Daily bonus">
+              <EventArt art={CHALKBOARD_ART} size={32} />
+              <div className={styles.barText}>
+                <h3 className={styles.barTitle}>Chalkboard Special</h3>
+                <button
+                  type="button"
+                  className={styles.claimButton}
+                  onClick={handleClaimDailyBonus}
+                  disabled={!dailyBonusAvailable}
+                  title="Regulars stop by once a day for the special"
+                >
+                  {dailyBonusAvailable
+                    ? <>Claim daily bonus +{C.DAILY_BONUS} <CandyCorn /></>
+                    : 'Claimed. Come back tomorrow!'}
+                </button>
+              </div>
+            </section>
+          )}
         </div>
 
         {pumpkinsInStock > 0 ? (
@@ -446,43 +505,10 @@ const FarmStandTab: FC<FarmStandTabProps> = memo(({ event, formatNumber }) => {
             />
           ))}
         </div>
-
       </div>
 
-      {/* Right Column: Bonuses and Stand Upgrades */}
+      {/* Right Column: Stand Upgrades */}
       <div className={styles.rightColumn}>
-        {hasChalkboardSign && (
-          <section className={styles.dailyBonus} aria-label="Daily bonus">
-            <h3 className={styles.bonusTitle}>Chalkboard Special</h3>
-            <p className={styles.bonusDescription}>Regulars stop by once a day for the special.</p>
-            <button
-              type="button"
-              className={styles.claimButton}
-              onClick={handleClaimDailyBonus}
-              disabled={!dailyBonusAvailable}
-            >
-              Claim daily bonus (+{C.DAILY_BONUS} <CandyCorn />)
-            </button>
-            {!dailyBonusAvailable && (
-              <p className={styles.bonusClaimed}>Claimed today. Come back tomorrow!</p>
-            )}
-          </section>
-        )}
-
-        {passiveCandyCornPerSecond > 0 && (
-          <section className={styles.passiveIncome} aria-label="Hayride income">
-            <h3 className={styles.passiveTitle}>Hayride</h3>
-            <div className={styles.passiveValue}>
-              +{formatNumber(passiveCandyCornPerSecond, 2)} <CandyCorn size={20} /> per second
-            </div>
-            <div className={styles.passiveHint}>
-              {passiveCandyCornPerSecond < 1
-                ? `1 Candy Corn every ${formatNumber(1 / passiveCandyCornPerSecond, 1)} seconds`
-                : 'Visitors ride around the patch while you farm'}
-            </div>
-          </section>
-        )}
-
         <EventUpgradesPanel
           title="Stand Upgrades"
           category="shopfront"

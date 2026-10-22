@@ -285,6 +285,44 @@ describe('useHarvestAndSell', () => {
       const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
       expect(addMoney(0)).toBe(95);
     });
+
+    it('awards committed Growers a Sigil for a manual harvest', () => {
+      const growers: GuildState = { ...DEFAULT_GUILD_STATE, committedGuild: 'growers', status: 'committed' };
+      const deps = createDefaultDeps({ farmTier: 5, guildState: growers });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.harvestVeggie(0, false);
+      });
+
+      const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      expect(update(growers).guildCurrencies.growers).toBe(1);
+    });
+
+    it('awards committed Preservers nothing for a manual harvest: they earn Wax Seals by canning', () => {
+      const preservers: GuildState = { ...DEFAULT_GUILD_STATE, committedGuild: 'preservers', status: 'committed' };
+      const deps = createDefaultDeps({ farmTier: 5, guildState: preservers });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.harvestVeggie(0, false);
+      });
+
+      expect(deps.setGuildState).not.toHaveBeenCalled();
+    });
+
+    it('sells raw crops for 10% less for committed Preservers', () => {
+      const preservers: GuildState = { ...DEFAULT_GUILD_STATE, committedGuild: 'preservers', status: 'committed' };
+      const deps = createDefaultDeps({ guildState: preservers });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleSell(false);
+      });
+
+      const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(addMoney(0)).toBeCloseTo(95 * 0.9);
+    });
   });
 
   describe('handleRitualHarvestAll', () => {

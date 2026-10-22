@@ -1,5 +1,6 @@
 import type { BeeState } from './bees';
 import type { CanningState } from './canning';
+import type { GuildState } from './guilds';
 
 /** Game values that achievement requirements are checked against. */
 export interface AchievementGameState {
@@ -12,8 +13,11 @@ export interface AchievementGameState {
   totalHarvests?: number;
   christmasTreesSold?: number;
   pumpkinsSold?: number;
+  /** The heaviest Atlantic Giant grown this Pumpkin Rush, in pounds */
+  heaviestGiant?: number;
   beeState?: BeeState | null;
   canningState?: CanningState | null;
+  guildState?: GuildState | null;
 }
 
 export interface Achievement {

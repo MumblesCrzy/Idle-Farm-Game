@@ -77,7 +77,7 @@ const INITIAL_CANNING_UPGRADES: CanningUpgrade[] = [
     baseCost: 500,
     upgradeCostScaling: 2.0,
     costCurrency: 'money',
-    maxLevel: 14,
+    maxLevel: 15, // 16 slots: four full rows on the stove
     effect: 1, // Number of additional simultaneous processes
     unlocked: true
   },
@@ -114,6 +114,48 @@ const INITIAL_CANNING_STATE: CanningState = {
 
 import type { GuildState } from '../types/guilds';
 
+/** Each upgrade's effect at its level */
+function withEffects(upgrades: CanningUpgrade[]): CanningUpgrade[] {
+  return upgrades.map(upgrade => {
+    let effect = 0;
+    switch (upgrade.type) {
+      case 'speed':
+        effect = Math.max(0.1, 1 - (upgrade.level * 0.05)); // Faster processing
+        break;
+      case 'efficiency':
+        effect = 1 + (upgrade.level * 0.10); // Higher sale prices
+        break;
+      case 'quality':
+        effect = upgrade.level * 5; // Percentage chance for bonus
+        break;
+      case 'automation':
+        effect = upgrade.level; // Additional simultaneous processes
+        break;
+    }
+    return { ...upgrade, effect };
+  });
+}
+
+/** Each upgrade's next cost at its level */
+function withCosts(upgrades: CanningUpgrade[]): CanningUpgrade[] {
+  return upgrades.map(upgrade => ({
+    ...upgrade,
+    cost: Math.ceil(upgrade.baseCost * Math.pow(upgrade.upgradeCostScaling, upgrade.level))
+  }));
+}
+
+/**
+ * A saved canning state with today's upgrade rules: names, costs and max levels come from the
+ * definitions, and only each upgrade's level from the save. Saves keep whole upgrades, so this
+ * is how a raised max level, like Batch Canning's 15th, reaches existing games.
+ */
+function withCurrentUpgradeRules(state: CanningState): CanningState {
+  const levels = new Map((state.upgrades ?? []).map(upgrade => [upgrade.id, upgrade.level]));
+  const upgrades = INITIAL_CANNING_UPGRADES.map(definition => ({ ...definition, level: levels.get(definition.id) ?? 0 }));
+  return { ...state, upgrades: withCosts(withEffects(upgrades)) };
+}
+import type { BatchCount } from '../utils/guildCalculations';
+
 // Hook for managing canning system state and logic
 export function useCanningSystem<T extends {name: string, stash: number, salePrice: number, betterSeedsLevel?: number}>(
   // experience: number, // Unused parameter
@@ -135,9 +177,15 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   unlockedAchievementIds?: string[],
   guildState?: GuildState,
   isPaused?: boolean,
-  onGoodsCanned?: (count: number) => void
+  onGoodsCanned?: (count: number) => void,
+  /** Finished batches by who started them, with Prize Jars, for the Preservers' Wax Seals */
+  onBatchesFinished?: (batches: BatchCount) => void,
+  /** Bee upgrades owned: Honey Jars opens the honey jar recipes */
+  ownedBeeUpgrades?: readonly string[]
 ) {
-  const [canningState, setCanningState] = useState<CanningState>(initialCanningState || INITIAL_CANNING_STATE);
+  const [canningState, setCanningState] = useState<CanningState>(() => (
+    initialCanningState ? withCurrentUpgradeRules(initialCanningState) : INITIAL_CANNING_STATE
+  ));
 
   // Latest committed canning state, for the game-step callbacks
   const canningStateRef = useLatestRef(canningState);
@@ -145,13 +193,30 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   // Ref to always have access to current veggie state in callbacks
   const currentVeggiesRef = useRef(veggies);
   currentVeggiesRef.current = veggies;
+
+  // Latest guild state, for batch times and payouts
+  const guildStateRef = useRef(guildState);
+  guildStateRef.current = guildState;
+
+  // Guild upgrades decide which recipes exist: the Cellar recipes need Cellar Recipes, bought this
+  // Legacy or kept from an earlier one. One string, so the list is rebuilt only when the set changes.
+  const ownedGuildUpgradesKey = guildState
+    ? [...guildState.purchasedUpgrades, ...(guildState.legacy?.keptUnlocks ?? [])].join('|')
+    : '';
+  // Bee upgrades do the same for the honey jars, which need Honey Jars from the Bees tab
+  const ownedBeeUpgradesKey = (ownedBeeUpgrades ?? []).join('|');
   
   // Build the recipe list from configuration. It runs whenever the crops change, every game
   // step, so it keeps how many times each recipe was made.
   useEffect(() => {
     setCanningState(prev => {
       const completed = new Map(prev.recipes.map(recipe => [recipe.id, recipe.timesCompleted]));
-      const recipes: Recipe[] = INITIAL_RECIPES.map(config => {
+      const ownedGuildUpgrades = new Set(ownedGuildUpgradesKey.split('|'));
+      const beeUpgradesOwned = new Set(ownedBeeUpgradesKey.split('|'));
+      const available = INITIAL_RECIPES.filter(config =>
+        (!config.requiredGuildUpgrade || ownedGuildUpgrades.has(config.requiredGuildUpgrade)) &&
+        (!config.requiredBeeUpgrade || beeUpgradesOwned.has(config.requiredBeeUpgrade)));
+      const recipes: Recipe[] = available.map(config => {
         const ingredients: CanningIngredient[] = config.ingredients.map(ing => {
           const veggieIndex = veggies.findIndex(v => v.name === ing.veggieName);
           return {
@@ -200,6 +265,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           baseSalePrice: config.baseSalePrice,
           experienceRequired: config.experienceRequired,
           requiredAchievementId: config.requiredAchievementId,
+          requiredGuildUpgrade: config.requiredGuildUpgrade,
+          requiredBeeUpgrade: config.requiredBeeUpgrade,
           unlocked,
           timesCompleted: completed.get(config.id) ?? 0
         };
@@ -215,7 +282,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         unlockedRecipes: unlockedRecipeIds
       };
     });
-  }, [veggies, farmTier, totalHoneyCollected, unlockedAchievementIds]); // Watch farmTier instead of experience for first recipe unlock
+  }, [veggies, farmTier, totalHoneyCollected, unlockedAchievementIds, ownedGuildUpgradesKey, ownedBeeUpgradesKey]); // Watch farmTier instead of experience for first recipe unlock
   
   // Update recipe unlocks based on canning experience and farm tier
   useEffect(() => {
@@ -266,38 +333,6 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   // Note: Canning state is now preserved across farm tier upgrades
   // The reset logic has been removed to maintain player progress
   
-  // Update upgrade effects based on levels
-  const updateUpgradeEffects = useCallback((upgrades: CanningUpgrade[]) => {
-    return upgrades.map(upgrade => {
-      let effect = 0;
-      
-      switch (upgrade.type) {
-        case 'speed':
-          effect = Math.max(0.1, 1 - (upgrade.level * 0.05)); // Faster processing
-          break;
-        case 'efficiency':
-          effect = 1 + (upgrade.level * 0.10); // Higher sale prices
-          break;
-        case 'quality':
-          effect = upgrade.level * 5; // Percentage chance for bonus
-          break;
-        case 'automation':
-          effect = upgrade.level; // Additional simultaneous processes
-          break;
-      }
-      
-      return { ...upgrade, effect };
-    });
-  }, []);
-  
-  // Update upgrade costs based on level
-  const updateUpgradeCosts = useCallback((upgrades: CanningUpgrade[]) => {
-    return upgrades.map(upgrade => ({
-      ...upgrade,
-      cost: Math.ceil(upgrade.baseCost * Math.pow(upgrade.upgradeCostScaling, upgrade.level))
-    }));
-  }, []);
-  
   // Check if player has enough ingredients for a recipe
   const canMakeRecipe = useCallback((recipe: Recipe): boolean => (
     hasIngredients(recipe, veggies, { regular: regularHoney || 0, golden: goldenHoney || 0 })
@@ -338,8 +373,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       }
     }
     
-    // Calculate actual processing time with speed upgrades
-    const processingTime = getBatchTime(recipe, canningState.upgrades);
+    // Calculate actual processing time with speed upgrades and the guild's
+    const processingTime = getBatchTime(recipe, canningState.upgrades, guildStateRef.current);
     
     const process: CanningProcess = {
       recipeId,
@@ -372,10 +407,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const heirloomOwnedRef = useRef(heirloomOwned);
   heirloomOwnedRef.current = heirloomOwned;
   
-  const guildStateRef = useRef(guildState);
-  guildStateRef.current = guildState;
-
   const onGoodsCannedRef = useLatestRef(onGoodsCanned);
+  const onBatchesFinishedRef = useLatestRef(onBatchesFinished);
   
   const completeCanning = useCallback((processIndex: number): void => {
     const process = canningState.activeProcesses[processIndex];
@@ -389,7 +422,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       money: totalEarnings,
       knowledge: knowledgeReward,
       experience: canningExperienceReward,
-      items: totalItems
+      items: totalItems,
+      prize
     } = getBatchRewards(
       recipe,
       process.automated ?? false,
@@ -403,6 +437,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     setMoney(prev => prev + totalEarnings);
     setKnowledge(prev => prev + knowledgeReward);
     onGoodsCannedRef.current?.(totalItems);
+    const automated = process.automated ?? false;
+    onBatchesFinishedRef.current?.({ manual: automated ? 0 : 1, automated: automated ? 1 : 0, prizes: prize && !automated ? 1 : 0 });
     
     // Call event logging callback if available
     const globalCanningCompleteCallback = window.globalCanningCompleteCallback;
@@ -422,7 +458,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           : r
       )
     }));
-  }, [canningState.activeProcesses, canningState.recipes, canningState.upgrades, setMoney, setKnowledge, onGoodsCannedRef]);
+  }, [canningState.activeProcesses, canningState.recipes, canningState.upgrades, setMoney, setKnowledge, onGoodsCannedRef, onBatchesFinishedRef]);
   
   // Purchase a canning upgrade
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
@@ -452,8 +488,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           : u
       );
       
-      const upgradesWithEffects = updateUpgradeEffects(updatedUpgrades);
-      const upgradesWithCosts = updateUpgradeCosts(upgradesWithEffects);
+      const upgradesWithCosts = withCosts(withEffects(updatedUpgrades));
       
       // Update max simultaneous processes if needed
       const simultaneousUpgrade = upgradesWithCosts.find(u => u.id === 'simultaneous_processing');
@@ -467,7 +502,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     });
     
     return true;
-  }, [canningState.upgrades, money, knowledge, setMoney, setKnowledge, updateUpgradeEffects, updateUpgradeCosts]);
+  }, [canningState.upgrades, money, knowledge, setMoney, setKnowledge]);
   
   // Hidden-tab catch-up. The game clock stops while the tab is hidden and every system
   // credits that time when the player returns. Canning runs the missed steps on the next
@@ -508,6 +543,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     if (rewards.money > 0) setMoney(prev => prev + rewards.money);
     if (rewards.knowledge > 0) setKnowledge(prev => prev + rewards.knowledge);
     if (rewards.items > 0) onGoodsCannedRef.current?.(rewards.items);
+    if (result.batchCount.manual + result.batchCount.automated > 0) onBatchesFinishedRef.current?.(result.batchCount);
     const logBatches = window.globalCanningCompleteCallback;
     if (logBatches) {
       result.finished.forEach(batches => logBatches(
@@ -616,8 +652,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const recipeValueContext = useMemo<RecipeValueContext>(() => ({
     veggies,
     heirloomOwned,
-    efficiencyMultiplier
-  }), [veggies, heirloomOwned, efficiencyMultiplier]);
+    efficiencyMultiplier,
+    guildState
+  }), [veggies, heirloomOwned, efficiencyMultiplier, guildState]);
 
   const sortRecipes = useCallback((recipes: Recipe[]) => (
     sortRecipesByPreference(recipes, recipeSort, recipeValueContext)
@@ -683,6 +720,17 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }));
   }, []);
 
+  // Rush Batch (Preservers): every running batch finishes now, and the completion effect pays
+  // them as usual. The caller charges the Wax Seals.
+  const rushBatches = useCallback(() => {
+    setCanningState(prev => ({
+      ...prev,
+      activeProcesses: prev.activeProcesses.map(process => (
+        process.completed ? process : { ...process, remainingTime: 0, completed: true }
+      ))
+    }));
+  }, []);
+
   // Reset canning state to initial values
   const resetCanningState = useCallback(() => {
     setCanningState(INITIAL_CANNING_STATE);
@@ -697,6 +745,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     getAvailableRecipes,
     getRecipeAnalysis,
     toggleAutoCanning,
+    rushBatches,
     resetCanningState
   };
 }

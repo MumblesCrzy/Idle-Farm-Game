@@ -8,22 +8,6 @@
  */
 
 // ============================================================================
-// BEE PRODUCTION CONSTANTS
-// ============================================================================
-
-/**
- * Production timing constants
- */
-export const BEE_CONSTANTS = {
-  BASE_PRODUCTION_TIME: 132, // Reduced from 182 to account for 50-day winter pause (maintains 2 harvests/year)
-  STARTING_BEE_BOXES: 2,
-  MAX_BEE_BOXES: 30,
-  BASE_YIELD_BONUS_PER_BOX: 0.005, // 0.5% crop yield bonus per box
-  UNLOCK_FARM_TIER: 3, // Tier 3+ required to unlock bees
-  BEEKEEPER_ASSISTANT_UNLOCK_BOXES: 4, // Unlock assistant after owning 4-6 boxes
-} as const;
-
-// ============================================================================
 // BEE BOX TYPES
 // ============================================================================
 
@@ -37,7 +21,8 @@ export interface BeeBox {
   productionTime: number; // Time required for one honey (base: 182 seconds, affected by upgrades)
   honeyProduced: number; // Total honey produced by this box (lifetime stat)
   lastHarvestTime: number; // Timestamp of last harvest (for offline calculation)
-  harvestReady: boolean; // Whether honey is ready to collect
+  harvestReady: boolean; // Whether any honey is waiting to be collected
+  storedBatches?: number; // Batches made and waiting to be collected; the bees keep working meanwhile (missing in older saves)
 }
 
 /**
@@ -98,7 +83,7 @@ export interface BeeState {
 /**
  * Categories for bee upgrades
  */
-export type BeeUpgradeCategory = 'production' | 'quality' | 'yield' | 'automation';
+export type BeeUpgradeCategory = 'production' | 'quality' | 'yield' | 'automation' | 'kitchen';
 
 /**
  * Individual bee upgrade
@@ -143,7 +128,8 @@ export type BeeUpgradeEffectType =
   | 'cropYieldBonus'     // Increases yield bonus per box (e.g., Meadow Magic +0.5%)
   | 'automationSpeed'    // Reduces automation delay (Beekeeper Assistant)
   | 'goldenHoneyDouble'  // Doubles Golden Honey chance (Queen's Blessing)
-  | 'winterProduction';  // Allows production during winter (Winter Hardiness)
+  | 'winterProduction'   // Allows production during winter (Winter Hardiness)
+  | 'kitchenRecipes';   // Opens recipes in the Kitchen (Honey Jars)
 
 // ============================================================================
 // BEEKEEPER ASSISTANT
@@ -180,7 +166,7 @@ export interface BeeActions {
   // Bee box management
   addBeeBox: () => boolean; // Returns success
   removeBeeBox: (boxId: string) => boolean; // For potential future use
-  harvestHoney: (boxId: string) => HoneyProduction | null;
+  harvestHoney: (boxId: string) => HoneyProduction[];
   harvestAllHoney: () => HoneyProduction[];
   applyOfflineProgress: (progress: OfflineBeeProgress) => void;
   

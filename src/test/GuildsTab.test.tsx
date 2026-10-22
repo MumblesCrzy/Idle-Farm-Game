@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import GuildsTab from '../components/GuildsTab';
 import { GUILDS_UNLOCK_TIER, getSamplingUpgrades } from '../data/guildData';
 import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
+import type { LegacyResetSummary } from '../utils/legacy';
 
 type GuildsTabProps = Parameters<typeof GuildsTab>[0];
 
@@ -126,6 +127,197 @@ describe('GuildsTab', () => {
     });
   });
 
+  describe('Preservers', () => {
+    const preserversCard = () => screen.getByRole('button', { name: /Preservers Guild/ });
+
+    /** One Preservers upgrade sampled, which allows committing */
+    const sampledPreservers: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'sampling',
+      sampledUpgrades: { ...DEFAULT_GUILD_STATE.sampledUpgrades, preservers: ['preservers_shelf_life'] },
+      purchasedUpgrades: ['preservers_shelf_life'],
+      upgradeLevels: { preservers_shelf_life: 1 },
+    };
+
+    /** Committed, with two Pressure Canner levels and Wax Seals to spare */
+    const committedPreservers: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'committed',
+      committedGuild: 'preservers',
+      guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, preservers: 238 },
+      purchasedUpgrades: ['preservers_pressure_canner'],
+      upgradeLevels: { preservers_pressure_canner: 2 },
+    };
+
+    it('can be joined once one of their upgrades is sampled', async () => {
+      const user = userEvent.setup();
+      const props = renderTab({ guildState: sampledPreservers });
+
+      await user.click(preserversCard());
+      await user.click(screen.getByRole('button', { name: 'Commit to Guild' }));
+      const dialog = screen.getByRole('dialog', { name: 'Commit to Preservers Guild?' });
+      await user.click(within(dialog).getByRole('button', { name: 'Commit Forever' }));
+
+      expect(props.onCommitToGuild).toHaveBeenCalledWith('preservers');
+    });
+
+    it('show what their sampled upgrades do at half strength', async () => {
+      const user = userEvent.setup();
+      renderTab({ guildState: sampledPreservers });
+
+      await user.click(preserversCard());
+
+      expect(screen.getByText('Current Effects (at 50%):').parentElement).toHaveTextContent('+1.0% Jar Value');
+    });
+
+    it('leave guilds that are not open yet without a commit button', async () => {
+      const user = userEvent.setup();
+      renderTab({ guildState: sampledPreservers });
+
+      await user.click(screen.getByRole('button', { name: /Engineers Guild/ }));
+
+      expect(screen.queryByRole('button', { name: 'Commit to Guild' })).not.toBeInTheDocument();
+    });
+
+    it('show Wax Seals, the guild effects and upgrades priced in Seals once joined', () => {
+      renderTab({ guildState: committedPreservers });
+
+      expect(screen.getByText('Wax Seals').parentElement).toHaveTextContent('238');
+      expect(screen.getByText('Jar value:').parentElement).toHaveTextContent('Jar value: +20%');
+      expect(screen.getByText('Jars per batch:').parentElement).toHaveTextContent('Jars per batch: 3');
+      expect(screen.getByText('Now: Jars per batch: +2')).toBeInTheDocument();
+      // 200 Seals, x2.2 per level
+      expect(buyButton('Pressure Canner')).toHaveTextContent('968');
+      expect(buyButton('Cellar Recipes')).toHaveTextContent('200');
+      expect(buyButton('Cellar Recipes')).toBeEnabled();
+    });
+
+    it('price upgrades in whole Wax Seals', () => {
+      renderTab({
+        guildState: {
+          ...committedPreservers,
+          purchasedUpgrades: ['preservers_cellar_aging'],
+          upgradeLevels: { preservers_cellar_aging: 3 },
+        }
+      });
+
+      // 75 x 1.8^3 is 437.4
+      expect(buyButton('Cellar Aging')).toHaveTextContent('437');
+      expect(buyButton('Cellar Aging')).not.toHaveTextContent('437.4');
+    });
+
+    it('warn that unspent Guild Tokens stay behind when joining', async () => {
+      const user = userEvent.setup();
+      renderTab({ guildState: sampledPreservers });
+
+      await user.click(preserversCard());
+      await user.click(screen.getByRole('button', { name: 'Commit to Guild' }));
+
+      expect(screen.getByRole('dialog')).toHaveTextContent('Leave behind any unspent Guild Tokens');
+    });
+
+    it('show no emoji after joining', () => {
+      renderTab({ guildState: committedPreservers });
+      expect(document.body.textContent).not.toMatch(emoji);
+    });
+  });
+
+  describe('Legacy', () => {
+    const reset: LegacyResetSummary = {
+      guildName: 'Preservers Guild', guildCurrency: 238, guildCurrencyName: 'Wax Seals', farmTier: 6, maxPlots: 16, cropsUnlocked: 10,
+      money: 5e6, knowledge: 4e5, experience: 2e6, recipesUnlocked: 38, canningUpgradeLevels: 20, canningExperience: 90000,
+      hives: 12, honey: 442, goldenHoney: 3.2, beeUpgrades: 6, achievementsKept: 11, achievementsReset: 22, year: 3, daysThisLegacy: 870
+    };
+    /** A Preserver with levels and unlocks to keep, and Rush Batch, which can't leave */
+    const member: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'committed',
+      committedGuild: 'preservers',
+      guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, preservers: 238 },
+      purchasedUpgrades: ['preservers_cellar_aging', 'preservers_copper_kettles', 'preservers_cellar_recipes', 'preservers_family_cookbook', 'preservers_rush_batch'],
+      upgradeLevels: { preservers_cellar_aging: 6, preservers_copper_kettles: 3, preservers_cellar_recipes: 1, preservers_family_cookbook: 1, preservers_rush_batch: 1 },
+    };
+    const carried: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      legacy: {
+        count: 1,
+        keptLevels: { preservers_cellar_aging: 3 },
+        keptUnlocks: ['preservers_cellar_recipes'],
+        history: [{ guild: 'preservers', endedAt: 1, days: 870, unlock: 'preservers_cellar_recipes', levelsKept: 4 }],
+      },
+    };
+
+    it('offers End Legacy to members from Farm Tier 6', () => {
+      renderTab({ guildState: member, farmTier: 5, onEndLegacy: vi.fn(), legacyReset: reset });
+      const early = screen.getByRole('button', { name: /End Legacy/ });
+      expect(early).toBeDisabled();
+      expect(early).toHaveAttribute('title', 'Available at Farm Tier 6');
+    });
+
+    it('previews what stays, and ends the Legacy with the picked unlock once the box is ticked', async () => {
+      const user = userEvent.setup();
+      const props = renderTab({ guildState: member, farmTier: 6, onEndLegacy: vi.fn(), legacyReset: reset });
+
+      await user.click(screen.getByRole('button', { name: /End Legacy/ }));
+      const dialog = screen.getByRole('dialog', { name: 'End your Legacy?' });
+      expect(within(dialog).getByRole('row', { name: /Cellar Aging/ })).toHaveTextContent('Cellar Aging63');
+      expect(within(dialog).getByRole('row', { name: /Copper Kettles/ })).toHaveTextContent('Copper Kettles31');
+      expect(within(dialog).getByRole('radio', { name: /Cellar Recipes/ })).toBeChecked();
+      expect(within(dialog).queryByRole('radio', { name: /Rush Batch/ })).not.toBeInTheDocument();
+      expect(within(dialog).getByText(/Rush Batch stays with the Preservers/)).toBeInTheDocument();
+      expect(dialog).toHaveTextContent('2 years and 140 days');
+      expect(dialog).toHaveTextContent('11 special and hidden achievements');
+
+      const end = within(dialog).getByRole('button', { name: 'End Legacy' });
+      expect(end).toBeDisabled();
+      await user.click(within(dialog).getByRole('radio', { name: /Family Cookbook/ }));
+      await user.click(within(dialog).getByRole('checkbox'));
+      await user.click(end);
+
+      expect(props.onEndLegacy).toHaveBeenCalledWith('preservers_family_cookbook');
+    });
+
+    it('shows the Legacy box while the guilds are still locked', () => {
+      renderTab({ guildState: carried, farmTier: 1 });
+
+      // The Legacy box comes first; the big locked card gives way to a short note
+      expect(screen.queryByRole('heading', { name: 'Guilds System Locked' })).not.toBeInTheDocument();
+      const note = screen.getByRole('heading', { name: 'Guilds unlock at Farm Tier 5' });
+      const box = screen.getByRole('region', { name: /Your Legacy/ });
+      expect(box.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(box).toHaveTextContent('Legacy II');
+      expect(box).toHaveTextContent('Cellar Recipes');
+      expect(box).toHaveTextContent('Cellar Aging 3');
+      expect(box).toHaveTextContent('Choose a guild again at Farm Tier 5');
+    });
+
+    it('shows kept levels on the rows and a kept unlock as Kept', () => {
+      renderTab({
+        guildState: { ...member, legacy: carried.legacy, upgradeLevels: { ...member.upgradeLevels, preservers_cellar_aging: 2 }, purchasedUpgrades: member.purchasedUpgrades.filter(id => id !== 'preservers_cellar_recipes') }
+      });
+
+      const aging = screen.getByRole('heading', { name: 'Cellar Aging' }).parentElement!.parentElement!;
+      expect(aging).toHaveTextContent('Lv. 5/10');
+      expect(aging).toHaveTextContent('3 from Legacy');
+      expect(buyButton('Cellar Recipes')).toHaveTextContent('Kept');
+      expect(buyButton('Cellar Recipes')).toBeDisabled();
+    });
+  });
+
+  describe('effect text', () => {
+    it('shows a multiplier as itself, not as a percentage', () => {
+      renderTab({
+        guildState: {
+          ...committedGrowersState,
+          purchasedUpgrades: ['growers_whispers_of_seed'],
+          upgradeLevels: { growers_whispers_of_seed: 1 },
+        }
+      });
+
+      expect(screen.getByText(/^Now: 10× multiplier/)).toBeInTheDocument();
+    });
+  });
+
   describe('icons', () => {
     it('shows no emoji on the locked card', () => {
       renderTab({ farmTier: GUILDS_UNLOCK_TIER - 1 });
@@ -163,7 +355,7 @@ describe('GuildsTab', () => {
       renderTab({ introShown: false });
 
       const dialog = screen.getByRole('dialog', { name: 'Choose Your Path' });
-      for (const line of ['+1 per manual harvest', '+1 per 5 canned goods', '+2 per bee hive harvest', '+1 per 10 auto harvests']) {
+      for (const line of ['+1 per manual harvest', '+1 per 5 canned goods', '+2 per batch of honey', '+1 per 10 auto harvests']) {
         expect(within(dialog).getByText(line)).toBeInTheDocument();
       }
     });

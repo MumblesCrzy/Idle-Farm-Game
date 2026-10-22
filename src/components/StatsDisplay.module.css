@@ -121,8 +121,9 @@
   color: #fff;
 }
 
+/* Dark enough for the mint labels and the amber cap note to read at 4.5:1 */
 .farmUpgradeButton:enabled {
-  background: #2e7d32;
+  background: #1b5e20;
   border: 2px solid #ffeb3b;
   box-shadow: 0 0 8px 2px #ffe066;
   cursor: pointer;
