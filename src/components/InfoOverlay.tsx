@@ -1,7 +1,7 @@
 import InlineIcon from './InlineIcon';
 import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, SPECIAL_GLUTTON, CANNING_CANNER, ICON_SCROLL } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, ICON_GEARS, SPECIAL_GLUTTON, SPECIAL_STANLEY, CANNING_CANNER, ICON_SCROLL } from '../config/assetPaths';
 import {
   AUTO_PURCHASER_CYCLE_DAYS,
   BEE_CONSTANTS,
@@ -611,8 +611,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <ul>
                   <li><strong>Guild Tokens:</strong> +1 per manual harvest, +1 per 5 canned goods, +2 per batch of honey, +1 per 10 auto harvests</li>
                   <li><strong>Sampling:</strong> Buy up to two starter upgrades from each guild with Guild Tokens; they work at half strength until you join that guild</li>
-                  <li><strong>Joining:</strong> Sample one of a guild's upgrades to join it. Unspent Guild Tokens don't carry over, and the guild's currency is earned only as a member. You can't change guilds later</li>
-                  <li><strong>Open Now:</strong> The Growers and the Preservers; the Engineers and Merchants come in a later update</li>
+                  <li><strong>Joining:</strong> Sample one of a guild's upgrades to join it. Unspent Guild Tokens don't carry over, and the guild's currency is earned only as a member. Only a Legacy lets you change guilds</li>
+                  <li><strong>Open Now:</strong> The Growers, the Preservers and the Engineers; the Merchants come in a later update</li>
                 </ul>
 
                 <h5><InlineIcon src={GUILD_GROWERS} size={18} gap={4} /> Growers Guild:</h5>
@@ -647,11 +647,32 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Pantry Lock:</strong> Keeps him out of the stash for good; he still visits, and still pays</li>
                 </ul>
 
+                <h5><InlineIcon src={GUILD_ENGINEERS} size={18} gap={4} /> Engineers Guild:</h5>
+                <ul>
+                  <li><strong>Gears <InlineIcon src={ICON_GEARS} size={14} gap={2} />:</strong> 1 per 10 auto harvests, 1 per 5 batches off the factory floor, and 5 for each Tune-Up from Stanley. The machines earn them while you're away too</li>
+                  <li><strong>Bonuses:</strong> Every crop gets an Auto Harvester, switched on, that runs 25% faster, and auto harvests give full experience and knowledge. Batches run 30% faster</li>
+                  <li><strong>Trade-offs:</strong> No manual harvests or canning, crops sell for 15% less and jars for 25% less, and the bees make 25% less honey</li>
+                  <li><strong>The Cannery:</strong> The Canning tab becomes a factory floor with a machine for every stove slot. Each makes the recipe you set while the hopper has its ingredients, and floor batches give half the knowledge and canning experience of a hand-started batch</li>
+                  <li><strong>Hold what the floor needs:</strong> The Merchant still sells every crop set to Sell, so set the floor's crops to Hold</li>
+                  <li><strong>Bulk Purchasing:</strong> What your auto-buyers buy costs 3% less per level, up to 30%</li>
+                  <li><strong>Sprinkler Network and Climate Control:</strong> Irrigation gives +30% growth and stops the Heatwave penalty too; the Greenhouse adds +20% growth in every season</li>
+                  <li><strong>Night Shift:</strong> Time away counts up to 12 hours instead of 8</li>
+                  <li><strong>More:</strong> Hydraulic Arms, Combine Header, Conveyor Belts, Mass Production, Sound Dampers and Overclock</li>
+                  <li><strong>GMO Seeds:</strong> Engineers know Heirloom Seeds as GMO Seeds; it works the same</li>
+                </ul>
+
+                <h5><InlineIcon src={SPECIAL_STANLEY} size={18} gap={4} /> Stanley the Cat:</h5>
+                <ul>
+                  <li><strong>Visits:</strong> Every 3 to 6 minutes of play he shows up somewhere on the screen and waits 20 seconds; never while paused or away. Missing him costs nothing</li>
+                  <li><strong>Tune-Up:</strong> Click him for 5 Gears, and every machine runs twice as fast for 60 seconds, or 90 with Overclock. The header shows the seconds left</li>
+                  <li><strong>Machines:</strong> The Auto Harvesters and the factory floor. The auto-buyers are people, not machines, so they keep their pace</li>
+                </ul>
+
                 <h5><InlineIcon src={ICON_SCROLL} size={18} gap={4} /> Legacy:</h5>
                 <ul>
                   <li><strong>What it is:</strong> From Farm Tier 6, a guild member can end their Legacy from the Guilds tab. The farm starts over at Tier 1, and the guild's benefits carry on</li>
                   <li><strong>Kept levels:</strong> Half the levels bought this Legacy in your guild's upgrades, rounded down, added to what you kept before. They work at full strength in any guild, and count toward the max level</li>
-                  <li><strong>Kept unlock:</strong> One one-time upgrade of your guild, kept for good. Ritual Circles and Rush Batch stay with their guilds, since their abilities spend guild currency</li>
+                  <li><strong>Kept unlock:</strong> One one-time upgrade of your guild, kept for good. Ritual Circles and Rush Batch stay with their guilds, since their abilities spend guild currency, and so does Overclock, since Stanley visits only Engineers</li>
                   <li><strong>Kept achievements:</strong> Special and hidden ones, with the bonuses and outfits they grant. The rest can be earned again</li>
                   <li><strong>Kept events:</strong> Pumpkin Rush and Christmas Tree Shop progress is untouched</li>
                   <li><strong>Back to the start:</strong> Money, knowledge, experience, crops, canning, bees, achievements, guild membership and currency. You choose a guild again at Farm Tier 5, the same one or another</li>

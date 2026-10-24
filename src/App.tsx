@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useContext, useMemo, useCallback, lazy, Suspense, type FC, type ReactNode, type SetStateAction } from 'react';
 import ArchieIcon from './components/ArchieIcon';
 import GluttonVisitor from './components/GluttonVisitor';
+import StanleyVisitor from './components/StanleyVisitor';
 import LiveAnnouncer from './components/LiveAnnouncer';
 import { useGluttonVisits } from './hooks/useGluttonVisits';
+import { useStanleyVisits } from './hooks/useStanleyVisits';
 import { GLUTTON_NAME, describeEaten, gluttonLook, recordShoo, recordStuffed, vetBill, type GluttonOutcome } from './utils/glutton';
-import { SPECIAL_GLUTTON, SPECIAL_GLUTTON_SWEATER, SPECIAL_GLUTTON_VAMPIRE } from './config/assetPaths';
+import { STANLEY_GEARS, STANLEY_NAME, machineSpeed, recordTuneUp, stanleyLook, tickTuneUp, tuneUpLeft, tuneUpSteps } from './utils/stanley';
+import { SPECIAL_GLUTTON, SPECIAL_GLUTTON_SWEATER, SPECIAL_GLUTTON_VAMPIRE, SPECIAL_STANLEY, SPECIAL_STANLEY_HALLOWEEN } from './config/assetPaths';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
@@ -29,7 +32,7 @@ import GuildsTab from './components/GuildsTab';
 
 import StatsDisplay from './components/StatsDisplay';
 import HeaderBar from './components/HeaderBar';
-import SaveLoadSystem from './components/SaveLoadSystem';
+import { useSaveLoadSystem } from './components/SaveLoadSystem';
 import Toast from './components/Toast';
 import HarvestTutorial from './components/HarvestTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -39,7 +42,7 @@ import { ICON_BEE, ICON_GUILDS } from './config/assetPaths';
 // Guild system imports
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
-import { awardGuildTokens, awardWaxSeals, commitToGuild, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
+import { awardGears, awardGuildTokens, awardWaxSeals, commitToGuild, getAutoBuyerPriceMultiplier, getGuildHoneyMultiplier, getOfflineCapMs, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, heirloomSeedsName, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
 import { legacyResetSummary } from './utils/legacy';
 import { endLegacy } from './utils/legacyReset';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
@@ -82,6 +85,7 @@ import { useCanningSystem } from './hooks/useCanningSystem';
 import { GameContext } from './context/GameContext';
 import { useWeatherSystem } from './hooks/useWeatherSystem';
 import { useSeasonSystem } from './hooks/useSeasonSystem';
+import { useStableCallback } from './hooks/useStableCallback';
 import { useAchievements } from './hooks/useAchievements';
 import { useAutoPurchase } from './hooks/useAutoPurchase';
 import { useGameState } from './hooks/useGameState';
@@ -117,7 +121,8 @@ import {
 import {
   processVeggieGrowth,
   processAutoHarvest,
-  processVeggieUnlocks
+  processVeggieUnlocks,
+  fitFactoryHarvesters
 } from './utils/gameLoopProcessors';
 import {
   buildHarvestEvent,
@@ -342,6 +347,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     maxPlots,
     heirloomMoneyCost,
     heirloomKnowledgeCost,
+    heirloomName: heirloomSeedsName(guildState),
     onMilestone: eventLogCallbacks.onAchievementUnlock
   });
 
@@ -381,6 +387,13 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
   }, { order: 10 });
 
+  // Engineers' crops come with Auto Harvesters, switched on: on joining, as crops unlock,
+  // and on every larger farm
+  useEffect(() => {
+    if (fitFactoryHarvesters(veggies, guildState) === veggies) return;
+    setVeggies(prev => fitFactoryHarvesters(prev, guildState));
+  }, [veggies, guildState, setVeggies]);
+
   // Latest-value refs to avoid large dependency arrays and restart of loops
   // Only keep refs that are actually used in game loops
   const knowledgeRef = useLatestRef(knowledge);
@@ -413,6 +426,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       farmTier,
       knowledge,
       guildState,
+      beeYieldBonus,
+      permanentBonuses,
       christmasEvent,
       pumpkinEvent
     },
@@ -451,7 +466,10 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         knowledgeRef.current,
         beeYieldBonusRef.current,
         seasonRef.current,
-        permanentBonusesRef.current
+        permanentBonusesRef.current,
+        guildStateRef.current,
+        // Stanley's Tune-Up runs the harvesters twice as fast
+        machineSpeed(guildStateRef.current)
       );
 
       if (!needsUpdate) {
@@ -473,7 +491,11 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
           logHarvest(veggie.name, amount, expGain, knGain, true);
         });
         if (harvestedVeggies.length > 0) {
-          setGuildState(prev => awardGuildTokens(prev, 'autoHarvests', harvestedVeggies.length, farmTierRef.current));
+          // Guild Tokens until a guild is chosen; the Engineers' machines make Gears
+          setGuildState(prev => awardGears(
+            awardGuildTokens(prev, 'autoHarvests', harvestedVeggies.length, farmTierRef.current),
+            { autoHarvests: harvestedVeggies.length }
+          ));
         }
         if (awardGains) {
           setKnowledge((k: number) => k + totalKnowledgeGain);
@@ -531,6 +553,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       handleBuyAdditionalPlot
     },
     initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
+    priceFactor: getAutoBuyerPriceMultiplier(guildState),
     onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
@@ -633,9 +656,11 @@ interface BeesTabWrapperProps {
   /** Day of the year */
   day: number;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  /** Honey per batch as a share, from the player's guild */
+  honeyMultiplier: number;
 }
 
-const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, day, formatNumber }) => {
+const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, day, formatNumber, honeyMultiplier }) => {
   const beeContext = useBees();
   
   // Store bee context globally for dev tools access
@@ -652,9 +677,17 @@ const BeesTabWrapper: FC<BeesTabWrapperProps> = ({ farmTier, day, formatNumber }
       farmTier={farmTier}
       day={day}
       formatNumber={formatNumber}
+      honeyMultiplier={honeyMultiplier}
     />
   );
 };
+
+/**
+ * How fast each crop grows today. Made outside App, so the function holds only these inputs:
+ * one made inside would hold the whole scope of the render that made it.
+ */
+const growthMultiplierFor = (season: string, weather: string, greenhouseOwned: boolean, irrigationOwned: boolean, guildState: GuildState) =>
+  (crop: Veggie) => getVeggieGrowthBonus(crop, season, weather, greenhouseOwned, irrigationOwned, guildState);
 
 function App() {
   const { soundEnabled, setSoundEnabled, archieAppearance, setArchieAppearance } = useArchie();
@@ -827,12 +860,13 @@ function App() {
   const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
 
-  // Guild system handlers (needs day from useGame)
-  const handleCommitToGuild = useCallback((guildId: GuildType) => {
+  // Guild system handlers. Stable, so they never hold an old render's scope: memoized handlers
+  // remade at different times held each other's old scopes, and old renders stayed in memory
+  const handleCommitToGuild = useStableCallback((guildId: GuildType) => {
     setGuildState(prev => commitToGuild(prev, guildId, day));
-  }, [day, setGuildState]);
+  });
 
-  const handlePurchaseGuildUpgrade = useCallback((upgradeId: string) => {
+  const handlePurchaseGuildUpgrade = useStableCallback((upgradeId: string) => {
     // Find the upgrade from guild data
     let upgrade = null;
     for (const guild of GUILDS) {
@@ -929,7 +963,7 @@ function App() {
         upgradeLevels: newLevels
       };
     });
-  }, [guildState, setGuildState, money, knowledge, setMoney, setKnowledge]);
+  });
 
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -999,10 +1033,17 @@ function App() {
   const handleHivesHarvested = useCallback((count: number) => {
     setGuildState(prev => awardGuildTokens(prev, 'beeHives', count, farmTier));
   }, [setGuildState, farmTier]);
-  // Finished batches pay committed Preservers their Wax Seals
+  // Finished batches pay committed Preservers their Wax Seals, and the Canner's batches
+  // make the Engineers Gears
   const handleBatchesFinished = useCallback((batches: BatchCount) => {
-    setGuildState(prev => awardWaxSeals(prev, batches));
+    setGuildState(prev => awardGears(awardWaxSeals(prev, batches), { batches: batches.automated }));
   }, [setGuildState]);
+
+  // A factory floor machine that runs short goes in the event log, which is set up further down
+  const logMachineWaitingRef = useRef<(machine: number, recipeName: string, short: string) => void>(() => {});
+  const handleMachineWaiting = useCallback((machine: number, recipeName: string, short: string) => {
+    logMachineWaitingRef.current(machine, recipeName, short);
+  }, []);
 
   // Initialize canning system
   const {
@@ -1012,7 +1053,8 @@ function App() {
     purchaseUpgrade,
     canMakeRecipe,
     toggleAutoCanning,
-    rushBatches
+    rushBatches,
+    setMachineRecipe
   } = useCanningSystem(
     // experience parameter removed - unused
     veggies, 
@@ -1035,7 +1077,8 @@ function App() {
     isPaused,
     handleGoodsCanned,
     handleBatchesFinished,
-    ownedBeeUpgrades
+    ownedBeeUpgrades,
+    handleMachineWaiting
   );
 
   // Rush Batch: committed Preservers spend Wax Seals to finish every running batch now
@@ -1043,14 +1086,14 @@ function App() {
   const rushBatchCost = getRushBatchCost(runningBatches);
   const rushBatchOwned = isCommittedTo(guildState, 'preservers') && hasRushBatch(guildState);
   const canRushBatches = rushBatchOwned && runningBatches > 0 && guildState.guildCurrencies.preservers >= rushBatchCost;
-  const handleRushBatches = useCallback(() => {
+  const handleRushBatches = useStableCallback(() => {
     if (!canRushBatches) return;
     setGuildState(prev => ({
       ...prev,
       guildCurrencies: { ...prev.guildCurrencies, preservers: prev.guildCurrencies.preservers - rushBatchCost }
     }));
     rushBatches();
-  }, [canRushBatches, rushBatchCost, setGuildState, rushBatches]);
+  });
   const rushBatch = useMemo(() => (
     rushBatchOwned ? { cost: rushBatchCost, canRush: canRushBatches, onRush: handleRushBatches } : undefined
   ), [rushBatchOwned, rushBatchCost, canRushBatches, handleRushBatches]);
@@ -1153,6 +1196,14 @@ function App() {
       addEvent('canning', isAuto ? `Auto-canning completed: ${recipeName}` : `Completed canning: ${recipeName}`, opts);
     };
     
+    logMachineWaitingRef.current = (machine, recipeName, short) => {
+      addEvent('canning', `Machine ${machine + 1} is waiting for ${short}`, {
+        details: `${recipeName} needs more ${short} in the hopper`,
+        priority: 'minor',
+        icon: ICON_CANNING
+      });
+    };
+
     return () => {
       window.globalCanningStartCallback = null;
       window.globalCanningCompleteCallback = null;
@@ -1198,6 +1249,52 @@ function App() {
     christmasActive: christmasEvent?.isEventActive ?? false,
     pumpkinActive: pumpkinEventEnabled && pumpkinEvent.isEventActive
   })];
+
+  // Stanley, the Engineers' cat: visits committed Engineers, and a click tunes up every machine
+  const latestGuildStateRef = useLatestRef(guildState);
+  const handleStanleyArrive = useCallback(() => {
+    addEvent('upgrade', `${STANLEY_NAME} came by the farm`, {
+      details: 'Click him for a Tune-Up before he wanders off',
+      icon: SPECIAL_STANLEY
+    });
+  }, [addEvent]);
+  const handleStanleyTuneUp = useCallback(() => {
+    const seconds = tuneUpSteps(latestGuildStateRef.current);
+    setGuildState(prev => recordTuneUp(prev));
+    addEvent('upgrade', `${STANLEY_NAME} tuned up every machine`, {
+      details: `Twice as fast for ${seconds} seconds. +${STANLEY_GEARS} Gears`,
+      icon: SPECIAL_STANLEY
+    });
+  }, [latestGuildStateRef, setGuildState, addEvent]);
+  const handleTuneUpStep = useCallback(() => {
+    if (tuneUpLeft(latestGuildStateRef.current) === 1) {
+      addEvent('upgrade', 'The Tune-Up ended', {
+        details: 'The machines are back to their usual speed',
+        priority: 'minor',
+        icon: SPECIAL_STANLEY
+      });
+    }
+    setGuildState(prev => tickTuneUp(prev));
+  }, [latestGuildStateRef, setGuildState, addEvent]);
+  const handleStanleyWanderOff = useCallback(() => {
+    addEvent('upgrade', `${STANLEY_NAME} wandered off`, {
+      details: 'He comes back in 3 to 6 minutes',
+      priority: 'minor',
+      icon: SPECIAL_STANLEY
+    });
+  }, [addEvent]);
+  const { visit: stanleyVisit, tuneUp: tuneUpWithStanley } = useStanleyVisits({
+    active: isCommittedTo(guildState, 'engineers'),
+    isPaused,
+    tuneUpRunning: tuneUpLeft(guildState) > 0,
+    onTuneUp: handleStanleyTuneUp,
+    onTuneUpStep: handleTuneUpStep,
+    onArrive: handleStanleyArrive,
+    onWanderOff: handleStanleyWanderOff
+  });
+  const stanleyImage = stanleyLook({ pumpkinActive: pumpkinEventEnabled && pumpkinEvent.isEventActive }) === 'halloween'
+    ? SPECIAL_STANLEY_HALLOWEEN
+    : SPECIAL_STANLEY;
 
   // Everything that goes into a save. Autosave and export both use this, so an
   // exported file holds the full game, including guilds and achievements.
@@ -1407,8 +1504,8 @@ function App() {
   }, [season, currentWeather, eventLog]);
   
   // How fast each crop grows today, for the days to grow on the Growing tab's rows
-  const growthMultiplierOf = useCallback(
-    (crop: Veggie) => getVeggieGrowthBonus(crop, season, currentWeather, greenhouseOwned, irrigationOwned, guildState),
+  const growthMultiplierOf = useMemo(
+    () => growthMultiplierFor(season, currentWeather, greenhouseOwned, irrigationOwned, guildState),
     [season, currentWeather, greenhouseOwned, irrigationOwned, guildState]
   );
 
@@ -1465,12 +1562,15 @@ function App() {
 
   }, []); // Only run once on mount
 
+  // Export, import and new game, from a hook. Drawing the game inside a function child kept each
+  // render's values in one shared scope, and memoized callbacks held on to those scopes, so old
+  // renders and all their state were never freed.
+  const { fileInput, handleExportSave, handleImportSave, handleResetGame, loadingStates } = useSaveLoadSystem({
+    getSaveState: buildSaveState,
+    resetGame
+  });
+
   return (
-    <SaveLoadSystem
-      getSaveState={buildSaveState}
-      resetGame={resetGame}
-    >
-      {({ handleExportSave, handleImportSave, handleResetGame, loadingStates }) => (
     <BeeProvider 
       farmTier={farmTier}
       season={season}
@@ -1481,8 +1581,12 @@ function App() {
       isPaused={isPaused}
       onHivesHarvested={handleHivesHarvested}
       honeySettersRef={beeHoneyRef}
+      guildHoneyMultiplier={getGuildHoneyMultiplier(guildState)}
+      maxGapSeconds={getOfflineCapMs(guildState) / 1000}
     >
     <>
+    {/* The file picker that Import Save opens */}
+    {fileInput}
     {archieCharacterEnabled && (
       <ArchieIcon 
         setMoney={setMoney} 
@@ -1498,7 +1602,7 @@ function App() {
         isPaused={isPaused}
       />
     )}
-    {/* Screen readers hear toasts, unlocks and Dunkin from here */}
+    {/* Screen readers hear toasts, unlocks, Dunkin and Stanley from here */}
     <LiveAnnouncer />
     <GluttonVisitor
       visit={gluttonVisit}
@@ -1506,6 +1610,12 @@ function App() {
       vetBill={vetBill(money)}
       onShoo={shooGlutton}
       formatNumber={formatNumber}
+    />
+    <StanleyVisitor
+      visit={stanleyVisit}
+      image={stanleyImage}
+      tuneUpSeconds={tuneUpSteps(guildState)}
+      onTuneUp={tuneUpWithStanley}
     />
     <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
     {/* Skip link for keyboard navigation */}
@@ -1586,7 +1696,8 @@ function App() {
             >
               <div className={styles.tabButtonContent}>
                 <img src={ICON_CANNING} alt="" aria-hidden="true" className={canningUnlocked ? styles.tabIcon : styles.tabIconFaded} />
-                Canning
+                {/* The Engineers' factory floor */}
+                {isCommittedTo(guildState, 'engineers') ? 'Cannery' : 'Canning'}
               </div>
               {!canningUnlocked && (
                 <div className={styles.tabUnlockHint}>
@@ -1758,6 +1869,7 @@ function App() {
                     handleBuyGreenhouse={handleBuyGreenhouse}
                     handleBuyHeirloom={handleBuyHeirloom}
                     formatNumber={formatNumber}
+                    guildState={guildState}
                   />
                 }
               />
@@ -1795,6 +1907,7 @@ function App() {
             onRecipeFilterChange={setCanningRecipeFilter}
             onRecipeSortChange={setCanningRecipeSort}
             onCanMakeOnlyChange={setCanningCanMakeOnly}
+            onSetMachineRecipe={setMachineRecipe}
           />
         </PerformanceWrapper>
         </div>
@@ -1808,7 +1921,7 @@ function App() {
           className={activeTab !== 'bees' ? styles.tabPanelHidden : undefined}
         >
         <PerformanceWrapper id="BeesTab">
-          <BeesTabWrapper farmTier={farmTier} day={day} formatNumber={formatNumber} />
+          <BeesTabWrapper farmTier={farmTier} day={day} formatNumber={formatNumber} honeyMultiplier={getGuildHoneyMultiplier(guildState)} />
         </PerformanceWrapper>
         </div>
       )}
@@ -2186,8 +2299,6 @@ function App() {
     </ErrorBoundary>
     </>
     </BeeProvider>
-      )}
-    </SaveLoadSystem>
   );
 }
 

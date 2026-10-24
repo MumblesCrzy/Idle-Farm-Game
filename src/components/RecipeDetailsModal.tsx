@@ -3,7 +3,7 @@ import { ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
 import { memo, type FC, type ReactNode } from 'react';
 import type { Recipe } from '../types/canning';
 import type { GuildState } from '../types/guilds';
-import { getPressureCannerJars, getRecipeValueMultiplier } from '../utils/guildCalculations';
+import { getJarsPerBatch, getRecipeValueMultiplier } from '../utils/guildCalculations';
 import { rewardIngredients } from '../utils/canningSimulation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './RecipeDetailsModal.module.css';
@@ -102,7 +102,7 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
     (total, row) => total + (row.veggie?.salePrice || 0) * row.ingredient.quantity,
     0
   );
-  const jars = guildState ? getPressureCannerJars(guildState) : 1;
+  const jars = getJarsPerBatch(guildState);
   const effectiveSalePrice = recipe.salePrice * efficiencyMultiplier * betterSeedsMultiplier
     * getRecipeValueMultiplier(guildState, recipe) * jars;
   const effectiveProcessingTime = Math.ceil(recipe.baseProcessingTime * speedMultiplier);

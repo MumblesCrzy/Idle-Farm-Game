@@ -28,6 +28,8 @@ interface BeesTabProps {
   /** Day of the year, for the days until winter or spring */
   day: number;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  /** Honey per batch as a share, from the player's guild: the Engineers' bees make less */
+  honeyMultiplier?: number;
 }
 
 /** What a collection gave, read out to screen readers */
@@ -46,7 +48,8 @@ const BeesTab: FC<BeesTabProps> = memo(({
   beeContext,
   farmTier,
   day,
-  formatNumber
+  formatNumber,
+  honeyMultiplier = 1
 }) => {
   if (farmTier < BEES_UNLOCK_TIER) {
     const mainContent = (
@@ -85,10 +88,10 @@ const BeesTab: FC<BeesTabProps> = memo(({
   // The Beekeeper speeds the bees only while he works
   const beekeeperBonus = assistant.active ? assistant.productionSpeedBonus : 0;
   const days = batchDays(levels, beekeeperBonus);
-  const lbs = lbsPerBatch(levels);
+  const lbs = lbsPerBatch(levels, honeyMultiplier);
   const waitingBatches = boxes.reduce((sum, box) => sum + storedBatches(box), 0);
   const purchase = beeContext.getBeeBoxPurchaseInfo();
-  const groups = beeUpgradeGroups({ upgrades, levels, hives: boxes.length, honey: regularHoney, goldenHoney, beekeeperBonus });
+  const groups = beeUpgradeGroups({ upgrades, levels, hives: boxes.length, honey: regularHoney, goldenHoney, beekeeperBonus, honeyMultiplier });
 
   const mainContent = (
     <div className={styles.layout}>

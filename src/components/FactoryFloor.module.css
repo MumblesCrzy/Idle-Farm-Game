@@ -1,0 +1,373 @@
+/* The Cannery: the hopper, the factory floor, then its stats and upgrades, from left to right */
+.cannery {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 270px;
+  align-items: start;
+  gap: 14px;
+}
+
+.floor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.floorHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  min-width: 0;
+}
+
+.floorHeader img {
+  width: 22px;
+  height: 22px;
+}
+
+.floorTitle {
+  margin: 0;
+  color: #ffffff;
+  font: 800 14px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.floorNote {
+  overflow: hidden;
+  color: #aab6c6;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.machines {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A machine: steel and brass */
+.machine {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 2px solid #56647a;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #36414f 0, #2c3542 100%);
+  box-shadow: inset 0 0 0 1px #1c2129;
+  color: #eef3f9;
+}
+
+.waiting {
+  border-color: #c98a3a;
+}
+
+.plate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d9a43a;
+  font: 800 11px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plateName {
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.light {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4a5566;
+}
+
+.go {
+  background: #6fdc74;
+  box-shadow: 0 0 6px #6fdc74;
+}
+
+.amber {
+  background: #f5c040;
+  box-shadow: 0 0 6px #f5c040;
+}
+
+.state {
+  color: #cfd8e3;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #6e7c90;
+  border-radius: 8px;
+  background: #1f2631;
+  color: #ffffff;
+  font: 700 13px system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick:hover {
+  border-color: #d9a43a;
+}
+
+.pick img {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.pickName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.caret {
+  color: #aab6c6;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dial {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The gauge fills as the batch cooks; glide-ring moves it smoothly */
+.gauge {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: conic-gradient(#4f7be8 0 var(--glide-progress), #1c2129 var(--glide-progress) 100%);
+}
+
+.gauge > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #1f2631;
+  color: #ffffff;
+  font: 800 16px system-ui, sans-serif;
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  color: #aab6c6;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.facts b {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.facts .price {
+  color: #8fdc8a;
+}
+
+.facts .fast {
+  color: #6fdc74;
+}
+
+.idleNote {
+  margin: 0;
+  color: #aab6c6;
+  font-size: 12px;
+}
+
+.warn {
+  margin: 0;
+  color: #ffd9a6;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.tray {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  margin-top: auto;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: #1c2129;
+  color: #cfd8e3;
+  font-size: 11px;
+}
+
+.tray img {
+  width: 18px;
+  height: 18px;
+}
+
+.tray span {
+  margin-left: 4px;
+}
+
+/* Medium machines, four to a row, when the floor holds 6 to 11: a smaller gauge */
+.medium .gauge {
+  width: 66px;
+  height: 66px;
+}
+
+.medium .gauge > span {
+  width: 52px;
+  height: 52px;
+  font-size: 14px;
+}
+
+/* Compact machines, when the floor holds 12 to 16 */
+.compact .machine {
+  gap: 5px;
+  padding: 7px 9px;
+}
+
+.compact .pick {
+  height: 26px;
+  font-size: 12px;
+}
+
+.compact .gauge {
+  width: 50px;
+  height: 50px;
+}
+
+.compact .gauge > span {
+  width: 38px;
+  height: 38px;
+  font-size: 12px;
+}
+
+.compact .facts {
+  gap: 0;
+  font-size: 11px;
+}
+
+.compact .warn {
+  font-size: 11px;
+}
+
+/* The next machine's bay */
+.bay {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border: 2px dashed #4a5a70;
+  border-radius: 12px;
+  color: #8796ab;
+  font-size: 12px;
+  text-align: center;
+}
+
+.bay b {
+  color: #aab6c6;
+  font: 800 11px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border: 2px solid #4a5a70;
+  border-radius: 9px;
+  background: #2a3340;
+  color: #eef3f9;
+}
+
+.statsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cap {
+  margin: 0;
+  color: #cfd8e3;
+  font: 800 12px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gears {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid #d9a43a;
+  border-radius: 12px;
+  background: #3a3420;
+  color: #ffe9b0;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.gears img {
+  width: 16px;
+  height: 16px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.stat b {
+  font-weight: 800;
+  white-space: nowrap;
+}

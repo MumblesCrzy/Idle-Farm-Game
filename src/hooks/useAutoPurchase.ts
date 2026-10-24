@@ -4,10 +4,10 @@ import { canMakePurchase } from '../utils/gameCalculations';
 import { AUTO_PURCHASER_CYCLE_DAYS } from '../config/gameConstants';
 
 interface AutoPurchaseHandlers {
-  handleBuyFertilizer: (veggieIndex: number) => void;
-  handleBuyBetterSeeds: (veggieIndex: number) => void;
-  handleBuyHarvesterSpeed: (veggieIndex: number) => void;
-  handleBuyAdditionalPlot: (veggieIndex: number) => void;
+  handleBuyFertilizer: (veggieIndex: number, priceFactor?: number) => void;
+  handleBuyBetterSeeds: (veggieIndex: number, priceFactor?: number) => void;
+  handleBuyHarvesterSpeed: (veggieIndex: number, priceFactor?: number) => void;
+  handleBuyAdditionalPlot: (veggieIndex: number, priceFactor?: number) => void;
 }
 
 interface AutoPurchaseParams {
@@ -18,6 +18,8 @@ interface AutoPurchaseParams {
   maxPlots: number;
   handlers: AutoPurchaseHandlers;
   initialTimer?: number;
+  /** Share of the price the auto-buyers pay: below 1 with the Engineers' Bulk Purchasing */
+  priceFactor?: number;
   onPurchaseCallback?: (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => void;
 }
 
@@ -36,6 +38,7 @@ export const useAutoPurchase = ({
   maxPlots,
   handlers,
   initialTimer = 0,
+  priceFactor = 1,
   onPurchaseCallback
 }: AutoPurchaseParams) => {
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(initialTimer);
@@ -49,7 +52,7 @@ export const useAutoPurchase = ({
         for (const ap of v.autoPurchasers) {
           if (ap.owned && ap.active) {
             // Check if we can afford and make the purchase
-            if (canMakePurchase(v, ap.purchaseType, money, knowledge, ap.currencyType, veggies, maxPlots)) {
+            if (canMakePurchase(v, ap.purchaseType, money, knowledge, ap.currencyType, veggies, maxPlots, priceFactor)) {
               // Get current upgrade level before purchase
               let currentLevel = 0;
               let upgradeCost = 0;
@@ -58,22 +61,22 @@ export const useAutoPurchase = ({
                 case 'fertilizer':
                   currentLevel = v.fertilizerLevel;
                   upgradeCost = v.fertilizerCost;
-                  handlers.handleBuyFertilizer(veggieIndex);
+                  handlers.handleBuyFertilizer(veggieIndex, priceFactor);
                   break;
                 case 'betterSeeds':
                   currentLevel = v.betterSeedsLevel;
                   upgradeCost = v.betterSeedsCost;
-                  handlers.handleBuyBetterSeeds(veggieIndex);
+                  handlers.handleBuyBetterSeeds(veggieIndex, priceFactor);
                   break;
                 case 'harvesterSpeed':
                   currentLevel = v.harvesterSpeedLevel || 0;
                   upgradeCost = v.harvesterSpeedCost || 0;
-                  handlers.handleBuyHarvesterSpeed(veggieIndex);
+                  handlers.handleBuyHarvesterSpeed(veggieIndex, priceFactor);
                   break;
                 case 'additionalPlot':
                   currentLevel = v.additionalPlotLevel || 0;
                   upgradeCost = v.additionalPlotCost;
-                  handlers.handleBuyAdditionalPlot(veggieIndex);
+                  handlers.handleBuyAdditionalPlot(veggieIndex, priceFactor);
                   break;
               }
               
@@ -84,7 +87,7 @@ export const useAutoPurchase = ({
                   ap.name,
                   ap.purchaseType,
                   currentLevel + 1, // New level after purchase
-                  upgradeCost,
+                  upgradeCost * priceFactor, // What the auto-buyer paid
                   ap.currencyType
                 );
               }
@@ -108,7 +111,7 @@ export const useAutoPurchase = ({
         }
       });
     }
-  }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handlers, setVeggies, onPurchaseCallback]);
+  }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handlers, setVeggies, priceFactor, onPurchaseCallback]);
 
   return {
     globalAutoPurchaseTimer,

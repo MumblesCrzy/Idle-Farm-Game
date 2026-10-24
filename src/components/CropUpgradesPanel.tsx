@@ -20,7 +20,9 @@ import {
 } from '../config/assetPaths';
 import { AUTO_PURCHASER_CYCLE_DAYS, veggieSeasonBonuses } from '../config/gameConstants';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
-import { getGrowersPriceBonus, hasWhispersOfSeed } from '../utils/guildCalculations';
+import { glideFill, useGlide } from '../hooks/useGlide';
+import { machineSpeed } from '../utils/stanley';
+import { getAutoBuyerPriceMultiplier, getGrowersPriceBonus, getStandardGradeCropMultiplier, hasFactoryFittedHarvesters, hasWhispersOfSeed } from '../utils/guildCalculations';
 import styles from './CropUpgradesPanel.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
@@ -46,12 +48,14 @@ interface AutoBuyerProps {
   knowledge: number;
   /** Hiring is blocked, as for the Surveyor on a full farm */
   blocked?: boolean;
+  /** Bulk Purchasing's discount on what a hired auto-buyer buys, as a share */
+  discount?: number;
   onClick: (autoPurchaserId: string) => void;
   formatNumber: FormatNumber;
 }
 
 /** An upgrade's auto-buyer: hire it, then switch it on and off */
-const AutoBuyer: FC<AutoBuyerProps> = ({ buyer, description, money, knowledge, blocked = false, onClick, formatNumber }) => {
+const AutoBuyer: FC<AutoBuyerProps> = ({ buyer, description, money, knowledge, blocked = false, discount = 0, onClick, formatNumber }) => {
   const { id, name, owned, active, cost, currencyType } = buyer;
   const canAfford = currencyType === 'money' ? money >= cost : knowledge >= cost;
   const costText = currencyType === 'money' ? `$${formatNumber(cost, 1)}` : `${formatNumber(cost, 1)} Kn`;
@@ -75,6 +79,11 @@ const AutoBuyer: FC<AutoBuyerProps> = ({ buyer, description, money, knowledge, b
       >
         {!owned ? `Hire · ${costText}` : active ? 'On' : 'Off'}
       </button>
+      {owned && discount > 0 && (
+        <span className={styles.discount} title={`Bulk Purchasing: the ${name} pays ${Math.round(discount * 100)}% less for what it buys`}>
+          -{Math.round(discount * 100)}%
+        </span>
+      )}
     </span>
   );
 };
@@ -171,6 +180,12 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
     [onBuyAutoPurchaser, cropIndex]
   );
 
+  const autoBuyerDiscount = 1 - getAutoBuyerPriceMultiplier(guildState);
+  // An Engineer's crops come with their Auto Harvesters, always on
+  const fitted = hasFactoryFittedHarvesters(guildState);
+  // Stanley's Tune-Up runs it twice as fast
+  const speed = machineSpeed(guildState);
+
   // Saves from older versions can lack an auto-purchaser, so each one is optional
   const autoBuyer = (id: string, description: string, blocked = false) => {
     const config = crop.autoPurchasers.find(ap => ap.id === id);
@@ -181,6 +196,7 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         money={money}
         knowledge={knowledge}
         blocked={blocked}
+        discount={autoBuyerDiscount}
         onClick={buyAutoPurchaser}
         formatNumber={formatNumber}
       />
@@ -193,9 +209,10 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
   const seedsBonus = (level: number) => formatNumber(Math.round((seedsMultiplier ** level - 1) * 100), 2);
   const harvesterSpeedCost = crop.harvesterSpeedCost ?? 50;
   // The same intervals the live auto-harvest uses
-  const interval = getHarvesterInterval(crop);
-  const nextInterval = getHarvesterInterval({ ...crop, harvesterSpeedLevel: (crop.harvesterSpeedLevel ?? 0) + 1 });
+  const interval = getHarvesterInterval(crop, guildState);
+  const nextInterval = getHarvesterInterval({ ...crop, harvesterSpeedLevel: (crop.harvesterSpeedLevel ?? 0) + 1 }, guildState);
   const harvesterShare = interval > 0 ? Math.min(100, (crop.harvesterTimer / interval) * 100) : 0;
+  const harvesterGlides = useGlide(harvesterShare);
 
   const guildPriceBonus = guildState ? getGrowersPriceBonus(guildState) : 0;
   const priceParts = [`$${formatNumber(crop.salePrice, 2)} base`];
@@ -204,6 +221,10 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
   }
   if (guildState && hasWhispersOfSeed(guildState)) {
     priceParts.push('× 10 Whispers of the Seed');
+  }
+  const gradeMultiplier = getStandardGradeCropMultiplier(guildState);
+  if (gradeMultiplier < 1) {
+    priceParts.push(`× ${formatNumber(gradeMultiplier, 2)} Standard Grade (-${Math.round((1 - gradeMultiplier) * 100)}%)`);
   }
 
   return (
@@ -307,7 +328,19 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         />
       )}
 
-      {crop.harvesterOwned ? (
+      {fitted ? (
+        <div className={styles.row}>
+          <img src={UPGRADE_AUTO_HARVESTER} alt="" aria-hidden="true" className={styles.rowIcon} />
+          <div className={styles.rowInfo}>
+            <span className={styles.rowName}>Auto Harvester</span>
+            <span className={styles.rowEffect}>
+              {speed > 1 ? `Tune-Up · every ${Math.ceil(interval / speed)} s` : `Factory fitted · every ${interval} s`}
+            </span>
+            <span className={styles.harvestBar}><span key={crop.name} className="glide" style={glideFill(harvesterShare, harvesterGlides)} /></span>
+          </div>
+          <span className={`${styles.buy} ${styles.fitted}`} title="Engineers' Auto Harvesters come fitted to every crop and stay on">On</span>
+        </div>
+      ) : crop.harvesterOwned ? (
         <div className={styles.row}>
           <img src={UPGRADE_AUTO_HARVESTER} alt="" aria-hidden="true" className={styles.rowIcon} />
           <div className={styles.rowInfo}>
@@ -316,7 +349,7 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
               {crop.autoHarvesterEnabled ? `Harvests every ${interval} s` : 'Paused: harvest by hand'}
             </span>
             {crop.autoHarvesterEnabled && (
-              <span className={styles.harvestBar}><span style={{ width: `${harvesterShare}%` }} /></span>
+              <span className={styles.harvestBar}><span key={crop.name} className="glide" style={glideFill(harvesterShare, harvesterGlides)} /></span>
             )}
           </div>
           <button

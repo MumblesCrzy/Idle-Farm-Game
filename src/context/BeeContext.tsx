@@ -32,6 +32,7 @@ import {
   honeyMultiplier,
   normalizeBox,
   productiveSeconds,
+  MAX_GAP_SECONDS,
   storedBatches
 } from '../utils/beeProduction';
 import { BEE_CONSTANTS } from '../config/gameConstants';
@@ -59,6 +60,10 @@ interface BeeProviderProps {
   onHivesHarvested?: (count: number) => void; // Called with the batches each collected hive held (pays Guild Tokens)
   /** Receives the honey setters, so honey spent elsewhere, like in the Kitchen, comes off the bees' own totals */
   honeySettersRef?: RefObject<HoneySetters | null>;
+  /** Honey per batch as a share, from the player's guild: the Engineers' bees make less */
+  guildHoneyMultiplier?: number;
+  /** The longest gap the bees are credited for: 8 hours, or 12 with the Engineers' Night Shift */
+  maxGapSeconds?: number;
 }
 
 /** The bees' own honey setters, for honey spent outside the Bees tab */
@@ -117,7 +122,9 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   addEventLogEntry,
   isPaused = false,
   onHivesHarvested,
-  honeySettersRef
+  honeySettersRef,
+  guildHoneyMultiplier = 1,
+  maxGapSeconds = MAX_GAP_SECONDS
 }) => {
   // Core state - initialize from saved state if available
   const [unlocked, setUnlocked] = useState(initialState?.unlocked ?? false);
@@ -294,8 +301,8 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     const batches = storedBatches(box);
     if (batches === 0) return [];
 
-    // Each batch is 15 lbs, raised by Super Frames
-    const honeyPerBatch = Math.round(15 * calculateHoneyProductionMultiplier());
+    // Each batch is 15 lbs, raised by Super Frames, and lowered for the Engineers (Noisy Machines)
+    const honeyPerBatch = Math.round(15 * calculateHoneyProductionMultiplier() * guildHoneyMultiplier);
     const { regular, golden } = collectBatches(batches, { honeyPerBatch, goldenChance: calculateGoldenHoneyChance() });
 
     if (regular > 0) {
@@ -315,7 +322,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
     if (regular > 0) productions.push({ type: 'regular', amount: regular, boxId });
     if (golden > 0) productions.push({ type: 'golden', amount: golden, boxId });
     return productions;
-  }, [boxes, calculateGoldenHoneyChance, calculateHoneyProductionMultiplier, onHivesHarvestedRef]);
+  }, [boxes, calculateGoldenHoneyChance, calculateHoneyProductionMultiplier, guildHoneyMultiplier, onHivesHarvestedRef]);
 
   /**
    * Collect the honey stored in every hive
@@ -353,11 +360,11 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
   /**
    * Advance every hive by elapsed time. Finished batches are stored and the bees go on to the
    * next; winter stops them unless they have Winter Hardiness. Long gaps (time away, a hidden
-   * tab) are capped at 8 hours and count the warm share of the year.
+   * tab) are capped at 8 hours, or 12 with Night Shift, and count the warm share of the year.
    */
   const updateProduction = useCallback((deltaTime: number, currentSeason?: string) => {
     const winterHardiness = upgrades.find(u => u.id === 'winter_hardiness')?.purchased || false;
-    const seconds = productiveSeconds(deltaTime, { winter: currentSeason === 'Winter', winterHardiness });
+    const seconds = productiveSeconds(deltaTime, { winter: currentSeason === 'Winter', winterHardiness, maxSeconds: maxGapSeconds });
     if (seconds <= 0) return;
 
     const productionTime = calculateProductionTime();
@@ -390,7 +397,7 @@ export const BeeProvider: React.FC<BeeProviderProps> = ({
         }
       }, 0);
     }
-  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney, addEventLogEntry, upgrades]);
+  }, [calculateProductionTime, beekeeperAssistant, boxes, harvestAllHoney, addEventLogEntry, upgrades, maxGapSeconds]);
 
   /**
    * Check which boxes are ready to harvest

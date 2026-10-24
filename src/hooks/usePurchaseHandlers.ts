@@ -66,6 +66,8 @@ export interface UsePurchaseHandlersDependencies {
   maxPlots: number;
   heirloomMoneyCost: number;
   heirloomKnowledgeCost: number;
+  /** What Heirloom Seeds are called: GMO Seeds for committed Engineers */
+  heirloomName?: string;
   
   // Event logging callback
   onMilestone?: OnMilestoneCallback;
@@ -75,12 +77,13 @@ export interface UsePurchaseHandlersDependencies {
  * Return type for the usePurchaseHandlers hook
  */
 export interface PurchaseHandlers {
-  // Per-veggie handlers (take veggie index)
-  handleBuyFertilizer: (index: number) => void;
+  // Per-veggie handlers (take veggie index). Those the auto-buyers use also take the share
+  // of the price paid, below 1 with the Engineers' Bulk Purchasing
+  handleBuyFertilizer: (index: number, priceFactor?: number) => void;
   handleBuyHarvester: (index: number) => void;
-  handleBuyHarvesterSpeed: (index: number) => void;
-  handleBuyBetterSeeds: (index: number) => void;
-  handleBuyAdditionalPlot: (index: number) => void;
+  handleBuyHarvesterSpeed: (index: number, priceFactor?: number) => void;
+  handleBuyBetterSeeds: (index: number, priceFactor?: number) => void;
+  handleBuyAdditionalPlot: (index: number, priceFactor?: number) => void;
   
   // Auto-purchaser handler (factory pattern)
   handleBuyAutoPurchaser: (autoPurchaseId: string) => (index: number) => void;
@@ -254,6 +257,7 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
     maxPlots,
     heirloomMoneyCost,
     heirloomKnowledgeCost,
+    heirloomName = 'Heirloom Seeds',
     onMilestone
   } = deps;
 
@@ -265,10 +269,11 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
    * Purchase fertilizer upgrade for a specific veggie
    * Increases the veggie's growth rate
    */
-  const handleBuyFertilizer = useCallback((index: number) => {
+  const handleBuyFertilizer = useCallback((index: number, priceFactor: number = 1) => {
     const v = veggies[index];
-    if (money >= v.fertilizerCost) {
-      setMoney((m: number) => Math.max(0, m - v.fertilizerCost));
+    const cost = v.fertilizerCost * priceFactor;
+    if (money >= cost) {
+      setMoney((m: number) => Math.max(0, m - cost));
       setVeggies((prev) => {
         const updated = [...prev];
         const v2 = { ...updated[index] };
@@ -302,10 +307,11 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
    * Purchase harvester speed upgrade for a specific veggie
    * Reduces time between auto-harvests
    */
-  const handleBuyHarvesterSpeed = useCallback((index: number) => {
+  const handleBuyHarvesterSpeed = useCallback((index: number, priceFactor: number = 1) => {
     const v = veggies[index];
-    if (v.harvesterOwned && money >= v.harvesterSpeedCost!) {
-      setMoney((m: number) => Math.max(0, m - v.harvesterSpeedCost!));
+    const cost = v.harvesterSpeedCost! * priceFactor;
+    if (v.harvesterOwned && money >= cost) {
+      setMoney((m: number) => Math.max(0, m - cost));
       setVeggies((prev) => {
         const updated = [...prev];
         const v2 = { ...updated[index] };
@@ -321,10 +327,10 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
    * Purchase better seeds upgrade for a specific veggie
    * Increases sale price (enhanced by Heirloom Seeds if owned)
    */
-  const handleBuyBetterSeeds = useCallback((index: number) => {
+  const handleBuyBetterSeeds = useCallback((index: number, priceFactor: number = 1) => {
     const v = veggies[index];
-    if (knowledge >= v.betterSeedsCost) {
-      const cost = v.betterSeedsCost;
+    const cost = v.betterSeedsCost * priceFactor;
+    if (knowledge >= cost) {
       setKnowledge((k: number) => Math.max(0, k - cost));
       setVeggies((prev) => {
         const updated = [...prev];
@@ -343,12 +349,13 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
    * Purchase additional plot for a specific veggie
    * Increases harvest amount per harvest
    */
-  const handleBuyAdditionalPlot = useCallback((index: number) => {
+  const handleBuyAdditionalPlot = useCallback((index: number, priceFactor: number = 1) => {
     const v = veggies[index];
     // Block purchase if maxPlots reached
     if (totalPlotsUsed >= maxPlots) return;
-    if (money >= v.additionalPlotCost) {
-      setMoney((m: number) => Math.max(0, m - v.additionalPlotCost));
+    const cost = v.additionalPlotCost * priceFactor;
+    if (money >= cost) {
+      setMoney((m: number) => Math.max(0, m - cost));
       setVeggies((prev) => {
         const updated = [...prev];
         const v2 = { ...updated[index] };
@@ -427,8 +434,8 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
       
       // Log heirloom purchase milestone
       onMilestone?.({
-        name: 'Heirloom Seeds Unlocked',
-        description: 'Unlocked Heirloom Seeds (Better Seeds now 1.5x more effective)',
+        name: `${heirloomName} Unlocked`,
+        description: `Unlocked ${heirloomName} (Better Seeds now 1.5x more effective)`,
         reward: null,
         category: 'milestone'
       });
@@ -449,7 +456,7 @@ export function usePurchaseHandlers(deps: UsePurchaseHandlersDependencies): Purc
         });
       });
     }
-  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost, setMoney, setKnowledge, setHeirloomOwned, setVeggies, onMilestone]);
+  }, [heirloomOwned, money, heirloomMoneyCost, knowledge, heirloomKnowledgeCost, heirloomName, setMoney, setKnowledge, setHeirloomOwned, setVeggies, onMilestone]);
 
   /**
    * Purchase auto-sell (merchant partnership)

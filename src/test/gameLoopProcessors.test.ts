@@ -3,8 +3,11 @@ import {
   calculateWeatherChange,
   processVeggieGrowth,
   processAutoHarvest,
-  processVeggieUnlocks
+  processVeggieUnlocks,
+  getHarvesterInterval
 } from '../utils/gameLoopProcessors';
+import { commitToGuild } from '../utils/guildCalculations';
+import { DEFAULT_GUILD_STATE } from '../types/guilds';
 import type { Veggie } from '../types/game';
 
 // Helper to create test veggie
@@ -149,6 +152,15 @@ describe('processVeggieGrowth', () => {
 });
 
 describe('processAutoHarvest', () => {
+  it("waits a quarter longer for a committed Grower, as the guild's trade-off says", () => {
+    const veggie = createTestVeggie({ harvesterOwned: true, harvesterTimer: 50, growth: 100 });
+    const grower = commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1);
+
+    expect(processAutoHarvest([veggie], 0, 1, 0).harvestedVeggies).toHaveLength(1);
+    expect(processAutoHarvest([veggie], 0, 1, 0, 0, '', [], grower).harvestedVeggies).toHaveLength(0);
+    expect(getHarvesterInterval(veggie, grower)).toBe(67);
+  });
+
   it('should not harvest if harvester not owned', () => {
     const veggie = createTestVeggie({ 
       harvesterOwned: false, 

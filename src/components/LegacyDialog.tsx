@@ -23,7 +23,8 @@ interface LegacyDialogProps {
 /** The guild-only upgrades, named so the dialog can say why they stay */
 const GUILD_ONLY_NOTES: Record<string, string> = {
   growers: 'Ritual Circles stays with the Growers: Ritual Harvest spends Sigils',
-  preservers: 'Rush Batch stays with the Preservers: it spends Wax Seals'
+  preservers: 'Rush Batch stays with the Preservers: it spends Wax Seals',
+  engineers: 'Overclock stays with the Engineers: only members get Tune-Ups from Stanley'
 };
 
 /** One line under each unlock, in plain words */
@@ -35,7 +36,11 @@ const UNLOCK_NOTES: Record<string, string> = {
   preservers_cellar_recipes: 'The 10 Cellar recipes stay open, in any guild',
   preservers_family_cookbook: 'Recipe Mastery ribbons keep paying',
   preservers_trusted_apprentice: 'Canner batches keep paying half knowledge',
-  preservers_pantry_lock: 'Only matters if you rejoin the Preservers: Dunkin visits members'
+  preservers_pantry_lock: 'Only matters if you rejoin the Preservers: Dunkin visits members',
+  engineers_sprinkler_network: 'Irrigation keeps its +30% and stops Heatwaves, in any guild',
+  engineers_climate_control: 'The Greenhouse keeps adding +20% growth all year',
+  engineers_sound_dampers: 'Only matters if you rejoin the Engineers: their bees lose less honey',
+  engineers_night_shift: 'Time away keeps counting up to 12 hours, in any guild'
 };
 
 /** "3 hives", "1 hive" */

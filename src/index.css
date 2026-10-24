@@ -84,6 +84,37 @@ button:focus-visible {
   border-width: 0;
 }
 
+/*
+ * Progress glides (src/hooks/useGlide.ts): a bar or ring that moves once a game step eases to
+ * each new value over the step, one second, so it moves smoothly instead of jumping. Players
+ * who ask for less motion keep the once-a-second steps.
+ */
+@property --glide-progress {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.glide {
+  transition: transform 1s linear;
+}
+
+.glide-width {
+  transition: width 1s linear;
+}
+
+.glide-ring {
+  transition: --glide-progress 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glide,
+  .glide-width,
+  .glide-ring {
+    transition: none;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

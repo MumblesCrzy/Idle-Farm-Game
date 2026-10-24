@@ -1,6 +1,7 @@
 /**
  * The Kitchen's canning upgrades, one compact row each: icon, name and level, what it does
- * now, and its next cost. Once bought, the Canner's row switches it on and off.
+ * now, and its next cost. Once bought, the Canner's row switches it on and off. On the
+ * Engineers' factory floor the panel is steel and the Canner is gone: the machines replace it.
  */
 import { memo, type FC } from 'react';
 import type { CanningUpgrade, CanningState } from '../types/canning';
@@ -22,6 +23,8 @@ interface CanningUpgradesPanelProps {
   onPurchaseUpgrade: (upgradeId: string) => boolean;
   canningState: CanningState;
   onToggleAutoCanning: () => void;
+  /** The Engineers' factory floor: steel, and no Canner, which the machines replace */
+  floor?: boolean;
 }
 
 const ICONS: Record<string, string> = {
@@ -61,11 +64,12 @@ const CanningUpgradesPanel: FC<CanningUpgradesPanelProps> = memo(({
   knowledge,
   onPurchaseUpgrade,
   canningState,
-  onToggleAutoCanning
+  onToggleAutoCanning,
+  floor = false
 }) => (
-  <section className={styles.panel} aria-labelledby="canning-upgrades-heading">
+  <section className={floor ? `${styles.panel} ${styles.floor}` : styles.panel} aria-labelledby="canning-upgrades-heading">
     <h2 id="canning-upgrades-heading" className={styles.title}>Upgrades</h2>
-    {upgrades?.map(upgrade => {
+    {upgrades?.filter(upgrade => !floor || upgrade.id !== 'canner').map(upgrade => {
       const icon = ICONS[upgrade.id] ?? UPGRADE_FERTILIZER;
 
       // Once bought, the Canner's row turns it on and off

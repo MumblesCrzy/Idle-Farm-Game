@@ -1,8 +1,8 @@
 /**
  * Growing Tab: the garden.
  *
- * A plank along the top holds Growing Experience, the Growers' bonuses, Ritual Harvest and Sell
- * All. Below it every crop of a kind (vegetables, or fruits once the Growers' Fruit Cultivation
+ * A plank along the top holds Growing Experience, the Growers' or the Engineers' bonuses, the
+ * Engineers' Gears, Ritual Harvest and Sell All. Below it every crop of a kind (vegetables, or fruits once the Growers' Fruit Cultivation
  * opens them) has a raised bed with its growth, Sell or Hold, the Auto Harvester, upgrade levels
  * with their auto-buyers, and Harvest. The tool shed on the right holds the picked crop's
  * upgrades and the farm upgrades. The tab fits a 1600x1000 window, and nothing changes size as
@@ -15,15 +15,18 @@ import CropGarden, { type CropGroup } from './CropGarden';
 import CropUpgradesPanel from './CropUpgradesPanel';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { GUILD_GROWERS, ICON_EXPERIENCE, ICON_MONEY, ICON_RITUAL_HARVEST, ICON_SIGIL } from '../config/assetPaths';
+import { GUILD_ENGINEERS, GUILD_GROWERS, ICON_EXPERIENCE, ICON_GEARS, ICON_MONEY, ICON_RITUAL_HARVEST, ICON_SIGIL } from '../config/assetPaths';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import {
   applyGuildPriceBonuses,
   getBlessedCropChance,
+  getEngineersHarvesterSpeedMultiplier,
   getGrowersBeePollinationBonus,
   getGrowersGrowthBonus,
   getGrowersManualHarvestBonus,
   getGrowersPriceBonus,
+  getStandardGradeCropMultiplier,
+  getStandardGradeJarMultiplier,
   getUpgradeLevel,
   hasFruitCultivation,
   isCommittedTo
@@ -97,6 +100,29 @@ const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
   );
 };
 
+/** Engineers Guild bonuses and the grade their crops sell at, shown while committed to the guild */
+const EngineersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
+  const harvesterBonus = getEngineersHarvesterSpeedMultiplier(guildState) - 1;
+  const cropCut = 1 - getStandardGradeCropMultiplier(guildState);
+  const jarCut = 1 - getStandardGradeJarMultiplier(guildState);
+
+  return (
+    <div className={styles.guildBonuses} role="group" aria-label="Engineers Guild bonuses">
+      <img src={GUILD_ENGINEERS} alt="" aria-hidden="true" title="Engineers Guild" className={styles.guildEmblem} />
+      <span className={styles.machineChip} title="Auto Harvester speed from Automated Excellence and Engineers upgrades">
+        +{Math.round(harvesterBonus * 100)}% Harvesters
+      </span>
+      <span className={styles.machineChip} title="Auto harvests give full experience and knowledge">Full XP</span>
+      <span
+        className={styles.machineChip}
+        title={`Standard Grade: crops sell for ${Math.round(cropCut * 100)}% less and canned goods for ${Math.round(jarCut * 100)}% less`}
+      >
+        Standard Grade
+      </span>
+    </div>
+  );
+};
+
 const GrowingTab: FC<GrowingTabProps> = memo(({
   veggies,
   activeVeggie,
@@ -155,6 +181,8 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
   const sigils = guildState?.guildCurrencies?.growers ?? 0;
   const hasReadyCrops = veggies.some(v => v.growth >= GROWTH_COMPLETE_THRESHOLD);
   const canRitualHarvest = ritualUnlocked && sigils >= RITUAL_HARVEST_COST && hasReadyCrops;
+  const engineer = !!guildState && isCommittedTo(guildState, 'engineers');
+  const gears = guildState?.guildCurrencies?.engineers ?? 0;
 
   const mainContent = (
     <div className={styles.layout}>
@@ -165,7 +193,14 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
           <small>Growing Experience</small>
         </span>
         {guildState && isCommittedTo(guildState, 'growers') && <GrowersBonuses guildState={guildState} />}
+        {guildState && engineer && <EngineersBonuses guildState={guildState} />}
         <span className={styles.spacer} />
+        {engineer && (
+          <span className={styles.gearsChip} title="Gears, made by your machines">
+            <img src={ICON_GEARS} alt="" aria-hidden="true" />
+            {formatNumber(gears, 2)} Gears
+          </span>
+        )}
         {ritualUnlocked && (
           <button
             type="button"
@@ -209,6 +244,7 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
         onToggleSell={handleToggleSell}
         onBuyHarvester={handleBuyHarvester}
         formatNumber={formatNumber}
+        guildState={guildState}
       />
 
       <div className={styles.shed}>

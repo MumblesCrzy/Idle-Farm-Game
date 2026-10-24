@@ -666,6 +666,10 @@ function migrateCanningSaveData(loaded: ExtendedGameState): ExtendedGameState {
         };
       }
 
+      // Preserve the Engineers' factory floor: each machine's recipe and the batches it made
+      if (originalCanningState.machines) defaultCanningState.machines = originalCanningState.machines;
+      if (originalCanningState.floorBatches) defaultCanningState.floorBatches = originalCanningState.floorBatches;
+
       // Migrate activeProcesses to include totalTime field
       if (originalCanningState.activeProcesses && Array.isArray(originalCanningState.activeProcesses)) {
         defaultCanningState.activeProcesses = originalCanningState.activeProcesses.map(process => {

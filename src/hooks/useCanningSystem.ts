@@ -9,19 +9,27 @@ import type {
 import { INITIAL_RECIPES, calculateRecipeProfit } from '../data/recipes';
 import { useGameTick } from './useGameClock';
 import { useLatestRef } from './useLatestRef';
+import { useStableCallback } from './useStableCallback';
 import { sortRecipesByPreference, type RecipeValueContext, filterRecipesByCategory } from '../utils/recipeHelpers';
 import { useDeferredEffects } from './useDeferredEffects';
 import { GAME_STEP_MS } from '../utils/gameClock';
-import { MAX_OFFLINE_MS } from '../config/gameConstants';
+import { machineSpeed } from '../utils/stanley';
+import { getOfflineCapMs, isEngineer } from '../utils/guildCalculations';
 import {
   CANNER_INTERVAL_STEPS,
+  FLOOR_CHECK_STEPS,
+  assignMachines,
+  floorMachines,
   getBatchRewards,
   getBatchTime,
   hasIngredients,
   pickRecipeToStart,
+  planFloorStarts,
   seededRandom,
+  shortOf,
   simulateCanning,
   type CanningCatchUp,
+  type FloorStart,
   type HoneyStock
 } from '../utils/canningSimulation';
 
@@ -156,6 +164,13 @@ function withCurrentUpgradeRules(state: CanningState): CanningState {
 }
 import type { BatchCount } from '../utils/guildCalculations';
 
+// The recipe checks, made outside the hook so each function holds only its own inputs: one made
+// inside would hold the whole scope of the render that made it, and old renders with it
+const canMakeWith = (crops: Parameters<typeof hasIngredients>[1], honey: HoneyStock) =>
+  (recipe: Recipe): boolean => hasIngredients(recipe, crops, honey);
+const sortWith = (recipeSort: Parameters<typeof sortRecipesByPreference>[1], context: RecipeValueContext) =>
+  (recipes: Recipe[]) => sortRecipesByPreference(recipes, recipeSort, context);
+
 // Hook for managing canning system state and logic
 export function useCanningSystem<T extends {name: string, stash: number, salePrice: number, betterSeedsLevel?: number}>(
   // experience: number, // Unused parameter
@@ -181,7 +196,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   /** Finished batches by who started them, with Prize Jars, for the Preservers' Wax Seals */
   onBatchesFinished?: (batches: BatchCount) => void,
   /** Bee upgrades owned: Honey Jars opens the honey jar recipes */
-  ownedBeeUpgrades?: readonly string[]
+  ownedBeeUpgrades?: readonly string[],
+  /** A factory floor machine ran short of an ingredient and is waiting for it */
+  onMachineWaiting?: (machine: number, recipeName: string, short: string) => void
 ) {
   const [canningState, setCanningState] = useState<CanningState>(() => (
     initialCanningState ? withCurrentUpgradeRules(initialCanningState) : INITIAL_CANNING_STATE
@@ -197,6 +214,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   // Latest guild state, for batch times and payouts
   const guildStateRef = useRef(guildState);
   guildStateRef.current = guildState;
+
+  // Committed Engineers run a factory floor instead of a kitchen (Industrial Canning, Hands Off)
+  const onFloor = isEngineer(guildState);
+  const onFloorRef = useLatestRef(onFloor);
 
   // Guild upgrades decide which recipes exist: the Cellar recipes need Cellar Recipes, bought this
   // Legacy or kept from an earlier one. One string, so the list is rebuilt only when the set changes.
@@ -334,12 +355,15 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   // The reset logic has been removed to maintain player progress
   
   // Check if player has enough ingredients for a recipe
-  const canMakeRecipe = useCallback((recipe: Recipe): boolean => (
-    hasIngredients(recipe, veggies, { regular: regularHoney || 0, golden: goldenHoney || 0 })
-  ), [veggies, regularHoney, goldenHoney]);
+  const canMakeRecipe = useMemo(
+    () => canMakeWith(veggies, { regular: regularHoney || 0, golden: goldenHoney || 0 }),
+    [veggies, regularHoney, goldenHoney]
+  );
   
   // Start a canning process
   const startCanning = useCallback((recipeId: string, automated: boolean = false): boolean => {
+    // Hands Off: on the factory floor the machines do the canning
+    if (!automated && onFloorRef.current) return false;
     const recipe = canningState.recipes.find(r => r.id === recipeId);
     if (!recipe || !recipe.unlocked || !canMakeRecipe(recipe)) {
       return false;
@@ -400,7 +424,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }
     
     return true;
-  }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies, setRegularHoney, setGoldenHoney]);
+  }, [canningState.recipes, canningState.activeProcesses, canningState.maxSimultaneousProcesses, canningState.upgrades, canMakeRecipe, setVeggies, setRegularHoney, setGoldenHoney, onFloorRef]);
   
   // Complete a canning process
   // Refs to avoid stale closures in completeCanning
@@ -410,7 +434,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const onGoodsCannedRef = useLatestRef(onGoodsCanned);
   const onBatchesFinishedRef = useLatestRef(onBatchesFinished);
   
-  const completeCanning = useCallback((processIndex: number): void => {
+  const completeCanning = useStableCallback((processIndex: number): void => {
     const process = canningState.activeProcesses[processIndex];
     if (!process) return;
     
@@ -446,19 +470,20 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       globalCanningCompleteCallback(recipe.name, totalEarnings, knowledgeReward, totalItems, process.automated ?? false);
     }
     
-    // Remove completed process
+    // Remove completed process; a factory floor machine counts the jars it made
+    const machine = process.machine;
     setCanningState(prev => ({
       ...prev,
       activeProcesses: prev.activeProcesses.filter((_, index) => index !== processIndex),
       totalItemsCanned: prev.totalItemsCanned + totalItems,
       canningExperience: prev.canningExperience + canningExperienceReward,
-      recipes: prev.recipes.map(r => 
-        r.id === recipe.id 
-          ? { ...r, timesCompleted: r.timesCompleted + 1 }
-          : r
-      )
+      recipes: prev.recipes.map(r => (r.id === recipe.id ? { ...r, timesCompleted: r.timesCompleted + 1 } : r)),
+      ...(machine !== undefined && prev.machines ? {
+        machines: prev.machines.map((m, index) => (index === machine ? { ...m, jarsMade: m.jarsMade + totalItems } : m)),
+        floorBatches: (prev.floorBatches ?? 0) + 1
+      } : {})
     }));
-  }, [canningState.activeProcesses, canningState.recipes, canningState.upgrades, setMoney, setKnowledge, onGoodsCannedRef, onBatchesFinishedRef]);
+  });
   
   // Purchase a canning upgrade
   const purchaseUpgrade = useCallback((upgradeId: string): boolean => {
@@ -524,7 +549,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       const hiddenSteps = Math.floor((Date.now() - hiddenAt) / GAME_STEP_MS);
       hiddenAt = null;
       if (isPausedRef.current || hiddenSteps < 1) return;
-      pendingCatchUpStepsRef.current = Math.min(pendingCatchUpStepsRef.current + hiddenSteps, MAX_OFFLINE_MS / GAME_STEP_MS);
+      const maxSteps = getOfflineCapMs(guildStateRef.current) / GAME_STEP_MS;
+      pendingCatchUpStepsRef.current = Math.min(pendingCatchUpStepsRef.current + hiddenSteps, maxSteps);
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -558,8 +584,10 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     const key = {};
     const seed = Math.floor(Math.random() * 2 ** 32);
     setCanningState(prev => {
-      const cannerOn = (prev.upgrades.find(u => u.id === 'canner')?.level || 0) > 0 && prev.autoCanning.enabled;
-      if (prev.activeProcesses.length === 0 && !cannerOn) {
+      // On the factory floor the machines start batches, and the Canner stays off
+      const floor = onFloorRef.current && !!prev.machines;
+      const cannerOn = !floor && (prev.upgrades.find(u => u.id === 'canner')?.level || 0) > 0 && prev.autoCanning.enabled;
+      if (prev.activeProcesses.length === 0 && !cannerOn && !floor) {
         scheduleAfterCommit(key, undefined);
         return prev;
       }
@@ -569,6 +597,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         honey: honeyRef.current,
         sortedRecipes: sortRecipes(prev.recipes.filter(recipe => recipe.unlocked)),
         cannerOn,
+        floor,
         heirloomOwned: heirloomOwnedRef.current,
         guildState: guildStateRef.current,
         random: seededRandom(seed)
@@ -581,6 +610,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         activeProcesses: result.activeProcesses,
         totalItemsCanned: prev.totalItemsCanned + result.rewards.items,
         canningExperience: prev.canningExperience + result.rewards.experience,
+        machines: prev.machines?.map((m, index) => (result.machineJars[index] ? { ...m, jarsMade: m.jarsMade + result.machineJars[index] } : m)),
+        floorBatches: (prev.floorBatches ?? 0) + result.floorBatches,
         recipes: prev.recipes.map(recipe => {
           const batches = batchesByRecipe.get(recipe.id);
           return batches ? { ...recipe, timesCompleted: recipe.timesCompleted + batches } : recipe;
@@ -605,9 +636,11 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
 
     if (!hasActiveProcesses) return;
     
+    // Stanley's Tune-Up runs the Canner's batches twice as fast; hand-started ones keep their pace
+    const cannerStep = machineSpeed(guildStateRef.current);
     setCanningState(prev => {
       const updatedProcesses = prev.activeProcesses.map(process => {
-        const newRemainingTime = Math.max(0, process.remainingTime - 1);
+        const newRemainingTime = Math.max(0, process.remainingTime - (process.automated ? cannerStep : 1));
         return {
           ...process,
           remainingTime: newRemainingTime,
@@ -656,9 +689,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     guildState
   }), [veggies, heirloomOwned, efficiencyMultiplier, guildState]);
 
-  const sortRecipes = useCallback((recipes: Recipe[]) => (
-    sortRecipesByPreference(recipes, recipeSort, recipeValueContext)
-  ), [recipeSort, recipeValueContext]);
+  const sortRecipes = useMemo(() => sortWith(recipeSort, recipeValueContext), [recipeSort, recipeValueContext]);
 
 
   // Auto-canning timer - runs every 10 seconds when Canner upgrade is purchased and enabled
@@ -667,6 +698,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   useGameTick(() => {
     if (isPaused) return;
     if (!cannerEnabled) return;
+    // The factory floor replaces the Canner
+    if (onFloorRef.current) return;
     
     // Read the latest committed state; starting a job is a normal state update
     const currentState = canningStateRef.current;
@@ -684,6 +717,87 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     }
   }, { every: CANNER_INTERVAL_STEPS, order: 70 });
   
+  // The Engineers' factory floor: a machine for every stove slot. Joining sets it up with the
+  // first unlocked recipes in the player's order; Batch Canning adds machines with none.
+  const sortRecipesRef = useLatestRef(sortRecipes);
+  useEffect(() => {
+    if (!onFloor) return;
+    setCanningState(prev => {
+      if (prev.recipes.length === 0) return prev;
+      const sorted = sortRecipesRef.current(prev.recipes.filter(recipe => recipe.unlocked));
+      const machines = floorMachines(prev, sorted, currentVeggiesRef.current, honeyRef.current);
+      const activeProcesses = assignMachines(prev.activeProcesses, machines.length);
+      const unchanged = prev.machines?.length === machines.length
+        && activeProcesses.every((process, index) => process === prev.activeProcesses[index]);
+      return unchanged ? prev : { ...prev, machines, activeProcesses };
+    });
+  }, [onFloor, canningState.maxSimultaneousProcesses, canningState.recipes.length, sortRecipesRef, honeyRef]);
+
+  // Starts planned batches: the hopper pays their ingredients and each machine gets its batch
+  const startFloorBatches = (starts: FloorStart[]) => {
+    const cropsUsed: Record<string, number> = {};
+    const honeyUsed: HoneyStock = { regular: 0, golden: 0 };
+    for (const { recipe } of starts) {
+      for (const ingredient of recipe.ingredients) {
+        cropsUsed[ingredient.veggieName] = (cropsUsed[ingredient.veggieName] ?? 0) + ingredient.quantity;
+      }
+      honeyUsed.regular += recipe.honeyRequirement?.regular ?? 0;
+      honeyUsed.golden += recipe.honeyRequirement?.golden ?? 0;
+    }
+    setVeggies(prev => prev.map(veggie => (
+      cropsUsed[veggie.name] ? { ...veggie, stash: veggie.stash - cropsUsed[veggie.name] } : veggie
+    )));
+    if (honeyUsed.regular > 0) setRegularHoney?.(prev => prev - honeyUsed.regular);
+    if (honeyUsed.golden > 0) setGoldenHoney?.(prev => prev - honeyUsed.golden);
+    const upgrades = canningStateRef.current.upgrades;
+    const batches: CanningProcess[] = starts.map(({ machine, recipe }) => {
+      const time = getBatchTime(recipe, upgrades, guildStateRef.current);
+      return { recipeId: recipe.id, startTime: Date.now(), remainingTime: time, totalTime: time, completed: false, automated: true, machine };
+    });
+    setCanningState(prev => ({ ...prev, activeProcesses: [...prev.activeProcesses, ...batches] }));
+  };
+
+  // Each game step, free machines start their recipes while the hopper has them. A machine
+  // waiting for stock looks every other step, or every step during Stanley's Tune-Up.
+  const floorWaitingRef = useRef<ReadonlySet<number>>(new Set());
+  const floorStepRef = useRef(0);
+  const onMachineWaitingRef = useLatestRef(onMachineWaiting);
+  useGameTick(() => {
+    if (isPaused || !onFloorRef.current) return;
+    const state = canningStateRef.current;
+    if (!state.machines || pendingCatchUpStepsRef.current > 0) return;
+    floorStepRef.current += 1;
+    const plan = planFloorStarts({
+      machines: state.machines,
+      processes: state.activeProcesses,
+      recipes: state.recipes,
+      crops: currentVeggiesRef.current,
+      honey: honeyRef.current,
+      waiting: floorWaitingRef.current,
+      checkWaiting: machineSpeed(guildStateRef.current) > 1 || floorStepRef.current % FLOOR_CHECK_STEPS === 0
+    });
+    // Said once, when a machine starts waiting
+    plan.waiting.forEach(machine => {
+      if (floorWaitingRef.current.has(machine)) return;
+      const recipe = state.recipes.find(r => r.id === state.machines?.[machine]?.recipeId);
+      const short = recipe ? shortOf(recipe, currentVeggiesRef.current, honeyRef.current) : null;
+      if (recipe && short) onMachineWaitingRef.current?.(machine, recipe.name, short);
+    });
+    floorWaitingRef.current = plan.waiting;
+    if (plan.starts.length > 0) startFloorBatches(plan.starts);
+  }, { order: 65 });
+
+  // The player sets a machine's recipe, or clears it. A batch it is running finishes as it
+  // was, and the machine looks at the hopper for its new recipe on the next step.
+  const setMachineRecipe = useCallback((machine: number, recipeId: string | null) => {
+    setCanningState(prev => (prev.machines?.[machine]
+      ? { ...prev, machines: prev.machines.map((m, index) => (index === machine ? { recipeId, jarsMade: 0 } : m)) }
+      : prev));
+    const waiting = new Set(floorWaitingRef.current);
+    waiting.delete(machine);
+    floorWaitingRef.current = waiting;
+  }, []);
+
   // Get available recipes (unlocked and can make)
   const getAvailableRecipes = useCallback(() => {
     return filterRecipesByCategory(canningState.recipes, 'all', canMakeRecipe, true);
@@ -746,6 +860,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
     getRecipeAnalysis,
     toggleAutoCanning,
     rushBatches,
+    setMachineRecipe,
     resetCanningState
   };
 }

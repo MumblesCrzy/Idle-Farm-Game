@@ -74,12 +74,24 @@ describe('ProgressBar', () => {
       overflow: 'hidden'
     })
 
-    // Progress bar styling
+    // Progress bar styling: it glides between game steps
     expect(progress).toHaveStyle({
       height: '100%',
-      borderRadius: '6px',
-      transition: 'width 0.3s, background 0.3s ease'
+      borderRadius: '6px'
     })
+    expect(progress).toHaveClass('glide-width')
+  })
+
+  it('snaps back instead of gliding when the value drops', () => {
+    const { rerender } = render(<ProgressBar value={80} />)
+    const progress = screen.getByTestId('progress-bar').querySelector('.progress') as HTMLElement
+    expect(progress.style.transition).toBe('')
+
+    rerender(<ProgressBar value={10} />)
+    expect(progress.style.transition).toBe('none')
+
+    rerender(<ProgressBar value={20} />)
+    expect(progress.style.transition).toBe('')
   })
 
   it('should use default height when height is not a number', () => {

@@ -174,7 +174,7 @@ describe('GuildsTab', () => {
       const user = userEvent.setup();
       renderTab({ guildState: sampledPreservers });
 
-      await user.click(screen.getByRole('button', { name: /Engineers Guild/ }));
+      await user.click(screen.getByRole('button', { name: /Merchants Guild/ }));
 
       expect(screen.queryByRole('button', { name: 'Commit to Guild' })).not.toBeInTheDocument();
     });
@@ -218,6 +218,66 @@ describe('GuildsTab', () => {
 
     it('show no emoji after joining', () => {
       renderTab({ guildState: committedPreservers });
+      expect(document.body.textContent).not.toMatch(emoji);
+    });
+  });
+
+  describe('Engineers', () => {
+    const engineersCard = () => screen.getByRole('button', { name: /Engineers Guild/ });
+
+    /** One Engineers upgrade sampled, which allows committing */
+    const sampledEngineers: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'sampling',
+      sampledUpgrades: { ...DEFAULT_GUILD_STATE.sampledUpgrades, engineers: ['engineers_automation_boost'] },
+      purchasedUpgrades: ['engineers_automation_boost'],
+      upgradeLevels: { engineers_automation_boost: 1 },
+    };
+
+    /** Committed, with Bulk Purchasing and Night Shift bought and Gears to spare */
+    const committedEngineers: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'committed',
+      committedGuild: 'engineers',
+      guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, engineers: 412 },
+      purchasedUpgrades: ['engineers_bulk_purchasing', 'engineers_night_shift'],
+      upgradeLevels: { engineers_bulk_purchasing: 3, engineers_night_shift: 1 },
+    };
+
+    const chip = (label: string) => screen.getByText(label).parentElement;
+
+    it('show their sampled upgrades at half strength, and can be joined', async () => {
+      const user = userEvent.setup();
+      const props = renderTab({ guildState: sampledEngineers });
+
+      await user.click(engineersCard());
+      expect(screen.getByText('Current Effects (at 50%):').parentElement).toHaveTextContent('+2.0% Harvester Speed');
+      await user.click(screen.getByRole('button', { name: 'Commit to Guild' }));
+      const dialog = screen.getByRole('dialog', { name: 'Commit to Engineers Guild?' });
+      await user.click(within(dialog).getByRole('button', { name: 'Commit Forever' }));
+
+      expect(props.onCommitToGuild).toHaveBeenCalledWith('engineers');
+    });
+
+    it('show Gears, the machine effects and the trade-offs once joined', () => {
+      renderTab({ guildState: committedEngineers });
+
+      expect(chip('Gears')).toHaveTextContent('412');
+      expect(chip('Harvester speed:')).toHaveTextContent('Harvester speed: +25.0%');
+      expect(chip('Auto harvest rewards:')).toHaveTextContent('Full');
+      expect(chip('Auto-buyers:')).toHaveTextContent('Auto-buyers: -9%');
+      expect(chip('Canning time:')).toHaveTextContent('Canning time: -30.0%');
+      expect(chip('Canner rewards:')).toHaveTextContent('1/2');
+      expect(chip('Time away:')).toHaveTextContent('Time away: 12 h');
+      expect(chip('Hand harvests:')).toHaveTextContent('Off');
+      expect(chip('Crop value:')).toHaveTextContent('Crop value: -15%');
+      expect(chip('Jar value:')).toHaveTextContent('Jar value: -25%');
+      expect(chip('Honey:')).toHaveTextContent('Honey: -25%');
+      expect(screen.queryByText('Purchase upgrades to unlock')).not.toBeInTheDocument();
+    });
+
+    it('show no emoji after joining', () => {
+      renderTab({ guildState: committedEngineers });
       expect(document.body.textContent).not.toMatch(emoji);
     });
   });

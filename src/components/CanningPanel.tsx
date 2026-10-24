@@ -10,7 +10,7 @@ import type { Recipe, CanningState, RushBatchControl } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import { formatNumber } from '../utils/gameCalculations';
-import { getPreserversTimeMultiplier, getPressureCannerJars, getRecipeMasteryBonus } from '../utils/guildCalculations';
+import { getGuildCanningTimeMultiplier, getJarsPerBatch, getRecipeMasteryBonus } from '../utils/guildCalculations';
 import { filterRecipesByCategory, getEffectiveSalePrice, sortRecipesByPreference, type RecipeValueContext } from '../utils/recipeHelpers';
 import { RIBBON_FIRST, RIBBON_SECOND, RIBBON_THIRD } from '../config/assetPaths';
 import styles from './CanningPanel.module.css';
@@ -69,10 +69,10 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
   onCanMakeOnlyChange
 }) => {
   const efficiencyMultiplier = canningState.upgrades.find(u => u.id === 'canning_efficiency')?.effect || 1;
-  // Quick Hands and the Preservers' time upgrades together
+  // Quick Hands and the guilds' time upgrades together
   const speedMultiplier = (canningState.upgrades.find(u => u.id === 'canning_speed')?.effect || 1)
-    * (guildState ? getPreserversTimeMultiplier(guildState) : 1);
-  const jarsPerBatch = guildState ? getPressureCannerJars(guildState) : 1;
+    * getGuildCanningTimeMultiplier(guildState);
+  const jarsPerBatch = getJarsPerBatch(guildState);
 
   const recipeValueContext = useMemo<RecipeValueContext>(() => ({
     veggies,

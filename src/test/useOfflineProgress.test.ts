@@ -12,6 +12,7 @@ import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/o
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
 import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
+import { commitToGuild } from '../utils/guildCalculations';
 import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
 
 vi.mock('../utils/offlineProgress', () => ({
@@ -246,6 +247,19 @@ describe('useOfflineProgress', () => {
       expect(deps.setGuildState).toHaveBeenCalledTimes(1);
       const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
       expect(update(DEFAULT_GUILD_STATE).guildTokens).toBe(2);
+    });
+
+    it('makes committed Engineers Gears from the auto harvests', () => {
+      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ autoHarvests: 25 }));
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, farmTier: GUILDS_UNLOCK_TIER } });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      const member = update(commitToGuild(DEFAULT_GUILD_STATE, 'engineers', 1));
+      expect(member.guildCurrencies.engineers).toBe(2);
+      expect(member.gearProgress?.autoHarvests).toBe(5);
+      expect(member.guildTokens).toBe(0);
     });
 
     it('leaves guild state alone when nothing was auto harvested', () => {

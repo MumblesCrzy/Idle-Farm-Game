@@ -2,7 +2,7 @@ import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/offlineProgress';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
 import { devTelemetry } from '../utils/devTelemetry';
-import { awardGuildTokens } from '../utils/guildCalculations';
+import { awardGears, awardGuildTokens } from '../utils/guildCalculations';
 import type { Veggie, WeatherType } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
@@ -48,6 +48,10 @@ export interface OfflineGameState {
   farmTier: number;
   knowledge: number;
   guildState: GuildState;
+  /** Crop yield bonus from bee hives */
+  beeYieldBonus?: number;
+  /** Achievement bonuses such as Frost Fertilizer and Harvest Moon */
+  permanentBonuses?: string[];
   christmasEvent: UseChristmasEventReturn;
   pumpkinEvent?: UsePumpkinEventReturn;
 }
@@ -98,6 +102,8 @@ function applyCatchUp(
     canningUpgrades: {},
     autoCanning: { enabled: false },
     guildState: state.guildState,
+    beeYieldBonus: state.beeYieldBonus,
+    permanentBonuses: state.permanentBonuses,
     christmasEvent: state.christmasEvent
   });
 
@@ -109,7 +115,10 @@ function applyCatchUp(
   deps.setDay(result.day);
   deps.setTotalDaysElapsed(result.totalDaysElapsed);
   if (result.autoHarvests > 0) {
-    deps.setGuildState(prev => awardGuildTokens(prev, 'autoHarvests', result.autoHarvests, state.farmTier));
+    deps.setGuildState(prev => awardGears(
+      awardGuildTokens(prev, 'autoHarvests', result.autoHarvests, state.farmTier),
+      { autoHarvests: result.autoHarvests }
+    ));
   }
 
   // Christmas event catch-up: trees grow, the Elves' Bench crafts, the Golden Bell pays out

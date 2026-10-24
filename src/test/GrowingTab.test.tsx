@@ -8,6 +8,7 @@ import { ArchieProvider } from '../context/ArchieContext';
 import GrowingTab from '../components/GrowingTab';
 import { createAllCrops, formatNumber } from '../utils/gameCalculations';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
+import { commitToGuild } from '../utils/guildCalculations';
 import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
 import type { Veggie } from '../types/game';
 
@@ -261,6 +262,14 @@ describe('GrowingTab', () => {
     expect(handlers.handleToggleAutoHarvester).toHaveBeenCalledWith(0);
   });
 
+  it("shows a Grower's slower Auto Harvester on the bed and in the shed", () => {
+    const veggies = crops(c => c.map((crop, i) => i === 0 ? { ...crop, harvesterOwned: true, autoHarvesterEnabled: true } : crop));
+    renderTab(veggies, 0, { guildState: commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1) });
+
+    expect(within(bedOf(veggies[0].name)).getByText('67 s')).toBeInTheDocument();
+    expect(within(shedOf(veggies[0].name)).getByText('Harvests every 67 s')).toBeInTheDocument();
+  });
+
   it('keeps fruits behind their own switch once Fruit Cultivation opens them', () => {
     const plain = crops();
     const firstFruit = plain.findIndex(v => v.cropType === 'fruit');
@@ -285,6 +294,15 @@ describe('GrowingTab', () => {
     expect(screen.getByText('Unlocks at 60.36M Growing Experience')).toBeInTheDocument();
   });
 
+  it('draws each ring from its crop growth, gold once ripe', () => {
+    renderTab(crops(c => c.map((crop, i) => (i === 1 ? { ...crop, growth: 39 } : i === 2 ? { ...crop, growth: 100 } : crop))));
+
+    const ring = (name: string) => bedOf(name).querySelector('.glide-ring') as HTMLElement;
+    expect(ring('Lettuce').style.getPropertyValue('--glide-progress')).toBe('39%');
+    expect(ring('Lettuce').className).not.toMatch(/ripeRing/);
+    expect(ring('Green Beans').className).toMatch(/ripeRing/);
+  });
+
   it('has no fruit switch before Fruit Cultivation', () => {
     renderTab(crops());
     expect(screen.queryByRole('button', { name: /^Fruits/ })).toBeNull();
@@ -296,5 +314,62 @@ describe('GrowingTab', () => {
     const marked = container.querySelectorAll('[data-tutorial="harvest-button"]');
     expect(marked).toHaveLength(1);
     expect(marked[0]).toHaveAccessibleName(`Harvest ${veggies[1].name}`);
+  });
+
+  describe('for a committed Engineer', () => {
+    const engineer = (levels: Record<string, number> = {}): GuildState => ({
+      ...commitToGuild(DEFAULT_GUILD_STATE, 'engineers', 1),
+      guildCurrencies: { ...DEFAULT_GUILD_STATE.guildCurrencies, engineers: 1240 },
+      purchasedUpgrades: Object.keys(levels),
+      upgradeLevels: levels
+    });
+
+    /** The open crops with their harvesters fitted, ten seconds into the 40 second pass */
+    const fitted = (change: (crop: Veggie, index: number) => Veggie = crop => crop) => crops(all => all.map((crop, i) => (crop.unlocked
+      ? change({ ...crop, harvesterOwned: true, autoHarvesterEnabled: true, harvesterTimer: 10 }, i)
+      : crop)));
+
+    it('shows each machine where Harvest would be, with nothing to harvest or buy by hand', () => {
+      renderTab(fitted((crop, i) => ({ ...crop, growth: i === 0 ? 100 : 40 })), 0, { guildState: engineer() });
+
+      expect(screen.queryByRole('button', { name: /^Harvest / })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /is growing$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /: Buy/ })).not.toBeInTheDocument();
+      expect(within(bedOf('Radish')).getByText('Next pass 30 s')).toBeInTheDocument();
+      expect(within(bedOf('Lettuce')).getByText('30 s')).toBeInTheDocument();
+      expect(screen.getByText('Machines harvest every bed. Click a bed to see its upgrades')).toBeInTheDocument();
+    });
+
+    it('shows the guild on the plank: faster harvesters, full XP, Standard Grade and the Gears', () => {
+      renderTab(fitted(), 0, { guildState: engineer() });
+
+      const bonuses = screen.getByRole('group', { name: 'Engineers Guild bonuses' });
+      expect(bonuses).toHaveTextContent('+25% Harvesters');
+      expect(bonuses).toHaveTextContent('Full XP');
+      expect(bonuses).toHaveTextContent('Standard Grade');
+      expect(screen.getByText('1.24K Gears')).toBeInTheDocument();
+    });
+
+    it("shows Stanley's Tune-Up on every bed and in the shed", () => {
+      const tuned: GuildState = { ...engineer(), stanley: { tuneUps: 1, tuneUpLeft: 30 } };
+      renderTab(fitted(crop => ({ ...crop, growth: 40 })), 0, { guildState: tuned });
+
+      expect(within(bedOf('Radish')).getByText('×2')).toBeInTheDocument();
+      expect(within(bedOf('Radish')).getByText('15 s')).toBeInTheDocument();
+      expect(within(shedOf('Radish')).getByText('Tune-Up · every 20 s')).toBeInTheDocument();
+    });
+
+    it('shows the fitted harvester in the shed, and what Bulk Purchasing takes off', () => {
+      const veggies = fitted(crop => ({
+        ...crop,
+        autoPurchasers: crop.autoPurchasers.map(ap => (ap.id === 'assistant' ? { ...ap, owned: true, active: true } : ap))
+      }));
+      renderTab(veggies, 0, { guildState: engineer({ engineers_bulk_purchasing: 3 }) });
+
+      const shed = shedOf('Radish');
+      expect(within(shed).getByText('Factory fitted · every 40 s')).toBeInTheDocument();
+      expect(within(shed).queryByRole('button', { name: /^Auto Harvester for Radish/ })).not.toBeInTheDocument();
+      expect(within(shed).getAllByText('-9%')).toHaveLength(1);
+    });
   });
 });

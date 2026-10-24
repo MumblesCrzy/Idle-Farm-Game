@@ -71,6 +71,10 @@ describe('time for the bees', () => {
     expect(productiveSeconds(3600, { winter: false, winterHardiness: true })).toBe(3600);
     expect(productiveSeconds(10 * 24 * 3600, { winter: false, winterHardiness: true })).toBe(MAX_GAP_SECONDS);
   });
+
+  it('counts up to 12 hours away with Night Shift', () => {
+    expect(productiveSeconds(10 * 24 * 3600, { winter: false, winterHardiness: true, maxSeconds: 12 * 3600 })).toBe(12 * 3600);
+  });
 });
 
 describe('the bee system', () => {
@@ -106,6 +110,30 @@ describe('the bee system', () => {
     expect(result.current.regularHoney).toBe(45);
     expect(onHivesHarvested).toHaveBeenCalledWith(3);
     expect(result.current.boxes[0]).toMatchObject({ storedBatches: 0, harvestReady: false, productionTimer: 50 });
+    vi.restoreAllMocks();
+  });
+
+  it('collects smaller batches for the Engineers, whose machines bother the bees', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <GameClockProvider>
+        <BeeProvider
+          farmTier={4}
+          season="Spring"
+          guildHoneyMultiplier={0.75}
+          initialState={{ unlocked: true, firstTimeSetup: true, boxes: [hive({ storedBatches: 2, harvestReady: true })], lastUpdateTime: Date.now() }}
+        >
+          {children}
+        </BeeProvider>
+      </GameClockProvider>
+    );
+    const { result } = renderHook(() => useBees(), { wrapper });
+
+    act(() => {
+      result.current.harvestAllHoney();
+    });
+
+    expect(result.current.regularHoney).toBe(22);
     vi.restoreAllMocks();
   });
 

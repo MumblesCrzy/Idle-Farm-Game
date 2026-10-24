@@ -3,6 +3,7 @@
  * Calculates all bonuses and penalties from guild upgrades
  */
 import type { GuildState, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
+import { MAX_OFFLINE_MS } from '../config/gameConstants';
 import {
   GUILD_TOKEN_SOURCES,
   GUILDS,
@@ -325,7 +326,7 @@ export function getPrizeJarChance(guildState: GuildState): number {
 
 /** Canner batches give the knowledge and canning experience of a manual batch divided by this */
 export function getCannerRewardDivisor(guildState: GuildState | undefined): number {
-  return guildState && owns(guildState, 'preservers_trusted_apprentice') ? 2 : 10;
+  return guildState && (owns(guildState, 'preservers_trusted_apprentice') || isEngineer(guildState)) ? 2 : 10;
 }
 
 /** Whether the Cellar recipes are open */
@@ -350,8 +351,8 @@ export function getRawCropPriceMultiplier(guildState: GuildState): number {
 
 /**
  * What guilds do to one canning batch's value, before counting jars: the Growers'
- * canning penalty, and the Preservers' bonuses, which add together: value upgrades,
- * Recipe Mastery and, on honey recipes, Honey Glaze.
+ * canning penalty, the Engineers' Standard Grade, and the Preservers' bonuses, which add
+ * together: value upgrades, Recipe Mastery and, on honey recipes, Honey Glaze.
  */
 export function getRecipeValueMultiplier(
   guildState: GuildState | undefined,
@@ -360,7 +361,7 @@ export function getRecipeValueMultiplier(
   if (!guildState) return 1;
   const honey = recipe.honeyRequirement ? getHoneyGlazeBonus(guildState) : 0;
   const bonus = getPreserversValueBonus(guildState) + getRecipeMasteryBonus(guildState, recipe.timesCompleted) + honey;
-  return getGrowerCanningProfitMultiplier(guildState) * (1 + bonus);
+  return getGrowerCanningProfitMultiplier(guildState) * getStandardGradeJarMultiplier(guildState) * (1 + bonus);
 }
 
 /** Wax Seals one Rush Batch costs */
@@ -394,6 +395,176 @@ export function awardWaxSeals(guildState: GuildState, batches: BatchCount): Guil
 }
 
 // =============================================================================
+// ENGINEERS GUILD
+// =============================================================================
+
+/** Automated Excellence: committed Engineers' Auto Harvesters run this much faster */
+export const AUTOMATED_EXCELLENCE_BONUS = 0.25;
+
+/** Industrial Canning: committed Engineers' batches take this share of the time */
+export const INDUSTRIAL_CANNING_TIME = 0.7;
+
+/** Standard Grade: committed Engineers' raw crops sell for this much less */
+export const STANDARD_GRADE_CROP_PENALTY = 0.15;
+
+/** Standard Grade: committed Engineers' canned goods sell for this much less */
+export const STANDARD_GRADE_JAR_PENALTY = 0.25;
+
+/** Noisy Machines: committed Engineers' bees make this much less honey */
+export const NOISY_MACHINES_HONEY_PENALTY = 0.25;
+
+/** Noisy Machines with Sound Dampers */
+export const SOUND_DAMPERS_HONEY_PENALTY = 0.1;
+
+/** Irrigation's growth bonus, and the larger one with Sprinkler Network */
+export const IRRIGATION_GROWTH_BONUS = 0.15;
+export const SPRINKLER_GROWTH_BONUS = 0.3;
+
+/** Climate Control: the Greenhouse adds this much growth in every season */
+export const CLIMATE_CONTROL_GROWTH_BONUS = 0.2;
+
+/** Night Shift: time away counts up to this many hours */
+export const NIGHT_SHIFT_HOURS = 12;
+
+/** Gears for committed Engineers: one for every this many auto harvests, and canning batches */
+export const GEAR_SOURCES = { autoHarvests: 10, batches: 5 } as const;
+
+/** Whether the player has joined the Engineers */
+export function isEngineer(guildState: GuildState | undefined): guildState is GuildState {
+  return !!guildState && isCommittedTo(guildState, 'engineers');
+}
+
+/**
+ * Auto Harvester speed from the Engineers: Automated Excellence for members, Automation
+ * Efficiency (half strength before joining) and Hydraulic Arms. 1.25 means 25% faster.
+ */
+export function getEngineersHarvesterSpeedMultiplier(guildState: GuildState): number {
+  const excellence = isEngineer(guildState) ? AUTOMATED_EXCELLENCE_BONUS : 0;
+  return (1 + excellence)
+    * (1 + softCappedLevels(guildState, 'engineers_automation_boost', 'engineers') * rateOf('engineers_automation_boost'))
+    * (1 + levelEffect(guildState, 'engineers_hydraulic_arms'));
+}
+
+/** Every guild's effect on Auto Harvester speed: the Growers' penalty and the Engineers' bonuses */
+export function getGuildHarvesterSpeedMultiplier(guildState: GuildState): number {
+  return getGrowersHarvesterSpeedMultiplier(guildState) * getEngineersHarvesterSpeedMultiplier(guildState);
+}
+
+/** Extra crops from auto harvests: Precision Tools (half strength before joining) and Combine Header. 0.1 means +10% */
+export function getAutoHarvestYieldBonus(guildState: GuildState): number {
+  return softCappedLevels(guildState, 'engineers_precision_tools', 'engineers') * rateOf('engineers_precision_tools')
+    + levelEffect(guildState, 'engineers_combine_header');
+}
+
+/** Engineers' auto harvests give a manual harvest's full experience and knowledge */
+export function hasFullAutoHarvestRewards(guildState: GuildState | undefined): boolean {
+  return isEngineer(guildState);
+}
+
+/** Hands Off: committed Engineers can't harvest by hand; their machines bring in every crop */
+export function hasHandsOff(guildState: GuildState | undefined): boolean {
+  return isEngineer(guildState);
+}
+
+/** Every unlocked crop of a committed Engineer comes with an Auto Harvester */
+export function hasFactoryFittedHarvesters(guildState: GuildState | undefined): boolean {
+  return isEngineer(guildState);
+}
+
+/** What auto-buyers pay with Bulk Purchasing: 0.91 means 9% less */
+export function getAutoBuyerPriceMultiplier(guildState: GuildState | undefined): number {
+  return guildState ? 1 - levelEffect(guildState, 'engineers_bulk_purchasing') : 1;
+}
+
+/** Irrigation's growth bonus: +15%, or +30% with Sprinkler Network */
+export function getIrrigationGrowthBonus(guildState: GuildState | undefined): number {
+  return guildState && owns(guildState, 'engineers_sprinkler_network') ? SPRINKLER_GROWTH_BONUS : IRRIGATION_GROWTH_BONUS;
+}
+
+/** Whether Irrigation also keeps Heatwaves from slowing crops, with Sprinkler Network */
+export function hasHeatwaveIrrigation(guildState: GuildState | undefined): boolean {
+  return !!guildState && owns(guildState, 'engineers_sprinkler_network');
+}
+
+/** Growth the Greenhouse adds in every season with Climate Control */
+export function getGreenhouseGrowthBonus(guildState: GuildState | undefined): number {
+  return guildState && owns(guildState, 'engineers_climate_control') ? CLIMATE_CONTROL_GROWTH_BONUS : 0;
+}
+
+/** Canning time from the Engineers: Industrial Canning for members, and Conveyor Belts. 0.7 means 70% of the time */
+export function getEngineersCanningTimeMultiplier(guildState: GuildState): number {
+  return (isEngineer(guildState) ? INDUSTRIAL_CANNING_TIME : 1) * (1 - levelEffect(guildState, 'engineers_conveyor_belts'));
+}
+
+/** Extra jars per canning batch from Mass Production */
+export function getMassProductionJars(guildState: GuildState): number {
+  return getUpgradeLevel(guildState, 'engineers_mass_production');
+}
+
+/** Canning time from every guild: the Preservers' time upgrades and the Engineers' line */
+export function getGuildCanningTimeMultiplier(guildState: GuildState | undefined): number {
+  if (!guildState) return 1;
+  return getPreserversTimeMultiplier(guildState) * getEngineersCanningTimeMultiplier(guildState);
+}
+
+/** Jars from one batch: 1, plus the Pressure Canner's and Mass Production's */
+export function getJarsPerBatch(guildState: GuildState | undefined): number {
+  if (!guildState) return 1;
+  return getPressureCannerJars(guildState) + getMassProductionJars(guildState);
+}
+
+/** Standard Grade: what committed Engineers' raw crops sell for, as a share of the price */
+export function getStandardGradeCropMultiplier(guildState: GuildState | undefined): number {
+  return isEngineer(guildState) ? 1 - STANDARD_GRADE_CROP_PENALTY : 1;
+}
+
+/** Standard Grade: what committed Engineers' canned goods sell for, as a share of the price */
+export function getStandardGradeJarMultiplier(guildState: GuildState | undefined): number {
+  return isEngineer(guildState) ? 1 - STANDARD_GRADE_JAR_PENALTY : 1;
+}
+
+/** Honey per batch as a share: committed Engineers' bees make 25% less, or 10% less with Sound Dampers */
+export function getGuildHoneyMultiplier(guildState: GuildState | undefined): number {
+  if (!isEngineer(guildState)) return 1;
+  return 1 - (owns(guildState, 'engineers_sound_dampers') ? SOUND_DAMPERS_HONEY_PENALTY : NOISY_MACHINES_HONEY_PENALTY);
+}
+
+/** How much time away counts: 8 hours, or 12 with Night Shift */
+export function getOfflineCapMs(guildState: GuildState | undefined): number {
+  return guildState && owns(guildState, 'engineers_night_shift') ? NIGHT_SHIFT_HOURS * 60 * 60 * 1000 : MAX_OFFLINE_MS;
+}
+
+/** The farm upgrade's name: Heirloom Seeds, or GMO Seeds for committed Engineers. The effect is the same */
+export function heirloomSeedsName(guildState: GuildState | undefined): string {
+  return isEngineer(guildState) ? 'GMO Seeds' : 'Heirloom Seeds';
+}
+
+/** Machine work that pays Gears */
+export interface GearWork {
+  autoHarvests?: number;
+  batches?: number;
+}
+
+/**
+ * Pays committed Engineers their Gears: 1 for every 10 auto harvests and 1 for every 5 canning
+ * batches. What's left toward the next Gear carries over in the save. Returns the same state when
+ * the player isn't an Engineer or nothing was done.
+ */
+export function awardGears(guildState: GuildState, work: GearWork): GuildState {
+  const harvested = Math.max(0, work.autoHarvests ?? 0);
+  const canned = Math.max(0, work.batches ?? 0);
+  if (!isEngineer(guildState) || harvested + canned === 0) return guildState;
+  const harvests = (guildState.gearProgress?.autoHarvests ?? 0) + harvested;
+  const batches = (guildState.gearProgress?.batches ?? 0) + canned;
+  const gears = Math.floor(harvests / GEAR_SOURCES.autoHarvests) + Math.floor(batches / GEAR_SOURCES.batches);
+  return {
+    ...guildState,
+    guildCurrencies: { ...guildState.guildCurrencies, engineers: guildState.guildCurrencies.engineers + gears },
+    gearProgress: { autoHarvests: harvests % GEAR_SOURCES.autoHarvests, batches: batches % GEAR_SOURCES.batches }
+  };
+}
+
+// =============================================================================
 // COMPOSITE FUNCTIONS
 // =============================================================================
 
@@ -408,9 +579,9 @@ export function applyGuildPriceBonuses(
   guildState: GuildState,
   applyQualityBonus: boolean = false
 ): number {
-  // Apply percentage bonuses, and the Preservers' raw crop penalty
+  // Apply percentage bonuses, the Preservers' raw crop penalty and the Engineers' Standard Grade
   const percentBonus = getGrowersPriceBonus(guildState);
-  let price = basePrice * (1 + percentBonus) * getRawCropPriceMultiplier(guildState);
+  let price = basePrice * (1 + percentBonus) * getRawCropPriceMultiplier(guildState) * getStandardGradeCropMultiplier(guildState);
   
   // Apply Whispers of the Seed 10x multiplier
   if (hasWhispersOfSeed(guildState)) {

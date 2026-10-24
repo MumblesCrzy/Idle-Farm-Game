@@ -16,7 +16,9 @@ import { memo, useCallback, useId, useState, type CSSProperties, type FC, type R
 import BaseTab from './BaseTab';
 import LockedFeatureCard from './LockedFeatureCard';
 import InlineIcon from './InlineIcon';
-import { CANNING_BATCH_CANNING, CANNING_CANNER, CANNING_QUICK_HANDS, GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, GUILD_PRESERVERS, ICON_BEE, ICON_BLESSED_CROP, ICON_CANNING, ICON_GROWING, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_HARVEST, ICON_HONEY, ICON_IDEA, ICON_MONEY, ICON_SCROLL, ICON_UPGRADE, ICON_WARNING, RIBBON_BLUE, RIBBON_FIRST, UPGRADE_AUTO_HARVESTER, UPGRADE_FERTILIZER, UPGRADE_HEIRLOOM_SEEDS } from '../config/assetPaths';
+import { tuneUpSteps } from '../utils/stanley';
+import { AUTO_ASSISTANT, CANNING_BATCH_CANNING, CANNING_CANNER, CANNING_QUICK_HANDS, GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, GUILD_PRESERVERS, ICON_AUTOMATION, ICON_BEE, ICON_BLESSED_CROP, ICON_CANNING, ICON_GROWING, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_HARVEST, ICON_HONEY, ICON_IDEA, ICON_MONEY, ICON_SCROLL, ICON_UPGRADE, ICON_WARNING, RIBBON_BLUE, RIBBON_FIRST, SPECIAL_STANLEY, UPGRADE_AUTO_HARVESTER, UPGRADE_FERTILIZER, UPGRADE_GREENHOUSE, UPGRADE_HARVESTER_SPEED, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_IRRIGATION } from '../config/assetPaths';
+import { MAX_OFFLINE_MS } from '../config/gameConstants';
 import type { GuildType, GuildState, Guild, GuildUpgrade } from '../types/guilds';
 import { GUILDS, GUILDS_UNLOCK_TIER, GUILD_TOKEN_SOURCES, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
 import LegacyPanel from './LegacyPanel';
@@ -37,8 +39,19 @@ import {
   getHoneyGlazeBonus,
   getPreserversTimeMultiplier,
   getPreserversValueBonus,
-  getPressureCannerJars,
   getPrizeJarChance,
+  getAutoBuyerPriceMultiplier,
+  getAutoHarvestYieldBonus,
+  getEngineersHarvesterSpeedMultiplier,
+  getGreenhouseGrowthBonus,
+  getGuildCanningTimeMultiplier,
+  getGuildHoneyMultiplier,
+  getIrrigationGrowthBonus,
+  getJarsPerBatch,
+  getOfflineCapMs,
+  getStandardGradeCropMultiplier,
+  getStandardGradeJarMultiplier,
+  hasHeatwaveIrrigation,
   getRecipeMasteryBonus,
   getGuildUpgradeCost,
   getKeptLevel,
@@ -170,7 +183,9 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
   const priceBonus = guild.id === 'growers' ? getGrowersPriceBonus(guildState) : 0;
   const jarBonus = guild.id === 'preservers' ? getPreserversValueBonus(guildState) : 0;
   const timeCut = guild.id === 'preservers' ? 1 - getPreserversTimeMultiplier(guildState) : 0;
-  const hasAnyBonus = growthBonus > 0 || priceBonus > 0 || jarBonus > 0 || timeCut > 0;
+  const machineSpeed = guild.id === 'engineers' ? getEngineersHarvesterSpeedMultiplier(guildState) - 1 : 0;
+  const machineYield = guild.id === 'engineers' ? getAutoHarvestYieldBonus(guildState) : 0;
+  const hasAnyBonus = growthBonus > 0 || priceBonus > 0 || jarBonus > 0 || timeCut > 0 || machineSpeed > 0 || machineYield > 0;
 
   return (
     <section className={styles.detailPanel} style={guildColorVars(guild)} aria-labelledby={titleId}>
@@ -266,6 +281,12 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
             )}
             {timeCut > 0 && (
               <span className={styles.samplingEffect}><InlineIcon src={CANNING_QUICK_HANDS} size={14} gap={3} />-{formatNumber(timeCut * 100, 1)}% Canning Time</span>
+            )}
+            {machineSpeed > 0 && (
+              <span className={styles.samplingEffect}><InlineIcon src={UPGRADE_HARVESTER_SPEED} size={14} gap={3} />+{formatNumber(machineSpeed * 100, 1)}% Harvester Speed</span>
+            )}
+            {machineYield > 0 && (
+              <span className={styles.samplingEffect}><InlineIcon src={ICON_HARVEST} size={14} gap={3} />+{formatNumber(machineYield * 100, 1)}% Auto Harvest Crops</span>
             )}
           </div>
         </div>
@@ -449,16 +470,31 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
   const fertilizerMult = guild.id === 'growers' ? getFertilizerEffectivenessMultiplier(guildState) : 1;
   const hasWhispers = guild.id === 'growers' ? hasWhispersOfSeed(guildState) : false;
 
-  // Preservers effects
+  // Preservers effects. The Engineers change canning too, so time, jars and the Canner show for both
   const isPreservers = guild.id === 'preservers';
+  const isEngineers = guild.id === 'engineers';
+  const changesCanning = isPreservers || isEngineers;
   const jarValueBonus = isPreservers ? getPreserversValueBonus(guildState) : 0;
-  const canningTimeCut = isPreservers ? 1 - getPreserversTimeMultiplier(guildState) : 0;
-  const jarsPerBatch = isPreservers ? getPressureCannerJars(guildState) : 1;
+  const canningTimeCut = changesCanning ? 1 - getGuildCanningTimeMultiplier(guildState) : 0;
+  const jarsPerBatch = changesCanning ? getJarsPerBatch(guildState) : 1;
   const honeyGlaze = isPreservers ? getHoneyGlazeBonus(guildState) : 0;
   const masteryTop = isPreservers ? getRecipeMasteryBonus(guildState, Number.MAX_SAFE_INTEGER) : 0;
   const prizeChance = isPreservers ? getPrizeJarChance(guildState) : 0;
-  const cannerDivisor = isPreservers ? getCannerRewardDivisor(guildState) : 10;
-  const hasEffects = growthBonus > 0 || priceBonus > 0 || manualHarvestBonus > 0 || jarValueBonus > 0 || canningTimeCut > 0;
+  const cannerDivisor = changesCanning ? getCannerRewardDivisor(guildState) : 10;
+
+  // Engineers effects and trade-offs
+  const machineSpeed = isEngineers ? getEngineersHarvesterSpeedMultiplier(guildState) - 1 : 0;
+  const machineYield = isEngineers ? getAutoHarvestYieldBonus(guildState) : 0;
+  const autoBuyerDiscount = isEngineers ? 1 - getAutoBuyerPriceMultiplier(guildState) : 0;
+  const irrigationBonus = isEngineers && hasHeatwaveIrrigation(guildState) ? getIrrigationGrowthBonus(guildState) : 0;
+  const greenhouseBonus = isEngineers ? getGreenhouseGrowthBonus(guildState) : 0;
+  const offlineCap = getOfflineCapMs(guildState);
+  const nightShiftHours = isEngineers && offlineCap > MAX_OFFLINE_MS ? offlineCap / (60 * 60 * 1000) : 0;
+  const overclocked = isEngineers && getUpgradeLevel(guildState, 'engineers_overclock') > 0;
+  const cropGradeCut = isEngineers ? 1 - getStandardGradeCropMultiplier(guildState) : 0;
+  const jarGradeCut = isEngineers ? 1 - getStandardGradeJarMultiplier(guildState) : 0;
+  const honeyCut = isEngineers ? 1 - getGuildHoneyMultiplier(guildState) : 0;
+  const hasEffects = growthBonus > 0 || priceBonus > 0 || manualHarvestBonus > 0 || jarValueBonus > 0 || canningTimeCut > 0 || machineSpeed > 0;
 
   return (
     <div className={styles.committedPanel} style={guildColorVars(guild)}>
@@ -533,6 +569,42 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.bonusText}>Bees: <span className={styles.bonusValue}>+{formatNumber(beePollinationBonus * 100, 0)}%</span></span>
               </div>
             )}
+            {machineSpeed > 0 && (
+              <div className={styles.bonusItem} title="From Automated Excellence, Automation Efficiency and Hydraulic Arms">
+                <InlineIcon src={UPGRADE_HARVESTER_SPEED} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Harvester speed: <span className={styles.bonusValue}>+{formatNumber(machineSpeed * 100, 1)}%</span></span>
+              </div>
+            )}
+            {machineYield > 0 && (
+              <div className={styles.bonusItem} title="From Precision Tools and Combine Header - more crops from every auto harvest">
+                <InlineIcon src={ICON_HARVEST} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Auto harvest crops: <span className={styles.bonusValue}>+{formatNumber(machineYield * 100, 1)}%</span></span>
+              </div>
+            )}
+            {isEngineers && (
+              <div className={styles.bonusItem} title="From Automated Excellence - auto harvests give full experience and knowledge, instead of half">
+                <InlineIcon src={UPGRADE_AUTO_HARVESTER} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Auto harvest rewards: <span className={styles.bonusValue}>Full</span></span>
+              </div>
+            )}
+            {autoBuyerDiscount > 0 && (
+              <div className={styles.bonusItem} title="From Bulk Purchasing - auto-buyers pay less for what they buy">
+                <InlineIcon src={AUTO_ASSISTANT} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Auto-buyers: <span className={styles.bonusValue}>-{formatNumber(autoBuyerDiscount * 100, 0)}%</span></span>
+              </div>
+            )}
+            {irrigationBonus > 0 && (
+              <div className={styles.bonusItem} title="From Sprinkler Network - Irrigation adds more growth and keeps Heatwaves from slowing crops">
+                <InlineIcon src={UPGRADE_IRRIGATION} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Irrigation: <span className={styles.bonusValue}>+{formatNumber(irrigationBonus * 100, 0)}%</span></span>
+              </div>
+            )}
+            {greenhouseBonus > 0 && (
+              <div className={styles.bonusItem} title="From Climate Control - the Greenhouse adds growth in every season">
+                <InlineIcon src={UPGRADE_GREENHOUSE} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Greenhouse: <span className={styles.bonusValue}>+{formatNumber(greenhouseBonus * 100, 0)}%</span></span>
+              </div>
+            )}
             {jarValueBonus > 0 && (
               <div className={styles.bonusItem} title="From Master Preserver, Tight Lids and Cellar Aging">
                 <InlineIcon src={ICON_CANNING} size={18} className={styles.bonusIcon} />
@@ -540,13 +612,13 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
               </div>
             )}
             {canningTimeCut > 0 && (
-              <div className={styles.bonusItem} title="From Rolling Boil and Copper Kettles">
+              <div className={styles.bonusItem} title={isEngineers ? 'From Industrial Canning and Conveyor Belts' : 'From Rolling Boil and Copper Kettles'}>
                 <InlineIcon src={CANNING_QUICK_HANDS} size={18} className={styles.bonusIcon} />
                 <span className={styles.bonusText}>Canning time: <span className={styles.bonusValue}>-{formatNumber(canningTimeCut * 100, 1)}%</span></span>
               </div>
             )}
             {jarsPerBatch > 1 && (
-              <div className={styles.bonusItem} title="From the Pressure Canner - every batch makes this many jars">
+              <div className={styles.bonusItem} title={`From ${isEngineers ? 'Mass Production' : 'the Pressure Canner'} - every batch makes this many jars`}>
                 <InlineIcon src={CANNING_BATCH_CANNING} size={18} className={styles.bonusIcon} />
                 <span className={styles.bonusText}>Jars per batch: <span className={styles.bonusValue}>{jarsPerBatch}</span></span>
               </div>
@@ -569,10 +641,22 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.bonusText}>Prize Jars: <span className={styles.bonusValue}>{formatNumber(prizeChance * 100, 0)}%</span></span>
               </div>
             )}
-            {isPreservers && cannerDivisor < 10 && (
-              <div className={styles.bonusItem} title="From Trusted Apprentice - Canner batches give half the knowledge and canning experience">
+            {cannerDivisor < 10 && (
+              <div className={styles.bonusItem} title={`From ${isEngineers ? 'Industrial Canning' : 'Trusted Apprentice'} - Canner batches give half the knowledge and canning experience`}>
                 <InlineIcon src={CANNING_CANNER} size={18} className={styles.bonusIcon} />
                 <span className={styles.bonusText}>Canner rewards: <span className={styles.bonusValue}>1/{cannerDivisor}</span></span>
+              </div>
+            )}
+            {nightShiftHours > 0 && (
+              <div className={styles.bonusItem} title="From Night Shift - the farm keeps working this long while you're away">
+                <InlineIcon src={ICON_AUTOMATION} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Time away: <span className={styles.bonusValue}>{nightShiftHours} h</span></span>
+              </div>
+            )}
+            {overclocked && (
+              <div className={styles.bonusItem} title="From Overclock - Stanley's Tune-Ups last longer">
+                <InlineIcon src={SPECIAL_STANLEY} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Tune-Ups: <span className={styles.bonusValue}>{tuneUpSteps(guildState)} s</span></span>
               </div>
             )}
             {!hasEffects && (
@@ -599,8 +683,32 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.tradeoffText}>Canning: <span className={styles.penaltyValue}>-{formatNumber((1 - canningProfitMult) * 100, 0)}%</span></span>
               </div>
             )}
+            {isEngineers && (
+              <div className={styles.tradeoffItem} title="Hands Off - the machines bring in every crop">
+                <InlineIcon src={ICON_HARVEST} size={18} className={styles.tradeoffIcon} />
+                <span className={styles.tradeoffText}>Hand harvests: <span className={styles.penaltyValue}>Off</span></span>
+              </div>
+            )}
+            {cropGradeCut > 0 && (
+              <div className={styles.tradeoffItem} title="Standard Grade - crops sell for less">
+                <InlineIcon src={ICON_MONEY} size={18} className={styles.tradeoffIcon} />
+                <span className={styles.tradeoffText}>Crop value: <span className={styles.penaltyValue}>-{formatNumber(cropGradeCut * 100, 0)}%</span></span>
+              </div>
+            )}
+            {jarGradeCut > 0 && (
+              <div className={styles.tradeoffItem} title="Standard Grade - canned goods sell for less">
+                <InlineIcon src={ICON_CANNING} size={18} className={styles.tradeoffIcon} />
+                <span className={styles.tradeoffText}>Jar value: <span className={styles.penaltyValue}>-{formatNumber(jarGradeCut * 100, 0)}%</span></span>
+              </div>
+            )}
+            {honeyCut > 0 && (
+              <div className={styles.tradeoffItem} title="Noisy Machines - bees make less honey per batch. Sound Dampers cut the loss to 10%">
+                <InlineIcon src={ICON_HONEY} size={18} className={styles.tradeoffIcon} />
+                <span className={styles.tradeoffText}>Honey: <span className={styles.penaltyValue}>-{formatNumber(honeyCut * 100, 0)}%</span></span>
+              </div>
+            )}
             {/* Static trade-offs when there are no computed penalties */}
-            {harvesterSpeedMult === 1 && canningProfitMult === 1 && guild.tradeOffs.map(tradeoff => (
+            {!isEngineers && harvesterSpeedMult === 1 && canningProfitMult === 1 && guild.tradeOffs.map(tradeoff => (
               <div key={tradeoff.id} className={styles.tradeoffItem}>
                 <InlineIcon src={ICON_WARNING} size={18} className={styles.tradeoffIcon} />
                 <span className={styles.tradeoffText}>{tradeoff.description}</span>

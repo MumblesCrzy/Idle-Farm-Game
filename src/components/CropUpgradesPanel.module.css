@@ -236,3 +236,29 @@
   height: 6px;
   background: #6f8fd8;
 }
+
+/* An Engineer's fitted Auto Harvester is always on, so it has a badge instead of a switch */
+.fitted {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 2px solid #6f8fd8;
+  background: #22335a;
+  color: #e3ebff;
+  cursor: default;
+}
+
+/* Bulk Purchasing's discount beside a hired auto-buyer */
+.discount {
+  box-sizing: border-box;
+  height: 16px;
+  padding: 0 6px;
+  border: 1px solid #d9a43a;
+  border-radius: 8px;
+  background: #3a3420;
+  color: #ffe9b0;
+  font: 800 10px system-ui, sans-serif;
+  line-height: 14px;
+  white-space: nowrap;
+}

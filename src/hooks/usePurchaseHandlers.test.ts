@@ -270,6 +270,20 @@ describe('usePurchaseHandlers', () => {
       expect(deps.setMoney).toHaveBeenCalled();
       expect(deps.setVeggies).toHaveBeenCalled();
     });
+
+    it('charges the share of the price an auto-buyer pays', () => {
+      const veggies = createInitialVeggies();
+      veggies[0].fertilizerCost = 100;
+      const deps = createMockDependencies({ veggies, money: 95 });
+      const { result } = renderHook(() => usePurchaseHandlers(deps));
+
+      act(() => {
+        result.current.handleBuyFertilizer(0, 0.9);
+      });
+
+      const pay = deps.setMoney.mock.calls[0][0] as (money: number) => number;
+      expect(pay(95)).toBeCloseTo(5);
+    });
   });
 
   describe('handleBuyHarvester', () => {

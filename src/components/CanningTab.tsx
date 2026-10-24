@@ -1,18 +1,20 @@
 /**
  * The Canning tab, laid out as a kitchen from left to right: the pantry of raw crops, the
  * stove and recipe book, then upgrades, the Preservers' Wax Seals and the kitchen's stats.
+ * For committed Engineers it is the Cannery, a factory floor of machines (FactoryFloor).
  */
 import { memo, useMemo, type FC } from 'react';
 import BaseTab from './BaseTab';
 import CanningPanel from './CanningPanel';
 import CanningUpgradesPanel from './CanningUpgradesPanel';
 import PantryPanel from './PantryPanel';
+import FactoryFloor from './FactoryFloor';
 import InlineIcon from './InlineIcon';
 import type { CanningState, Recipe, RushBatchControl } from '../types/canning';
 import type { GuildState } from '../types/guilds';
 import type { RecipeFilter, RecipeSort, Veggie } from '../types/game';
 import { formatNumber } from '../utils/gameCalculations';
-import { getPreserversValueBonus, isCommittedTo } from '../utils/guildCalculations';
+import { getPreserversValueBonus, isCommittedTo, isEngineer } from '../utils/guildCalculations';
 import { GUILD_PRESERVERS, ICON_WAX_SEAL } from '../config/assetPaths';
 import styles from './CanningTab.module.css';
 
@@ -39,7 +41,11 @@ interface CanningTabProps {
   onRecipeFilterChange: (filter: RecipeFilter) => void;
   onRecipeSortChange: (sort: RecipeSort) => void;
   onCanMakeOnlyChange: (value: boolean) => void;
+  /** Sets a factory floor machine's recipe (Engineers) */
+  onSetMachineRecipe?: (machine: number, recipeId: string | null) => void;
 }
+
+const noop = () => {};
 
 const CanningTab: FC<CanningTabProps> = memo(({
   canningState,
@@ -61,7 +67,8 @@ const CanningTab: FC<CanningTabProps> = memo(({
   canMakeOnly,
   onRecipeFilterChange,
   onRecipeSortChange,
-  onCanMakeOnlyChange
+  onCanMakeOnlyChange,
+  onSetMachineRecipe = noop
 }) => {
   const recipes = canningState?.recipes;
 
@@ -80,7 +87,26 @@ const CanningTab: FC<CanningTabProps> = memo(({
     .sort((a, b) => a.experienceRequired - b.experienceRequired)[0];
   const preserver = !!guildState && isCommittedTo(guildState, 'preservers');
 
-  const mainContent = (
+  const mainContent = guildState && isEngineer(guildState) && canningState ? (
+    <FactoryFloor
+      canningState={canningState}
+      veggies={veggies}
+      hopperCrops={pantryCrops}
+      showHoney={showHoney}
+      regularHoney={regularHoney ?? 0}
+      goldenHoney={goldenHoney ?? 0}
+      heirloomOwned={heirloomOwned}
+      money={money}
+      knowledge={knowledge}
+      guildState={guildState}
+      recipeSort={recipeSort}
+      nextRecipe={nextRecipe}
+      onSetMachineRecipe={onSetMachineRecipe}
+      purchaseUpgrade={purchaseUpgrade}
+      toggleAutoCanning={toggleAutoCanning}
+      formatNumber={formatNumber}
+    />
+  ) : (
     <div className={styles.kitchen}>
       <PantryPanel
         crops={pantryCrops}

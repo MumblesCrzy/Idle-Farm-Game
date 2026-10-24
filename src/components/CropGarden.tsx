@@ -4,10 +4,12 @@
  * Harvester, upgrade levels with their auto-buyers, and Harvest. A click anywhere on a bed, away
  * from its working buttons, shows that crop's upgrades in the tool shed; from the keyboard, its
  * sign does the same. Every bed is the same size, so nothing moves as crops grow, unlock or get
- * picked.
+ * picked. For the Engineers the machines harvest, so each bed shows its Auto Harvester's next pass
+ * where Harvest would be.
  */
 import { memo, type FC, type MouseEvent } from 'react';
 import type { Veggie } from '../types/game';
+import type { GuildState } from '../types/guilds';
 import {
   getVeggieImage,
   ICON_AUTOMATION,
@@ -22,6 +24,9 @@ import {
 } from '../config/assetPaths';
 import { AUTO_PURCHASER_CYCLE_DAYS, GROWTH_COMPLETE_THRESHOLD, veggieSeasonBonuses } from '../config/gameConstants';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
+import { glideFill, glideRing, useGlide } from '../hooks/useGlide';
+import { hasHandsOff } from '../utils/guildCalculations';
+import { machineSpeed } from '../utils/stanley';
 import styles from './CropGarden.module.css';
 
 export type CropGroup = 'vegetables' | 'fruits';
@@ -62,10 +67,6 @@ const isFruit = (crop: Veggie) => crop.cropType === 'fruit';
 const daysToGrowText = (growthMultiplier: number) =>
   growthMultiplier > 0 ? `~${Math.ceil(100 / growthMultiplier)} days` : 'Not growing';
 
-/** The ring around the crop: green as it grows, all gold once it can be harvested */
-const ringFill = (growth: number, ready: boolean) =>
-  ready ? '#f5c040' : `conic-gradient(#8bd48f 0 ${growth}%, #1a120c ${growth}% 100%)`;
-
 interface ToolProps {
   icon: string;
   label: string;
@@ -100,6 +101,8 @@ interface BedProps {
   fullLockNote: boolean;
   money: number;
   growthMultiplier: number;
+  /** The guild's effect on the Auto Harvester */
+  guildState?: GuildState;
   onSelect: CropHandler;
   onHarvest: CropHandler;
   onToggleSell: CropHandler;
@@ -115,6 +118,7 @@ const Bed: FC<BedProps> = memo(({
   fullLockNote,
   money,
   growthMultiplier,
+  guildState,
   onSelect,
   onHarvest,
   onToggleSell,
@@ -122,6 +126,12 @@ const Bed: FC<BedProps> = memo(({
   formatNumber
 }) => {
   const art = getVeggieImage(crop.name);
+  const growth = Math.min(100, Math.max(0, crop.growth));
+  const interval = getHarvesterInterval(crop, guildState);
+  const harvesterShare = interval > 0 ? Math.min(100, (crop.harvesterTimer / interval) * 100) : 0;
+  // The ring and bars glide between game steps, and snap back after a harvest
+  const growthGlides = useGlide(growth);
+  const harvesterGlides = useGlide(harvesterShare);
 
   if (!crop.unlocked) {
     return (
@@ -141,9 +151,12 @@ const Bed: FC<BedProps> = memo(({
   }
 
   const ready = crop.growth >= GROWTH_COMPLETE_THRESHOLD;
-  const growth = Math.min(100, Math.max(0, crop.growth));
-  const interval = getHarvesterInterval(crop);
-  const harvesterShare = interval > 0 ? Math.min(100, (crop.harvesterTimer / interval) * 100) : 0;
+  // The Engineers' machines take every harvest (Hands Off), so the bed shows the machine instead
+  const machine = hasHandsOff(guildState);
+  // Stanley's Tune-Up counts the harvester down twice as fast
+  const speed = machineSpeed(guildState);
+  const secondsToPass = Math.max(0, Math.ceil((interval - crop.harvesterTimer) / speed));
+  const machineText = ready ? `Next pass ${secondsToPass} s` : secondsToPass > 0 ? `${secondsToPass} s` : 'Waiting';
   const secondsToGrow = growthMultiplier > 0 ? Math.max(0, Math.ceil((100 - crop.growth) / growthMultiplier)) : null;
   const days = daysToGrowText(growthMultiplier);
   const bedClass = [
@@ -176,7 +189,11 @@ const Bed: FC<BedProps> = memo(({
         className={styles.plant}
         title={secondsToGrow === null ? 'Not growing right now' : `Growth: ${secondsToGrow} seconds until grown`}
       >
-        <span className={styles.ring} style={{ background: ringFill(growth, ready) }} aria-hidden="true">
+        <span
+          className={`${styles.ring} ${ready ? styles.ripeRing : ''} glide-ring`}
+          style={glideRing(growth, growthGlides)}
+          aria-hidden="true"
+        >
           <span><img src={art} alt="" /></span>
         </span>
         <span className={ready ? styles.ripeChip : styles.growthChip}>
@@ -195,7 +212,9 @@ const Bed: FC<BedProps> = memo(({
           <img src={crop.sellEnabled ? ICON_MONEY : ICON_CRATE} alt="" aria-hidden="true" />
           {crop.sellEnabled ? 'Sell' : 'Hold'}
         </button>
-        {!crop.harvesterOwned ? (
+        {machine ? (
+          speed > 1 && <span className={styles.tuneUpChip} title="Stanley's Tune-Up: this machine runs twice as fast">×2</span>
+        ) : !crop.harvesterOwned ? (
           <button
             type="button"
             className={styles.buyHarvester}
@@ -209,10 +228,10 @@ const Bed: FC<BedProps> = memo(({
         ) : crop.autoHarvesterEnabled ? (
           <span
             className={styles.harvester}
-            title={`Auto Harvester: ${Math.max(0, interval - crop.harvesterTimer)} seconds until next harvest attempt`}
+            title={`Auto Harvester: ${secondsToPass} seconds until next harvest attempt`}
           >
             <img src={UPGRADE_AUTO_HARVESTER} alt="Auto Harvester" />
-            <span className={styles.harvesterBar}><span style={{ width: `${harvesterShare}%` }} /></span>
+            <span className={styles.harvesterBar}><span className="glide" style={glideFill(harvesterShare, harvesterGlides)} /></span>
             <em>{interval} s</em>
           </span>
         ) : (
@@ -241,17 +260,28 @@ const Bed: FC<BedProps> = memo(({
         />
       </div>
 
-      <button
-        type="button"
-        className={ready ? styles.harvestReady : styles.harvestGrowing}
-        onClick={() => onHarvest(index)}
-        disabled={!ready}
-        aria-label={ready ? `Harvest ${crop.name}` : `${crop.name} is growing`}
-        // The first-harvest tutorial points at the picked crop's button
-        data-tutorial={isActive ? 'harvest-button' : undefined}
-      >
-        {ready ? 'Harvest' : 'Growing'}
-      </button>
+      {machine ? (
+        <div
+          className={ready ? `${styles.machine} ${styles.machineRipe}` : styles.machine}
+          title={`Auto Harvester: every ${interval} s it takes the crop, if it is ripe`}
+        >
+          <img src={UPGRADE_AUTO_HARVESTER} alt="" aria-hidden="true" />
+          <span className={styles.machineBar} aria-hidden="true"><span className="glide" style={glideFill(harvesterShare, harvesterGlides)} /></span>
+          <span><span className="sr-only">Auto Harvester: </span>{machineText}</span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={ready ? styles.harvestReady : styles.harvestGrowing}
+          onClick={() => onHarvest(index)}
+          disabled={!ready}
+          aria-label={ready ? `Harvest ${crop.name}` : `${crop.name} is growing`}
+          // The first-harvest tutorial points at the picked crop's button
+          data-tutorial={isActive ? 'harvest-button' : undefined}
+        >
+          {ready ? 'Harvest' : 'Growing'}
+        </button>
+      )}
     </li>
   );
 });
@@ -275,6 +305,8 @@ interface CropGardenProps {
   onToggleSell: CropHandler;
   onBuyHarvester: CropHandler;
   formatNumber: FormatNumber;
+  /** The guild's effect on Auto Harvesters */
+  guildState?: GuildState;
 }
 
 const CropGarden: FC<CropGardenProps> = memo(({
@@ -291,7 +323,8 @@ const CropGarden: FC<CropGardenProps> = memo(({
   onHarvest,
   onToggleSell,
   onBuyHarvester,
-  formatNumber
+  formatNumber,
+  guildState
 }) => {
   const showFruits = group === 'fruits';
   const beds = veggies
@@ -304,6 +337,8 @@ const CropGarden: FC<CropGardenProps> = memo(({
   };
   const autoBuyersWorking = veggies.some(crop => crop.autoPurchasers.some(ap => ap.owned && ap.active));
   const daysToShop = AUTO_PURCHASER_CYCLE_DAYS - globalAutoPurchaseTimer;
+  const machines = hasHandsOff(guildState);
+  const shopGlides = useGlide(globalAutoPurchaseTimer);
 
   return (
     <section className={styles.garden} aria-label="Garden">
@@ -325,14 +360,16 @@ const CropGarden: FC<CropGardenProps> = memo(({
             Vegetables <span className={styles.count}>{unlockedOf(false)}</span>
           </h3>
         )}
-        <span className={styles.hint}>Click a bed to see its upgrades in the shed</span>
+        <span className={styles.hint}>
+          {machines ? 'Machines harvest every bed. Click a bed to see its upgrades' : 'Click a bed to see its upgrades in the shed'}
+        </span>
         <span className={styles.spacer} />
         {autoBuyersWorking && (
           <div className={styles.timer} title={`Auto-buyers buy a level of their upgrade every ${AUTO_PURCHASER_CYCLE_DAYS} days, when you can afford it`}>
             <img src={ICON_AUTOMATION} alt="" aria-hidden="true" />
             Auto-buyers shop in {daysToShop} {daysToShop === 1 ? 'day' : 'days'}
             <span className={styles.miniBar}>
-              <span style={{ width: `${(globalAutoPurchaseTimer / AUTO_PURCHASER_CYCLE_DAYS) * 100}%` }} />
+              <span className="glide" style={glideFill((globalAutoPurchaseTimer / AUTO_PURCHASER_CYCLE_DAYS) * 100, shopGlides)} />
             </span>
           </div>
         )}
@@ -354,6 +391,7 @@ const CropGarden: FC<CropGardenProps> = memo(({
             onToggleSell={onToggleSell}
             onBuyHarvester={onBuyHarvester}
             formatNumber={formatNumber}
+            guildState={guildState}
           />
         ))}
       </ul>
@@ -362,7 +400,8 @@ const CropGarden: FC<CropGardenProps> = memo(({
         <span><span className={`${styles.dot} ${styles.dotOn}`} aria-hidden="true" />auto-buyer on</span>
         <span><span className={`${styles.dot} ${styles.dotPaused}`} aria-hidden="true" />paused</span>
         <span><span className={`${styles.dot} ${styles.dotNone}`} aria-hidden="true" />no auto-buyer</span>
-        <span>Hold keeps a crop out of Sell All and the Merchant</span>
+        <span>{machines ? 'Gold: ripe, the machine takes it on its next pass' : 'Hold keeps a crop out of Sell All and the Merchant'}</span>
+        {machines && <span>×2: Stanley's Tune-Up is running</span>}
       </div>
     </section>
   );

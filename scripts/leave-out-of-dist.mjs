@@ -14,6 +14,9 @@ const NOT_SHIPPED = [
   'Glutton.png',
   'Glutton Sweater.png',
   'Glutton Halloween Vampire.png',
+  // Stanley's full-size originals: the game loads the 256 px copies
+  'Stanley.png',
+  'Stanley Halloween.png',
   // Art for the itch.io page
   'Background_spring.png',
   'Cover Image.png',

@@ -95,6 +95,22 @@ button.hex:disabled {
   background: #352c1c;
 }
 
+/* The honey in a cell, rising from the bottom as the next batch nears */
+.honey {
+  position: absolute;
+  inset: 0;
+  background: #8a5a12;
+}
+
+/* Winter: a resting hive's cell is frosty */
+.restingFill {
+  background: #26303c;
+}
+
+.restingFill > .honey {
+  background: #3d4f66;
+}
+
 .content {
   position: relative;
   display: flex;

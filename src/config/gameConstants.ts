@@ -327,7 +327,7 @@ export const ARCHIE_LAST_CLICK_KEY = 'archieLastClickTime';
 export const ACTIVE_TAB_KEY = 'farmIdleActiveTab';
 export const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
 
-/** Longest absence the game credits: the offline and hidden-tab catch-ups stop at 8 hours */
+/** Longest absence the game credits: the offline and hidden-tab catch-ups stop at 8 hours, or 12 with the Engineers' Night Shift (getOfflineCapMs) */
 export const MAX_OFFLINE_MS = 8 * 60 * 60 * 1000;
 
 // ============================================================================

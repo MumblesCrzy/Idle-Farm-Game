@@ -7,7 +7,7 @@
 
 import { AUTO_HARVEST_EXPERIENCE_MULTIPLIER, AUTO_HARVEST_KNOWLEDGE_MULTIPLIER } from '../config/gameConstants';
 import type { GuildState } from '../types/guilds';
-import { getGrowersManualHarvestBonus, getBlessedCropChance, getQualityGradingExpBonus, getGuildBeeYieldBonus } from './guildCalculations';
+import { getGrowersManualHarvestBonus, getBlessedCropChance, getQualityGradingExpBonus, getGuildBeeYieldBonus, getAutoHarvestYieldBonus, hasFullAutoHarvestRewards } from './guildCalculations';
 
 /**
  * Result of harvest amount calculation
@@ -46,16 +46,20 @@ export function calculateHarvestAmount(
     harvestAmount = Math.ceil(harvestAmount * 1.05);
   }
   
-  // Apply bee yield bonus from bee boxes and Meadow Magic upgrades
-  // Plus guild bee synergy bonus
-  let totalBeeBonus = beeYieldBonus;
+  // Apply bee yield bonus from bee boxes and Meadow Magic upgrades, the guild bee synergy
+  // bonus and, on auto harvests, the Engineers' Precision Tools and Combine Header. One
+  // rounding for all of them, so each small bonus doesn't round a crop up on its own.
+  let yieldBonus = beeYieldBonus;
   if (guildState) {
-    totalBeeBonus += getGuildBeeYieldBonus(guildState);
+    yieldBonus += getGuildBeeYieldBonus(guildState);
+    if (isAutoHarvest) {
+      yieldBonus += getAutoHarvestYieldBonus(guildState);
+    }
   }
-  if (totalBeeBonus > 0) {
-    harvestAmount = Math.ceil(harvestAmount * (1 + totalBeeBonus));
+  if (yieldBonus > 0) {
+    harvestAmount = Math.ceil(harvestAmount * (1 + yieldBonus));
   }
-  
+
   // Apply Blessed Crop chance (Soilbound Pact) - chance for double yield
   // This triggers on manual harvest OR when soilbound pact causes self-harvest
   if (!isAutoHarvest && guildState) {
@@ -143,19 +147,22 @@ export function calculateHarvestRewards(
     guildState
   );
   
+  // Auto harvests earn less experience and knowledge, except the Engineers' machines
+  const reducedRewards = isAutoHarvest && !hasFullAutoHarvestRewards(guildState);
+
   const experienceGain = calculateExperienceGain(
     harvestResult.amount,
     knowledge,
-    isAutoHarvest,
+    reducedRewards,
     guildState
   );
-  
+
   const knowledgeGain = calculateKnowledgeGain(
     almanacLevel,
     farmTier,
-    isAutoHarvest
+    reducedRewards
   );
-  
+
   return {
     harvestAmount: harvestResult.amount,
     experienceGain,

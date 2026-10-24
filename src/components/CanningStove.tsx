@@ -6,6 +6,7 @@
 import { memo, type FC } from 'react';
 import type { CanningProcess, Recipe, RushBatchControl } from '../types/canning';
 import { CANNING_CANNER, ICON_CANNING, ICON_WAX_SEAL } from '../config/assetPaths';
+import { glideFill } from '../hooks/useGlide';
 import styles from './CanningStove.module.css';
 
 interface CanningStoveProps {
@@ -77,7 +78,7 @@ const CanningStove: FC<CanningStoveProps> = memo(({ processes, recipes, slots, j
                 aria-valuemax={100}
                 aria-valuenow={Math.floor(done)}
               >
-                <span className={styles.fill} style={{ width: `${done}%` }} />
+                <span className={`${styles.fill} glide`} style={glideFill(done, true)} />
               </span>
             </li>
           );

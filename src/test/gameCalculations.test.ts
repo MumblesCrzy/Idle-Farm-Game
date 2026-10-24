@@ -388,6 +388,14 @@ describe('canMakePurchase', () => {
     });
   });
 
+  describe('with a discount', () => {
+    it('counts what an auto-buyer with Bulk Purchasing pays', () => {
+      const veggie = createVeggieForPurchase();
+      expect(canMakePurchase(veggie, 'fertilizer', 91, 0, 'money', undefined, undefined, 0.91)).toBe(true);
+      expect(canMakePurchase(veggie, 'fertilizer', 90, 0, 'money', undefined, undefined, 0.91)).toBe(false);
+    });
+  });
+
   describe('betterSeeds purchase', () => {
     it('should allow purchase with enough money', () => {
       const veggie = createVeggieForPurchase();

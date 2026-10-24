@@ -5,7 +5,7 @@
  */
 
 import type { Guild, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
-import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS, ICON_GUILDS, ICON_SIGIL, ICON_WAX_SEAL } from '../config/assetPaths';
+import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS, ICON_GEARS, ICON_GUILDS, ICON_SIGIL, ICON_WAX_SEAL } from '../config/assetPaths';
 
 /** Maximum number of upgrades a player can sample from each guild before committing */
 export const MAX_SAMPLED_UPGRADES_PER_GUILD = 2;
@@ -408,36 +408,200 @@ export const PRESERVERS_UPGRADES: GuildUpgrade[] = [
 ];
 
 export const ENGINEERS_UPGRADES: GuildUpgrade[] = [
+  // Tier 1 - Available before commitment (sampling)
   {
     id: 'engineers_automation_boost',
     name: 'Automation Efficiency',
-    description: 'Auto-harvesters work faster',
+    description: 'Oiled gears and tighter belts speed up every Auto Harvester',
     guild: 'engineers',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 1000,
+    baseCost: 50,
     costScaling: 1.5,
-    currencyType: 'money',
-    effectPerLevel: 0.05,
-    effectTemplate: '+{value}% auto-harvester speed',
+    currencyType: 'guildTokens',
+    effectPerLevel: 0.04,
+    effectTemplate: '+{value}% Auto Harvester speed',
     purchased: false
   },
   {
     id: 'engineers_precision_tools',
     name: 'Precision Tools',
-    description: 'Better tools yield more per harvest',
+    description: 'Finer blades leave less in the field',
     guild: 'engineers',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 500,
+    baseCost: 30,
     costScaling: 1.5,
-    currencyType: 'knowledge',
+    currencyType: 'guildTokens',
     effectPerLevel: 0.02,
-    effectTemplate: '+{value}% yield from automated harvests',
+    effectTemplate: '+{value}% crops from auto harvests',
+    purchased: false
+  },
+  // Tier 2 - Post-commitment (Gears)
+  {
+    id: 'engineers_hydraulic_arms',
+    name: 'Hydraulic Arms',
+    description: 'Stronger arms swing through the rows faster',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 225,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.05,
+    effectTemplate: '+{value}% Auto Harvester speed',
+    purchased: false
+  },
+  {
+    id: 'engineers_combine_header',
+    name: 'Combine Header',
+    description: 'A wider cut brings in more on every pass',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 300,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.03,
+    effectTemplate: '+{value}% crops from auto harvests',
+    purchased: false
+  },
+  {
+    id: 'engineers_bulk_purchasing',
+    name: 'Bulk Purchasing',
+    description: 'Buying in bulk, and knowing where to look, brings the price down',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 300,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.03,
+    effectTemplate: 'Auto-buyers pay {value}% less for what they buy',
+    purchased: false
+  },
+  {
+    id: 'engineers_sprinkler_network',
+    name: 'Sprinkler Network',
+    description: 'Pipes and timers water every bed on schedule',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 750,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Irrigation gives +30% growth instead of +15%, and Heatwaves no longer slow crops',
+    purchased: false
+  },
+  {
+    id: 'engineers_climate_control',
+    name: 'Climate Control',
+    description: 'Heaters and vents keep the glass at a perfect day',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 1050,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'The Greenhouse adds +20% growth in every season',
+    purchased: false
+  },
+  {
+    id: 'engineers_conveyor_belts',
+    name: 'Conveyor Belts',
+    description: 'Jars roll from station to station without waiting',
+    guild: 'engineers',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 300,
+    costScaling: 1.8,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 0.03,
+    effectTemplate: '-{value}% canning time',
+    purchased: false
+  },
+  // Tier 3 - Advanced
+  {
+    id: 'engineers_mass_production',
+    name: 'Mass Production',
+    description: 'Bigger kettles fill more jars from the same batch',
+    guild: 'engineers',
+    tier: 3,
+    level: 0,
+    maxLevel: 5,
+    isOneTime: false,
+    baseCost: 600,
+    costScaling: 2.2,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Jars per batch: +{value}',
+    effectDisplay: 'number',
+    purchased: false
+  },
+  {
+    id: 'engineers_sound_dampers',
+    name: 'Sound Dampers',
+    description: 'Padding around the machines lets the bees work in peace',
+    guild: 'engineers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 900,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Bees lose 10% of their honey instead of 25%',
+    purchased: false
+  },
+  {
+    id: 'engineers_overclock',
+    name: 'Overclock',
+    description: 'Stanley knows a trick or two with the governors',
+    guild: 'engineers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 900,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: "Stanley's Tune-Ups last 90 seconds instead of 60",
+    purchased: false
+  },
+  {
+    id: 'engineers_night_shift',
+    name: 'Night Shift',
+    description: 'The factory never closes',
+    guild: 'engineers',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 1800,
+    costScaling: 1,
+    currencyType: 'guildCurrency',
+    effectPerLevel: 1,
+    effectTemplate: 'Time away counts up to 12 hours instead of 8',
     purchased: false
   }
 ];
@@ -622,27 +786,59 @@ export const GUILDS: Guild[] = [
       border: '#3454b4'
     },
     emblem: GUILD_ENGINEERS,
-    currency: { name: 'Guild Currency', icon: ICON_GUILDS, earnedFrom: 'Coming in a future update' },
-    joinable: false,
+    currency: { name: 'Gears', icon: ICON_GEARS, earnedFrom: 'Made by machines: 1 per 10 auto harvests and 1 per 5 canning batches, even while you are away' },
+    joinable: true,
     upgrades: ENGINEERS_UPGRADES,
     passiveBonuses: [
       {
         id: 'engineers_auto_bonus',
         name: 'Automated Excellence',
-        description: '+25% auto-harvester efficiency',
+        description: 'Every crop gets an Auto Harvester. They run 25% faster, and their harvests give full experience and knowledge',
         type: 'automation',
         value: 0.25,
         target: 'auto_harvest'
+      },
+      {
+        id: 'engineers_industrial_canning',
+        name: 'Industrial Canning',
+        description: "Batches take 30% less time, and the Canner's batches give half the knowledge and canning experience instead of a tenth",
+        type: 'speed',
+        value: 0.3,
+        target: 'canning'
+      },
+      {
+        id: 'engineers_gears',
+        name: 'Gears',
+        description: 'Machines earn Gears, even while you are away',
+        type: 'special',
+        value: 1,
+        target: 'automation'
       }
     ],
     tradeOffs: [
       {
-        id: 'engineers_manual_penalty',
-        name: 'Mechanical Mindset',
-        description: 'Manual harvesting provides no bonus yield',
-        type: 'yield',
+        id: 'engineers_hands_off',
+        name: 'Hands Off',
+        description: 'No manual harvests: the machines bring in every crop',
+        type: 'special',
         value: 0,
-        target: 'manual_harvest_bonus'
+        target: 'manual_harvest'
+      },
+      {
+        id: 'engineers_standard_grade',
+        name: 'Standard Grade',
+        description: 'Crops sell for 15% less and canned goods for 25% less',
+        type: 'price',
+        value: 0.15,
+        target: 'all_sales'
+      },
+      {
+        id: 'engineers_noisy_machines',
+        name: 'Noisy Machines',
+        description: 'Bees make 25% less honey',
+        type: 'yield',
+        value: 0.25,
+        target: 'honey'
       }
     ]
   },

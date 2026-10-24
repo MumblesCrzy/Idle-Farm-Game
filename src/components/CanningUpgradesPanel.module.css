@@ -106,3 +106,44 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* The Engineers' factory floor: steel rows, brass when the player can afford one */
+.floor {
+  border: 2px solid #4a5a70;
+  background: #2a3340;
+}
+
+.floor .title {
+  color: #ffffff;
+}
+
+.floor .upgrade {
+  border-color: #56647a;
+  background: #323d4c;
+}
+
+.floor .affordable {
+  border-color: #d9a43a;
+  background: #3a3420;
+  box-shadow: 0 0 6px rgba(217, 164, 58, 0.5);
+}
+
+.floor .affordable:hover {
+  background: #4a4228;
+}
+
+.floor .maxed {
+  border-color: #6fdc74;
+}
+
+.floor .level {
+  color: #cfd8e3;
+}
+
+.floor .effect {
+  color: #aab6c6;
+}
+
+.floor .cost {
+  color: #ffe9b0;
+}

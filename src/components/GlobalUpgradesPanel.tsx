@@ -22,6 +22,9 @@ import {
 } from '../config/gameConstants';
 import { VEGGIE_CONFIGS } from '../data/veggieConfigs';
 import { FRUIT_CONFIGS } from '../data/fruitConfigs';
+import type { GuildState } from '../types/guilds';
+import { getGreenhouseGrowthBonus, getIrrigationGrowthBonus, hasHeatwaveIrrigation, heirloomSeedsName } from '../utils/guildCalculations';
+import { glideFill, useGlide } from '../hooks/useGlide';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
@@ -50,6 +53,8 @@ interface GlobalUpgradesPanelProps {
   handleBuyGreenhouse: () => void;
   handleBuyHeirloom: () => void;
   formatNumber: FormatNumber;
+  /** The Engineers change what Irrigation and the Greenhouse do, and call Heirloom Seeds GMO Seeds */
+  guildState?: GuildState;
 }
 
 interface FarmUpgradeRowProps {
@@ -140,9 +145,14 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   handleBuyAutoSell,
   handleBuyGreenhouse,
   handleBuyHeirloom,
-  formatNumber
+  formatNumber,
+  guildState
 }) => {
   const merchantDay = day % MERCHANT_DAYS;
+  const merchantGlides = useGlide(merchantDay);
+  const irrigationPct = Math.round(getIrrigationGrowthBonus(guildState) * 100);
+  const sprinklers = hasHeatwaveIrrigation(guildState);
+  const greenhousePct = Math.round(getGreenhouseGrowthBonus(guildState) * 100);
   const shared = { money, knowledge, formatNumber };
 
   return (
@@ -164,11 +174,13 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         {...shared}
         icon={UPGRADE_IRRIGATION}
         name="Irrigation"
-        effect="+15% growth, no drought"
+        effect={sprinklers ? `+${irrigationPct}%, no drought or heatwave` : `+${irrigationPct}% growth, no drought`}
         owned={irrigationOwned}
         cost={irrigationCost}
         knowledgeCost={irrigationKnCost}
-        title="Negates drought penalty and provides +15% growth rate bonus."
+        title={sprinklers
+          ? `Negates drought and heatwave penalties and provides +${irrigationPct}% growth rate bonus (Sprinkler Network).`
+          : `Negates drought penalty and provides +${irrigationPct}% growth rate bonus.`}
         onBuy={handleBuyIrrigation}
       />
 
@@ -186,7 +198,7 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         onBuy={handleBuyAutoSell}
         footer={autoSellOwned ? (
           <span className={styles.merchantBar} aria-hidden="true">
-            <span style={{ width: `${(merchantDay / MERCHANT_DAYS) * 100}%` }} />
+            <span className="glide" style={glideFill((merchantDay / MERCHANT_DAYS) * 100, merchantGlides)} />
           </span>
         ) : undefined}
       />
@@ -195,18 +207,18 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         {...shared}
         icon={UPGRADE_GREENHOUSE}
         name="Greenhouse"
-        effect="No winter slowdown"
+        effect={greenhousePct > 0 ? `+${greenhousePct}% growth all year` : 'No winter slowdown'}
         owned={greenhouseOwned}
         cost={GREENHOUSE_COST_PER_PLOT * maxPlots}
         knowledgeCost={GREENHOUSE_KN_COST_PER_PLOT * maxPlots}
-        title={`Negates winter growth penalty. Cost is based max plots for your current farm: (${maxPlots} × $${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} & ${maxPlots} x ${formatNumber(GREENHOUSE_KN_COST_PER_PLOT, 1)} Kn).`}
+        title={`Negates winter growth penalty${greenhousePct > 0 ? ` and adds +${greenhousePct}% growth in every season (Climate Control)` : ''}. Cost is based max plots for your current farm: (${maxPlots} × $${formatNumber(GREENHOUSE_COST_PER_PLOT, 1)} & ${maxPlots} x ${formatNumber(GREENHOUSE_KN_COST_PER_PLOT, 1)} Kn).`}
         onBuy={handleBuyGreenhouse}
       />
 
       <FarmUpgradeRow
         {...shared}
         icon={UPGRADE_HEIRLOOM_SEEDS}
-        name="Heirloom Seeds"
+        name={heirloomSeedsName(guildState)}
         effect="Doubles Better Seeds"
         owned={heirloomOwned}
         cost={heirloomMoneyCost}

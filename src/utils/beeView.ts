@@ -87,9 +87,11 @@ export interface BeeRowContext {
   goldenHoney: number;
   /** The Beekeeper's speed bonus while he works, 0 when he doesn't */
   beekeeperBonus: number;
+  /** Honey per batch as a share, from the player's guild: the Engineers' bees make less */
+  honeyMultiplier?: number;
 }
 
-function effectOf(upgrade: BeeUpgrade, { levels, hives, beekeeperBonus }: BeeRowContext): string {
+function effectOf(upgrade: BeeUpgrade, { levels, hives, beekeeperBonus, honeyMultiplier = 1 }: BeeRowContext): string {
   const atMax = upgrade.repeatable && upgrade.maxLevel !== undefined && upgrade.level >= upgrade.maxLevel;
   switch (upgrade.id) {
     case 'busy_bees': {
@@ -128,7 +130,7 @@ function effectOf(upgrade: BeeUpgrade, { levels, hives, beekeeperBonus }: BeeRow
     case 'nectar_efficiency':
       return levels.nectarEfficiency
         ? '+10% honey a batch'
-        : `${lbsPerBatch(levels)} lbs a batch, then ${lbsPerBatch({ ...levels, nectarEfficiency: true })}`;
+        : `${lbsPerBatch(levels, honeyMultiplier)} lbs a batch, then ${lbsPerBatch({ ...levels, nectarEfficiency: true }, honeyMultiplier)}`;
     case 'winter_hardiness':
       return 'Bees work through winter';
     case 'honey_jars':

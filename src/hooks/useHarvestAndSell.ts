@@ -3,7 +3,7 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
-import { applyGuildPriceBonuses, awardGuildTokens, getUpgradeLevel, isCommittedTo } from '../utils/guildCalculations';
+import { applyGuildPriceBonuses, awardGuildTokens, getUpgradeLevel, hasHandsOff, isCommittedTo } from '../utils/guildCalculations';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { useLatestRef } from './useLatestRef';
@@ -298,8 +298,10 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
    * number (a click event, say) means the active veggie.
    */
   const handleHarvest = useCallback((cropIndex?: number) => {
+    // Engineers leave the harvest to their machines (Hands Off)
+    if (hasHandsOff(guildStateRef.current)) return;
     harvestVeggie(typeof cropIndex === 'number' ? cropIndex : activeVeggie, false, logHarvest);
-  }, [harvestVeggie, activeVeggie, logHarvest]);
+  }, [harvestVeggie, activeVeggie, logHarvest, guildStateRef]);
 
   /**
    * Ritual harvest (Growers Guild, Ritual Circles): spend sigils to harvest all ready crops
@@ -349,12 +351,14 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
    * Toggle the auto-harvester for a specific veggie.
    */
   const handleToggleAutoHarvester = useCallback((index: number) => {
+    // Engineers' harvesters stay on: with Hands Off, a paused crop would never be picked
+    if (hasHandsOff(guildStateRef.current)) return;
     setVeggies((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], autoHarvesterEnabled: !updated[index].autoHarvesterEnabled };
       return updated;
     });
-  }, [setVeggies]);
+  }, [setVeggies, guildStateRef]);
 
   /**
    * Sell handler for merchant visits. The sale is worked out from current state

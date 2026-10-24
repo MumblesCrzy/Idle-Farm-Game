@@ -38,6 +38,13 @@ export type CanningProcess = {
   totalTime: number; // Total processing time (including speed bonuses)
   completed: boolean; // Whether this process is finished
   automated?: boolean; // Whether this process was started automatically
+  machine?: number; // The factory floor machine running this batch (Engineers)
+};
+
+// One machine on the Engineers' factory floor, one per stove slot
+export type CanningMachine = {
+  recipeId: string | null; // The recipe it makes again and again, or null when none is set
+  jarsMade: number; // Jars it has made since its recipe was set
 };
 
 export type CanningUpgrade = {
@@ -78,6 +85,10 @@ export type CanningState = {
     selectedRecipes: string[]; // Which recipes to auto-make
     priorityOrder: string[]; // Order to attempt recipes
   };
+
+  // The Engineers' factory floor (missing until a member's floor is first set up)
+  machines?: CanningMachine[];
+  floorBatches?: number; // Batches off the factory floor, ever
 };
 
 // Rush Batch (Preservers Guild): what the Canning tab needs to show and use the button

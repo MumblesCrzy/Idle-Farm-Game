@@ -1,6 +1,7 @@
 /**
  * The Kitchen's pantry: the raw crops and honey canning uses, with what's on hand. Crops a
- * recipe can't get any of show in red, so a stash Dunkin emptied is easy to spot.
+ * recipe can't get any of show in red, so a stash Dunkin emptied is easy to spot. On the
+ * Engineers' factory floor the same list is the hopper, in steel.
  */
 import { memo, type FC } from 'react';
 import { getVeggieImage, ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
@@ -14,11 +15,15 @@ interface PantryPanelProps {
   regularHoney?: number;
   goldenHoney?: number;
   formatNumber: (num: number, decimalPlaces?: number) => string;
+  /** The heading: Pantry in the Kitchen, Hopper on the factory floor */
+  title?: string;
+  /** Steel, for the factory floor */
+  hopper?: boolean;
 }
 
-const PantryPanel: FC<PantryPanelProps> = memo(({ crops, showHoney, regularHoney = 0, goldenHoney = 0, formatNumber }) => (
-  <section className={styles.pantry} aria-labelledby="pantry-heading">
-    <h2 id="pantry-heading" className={styles.title}>Pantry</h2>
+const PantryPanel: FC<PantryPanelProps> = memo(({ crops, showHoney, regularHoney = 0, goldenHoney = 0, formatNumber, title = 'Pantry', hopper = false }) => (
+  <section className={hopper ? `${styles.pantry} ${styles.hopper}` : styles.pantry} aria-labelledby="pantry-heading">
+    <h2 id="pantry-heading" className={styles.title}>{title}</h2>
     <ul className={styles.list}>
       {crops.map(crop => (
         <li key={crop.name} className={`${styles.item} ${crop.stash < 1 ? styles.empty : ''}`}>

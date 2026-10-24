@@ -2,7 +2,27 @@
   margin-bottom: 0.5rem;
   font-size: 1rem;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+/* The day, season and weather keep their room, so the line holds still as they change */
+.day {
+  display: inline-block;
+  min-width: 64px;
+  text-align: left;
+}
+
+.seasonName {
+  display: inline-block;
+  min-width: 62px;
+  text-align: left;
+}
+
+.weatherName {
+  display: inline-block;
+  min-width: 74px;
+  text-align: left;
 }
 
 .seasonWeather {
@@ -32,11 +52,41 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
   flex-wrap: wrap;
   font-size: 1rem;
+  font-variant-numeric: tabular-nums;
   margin-bottom: 1rem;
   text-align: center;
+}
+
+/* Each stat keeps room for long numbers, so the row holds still as they change */
+.tierStat {
+  min-width: 120px;
+}
+
+.plotsStat {
+  min-width: 160px;
+}
+
+.moneyStat {
+  min-width: 155px;
+}
+
+.knowledgeStat {
+  min-width: 175px;
+}
+
+.currencyStat {
+  min-width: 150px;
+}
+
+.eventStat {
+  min-width: 170px;
+}
+
+.stashStat {
+  min-width: 115px;
 }
 
 .statItem {
@@ -72,6 +122,36 @@
   margin-right: 4px;
 }
 
+/* Stanley's Tune-Up: one size whether it runs or not, no taller than the other stats */
+.tuneUp {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 240px;
+  height: 26px;
+  padding: 0 10px 0 6px;
+  border: 1px solid #6fdc74;
+  border-radius: 13px;
+  background: #1f4a2a;
+  color: #d9f7d6;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Between Tune-Ups: the same chip, quiet, on its own dark ground so it reads in both themes */
+.tuneUpIdle {
+  border-style: dashed;
+  border-color: #6e6e6e;
+  background: #2b2b2b;
+  color: #c8c8c8;
+  font-weight: 700;
+}
+
+.tuneUpIdle img {
+  opacity: 0.55;
+}
+
 .stashButton {
   padding: 4px 8px;
   font-size: 0.85rem;
@@ -99,17 +179,23 @@
   object-fit: contain;
 }
 
-/* Farm Upgrade Button Styles */
+/* Farm Upgrade Button Styles. The row keeps the button's height whether or not it shows */
 .farmUpgradeContainer {
-  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 59px;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
-  text-align: center;
 }
 
 .farmUpgradeButton {
   display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 59px;
   padding: 0.5rem;
+  white-space: nowrap;
   gap: 1rem;
   vertical-align: middle;
   font-size: 1rem;
@@ -138,8 +224,22 @@
 
 .farmUpgradeText {
   color: #fff;
-  margin-top: 0.55rem;
-  margin-bottom: 0.55rem;
+}
+
+/* While plots are free: what the next farm costs and when it opens */
+.farmUpgradeWaiting {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 40px;
+  margin: 0;
+  padding: 0 16px 0 8px;
+  border: 1px dashed #4a5568;
+  border-radius: 8px;
+  background: #1f2328;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .farmUpgradeLabel {

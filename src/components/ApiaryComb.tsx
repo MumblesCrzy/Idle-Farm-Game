@@ -8,6 +8,7 @@ import { memo, type CSSProperties, type FC } from 'react';
 import type { BeeBox } from '../types/bees';
 import { storedBatches } from '../utils/beeProduction';
 import { HIVE_MILESTONES } from '../utils/beeView';
+import { glideFill, useGlide } from '../hooks/useGlide';
 import { BEE_HIVE_EXPANSION, ICON_BEE_HIVE, ICON_HONEY } from '../config/assetPaths';
 import styles from './ApiaryComb.module.css';
 
@@ -52,14 +53,16 @@ interface HiveCellProps {
 const HiveCell: FC<HiveCellProps> = ({ box, number, batchDays, lbsPerBatch, onCollect }) => {
   const waiting = storedBatches(box);
   const fill = Math.min(100, Math.max(0, (box.productionTimer / batchDays) * 100));
+  // Honey glides up between game steps, and drops straight back when a batch is made
+  const glides = useGlide(fill);
   const daysLeft = Math.max(1, Math.ceil(batchDays - box.productionTimer));
   // Winter stops a hive without Winter Hardiness; its cell turns frosty
   const resting = !box.active;
-  const fillStyle: CSSProperties = {
-    background: resting
-      ? `linear-gradient(to top, #3d4f66 ${fill}%, #26303c ${fill}%)`
-      : `linear-gradient(to top, #8a5a12 ${fill}%, #352c1c ${fill}%)`
-  };
+  const honey = (
+    <span className={resting ? `${styles.fill} ${styles.restingFill}` : styles.fill}>
+      <span className={`${styles.honey} glide`} style={glideFill(fill, glides, 'y')} />
+    </span>
+  );
   const art = <img src={ICON_BEE_HIVE} alt="" className={styles.hiveArt} />;
 
   if (waiting > 0) {
@@ -71,7 +74,7 @@ const HiveCell: FC<HiveCellProps> = ({ box, number, batchDays, lbsPerBatch, onCo
         aria-label={`Collect hive ${number}: ${batchesText(waiting)}, ${waiting * lbsPerBatch} lbs`}
       >
         <span className={styles.edge} />
-        <span className={styles.fill} style={fillStyle} />
+        {honey}
         <span className={styles.content}>{art}<span className={styles.readyPill}>{waiting} ready</span></span>
       </button>
     );
@@ -80,7 +83,7 @@ const HiveCell: FC<HiveCellProps> = ({ box, number, batchDays, lbsPerBatch, onCo
   return (
     <div className={`${styles.hex} ${resting ? styles.resting : ''}`}>
       <span className={styles.edge} />
-      <span className={styles.fill} style={fillStyle} />
+      {honey}
       <span className={styles.content} aria-hidden="true">
         {art}
         <span className={resting ? styles.restPill : styles.dayPill}>{resting ? 'Resting' : daysText(daysLeft)}</span>

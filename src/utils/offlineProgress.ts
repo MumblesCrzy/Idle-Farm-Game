@@ -10,7 +10,7 @@ import type { GuildState } from '../types/guilds';
 import type { CanningProcess } from '../types/canning';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
-import { MAX_OFFLINE_MS } from '../config/gameConstants';
+import { getOfflineCapMs } from './guildCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 
 /** One offline step, matching the 1-second interval of the live game loops */
@@ -53,6 +53,10 @@ export function calculateOfflineProgress(
     canningUpgrades: Record<string, number>; // upgrade id -> level
     autoCanning: { enabled: boolean };
     guildState?: GuildState;
+    /** Crop yield bonus from bee hives, as the live harvest uses */
+    beeYieldBonus?: number;
+    /** Achievement bonuses such as Frost Fertilizer and Harvest Moon */
+    permanentBonuses?: string[];
     christmasEvent?: {
       isEventActive: boolean;
       passiveCheerPerSecond: number;
@@ -97,8 +101,8 @@ export function calculateOfflineProgress(
   const canningProgressUpdates = new Map<string, number>();
   let autoCanningCycles = 0;
 
-  // At most 8 hours of offline time is credited
-  const cappedTime = Math.min(timeElapsedMs, MAX_OFFLINE_MS);
+  // At most 8 hours of offline time is credited, or 12 with the Engineers' Night Shift
+  const cappedTime = Math.min(timeElapsedMs, getOfflineCapMs(gameState.guildState));
   
   // Step once per second, the same rate as the live growth, harvest and day loops,
   // so offline progress matches what playing would have produced.
@@ -128,12 +132,16 @@ export function calculateOfflineProgress(
     );
     currentVeggies = growthResult.veggies;
 
-    // Auto-harvest (every tick)
+    // Auto-harvest (every tick), with the live loop's bee, achievement and guild bonuses
     const autoHarvestResult = processAutoHarvest(
       currentVeggies,
       gameState.almanacLevel,
       gameState.farmTier,
-      gameState.knowledge + totalKnowledgeGain
+      gameState.knowledge + totalKnowledgeGain,
+      gameState.beeYieldBonus ?? 0,
+      currentSeason,
+      gameState.permanentBonuses ?? [],
+      gameState.guildState
     );
     
     if (autoHarvestResult.needsUpdate) {

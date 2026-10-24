@@ -376,6 +376,18 @@ describe('useHarvestAndSell', () => {
       expect(updated[1].autoHarvesterEnabled).toBe(false);
       expect(updated[0].autoHarvesterEnabled).toBe(true);
     });
+
+    it('keeps the harvesters on for committed Engineers', () => {
+      const engineers: GuildState = { ...DEFAULT_GUILD_STATE, committedGuild: 'engineers', status: 'committed' };
+      const deps = createDefaultDeps({ guildState: engineers });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleToggleAutoHarvester(1);
+      });
+
+      expect(deps.setVeggies).not.toHaveBeenCalled();
+    });
   });
 
   describe('logHarvest', () => {
@@ -441,6 +453,19 @@ describe('useHarvestAndSell', () => {
       });
       
       expect(deps.setVeggies).not.toHaveBeenCalled();
+    });
+
+    it('leaves the harvest to the machines for committed Engineers', () => {
+      const engineers: GuildState = { ...DEFAULT_GUILD_STATE, committedGuild: 'engineers', status: 'committed' };
+      const deps = createDefaultDeps({ activeVeggie: 0, guildState: engineers });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleHarvest();
+      });
+
+      expect(deps.setVeggies).not.toHaveBeenCalled();
+      expect(deps.setTotalHarvests).not.toHaveBeenCalled();
     });
   });
 

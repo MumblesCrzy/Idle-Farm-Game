@@ -3,7 +3,7 @@ import type { Veggie, AutoPurchaseType, CurrencyType, AutoPurchaseConfig } from 
 import { VEGGIE_CONFIGS, type VeggieConfig } from '../data/veggieConfigs';
 import { FRUIT_CONFIGS, calculateFruitExpRequirement, type FruitConfig } from '../data/fruitConfigs';
 import type { GuildState } from '../types/guilds';
-import { getGuildGrowthMultiplier, getFertilizerEffectivenessMultiplier } from './guildCalculations';
+import { getGuildGrowthMultiplier, getFertilizerEffectivenessMultiplier, getGreenhouseGrowthBonus, getIrrigationGrowthBonus, hasHeatwaveIrrigation } from './guildCalculations';
 
 /**
  * Formats a number with K, M, B, T, Q suffixes for large values
@@ -85,13 +85,17 @@ export function getVeggieGrowthBonus(
   if (season === 'Winter' && !greenhouseOwned) {
     growthAmount *= 0.1; // 90% penalty in winter unless greenhouse owned
   }
+  // Climate Control: the Greenhouse adds growth in every season
+  if (greenhouseOwned) {
+    growthAmount *= 1 + getGreenhouseGrowthBonus(guildState);
+  }
   // Drought penalty (unless irrigation)
   if (currentWeather === 'Drought' && !irrigationOwned) {
     growthAmount *= 0.5; // 50% penalty
   }
-  // Irrigation water efficiency bonus (always active when owned)
+  // Irrigation water efficiency bonus (always active when owned): 15%, or 30% with Sprinkler Network
   if (irrigationOwned) {
-    growthAmount *= 1.15; // 15% growth bonus
+    growthAmount *= 1 + getIrrigationGrowthBonus(guildState);
   }
   // Rain bonus
   if (currentWeather === 'Rain') {
@@ -101,12 +105,13 @@ export function getVeggieGrowthBonus(
   if (currentWeather === 'Storm') {
     growthAmount *= 1.1; // 10% bonus
   }
-  // Heatwave penalty
+  // Heatwave penalty, which Irrigation with Sprinkler Network cancels
   if (currentWeather === 'Heatwave') {
+    const heatwavePenalty = irrigationOwned && hasHeatwaveIrrigation(guildState) ? 1 : 0.7;
     if (season === 'Summer') {
-      growthAmount *= 0.7; // 30% penalty
+      growthAmount *= heatwavePenalty; // 30% penalty
     } else if (season === 'Spring' || season === 'Fall') {
-      growthAmount *= bonusSeasons.includes('Summer') ? 1.1 : 0.7; // 10% bonus for summer veggies, else 30% penalty
+      growthAmount *= bonusSeasons.includes('Summer') ? 1.1 : heatwavePenalty; // 10% bonus for summer veggies, else 30% penalty
     } else {
       growthAmount *= 1.2; // 20% bonus in winter
     }
@@ -181,6 +186,7 @@ export const getAutoPurchaseCost = (veggie: Veggie, purchaseType: AutoPurchaseTy
  * @param currencyType - Whether purchase uses money or knowledge (default: money)
  * @param veggies - Optional: All veggies array (needed for additionalPlot check)
  * @param maxPlots - Optional: Maximum plots available (needed for additionalPlot check)
+ * @param priceFactor - Share of the price paid: below 1 for auto-buyers with Bulk Purchasing
  * @returns Whether the purchase can be made
  */
 export const canMakePurchase = (
@@ -190,9 +196,10 @@ export const canMakePurchase = (
   knowledge: number,
   currencyType: CurrencyType = 'money',
   veggies?: Veggie[],
-  maxPlots?: number
+  maxPlots?: number,
+  priceFactor: number = 1
 ): boolean => {
-  const cost = getAutoPurchaseCost(veggie, purchaseType);
+  const cost = getAutoPurchaseCost(veggie, purchaseType) * priceFactor;
   const currency = currencyType === 'money' ? money : knowledge;
   
   switch (purchaseType) {

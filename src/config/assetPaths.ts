@@ -26,6 +26,7 @@ export const ICON_FARM_TIER = './Farm Tier.png';
 export const ICON_SIGIL = './Sigil.png'; // Growers Guild currency
 export const ICON_WAX_SEAL = './Wax Seal.png'; // Preservers Guild currency
 export const ICON_GUILD_TOKEN = './Guild Token.png'; // Earned before committing to a guild
+export const ICON_GEARS = './Gear.png'; // Engineers Guild currency
 export const ICON_RITUAL_HARVEST = './Ritual Harvest.png';
 export const ICON_BLESSED_CROP = './Blessed Crop.png';
 export const ICON_WARNING = './Warning.png';
@@ -169,6 +170,9 @@ export const SPECIAL_ARCHIE_WARLOCK = './Archie Warlock Costume 256.png';
 export const SPECIAL_GLUTTON = './Glutton 256.png';
 export const SPECIAL_GLUTTON_SWEATER = './Glutton Sweater 256.png';
 export const SPECIAL_GLUTTON_VAMPIRE = './Glutton Halloween Vampire 256.png';
+// Stanley, the Engineers' cat: 256 px copies of the user's art with the backgrounds cut out
+export const SPECIAL_STANLEY = './Stanley 256.png';
+export const SPECIAL_STANLEY_HALLOWEEN = './Stanley Halloween 256.png';
 // Art for the itch.io page, not the game: the build leaves these out of dist
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
@@ -370,11 +374,14 @@ export const ALL_IMAGES = [
   SPECIAL_GLUTTON,
   SPECIAL_GLUTTON_SWEATER,
   SPECIAL_GLUTTON_VAMPIRE,
+  SPECIAL_STANLEY,
+  SPECIAL_STANLEY_HALLOWEEN,
 
   // Farm and guild icons
   ICON_FARM_TIER,
   ICON_SIGIL,
   ICON_WAX_SEAL,
+  ICON_GEARS,
   ICON_GUILD_TOKEN,
   ICON_RITUAL_HARVEST,
   ICON_BLESSED_CROP,

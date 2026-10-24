@@ -37,7 +37,7 @@ export interface EventLogCallbacks {
   // Fall Pumpkin Rush: one line for the log, with optional details
   onPumpkinEvent: (message: string, details?: string) => void;
   
-  // Register callbacks (used by SaveLoadSystem component)
+  // Register callbacks: App registers the logging for each system on mount
   registerCallbacks: (callbacks: Partial<EventLogCallbacks>) => void;
 }
 

@@ -12,7 +12,7 @@ export const NON_WINTER_SHARE = 264 / 365;
 /** Time gaps longer than this many seconds are credited as an average over the seasons */
 export const LONG_GAP_SECONDS = 5;
 
-/** The most time a single gap credits, the same 8 hours as every other system */
+/** The most time a single gap credits, the same 8 hours as every other system. Night Shift raises it for the Engineers */
 export const MAX_GAP_SECONDS = MAX_OFFLINE_MS / 1000;
 
 /** Batches waiting in a hive. Saves from before stockpiling only knew whether one was ready. */
@@ -35,13 +35,13 @@ export function normalizeBox(box: BeeBox): BeeBox {
  * How many seconds of a gap the bees work. Short gaps, like one game step, follow the
  * current season. Long ones, like time away or a hidden tab, can span seasons, so they count
  * the warm share of the year. Winter Hardiness keeps the bees working all year. Gaps are
- * capped at 8 hours.
+ * capped at 8 hours, or the longer time away the caller allows.
  */
 export function productiveSeconds(
   seconds: number,
-  { winter, winterHardiness }: { winter: boolean; winterHardiness: boolean }
+  { winter, winterHardiness, maxSeconds = MAX_GAP_SECONDS }: { winter: boolean; winterHardiness: boolean; maxSeconds?: number }
 ): number {
-  const capped = Math.min(Math.max(0, seconds), MAX_GAP_SECONDS);
+  const capped = Math.min(Math.max(0, seconds), maxSeconds);
   if (winterHardiness) return capped;
   if (capped > LONG_GAP_SECONDS) return capped * NON_WINTER_SHARE;
   return winter ? 0 : capped;
@@ -136,9 +136,9 @@ export function honeyMultiplier(levels: Pick<BeeLevels, 'superFrames' | 'nectarE
   return multiplier;
 }
 
-/** Pounds of honey in one batch */
-export function lbsPerBatch(levels: Pick<BeeLevels, 'superFrames' | 'nectarEfficiency'>): number {
-  return Math.round(15 * honeyMultiplier(levels));
+/** Pounds of honey in one batch. A guild may change it: the Engineers' machines mean less */
+export function lbsPerBatch(levels: Pick<BeeLevels, 'superFrames' | 'nectarEfficiency'>, guildMultiplier: number = 1): number {
+  return Math.round(15 * honeyMultiplier(levels) * guildMultiplier);
 }
 
 /**

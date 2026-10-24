@@ -140,6 +140,16 @@ export interface GluttonRecord {
 }
 
 /**
+ * Stanley, the Engineers' cat: what the save keeps about his visits
+ */
+export interface StanleyRecord {
+  /** Times he was clicked for a Tune-Up */
+  tuneUps: number;
+  /** Game steps left on the Tune-Up running now, so a reload keeps it */
+  tuneUpLeft?: number;
+}
+
+/**
  * One ended Legacy
  */
 export interface LegacyEntry {
@@ -191,8 +201,12 @@ export interface GuildState {
   guildTokens: number;
   /** Counts toward the next Guild Token for sources that pay every few actions (missing in older saves) */
   tokenProgress?: Partial<Record<GuildTokenSource, number>>;
+  /** Auto harvests and canning batches toward the next Gear for committed Engineers (missing in older saves) */
+  gearProgress?: { autoHarvests?: number; batches?: number };
   /** Dunkin's visits to committed Preservers (missing in older saves) */
   glutton?: GluttonRecord;
+  /** Stanley's visits to committed Engineers (missing in older saves) */
+  stanley?: StanleyRecord;
   /** Benefits kept from earlier Legacies (missing until the first Legacy ends) */
   legacy?: LegacyRecord;
   /** Guild-specific currencies earned */

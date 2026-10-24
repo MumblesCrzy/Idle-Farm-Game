@@ -141,3 +141,38 @@
   background: #2e2318;
   color: #f6eedc;
 }
+
+/* The Engineers' chips are steel blue, and their Gears brass */
+.machineChip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid #6f8fd8;
+  border-radius: 12px;
+  background: #22335a;
+  color: #e3ebff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gearsChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid #d9a43a;
+  border-radius: 12px;
+  background: #3a3420;
+  color: #ffe9b0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gearsChip img {
+  width: 16px;
+  height: 16px;
+}

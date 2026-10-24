@@ -57,3 +57,25 @@
 .empty .icon {
   opacity: 0.45;
 }
+
+/* The Engineers' hopper: the same stock, in steel */
+.hopper {
+  border: 2px solid #4a5a70;
+  background: #2a3340;
+  color: #eef3f9;
+}
+
+.hopper .title {
+  color: #cfd8e3;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hopper .honey {
+  border-top-color: #4a5a70;
+}
+
+.hopper .empty {
+  color: #ff9b8f;
+}

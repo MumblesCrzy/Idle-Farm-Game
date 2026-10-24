@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { calculateOfflineProgress } from '../utils/offlineProgress';
 import { processVeggieGrowth, processAutoHarvest } from '../utils/gameLoopProcessors';
 import { createInitialVeggies, getSeason } from '../utils/gameCalculations';
+import { commitToGuild } from '../utils/guildCalculations';
+import { DEFAULT_GUILD_STATE } from '../types/guilds';
 import type { Veggie } from '../types/game';
 
 type OfflineState = Parameters<typeof calculateOfflineProgress>[1];
@@ -58,6 +60,21 @@ describe('calculateOfflineProgress', () => {
     expect(offline.day).toBe(1 + seconds);
   });
 
+  it('harvests by the live rules while away: guild effects and the bee bonus', () => {
+    const veggies = farmWithHarvester();
+    const away = 300 * 1000;
+    const plain = calculateOfflineProgress(away, offlineState(veggies));
+
+    // A committed Grower's Auto Harvester waits 67 seconds instead of 50
+    const grower = calculateOfflineProgress(away, offlineState(veggies, { guildState: commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1) }));
+    expect(grower.autoHarvests).toBeLessThan(plain.autoHarvests);
+
+    // Hives doubling the yield double what each harvest brings in
+    const withBees = calculateOfflineProgress(away, offlineState(veggies, { beeYieldBonus: 1 }));
+    expect(withBees.autoHarvests).toBe(plain.autoHarvests);
+    expect(withBees.veggies[0].stash).toBe(plain.veggies[0].stash * 2);
+  });
+
   it('counts the auto harvests, which pay Guild Tokens', () => {
     const veggies = farmWithHarvester();
     const seconds = 200;
@@ -92,6 +109,18 @@ describe('calculateOfflineProgress', () => {
 
     const ratio = yearAway.veggies[0].stash / firstYearOnly.veggies[0].stash;
     expect(ratio).toBeGreaterThan(1.8);
+  });
+
+  it('counts 12 hours away for Engineers with Night Shift, 8 for everyone else', () => {
+    const nightShift = {
+      ...commitToGuild(DEFAULT_GUILD_STATE, 'engineers', 1),
+      purchasedUpgrades: ['engineers_night_shift'],
+      upgradeLevels: { engineers_night_shift: 1 }
+    };
+    const day = 24 * 60 * 60 * 1000;
+
+    expect(calculateOfflineProgress(day, offlineState(farmWithHarvester())).timeElapsed).toBe(8 * 60 * 60 * 1000);
+    expect(calculateOfflineProgress(day, offlineState(farmWithHarvester(), { guildState: nightShift })).timeElapsed).toBe(12 * 60 * 60 * 1000);
   });
 
   it('credits the same rate below and above one hour away', () => {

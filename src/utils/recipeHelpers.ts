@@ -1,7 +1,15 @@
 import type { Recipe } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { getPressureCannerJars, getRecipeValueMultiplier } from './guildCalculations';
+import { getJarsPerBatch, getRecipeValueMultiplier } from './guildCalculations';
+import { getVeggieImage, ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
+
+/** A recipe's ingredients as pictures: each crop, then honey and Golden Honey when it needs them */
+export const recipeIcons = (recipe: Pick<Recipe, 'ingredients' | 'honeyRequirement'>): string[] => [
+  ...recipe.ingredients.map(ingredient => getVeggieImage(ingredient.veggieName)),
+  ...(recipe.honeyRequirement?.regular ? [ICON_HONEY] : []),
+  ...(recipe.honeyRequirement?.golden ? [ICON_GOLDEN_HONEY] : [])
+];
 
 export type VeggieContext = {
   name: string;
@@ -77,14 +85,14 @@ export const getBetterSeedsMultiplier = (
 
 /**
  * What one batch sells for: price, Family Recipe, Better Seeds, the guild's value rules and
- * the Pressure Canner's jars. Heirloom Touch's chance of a bonus jar and Prize Jars are left out.
+ * the jars per batch. Heirloom Touch's chance of a bonus jar and Prize Jars are left out.
  */
 export const getEffectiveSalePrice = (
   recipe: Recipe,
   context: RecipeValueContext
 ): number => {
   const efficiencyMultiplier = context.efficiencyMultiplier ?? 1;
-  const jars = context.guildState ? getPressureCannerJars(context.guildState) : 1;
+  const jars = getJarsPerBatch(context.guildState);
   return recipe.salePrice * efficiencyMultiplier * getBetterSeedsMultiplier(recipe, context)
     * getRecipeValueMultiplier(context.guildState, recipe) * jars;
 };

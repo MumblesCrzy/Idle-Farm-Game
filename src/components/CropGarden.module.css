@@ -213,6 +213,7 @@
   gap: 4px;
 }
 
+/* The ring around the crop: green as it grows, all gold once it can be harvested */
 .ring {
   display: flex;
   align-items: center;
@@ -220,6 +221,11 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
+  background: conic-gradient(#8bd48f 0 var(--glide-progress), #1a120c var(--glide-progress) 100%);
+}
+
+.ripeRing {
+  background: #f5c040;
 }
 
 .ring > span {
@@ -538,4 +544,63 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+/* An Engineer's bed: the Auto Harvester's next pass, where Harvest would be */
+.machine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #6f8fd8;
+  border-radius: 8px;
+  background: #1d2840;
+  color: #e3ebff;
+  font: 800 12px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.machine img {
+  width: 18px;
+  height: 18px;
+}
+
+.machineBar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #0f1626;
+  overflow: hidden;
+}
+
+.machineBar > span {
+  display: block;
+  height: 8px;
+  background: #6f8fd8;
+}
+
+.machineRipe {
+  border-color: #f5c040;
+  background: #3a3014;
+  color: #ffe9b0;
+}
+
+.machineRipe .machineBar > span {
+  background: #f5c040;
+}
+
+/* Stanley's Tune-Up on an Engineer's bed: its machine runs twice as fast */
+.tuneUpChip {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid #6fdc74;
+  border-radius: 10px;
+  background: #1f4a2a;
+  color: #d9f7d6;
+  font: 800 10px system-ui, sans-serif;
 }

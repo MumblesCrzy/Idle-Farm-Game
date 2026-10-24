@@ -5,42 +5,33 @@ Grow, harvest, preserve, and profit—build your farming empire one plot at a ti
 
 Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and process a variety of crops into preserved goods. Unlock powerful upgrades, weather the changing seasons, keep bees, join a guild, expand your farm, and prestige for bigger rewards. Balance active canning gameplay with passive farming automation to maximize your profits!
 
-The game features growing, canning and beekeeping systems, guilds, two seasonal events with their own farms and currencies, 41 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
+The game features growing, canning and beekeeping systems, guilds, two seasonal events with their own farms and currencies, 44 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
 
-## ✨ Latest Updates (v0.13.0)
-### 🫙 The Preservers Guild - NOW OPEN!
-- **Join the Preservers**: The second guild you can commit to, built around canning
-- **Wax Seals**: The guild's currency, earned from batches you start yourself and from shooing Dunkin; the Canner's batches earn none
-- **Better Taste**: Jars sell for 20% more, and 12 upgrades push canning further; raw crops sell for 10% less
-- **Pressure Canner**: Up to 6 jars from one batch
-- **Cellar Recipes**: 10 new vegetable recipes, from Dilly Beans to Pantry Keeper's Reserve
-- **Recipe Mastery**: Recipes you make 25, 100 and 500 times sell for more and earn ribbons
-- **Rush Batch**: Spend Wax Seals to finish every running batch at once
+## ✨ Latest Updates (v0.14.0)
+### ⚙️ The Engineers Guild - NOW OPEN!
+- **Join the Engineers**: The third guild you can commit to, built around machines that run the farm for you
+- **Gears**: The guild's currency, made by machines: 1 for every 10 auto harvests, 1 for every 5 batches off the factory floor, and 5 for each Tune-Up from Stanley. The machines earn Gears while you're away too
+- **Automated Excellence**: Every crop gets an Auto Harvester, switched on, that runs 25% faster, and auto harvests give full experience and knowledge
+- **Hands Off**: No manual harvests or canning; crops sell for 15% less and jars for 25% less, and the bees make 25% less honey
+- **10 Guild Upgrades**: Faster harvesters and bigger harvests, cheaper auto-buyers with Bulk Purchasing, Sprinkler Network for Irrigation, Climate Control for the Greenhouse, and Night Shift, which counts 12 hours away instead of 8
 
-### 🐶 Watch for the Glutton
-- **Dunkin the French Bulldog** visits Preservers now and then and eats from the pantry
-- **Catch him early** and it costs nothing; let him eat his fill and he stays until you pay the vet
-- **Wax Seals either way**, three new achievements, and seasonal looks: a vampire cape for Halloween and a holiday sweater
+### 🏭 The Cannery
+- **A factory floor**: For Engineers the Canning tab becomes the Cannery, with a machine for every stove slot
+- **Set and forget**: Each machine makes the recipe you set, again and again, while the hopper has its ingredients; a machine that runs short waits and says what it needs
+- **Industrial Canning**: Batches run 30% faster, and Conveyor Belts and Mass Production push them further
 
-### 📜 Legacy
-- **Change your guild**: From Farm Tier 6, a guild member can end their Legacy and start the farm over
-- **Keep what matters**: Half the levels bought this Legacy in your guild's upgrades, one unlock kept for good, and your special and hidden achievements
-- **Compound it**: Kept benefits work in any guild and add up across Legacies; choose a guild again at Farm Tier 5
-- **Two achievements**: Turning the Page and Two Trades
+### 🐱 Stanley the Cat
+- **Stanley**, the Engineers' fluffy cream cat, visits every 3 to 6 minutes of play
+- **Tune-Up**: Click him for 5 Gears, and every machine runs twice as fast for 60 seconds, or 90 with Overclock
+- **Two achievements** for Tune-Ups, a hidden one on the factory floor, and a Halloween look
 
-### Also New in v0.13.0
-- **The Kitchen**: The Canning tab is reworked as a kitchen: the pantry on the left, the stove and a two-column recipe book in the middle, upgrades on the right
-- **The Garden**: The Growing tab gives every crop a raised bed with a growth ring, Sell or Hold, the Auto Harvester, upgrade levels and a Harvest button; click anywhere on a bed to see that crop's price, stash and upgrades in the tool shed
-- **Ingredients at a Glance**: Every recipe shows its ingredients, and the short ones are marked
-- **The Honeycomb**: The Bees tab is a honeycomb of hives that fill toward their next batch, a Honey House with your honey, what the bees give and the Beekeeper, and the upgrades grouped by what they improve
-- **Honey Jars**: Buy Honey Jars on the Bees tab and the Kitchen cans honey alone: Jars of Honey and Jars of Golden Honey
-- **Bees Stockpile Honey**: A full hive no longer waits for you; finished batches pile up while the bees start the next, and Collect all gathers them
-- **Guilds Help Page**: A new page in Info covers Guild Tokens, the Growers, the Preservers and Dunkin
-- **Growing Help**: The Info pages for growing describe the garden, and their numbers match the game again
-- **Accessibility**: Screen readers hear toasts, achievement unlocks and Dunkin's visits; the keyboard can scroll the Achievements and Event Log lists; text on the open tab, the Info and Log buttons and the farm banner reaches 4.5:1 contrast
-- **Fixes**: Golden Touch, Nectar Efficiency and Swift Gatherers now do what they promise, honey recipes take their honey, recipe prices include guild bonuses and penalties, crops show the right experience to unlock, a full stove disables Can instead of failing silently, Whispers of the Seed shows 10× instead of 1000×, and the Farm Stand, Carving Barn and Guilds tab fit the 1600×1000 itch.io window
+### Also New in v0.14.0
+- **Smooth progress**: Growth rings, harvester bars, countdowns, batches and the hives' honey glide between game steps instead of jumping once a second
+- **A steadier header**: The stats keep their own room, so the row stays put as numbers change, and the tabs no longer jump down when the Buy Larger Farm button appears
+- **Fixes**: Long sessions no longer freeze more and more often as memory fills up, guild effects now reach the Auto Harvesters, and harvests while away count every bonus that play does
 
 ### Earlier Updates
+- **v0.13.0**: The Preservers Guild, Dunkin the Glutton, Legacy, and the Garden, Kitchen and Honeycomb tabs
 - **v0.12.0**: Fall Pumpkin Rush event, cozy pixel art rework, more ways to earn Guild Tokens, canning in background tabs
 - **v0.11.0**: Guild system with the Growers Guild, 10 fruit crops, Ritual Harvest
 - **v0.10.0**: Achievement and recipe unlock fixes, recipe filters in the Canning tab
@@ -62,7 +53,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Visual Progress:** Real-time progress bars show growth percentages and estimated days to maturity
 - **Harvesting:** Click to collect grown crops or buy an Auto Harvester for each crop
 - **Strategic Selling:** Choose which crops to sell or stockpile with each crop's Sell or Hold button
-- **Reward Balance:** Manual harvesting gives full experience and knowledge; auto-harvesting gives half
+- **Reward Balance:** Manual harvesting gives full experience and knowledge; auto-harvesting gives half, except for the Engineers, whose machines get full rewards
 
 ### 🥫 Canning System (Unlocks at Farm Tier 3)
 - **Recipe Processing:** Turn raw crops into preserved goods worth more than their ingredients
@@ -70,6 +61,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **The Kitchen:** The pantry shows your crops and honey, the stove shows every batch cooking, and the recipe book shows each recipe's ingredients, value and time
 - **Stove Slots:** Run up to 16 batches at once (upgradeable with Batch Canning)
 - **Automation:** The Canner starts a batch every 10 seconds, using the first recipe in your sort order that your stash covers
+- **The Cannery:** Engineers run a factory floor instead, where each machine makes the recipe you set
 - **Enhanced Rewards:** Earn money, experience, AND knowledge from completed recipes; Canner batches give less knowledge
 - **Resource Management:** Balance selling fresh crops against processing them
 
@@ -93,7 +85,11 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Preservers Guild:** Commit to earn Wax Seals from batches you start and spend them on 10 guild upgrades, including Cellar Recipes and the Pressure Canner
   - **Bonuses:** Jars sell for 20% more, Recipe Mastery, Prize Jars and Rush Batch
   - **Trade-offs:** Raw crops sell for 10% less, and Dunkin the Glutton raids the pantry
-- **More Guilds Coming:** Engineers and Merchants can be previewed and sampled now; joining them comes in a future update
+- **Engineers Guild:** Commit to earn Gears from auto harvests, factory floor batches and Stanley, and spend them on 10 guild upgrades, including Bulk Purchasing and Night Shift
+  - **Bonuses:** Every crop gets a faster Auto Harvester with full rewards, batches run 30% faster, and the Kitchen becomes the Cannery
+  - **Trade-offs:** No manual harvests or canning, crops sell for 15% less and jars for 25% less, and the bees make 25% less honey
+- **Tune-Up:** Click Stanley the cat when he visits, and every machine runs twice as fast for a minute
+- **Merchants Coming:** The Merchants can be previewed and sampled now; joining them comes in a future update
 - **Legacy:** From Farm Tier 6, end your Legacy to start the farm over and keep half your guild levels, one unlock and your special achievements; then choose a guild again
 
 ### 🏆 Progression Systems
@@ -148,7 +144,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Irrigation:** Provides a constant +15% growth rate bonus AND negates drought penalties ($750 + 75 Knowledge)
 - **Merchant:** Sells every crop set to 💰 Sell once every 30 days ($1,000 + 100 Knowledge)
 - **Greenhouse:** Removes winter and snow growth penalties for all crops (cost scales with farm size)
-- **Heirloom Seeds:** Doubles the effect of Better Seeds (cost scales with the highest crop you've unlocked)
+- **Heirloom Seeds:** Doubles the effect of Better Seeds (cost scales with the highest crop you've unlocked); Engineers know it as GMO Seeds
 
 #### Auto-Purchaser System
 
@@ -190,14 +186,14 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
   - **Greenhouse:** Removes Winter (-90%) and Snow (-100%) penalties (scales with farm size)
 
 ### 🏅 Achievements
-- **41 Achievements:** Across farming, wealth, progression, canning, bees, Dunkin's visits, Legacies and both seasonal events
+- **44 Achievements:** Across farming, wealth, progression, canning, bees, Dunkin's and Stanley's visits, the factory floor, Legacies and both seasonal events
 - **Rewards:** Money, knowledge, Candy Corn, Archie outfits, a cocoa recipe and permanent crop bonuses
 - **Permanent Bonuses:** Frost Fertilizer (+5% winter crop yield) and Harvest Moon (+5% fall crop yield)
 
 ### 💾 Save & Progression
 - **Auto-Save System:** Progress saves to localStorage automatically every 30 seconds
 - **Export/Import:** Timestamped save files for backup and sharing
-- **Offline Progress:** Crops grow and auto-harvest, bees make honey, and both seasonal events keep running while you're away (the farm credits up to 8 hours)
+- **Offline Progress:** Crops grow and auto-harvest, bees make honey, and both seasonal events keep running while you're away (the farm credits up to 8 hours, or 12 with the Engineers' Night Shift)
 - **Background Tabs:** The game catches up when you return to a hidden tab, canning included
 - **Backward Compatibility:** Seamless migration when new features are added
 - **Year & Day Tracking:** Long-term progression display showing "Year: X | Day: Y"
@@ -216,10 +212,11 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Archie Bonus**: Archie shows up now and then; click him for bonus money, plus Holiday Cheer or Candy Corn during events, with streak multipliers and sound effects 🐕
 - **Archie's Looks**: Choose Archie's look in Settings, including winter and fall outfits earned from achievements
 - **Dunkin**: Preservers get visits from Dunkin the French Bulldog; shoo him before he eats the pantry
+- **Stanley**: Engineers get visits from Stanley the cat; click him for a Tune-Up
 - **Accessibility Features**: 
   - 100+ ARIA labels for screen reader support
   - Keyboard navigation with focus trapping in modals, and long lists the keyboard can scroll
-  - Toasts, achievement unlocks and Dunkin's visits read out to screen readers
+  - Toasts, achievement unlocks and Dunkin's and Stanley's visits read out to screen readers
   - Text on tabs and header buttons at 4.5:1 contrast or more
   - Alt text on images, left empty for decorative ones
   - Landmark regions for easy navigation
@@ -227,13 +224,13 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 
 ## Roadmap
 
-### 🎯 Current Features (v0.13.0)
+### 🎯 Current Features (v0.14.0)
 - ✅ **Fall Pumpkin Rush**: Pumpkin growing, carving, a farm stand and a County Fair weigh-off
 - ✅ **Christmas Tree Shop Event**: Complete seasonal event system with farming, crafting, and sales
 - ✅ **Bee System**: Honey, Golden Honey, pollination bonuses and honey recipes
-- ✅ **Guilds**: The Growers Guild with Sigils and 10 fruit crops, and the Preservers Guild with Wax Seals, 10 Cellar recipes and Dunkin
+- ✅ **Guilds**: The Growers Guild with Sigils and 10 fruit crops, the Preservers Guild with Wax Seals, 10 Cellar recipes and Dunkin, and the Engineers Guild with Gears, the Cannery and Stanley
 - ✅ **Legacy**: A guild prestige that keeps half your guild levels, one unlock and your special achievements
-- ✅ **Achievement System**: 41 achievements with rewards across every system
+- ✅ **Achievement System**: 44 achievements with rewards across every system
 - ✅ **Offline Progression**: Catch-up for time away and for hidden tabs
 - ✅ **Cozy Art**: Nearly every image redrawn in one pixel art style
 - ✅ **Toast Notifications**: Visual feedback for bonuses and events
@@ -243,9 +240,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Summer Watermelon Festival**: Competitive growing challenges
 
 ### 🌟 Planned Features
-- **More Guilds**: Full versions of the last two guilds
-  - Engineers - Smarter machines, but lose feel for the earth
-  - Merchants - Profits over people
+- **The Merchants Guild**: Profits over people, the last of the four guilds
 - **Root Cellar**: Somewhere for finished jars to rest and gain value before they sell
 
 ## 🎮 New Player Guide
@@ -262,7 +257,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 10. **Seasonal Events**: The Pumpkin Rush runs Sep 22 through Thanksgiving and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
 11. **Archie Hunting**: Keep an eye out for Archie - clicking him gives bonus money and builds streaks!
 12. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
-13. **Pick a Guild**: At Farm Tier 5, sample a few upgrades, then join the Growers for farming or the Preservers for canning
+13. **Pick a Guild**: At Farm Tier 5, sample a few upgrades, then join the Growers for farming, the Preservers for canning or the Engineers for machines that run the farm
 14. **Legacy**: At Farm Tier 6, end your Legacy from the Guilds tab to start over with half your guild levels and one unlock kept
 15. **Save Management**: Use the Settings panel to export saves regularly as backups
 

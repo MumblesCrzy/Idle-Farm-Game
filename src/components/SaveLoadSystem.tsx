@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, type FC, type ReactNode, type ChangeEvent } from 'react';
+import { useRef, useState, useCallback, type ReactNode, type ChangeEvent } from 'react';
 import { validateCanningImport, importGameState, createSaveSnapshot, type ExtendedGameState } from '../utils/saveSystem';
 import { validateSaveData } from '../utils/validation';
 import styles from './SaveLoadSystem.module.css';
@@ -10,27 +10,32 @@ export interface LoadingStates {
   isResetting: boolean;
 }
 
-interface SaveLoadSystemProps {
+interface SaveLoadSystemOptions {
   /** Builds the full save. Export writes exactly what autosave stores. */
   getSaveState: () => ExtendedGameState | null;
 
   // Function to reset the game
   resetGame: () => void;
-  
-  // Render props pattern for UI customization
-  children: (handlers: {
-    handleExportSave: () => void;
-    handleImportSave: () => void;
-    handleResetGame: () => void;
-    loadingStates: LoadingStates;
-  }) => ReactNode;
 }
 
-const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
-  getSaveState,
-  resetGame,
-  children
-}) => {
+/** The save buttons' handlers, and the hidden file picker that Import Save opens */
+export interface SaveLoadSystem {
+  /** Render this once, anywhere: Import Save clicks it */
+  fileInput: ReactNode;
+  handleExportSave: () => void;
+  handleImportSave: () => void;
+  handleResetGame: () => void;
+  loadingStates: LoadingStates;
+}
+
+/**
+ * Export, import and new game, for the Settings buttons.
+ *
+ * A hook rather than a component with a function as its children: the game drawn inside such a
+ * function kept each render's values in one shared scope, and memoized callbacks held on to
+ * those scopes, so old renders and all their state were never freed.
+ */
+export function useSaveLoadSystem({ getSaveState, resetGame }: SaveLoadSystemOptions): SaveLoadSystem {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Track import errors for console logging (state available for future UI display)
   const [, setImportError] = useState<string | null>(null);
@@ -180,23 +185,19 @@ const SaveLoadSystem: FC<SaveLoadSystemProps> = ({
     }
   }, [resetGame]);
 
-  return (
-    <>
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className={styles.hiddenInput} 
-        onChange={handleFileChange} 
+  return {
+    fileInput: (
+      <input
+        type="file"
+        ref={fileInputRef}
+        className={styles.hiddenInput}
+        onChange={handleFileChange}
         accept=".json"
       />
-      {children({
-        handleExportSave,
-        handleImportSave,
-        handleResetGame,
-        loadingStates
-      })}
-    </>
-  );
-};
-
-export default SaveLoadSystem;
+    ),
+    handleExportSave,
+    handleImportSave,
+    handleResetGame,
+    loadingStates
+  };
+}

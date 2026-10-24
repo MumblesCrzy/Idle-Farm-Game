@@ -21,6 +21,7 @@ import {
   PUMPKIN_SCALE,
   RIBBON_BLUE,
   SPECIAL_GLUTTON,
+  SPECIAL_STANLEY,
   ICON_SCROLL
 } from '../config/assetPaths';
 import { PUMPKIN_EVENT_CONSTANTS } from './pumpkinEventData';
@@ -309,6 +310,60 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     reward: {
       knowledge: 100,
       message: 'The vet sends a thank-you card. +100 knowledge'
+    },
+    hidden: true
+  },
+
+  // Engineers Guild: Stanley the cat
+  {
+    id: 'stanley_first_tune_up',
+    name: 'Well Oiled',
+    description: 'Get a Tune-Up from Stanley',
+    icon: SPECIAL_STANLEY,
+    category: 'farming',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.guildState?.stanley?.tuneUps ?? 0) >= 1
+    },
+    reward: {
+      knowledge: 50,
+      message: 'Purring like an engine! +50 knowledge'
+    }
+  },
+  {
+    id: 'stanley_overtime',
+    name: 'Overtime',
+    description: 'Get 100 Tune-Ups from Stanley',
+    icon: SPECIAL_STANLEY,
+    category: 'farming',
+    requirement: {
+      type: 'custom',
+      value: 100,
+      customCheck: (gameState) => (gameState.guildState?.stanley?.tuneUps ?? 0) >= 100,
+      getProgress: (gameState) => gameState.guildState?.stanley?.tuneUps ?? 0
+    },
+    reward: {
+      knowledge: 150,
+      money: 5000,
+      message: 'The factory never sleeps! +150 knowledge and $5,000'
+    }
+  },
+  {
+    id: 'engineers_lights_out_factory',
+    name: 'Lights-Out Factory',
+    description: 'Make 10,000 batches on the factory floor',
+    icon: ICON_CANNING,
+    category: 'canning',
+    requirement: {
+      type: 'custom',
+      value: 10000,
+      customCheck: (gameState) => (gameState.canningState?.floorBatches ?? 0) >= 10000,
+      getProgress: (gameState) => gameState.canningState?.floorBatches ?? 0
+    },
+    reward: {
+      knowledge: 250,
+      money: 25000,
+      message: 'The machines run themselves now! +250 knowledge and $25,000'
     },
     hidden: true
   },

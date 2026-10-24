@@ -6,7 +6,7 @@ import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
 import { processUnlocks } from './unlockSystem';
 import { calculateHarvestRewards } from './harvestCalculations';
-import { getGrowersHarvesterSpeedMultiplier } from './guildCalculations';
+import { getGuildHarvesterSpeedMultiplier, hasFactoryFittedHarvesters } from './guildCalculations';
 
 /**
  * Calculates new weather based on season and random chance
@@ -86,8 +86,8 @@ export function processVeggieGrowth(
 }
 
 /**
- * Seconds between auto-harvest attempts for a crop. Harvester Speed shortens it,
- * and committed Growers get a slower harvester when guild state is given.
+ * Seconds between auto-harvest attempts for a crop. Harvester Speed shortens it. With guild
+ * state given, committed Growers get a slower harvester and Engineers a faster one.
  */
 export function getHarvesterInterval(
   veggie: Pick<Veggie, 'harvesterSpeedLevel'>,
@@ -95,9 +95,19 @@ export function getHarvesterInterval(
 ): number {
   let speedMultiplier = 1 + (veggie.harvesterSpeedLevel ?? 0) * 0.05;
   if (guildState) {
-    speedMultiplier *= getGrowersHarvesterSpeedMultiplier(guildState);
+    speedMultiplier *= getGuildHarvesterSpeedMultiplier(guildState);
   }
   return Math.max(1, Math.round(HARVESTER_BASE_TIMER / speedMultiplier));
+}
+
+/**
+ * Engineers' crops come with Auto Harvesters, switched on (Automated Excellence). Fits every
+ * unlocked crop that lacks one or has it paused, and returns the same array when none does.
+ */
+export function fitFactoryHarvesters(veggies: Veggie[], guildState?: GuildState): Veggie[] {
+  const unfitted = (v: Veggie) => v.unlocked && !(v.harvesterOwned && v.autoHarvesterEnabled);
+  if (!hasFactoryFittedHarvesters(guildState) || !veggies.some(unfitted)) return veggies;
+  return veggies.map(v => (unfitted(v) ? { ...v, harvesterOwned: true, autoHarvesterEnabled: true } : v));
 }
 
 /**
@@ -107,6 +117,7 @@ export function getHarvesterInterval(
  * @param farmTier - Current farm tier
  * @param knowledge - Current knowledge amount
  * @param guildState - Optional guild state for guild bonuses
+ * @param timerStep - Seconds each harvester counts this step: 2 during Stanley's Tune-Up
  * @returns Object with updated veggies, experience gain, knowledge gain, and update flag
  */
 export function processAutoHarvest(
@@ -117,7 +128,8 @@ export function processAutoHarvest(
   beeYieldBonus: number = 0,
   season: string = '',
   permanentBonuses: string[] = [],
-  guildState?: GuildState
+  guildState?: GuildState,
+  timerStep: number = 1
 ): {
   veggies: Veggie[];
   experienceGain: number;
@@ -180,10 +192,10 @@ export function processAutoHarvest(
         newV = { ...v, harvesterTimer: timerMax };
       }
     }
-    // If timer is not primed, increment
+    // If timer is not primed, count toward the next pass
     else if (v.harvesterTimer < timerMax) {
       needsUpdate = true;
-      newV = { ...v, harvesterTimer: v.harvesterTimer + 1 };
+      newV = { ...v, harvesterTimer: Math.min(timerMax, v.harvesterTimer + timerStep) };
     }
 
     return newV;
