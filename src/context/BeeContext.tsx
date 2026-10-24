@@ -72,11 +72,15 @@ export interface HoneySetters {
   setGoldenHoney: Dispatch<SetStateAction<number>>;
 }
 
+/** Boxes made this session, so two made in the same millisecond never share an id */
+let boxSerial = 0;
+
 /**
  * Generate a unique ID for bee boxes
  */
 const generateBoxId = (): string => {
-  return `box_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  boxSerial += 1;
+  return `box_${Date.now()}_${boxSerial}_${Math.random().toString(36).slice(2, 9)}`;
 };
 
 /**
