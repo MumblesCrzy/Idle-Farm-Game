@@ -150,8 +150,9 @@ describe('County Fair judging', () => {
     expect(judgeWeighOff(base, 0, [0, 1, 1]).placing).toBe(3);
   });
 
-  it('makes rivals heavier with each fair entered', () => {
-    expect(rivalBaseWeight(5)).toBeGreaterThan(rivalBaseWeight(0));
+  it('makes rivals 12% heavier for each first place', () => {
+    expect(rivalBaseWeight(0)).toBe(C.RIVAL_BASE_WEIGHT);
+    expect(rivalBaseWeight(5)).toBeCloseTo(C.RIVAL_BASE_WEIGHT * 1.6);
   });
 });
 
@@ -388,6 +389,24 @@ describe('usePumpkinEvent', () => {
     expect(result.current.candyCorn).toBe(5000 - 200);
   });
 
+  it('sells Giant Vine Tonic past level 10, even to a save that stored the old top level', () => {
+    const upgrades = upgradesOwning('unlock_giant').map(u =>
+      u.id === 'giant_vine_tonic' ? { ...u, owned: true, level: 10, maxLevel: 10 } : u
+    );
+    const { result } = renderHook(() => usePumpkinEvent({ initialState: startWith({ candyCorn: 100_000, upgrades }) }));
+    let bought = false;
+    act(() => {
+      bought = result.current.purchaseUpgrade('giant_vine_tonic');
+    });
+
+    const tonic = result.current.eventState.upgrades.find(u => u.id === 'giant_vine_tonic')!;
+    expect(bought).toBe(true);
+    expect(tonic.level).toBe(11);
+    expect(tonic.maxLevel).toBeUndefined();
+    // Level 11 costs 300 Candy Corn times 1.6 to the tenth
+    expect(result.current.candyCorn).toBe(100_000 - 32_985);
+  });
+
   it('reads the sales milestones an older save claimed', () => {
     const saved = { milestones: [{ id: 'pumpkin_first_sale', claimed: true }, { id: 'pumpkin_50_sold', claimed: false }] };
     expect([...claimedSalesMilestones(saved)]).toEqual(['pumpkin_first_sale']);
@@ -435,6 +454,39 @@ describe('usePumpkinEvent', () => {
         ribbons: { first: 1, second: 0, third: 0 }
       });
       expect(onWeighOff).toHaveBeenCalledWith(entry);
+    });
+
+    it('makes the rivals heavier only after a first place', () => {
+      // Every rival brings the typical weight
+      vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      const giantShelf = [{ ...giant, id: 'light', weight: 100 }, { ...giant, id: 'heavy' }, { ...giant, id: 'next', weight: 100 }];
+      const weighOff = { ...createInitialPumpkinState().weighOff, daysUntilFair: 0, fairsEntered: 3 };
+      const { result } = renderHook(() => usePumpkinEvent({ initialState: startWith({ giantShelf, weighOff }) }));
+      const enter = (giantId: string) => {
+        act(() => {
+          result.current.enterWeighOff(giantId);
+        });
+        const entry = result.current.eventState.weighOff.lastResult!;
+        act(() => {
+          result.current.processPumpkinGrowth(C.FAIR_INTERVAL_DAYS);
+        });
+        return entry;
+      };
+      const rivalsAt = (firstPlaces: number) =>
+        Array.from({ length: C.RIVAL_COUNT }, () => Math.round(rivalBaseWeight(firstPlaces)));
+
+      const loss = enter('light');
+      expect(loss.placing).toBe(4);
+      expect(loss.rivalWeights).toEqual(rivalsAt(0));
+
+      // The loss left the rivals as they were
+      const win = enter('heavy');
+      expect(win.placing).toBe(1);
+      expect(win.rivalWeights).toEqual(rivalsAt(0));
+
+      // The win makes them heavier
+      expect(enter('next').rivalWeights).toEqual(rivalsAt(1));
+      expect(result.current.eventState.weighOff).toMatchObject({ fairsEntered: 6, ribbons: { first: 1, second: 0, third: 0 } });
     });
 
     it('sells a giant by weight', () => {

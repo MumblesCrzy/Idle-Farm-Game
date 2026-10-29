@@ -208,7 +208,7 @@ export const canMakePurchase = (
     case 'betterSeeds':
       return currency >= cost;
     case 'harvesterSpeed':
-      return currency >= cost;
+      return currency >= cost && veggie.harvesterOwned;
     case 'additionalPlot': {
       if (!veggies || maxPlots === undefined) return currency >= cost;
       // Check if we're already at max plots

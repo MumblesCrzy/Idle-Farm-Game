@@ -16,7 +16,7 @@ import { findGuildUpgrade, getBoughtLevel } from './guildCalculations';
 export const LEGACY_FARM_TIER = 6;
 
 /** Upgrades that stay with their guild: their abilities spend the guild's currency */
-export const LEGACY_GUILD_ONLY: readonly string[] = ['growers_ritual_circles', 'preservers_rush_batch', 'engineers_overclock'];
+export const LEGACY_GUILD_ONLY: readonly string[] = ['growers_ritual_circles', 'preservers_rush_batch', 'engineers_overclock', 'merchants_hostile_takeover', 'merchants_insider_trading'];
 
 /** No Legacy ended yet */
 export const EMPTY_LEGACY: LegacyRecord = { count: 0, keptLevels: {}, keptUnlocks: [], history: [] };

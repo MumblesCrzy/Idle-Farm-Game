@@ -1,7 +1,9 @@
 import { useCallback } from 'react';
 import type { Veggie } from '../types/game';
 import type { EventLogCallbacks } from '../context/EventLogContext';
-import { createAllCrops, calculateExpRequirement } from '../utils/gameCalculations';
+import type { GuildState } from '../types/guilds';
+import { createAllCrops, calculateExpRequirement, formatNumber } from '../utils/gameCalculations';
+import { getHostileTakeoverPrice, recordTakeover } from '../utils/guildCalculations';
 
 /**
  * Dependencies required for the farm management hook
@@ -33,6 +35,7 @@ export interface UseFarmManagementDeps {
   setIrrigationOwned: React.Dispatch<React.SetStateAction<boolean>>;
   setGlobalAutoPurchaseTimer: React.Dispatch<React.SetStateAction<number>>;
   setFarmCost: React.Dispatch<React.SetStateAction<number>>;
+  setGuildState: React.Dispatch<React.SetStateAction<GuildState>>;
   
   // Event callbacks
   eventLogCallbacks: EventLogCallbacks;
@@ -49,6 +52,8 @@ export interface UseFarmManagementReturn {
    * - Increases farm tier and farm cost
    */
   handleBuyLargerFarm: () => void;
+  /** A Merchant's Hostile Takeover: the next farm, keeping everything */
+  handleHostileTakeover: () => void;
 }
 
 /**
@@ -95,6 +100,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
+    setGuildState,
     eventLogCallbacks,
   } = deps;
 
@@ -182,7 +188,47 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     eventLogCallbacks
   ]);
 
+  /**
+   * Hostile Takeover, for Merchants who own it: the next Farm Tier and its larger max plots,
+   * by the same rule as a larger farm, at ten times the price. Crops, upgrades, auto-buyers,
+   * experience, the farm upgrades and the day all stay.
+   */
+  const handleHostileTakeover = useCallback(() => {
+    const price = getHostileTakeoverPrice(farmCost);
+    if (money < price) return;
+    const newMaxPlots = Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2);
+    const newFarmTier = farmTier + 1;
+
+    setMoney(m => m - price);
+    setMaxPlots(newMaxPlots);
+    setFarmTier(newFarmTier);
+    setFarmCost(Math.ceil(FARM_BASE_COST * Math.pow(1.85, newFarmTier - 1)));
+    setGuildState(prev => recordTakeover(prev));
+
+    eventLogCallbacks.onAchievementUnlock({
+      name: `Farm Tier ${newFarmTier}`,
+      description: `Hostile Takeover: Farm Tier ${newFarmTier} with ${newMaxPlots} max plots, for $${formatNumber(price, 2)}. Everything was kept`,
+      reward: null,
+      category: 'milestone'
+    });
+  }, [
+    experience,
+    money,
+    farmTier,
+    maxPlots,
+    farmCost,
+    FARM_BASE_COST,
+    setMoney,
+    setMaxPlots,
+    setFarmTier,
+    setFarmCost,
+    setGuildState,
+    eventLogCallbacks
+  ]);
+
   return {
     handleBuyLargerFarm,
+    handleHostileTakeover,
   };
+
 }

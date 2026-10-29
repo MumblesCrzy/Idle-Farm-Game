@@ -41,6 +41,31 @@
   color: #333;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Additives, from the Merchants: the counts shown are already one fewer */
+.additivesTag {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #6b21a8;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.additivesNote {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f3e8ff;
+  color: #4c1d95;
+  font-size: 13px;
+}
+
 .closeButton {
   background: none;
   border: none;

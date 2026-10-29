@@ -229,7 +229,7 @@ describe('GrowingTab', () => {
     const shed = shedOf(veggies[1].name);
 
     fireEvent.click(within(shed).getByRole('button', { name: /^Buy Fertilizer/ }));
-    expect(handlers.handleBuyFertilizer).toHaveBeenCalledWith(1);
+    expect(handlers.handleBuyFertilizer).toHaveBeenCalledWith(1, 1);
 
     fireEvent.click(within(shed).getByTitle(/^Assistant:/));
     expect(handlers.buyAutoPurchaser).toHaveBeenCalledWith('assistant', 1);
@@ -257,7 +257,7 @@ describe('GrowingTab', () => {
     expect(within(shed).getByText(`Harvests every ${interval} s`)).toBeInTheDocument();
 
     fireEvent.click(within(shed).getByRole('button', { name: /^Buy Harvester Speed/ }));
-    expect(handlers.handleBuyHarvesterSpeed).toHaveBeenCalledWith(0);
+    expect(handlers.handleBuyHarvesterSpeed).toHaveBeenCalledWith(0, 1);
     fireEvent.click(within(shed).getByRole('button', { name: `Auto Harvester for ${veggies[0].name}: On` }));
     expect(handlers.handleToggleAutoHarvester).toHaveBeenCalledWith(0);
   });
@@ -370,6 +370,54 @@ describe('GrowingTab', () => {
       expect(within(shed).getByText('Factory fitted · every 40 s')).toBeInTheDocument();
       expect(within(shed).queryByRole('button', { name: /^Auto Harvester for Radish/ })).not.toBeInTheDocument();
       expect(within(shed).getAllByText('-9%')).toHaveLength(1);
+    });
+  });
+
+  describe('for a committed Merchant', () => {
+    const merchant = (levels: Record<string, number> = {}): GuildState => ({
+      ...commitToGuild(DEFAULT_GUILD_STATE, 'merchants', 1),
+      purchasedUpgrades: Object.keys(levels),
+      upgradeLevels: levels
+    });
+
+    it('shows the guild on the plank: crop and jar prices, Bulk Deals and the knowledge cut', () => {
+      renderTab(crops(), 0, { guildState: merchant({ merchants_haggling: 5, merchants_bulk_deals: 2 }) });
+
+      const bonuses = screen.getByRole('group', { name: 'Merchants Guild bonuses' });
+      expect(bonuses).toHaveTextContent('+25% Crops');
+      expect(bonuses).toHaveTextContent('+15% Jars');
+      expect(bonuses).toHaveTextContent('+4% Bulk');
+      expect(bonuses).toHaveTextContent('-15% Knowledge');
+    });
+
+    it('adds Markup to the price in the shed, and Bulk Deals to Sell All on 100 crops or more', () => {
+      const veggies = crops(all => all.map((crop, i) => (i === 0 ? { ...crop, stash: 100 } : crop)));
+      renderTab(veggies, 0, { guildState: merchant({ merchants_bulk_deals: 5 }) });
+
+      const price = veggies[0].salePrice * 1.15;
+      expect(within(shedOf('Radish')).getByText(`$${formatNumber(price, 2)} each`)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Sell All/ })).toHaveTextContent(`Sell All · $${formatNumber(100 * price * 1.1, 2)}`);
+    });
+
+    it("doubles what sells during Ferdinand's Hot Tip, and marks it on Sell All, the beds and the shed", () => {
+      const veggies = crops(all => all.map((crop, i) => (i === 0 ? { ...crop, stash: 10, sellEnabled: true } : { ...crop, sellEnabled: false })));
+      renderTab(veggies, 0, { guildState: { ...merchant(), ferdinand: { hotTips: 1, hotTipLeft: 30 } } });
+
+      const price = veggies[0].salePrice * 1.15 * 2;
+      const sellAll = screen.getByRole('button', { name: /^Sell All/ });
+      expect(sellAll).toHaveTextContent(`Sell All · $${formatNumber(10 * price, 2)}×2`);
+      expect(within(bedOf('Radish')).getByRole('button', { name: 'Radish: Sell. Click to Hold' })).toHaveTextContent('Sell×2');
+      expect(within(bedOf('Lettuce')).getByRole('button', { name: 'Lettuce: Hold. Click to Sell' })).not.toHaveTextContent('×2');
+      expect(within(shedOf('Radish')).getByText(`$${formatNumber(price, 2)} each`)).toHaveTextContent('×2');
+    });
+
+    it('prices crop upgrades with Wholesale, and buys them at that price', () => {
+      const veggies = crops();
+      const { handlers } = renderTab(veggies, 1, { guildState: merchant({ merchants_wholesale: 5 }) });
+      const shed = shedOf(veggies[1].name);
+
+      fireEvent.click(within(shed).getByRole('button', { name: `Buy Fertilizer for $${formatNumber(veggies[1].fertilizerCost * 0.9, 1)}` }));
+      expect(handlers.handleBuyFertilizer).toHaveBeenCalledWith(1, expect.closeTo(0.9, 10));
     });
   });
 });

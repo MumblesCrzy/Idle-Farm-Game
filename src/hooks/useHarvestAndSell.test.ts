@@ -323,6 +323,50 @@ describe('useHarvestAndSell', () => {
       const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
       expect(addMoney(0)).toBeCloseTo(95 * 0.9);
     });
+
+    it('sells for 15% more for committed Merchants, and pays Bulk Deals on a sale of 100 crops or more', () => {
+      const merchants: GuildState = {
+        ...DEFAULT_GUILD_STATE,
+        committedGuild: 'merchants',
+        status: 'committed',
+        purchasedUpgrades: ['merchants_bulk_deals'],
+        upgradeLevels: { merchants_bulk_deals: 5 }
+      };
+      // 100 Carrots at $10 and 3 Potatoes at $15
+      const deps = createDefaultDeps({ guildState: merchants, veggies: createMockVeggies([{ stash: 100 }]) });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleSell(false);
+      });
+
+      const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(addMoney(0)).toBeCloseTo(1045 * 1.15 * 1.1);
+      expect(deps.eventLogCallbacks.onMerchantSale).toHaveBeenCalledWith(
+        expect.closeTo(1045 * 1.15 * 1.1, 6),
+        expect.arrayContaining([expect.objectContaining({ name: 'Carrot', quantity: 100, earnings: expect.closeTo(1000 * 1.15 * 1.1, 6) })]),
+        false
+      );
+    });
+
+    it('pays no Bulk Deals on a sale under 100 crops', () => {
+      const merchants: GuildState = {
+        ...DEFAULT_GUILD_STATE,
+        committedGuild: 'merchants',
+        status: 'committed',
+        purchasedUpgrades: ['merchants_bulk_deals'],
+        upgradeLevels: { merchants_bulk_deals: 5 }
+      };
+      const deps = createDefaultDeps({ guildState: merchants });
+      const { result } = renderHook(() => useHarvestAndSell(deps));
+
+      act(() => {
+        result.current.handleSell(false);
+      });
+
+      const addMoney = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(addMoney(0)).toBeCloseTo(95 * 1.15);
+    });
   });
 
   describe('handleRitualHarvestAll', () => {

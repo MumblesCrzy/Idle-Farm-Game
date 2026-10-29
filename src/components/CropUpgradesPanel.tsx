@@ -22,11 +22,13 @@ import { AUTO_PURCHASER_CYCLE_DAYS, veggieSeasonBonuses } from '../config/gameCo
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
 import { glideFill, useGlide } from '../hooks/useGlide';
 import { machineSpeed } from '../utils/stanley';
-import { getAutoBuyerPriceMultiplier, getGrowersPriceBonus, getStandardGradeCropMultiplier, hasFactoryFittedHarvesters, hasWhispersOfSeed } from '../utils/guildCalculations';
+import { getAutoBuyerPriceMultiplier, getGuildCropPriceBonus, getHotTipMultiplier, getStandardGradeCropMultiplier, getWholesalePriceMultiplier, hasFactoryFittedHarvesters, hasWhispersOfSeed } from '../utils/guildCalculations';
 import styles from './CropUpgradesPanel.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
 type CropHandler = (index: number) => void;
+/** Buys a crop upgrade; a price factor below 1 pays less, as with Wholesale */
+type PricedCropHandler = (index: number, priceFactor?: number) => void;
 
 /** How a buy button looks: affordable, too dear, or nothing to buy */
 type BuyState = 'afford' | 'short' | 'max';
@@ -140,12 +142,12 @@ interface CropUpgradesPanelProps {
   salePrice: number;
   beeYieldBonus: number;
   guildState?: GuildState;
-  onBuyFertilizer: CropHandler;
-  onBuyBetterSeeds: CropHandler;
-  onBuyAdditionalPlot: CropHandler;
+  onBuyFertilizer: PricedCropHandler;
+  onBuyBetterSeeds: PricedCropHandler;
+  onBuyAdditionalPlot: PricedCropHandler;
   onBuyHarvester: CropHandler;
   onToggleAutoHarvester: CropHandler;
-  onBuyHarvesterSpeed: CropHandler;
+  onBuyHarvesterSpeed: PricedCropHandler;
   onBuyAutoPurchaser: (autoPurchaserId: string) => CropHandler;
   formatNumber: FormatNumber;
 }
@@ -169,12 +171,14 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
   onBuyAutoPurchaser,
   formatNumber
 }) => {
-  const buyFertilizer = useCallback(() => onBuyFertilizer(cropIndex), [onBuyFertilizer, cropIndex]);
-  const buyBetterSeeds = useCallback(() => onBuyBetterSeeds(cropIndex), [onBuyBetterSeeds, cropIndex]);
-  const buyAdditionalPlot = useCallback(() => onBuyAdditionalPlot(cropIndex), [onBuyAdditionalPlot, cropIndex]);
+  // Wholesale: the Merchants pay less for every crop upgrade
+  const wholesale = getWholesalePriceMultiplier(guildState);
+  const buyFertilizer = useCallback(() => onBuyFertilizer(cropIndex, wholesale), [onBuyFertilizer, cropIndex, wholesale]);
+  const buyBetterSeeds = useCallback(() => onBuyBetterSeeds(cropIndex, wholesale), [onBuyBetterSeeds, cropIndex, wholesale]);
+  const buyAdditionalPlot = useCallback(() => onBuyAdditionalPlot(cropIndex, wholesale), [onBuyAdditionalPlot, cropIndex, wholesale]);
   const buyHarvester = useCallback(() => onBuyHarvester(cropIndex), [onBuyHarvester, cropIndex]);
   const toggleAutoHarvester = useCallback(() => onToggleAutoHarvester(cropIndex), [onToggleAutoHarvester, cropIndex]);
-  const buyHarvesterSpeed = useCallback(() => onBuyHarvesterSpeed(cropIndex), [onBuyHarvesterSpeed, cropIndex]);
+  const buyHarvesterSpeed = useCallback(() => onBuyHarvesterSpeed(cropIndex, wholesale), [onBuyHarvesterSpeed, cropIndex, wholesale]);
   const buyAutoPurchaser = useCallback(
     (autoPurchaserId: string) => onBuyAutoPurchaser(autoPurchaserId)(cropIndex),
     [onBuyAutoPurchaser, cropIndex]
@@ -204,17 +208,22 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
   };
 
   const dollars = (amount: number) => `$${formatNumber(amount, 1)}`;
+  const fertilizerCost = crop.fertilizerCost * wholesale;
+  const betterSeedsCost = crop.betterSeedsCost * wholesale;
+  const additionalPlotCost = crop.additionalPlotCost * wholesale;
+  const wholesaleNote = wholesale < 1 ? ` (Wholesale, ${Math.round((1 - wholesale) * 100)}% off)` : '';
   const fertilizerMaxed = crop.fertilizerLevel >= crop.fertilizerMaxLevel;
   const seedsMultiplier = heirloomOwned ? 1.5 : 1.25;
   const seedsBonus = (level: number) => formatNumber(Math.round((seedsMultiplier ** level - 1) * 100), 2);
-  const harvesterSpeedCost = crop.harvesterSpeedCost ?? 50;
+  const harvesterSpeedCost = (crop.harvesterSpeedCost ?? 50) * wholesale;
   // The same intervals the live auto-harvest uses
   const interval = getHarvesterInterval(crop, guildState);
   const nextInterval = getHarvesterInterval({ ...crop, harvesterSpeedLevel: (crop.harvesterSpeedLevel ?? 0) + 1 }, guildState);
   const harvesterShare = interval > 0 ? Math.min(100, (crop.harvesterTimer / interval) * 100) : 0;
   const harvesterGlides = useGlide(harvesterShare);
 
-  const guildPriceBonus = guildState ? getGrowersPriceBonus(guildState) : 0;
+  // The Growers' and the Merchants' bonuses, Markup included
+  const guildPriceBonus = guildState ? getGuildCropPriceBonus(guildState) : 0;
   const priceParts = [`$${formatNumber(crop.salePrice, 2)} base`];
   if (guildPriceBonus > 0) {
     priceParts.push(`× ${formatNumber(1 + guildPriceBonus, 2)} guild (+${Math.round(guildPriceBonus * 100)}%)`);
@@ -226,6 +235,9 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
   if (gradeMultiplier < 1) {
     priceParts.push(`× ${formatNumber(gradeMultiplier, 2)} Standard Grade (-${Math.round((1 - gradeMultiplier) * 100)}%)`);
   }
+  // Ferdinand's Hot Tip
+  const hotTip = getHotTipMultiplier(guildState) > 1;
+  if (hotTip) priceParts.push('× 2 Hot Tip');
 
   return (
     <section className={styles.panel} aria-label={`${crop.name} upgrades`}>
@@ -240,7 +252,7 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         <div className={styles.headerText}>
           <h3 className={styles.title}>{crop.name}</h3>
           <span className={styles.subline}>
-            <span title={priceParts.join(' ')}>${formatNumber(salePrice, 2)} each</span> · {formatNumber(crop.stash, 0)} in stash
+            <span title={priceParts.join(' ')}>${formatNumber(salePrice, 2)} each{hotTip && <span className={styles.hotTipMark}>×2</span>}</span> · {formatNumber(crop.stash, 0)} in stash
           </span>
         </div>
         {beeYieldBonus > 0 && (
@@ -257,12 +269,12 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         effect={fertilizerMaxed
           ? `Growth +${crop.fertilizerLevel * 5}%, its top level`
           : `Growth +${crop.fertilizerLevel * 5}%, next +${(crop.fertilizerLevel + 1) * 5}%`}
-        buyText={fertilizerMaxed ? 'Max' : dollars(crop.fertilizerCost)}
-        state={buyState(money >= crop.fertilizerCost, fertilizerMaxed)}
-        buyLabel={fertilizerMaxed ? 'Fertilizer: Max, its top level' : `Buy Fertilizer for ${dollars(crop.fertilizerCost)}`}
+        buyText={fertilizerMaxed ? 'Max' : dollars(fertilizerCost)}
+        state={buyState(money >= fertilizerCost, fertilizerMaxed)}
+        buyLabel={fertilizerMaxed ? 'Fertilizer: Max, its top level' : `Buy Fertilizer for ${dollars(fertilizerCost)}`}
         buyTitle={fertilizerMaxed
           ? 'Fertilizer: MAX Level Reached'
-          : `Fertilizer: +5% growth speed - Cost: $${formatNumber(crop.fertilizerCost, 1)}`}
+          : `Fertilizer: +5% growth speed - Cost: $${formatNumber(fertilizerCost, 1)}${wholesaleNote}`}
         onBuy={buyFertilizer}
       >
         {autoBuyer('assistant', `Auto-purchases fertilizer every ${AUTO_PURCHASER_CYCLE_DAYS} days`)}
@@ -273,10 +285,10 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         name="Better Seeds"
         level={crop.betterSeedsLevel}
         effect={`Price +${seedsBonus(crop.betterSeedsLevel)}%, next +${seedsBonus(crop.betterSeedsLevel + 1)}%`}
-        buyText={`${formatNumber(crop.betterSeedsCost, 1)} Kn`}
-        state={buyState(knowledge >= crop.betterSeedsCost)}
-        buyLabel={`Buy Better Seeds for ${formatNumber(crop.betterSeedsCost, 1)} Kn`}
-        buyTitle={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${formatNumber(crop.betterSeedsCost, 1)}Kn`}
+        buyText={`${formatNumber(betterSeedsCost, 1)} Kn`}
+        state={buyState(knowledge >= betterSeedsCost)}
+        buyLabel={`Buy Better Seeds for ${formatNumber(betterSeedsCost, 1)} Kn`}
+        buyTitle={`Better Seeds: +${heirloomOwned ? 50 : 25}% sale price - Cost: ${formatNumber(betterSeedsCost, 1)}Kn${wholesaleNote}`}
         onBuy={buyBetterSeeds}
       >
         {autoBuyer('cultivator', `Auto-purchases better seeds every ${AUTO_PURCHASER_CYCLE_DAYS} days`)}
@@ -287,14 +299,14 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
         name="Additional Plot"
         level={crop.additionalPlotLevel}
         effect={`+${crop.additionalPlotLevel} ${crop.name} per harvest`}
-        buyText={farmFull ? 'Farm full' : dollars(crop.additionalPlotCost)}
-        state={buyState(money >= crop.additionalPlotCost, farmFull)}
+        buyText={farmFull ? 'Farm full' : dollars(additionalPlotCost)}
+        state={buyState(money >= additionalPlotCost, farmFull)}
         buyLabel={farmFull
           ? 'Additional Plot: Farm full, no free plots'
-          : `Buy an Additional Plot for ${dollars(crop.additionalPlotCost)}`}
+          : `Buy an Additional Plot for ${dollars(additionalPlotCost)}`}
         buyTitle={farmFull
           ? 'Max Plots Reached'
-          : `Additional Plot: +1 veggie/harvest - Cost: $${formatNumber(crop.additionalPlotCost, 1)}`}
+          : `Additional Plot: +1 veggie/harvest - Cost: $${formatNumber(additionalPlotCost, 1)}${wholesaleNote}`}
         onBuy={buyAdditionalPlot}
       >
         {autoBuyer('surveyor', `Auto-purchases additional plot every ${AUTO_PURCHASER_CYCLE_DAYS} days`, farmFull)}
@@ -309,7 +321,7 @@ const CropUpgradesPanel: FC<CropUpgradesPanelProps> = memo(({
           buyText={dollars(harvesterSpeedCost)}
           state={buyState(money >= harvesterSpeedCost)}
           buyLabel={`Buy Harvester Speed for ${dollars(harvesterSpeedCost)}`}
-          buyTitle={`Harvester Speed: +5% speed - Cost: $${formatNumber(harvesterSpeedCost, 1)}`}
+          buyTitle={`Harvester Speed: +5% speed - Cost: $${formatNumber(harvesterSpeedCost, 1)}${wholesaleNote}`}
           onBuy={buyHarvesterSpeed}
         >
           {autoBuyer('mechanic', `Auto-purchases Harvester Speed every ${AUTO_PURCHASER_CYCLE_DAYS} days`)}

@@ -12,8 +12,10 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import {
   getVeggieImage,
+  GUILD_MERCHANTS,
   ICON_AUTOMATION,
   ICON_CRATE,
+  ICON_KNOWLEDGE,
   ICON_LOCK,
   ICON_MONEY,
   UPGRADE_ADDITIONAL_PLOT,
@@ -25,8 +27,9 @@ import {
 import { AUTO_PURCHASER_CYCLE_DAYS, GROWTH_COMPLETE_THRESHOLD, veggieSeasonBonuses } from '../config/gameConstants';
 import { getHarvesterInterval } from '../utils/gameLoopProcessors';
 import { glideFill, glideRing, useGlide } from '../hooks/useGlide';
-import { hasHandsOff } from '../utils/guildCalculations';
+import { getHotTipMultiplier, hasHandsOff } from '../utils/guildCalculations';
 import { machineSpeed } from '../utils/stanley';
+import type { PayrollControl } from '../hooks/usePayroll';
 import styles from './CropGarden.module.css';
 
 export type CropGroup = 'vegetables' | 'fruits';
@@ -155,6 +158,8 @@ const Bed: FC<BedProps> = memo(({
   const machine = hasHandsOff(guildState);
   // Stanley's Tune-Up counts the harvester down twice as fast
   const speed = machineSpeed(guildState);
+  // Ferdinand's Hot Tip: what is marked Sell sells for double
+  const hotTip = crop.sellEnabled && getHotTipMultiplier(guildState) > 1;
   const secondsToPass = Math.max(0, Math.ceil((interval - crop.harvesterTimer) / speed));
   const machineText = ready ? `Next pass ${secondsToPass} s` : secondsToPass > 0 ? `${secondsToPass} s` : 'Waiting';
   const secondsToGrow = growthMultiplier > 0 ? Math.max(0, Math.ceil((100 - crop.growth) / growthMultiplier)) : null;
@@ -207,10 +212,13 @@ const Bed: FC<BedProps> = memo(({
           className={crop.sellEnabled ? styles.sellPill : styles.holdPill}
           onClick={() => onToggleSell(index)}
           aria-label={crop.sellEnabled ? `${crop.name}: Sell. Click to Hold` : `${crop.name}: Hold. Click to Sell`}
-          title={crop.sellEnabled ? 'Sold by Sell All and the Merchant (click to Hold)' : 'Kept in the stash (click to Sell)'}
+          title={hotTip
+            ? 'Sold for double during the Hot Tip, by Sell All and the Merchant (click to Hold)'
+            : crop.sellEnabled ? 'Sold by Sell All and the Merchant (click to Hold)' : 'Kept in the stash (click to Sell)'}
         >
           <img src={crop.sellEnabled ? ICON_MONEY : ICON_CRATE} alt="" aria-hidden="true" />
           {crop.sellEnabled ? 'Sell' : 'Hold'}
+          {hotTip && <span className={styles.hotTipMark}>×2</span>}
         </button>
         {machine ? (
           speed > 1 && <span className={styles.tuneUpChip} title="Stanley's Tune-Up: this machine runs twice as fast">×2</span>
@@ -288,6 +296,49 @@ const Bed: FC<BedProps> = memo(({
 
 Bed.displayName = 'Bed';
 
+/** Payroll, for committed Merchants: lay off every auto-buyer, or hire everyone back, all or none */
+const PayrollSwitch: FC<{ payroll: PayrollControl; formatNumber: FormatNumber }> = ({ payroll, formatNumber }) => {
+  const { staff, rehire, canRehire, onLayOff, onRehire } = payroll;
+  if (staff > 0) {
+    return (
+      <div className={styles.payroll}>
+        <img src={GUILD_MERCHANTS} alt="" aria-hidden="true" />
+        <span className={styles.payrollLabel}>Payroll: {staff} on staff</span>
+        <button
+          type="button"
+          className={styles.layOff}
+          onClick={onLayOff}
+          title="Fires every Assistant, Cultivator, Surveyor and Mechanic. Nothing is refunded, and hiring them back costs their full prices"
+        >
+          Lay off everyone
+        </button>
+      </div>
+    );
+  }
+  const money = `$${formatNumber(rehire.money, 2)}`;
+  const knowledge = formatNumber(rehire.knowledge, 2);
+  return (
+    <div className={`${styles.payroll} ${styles.payrollOff}`}>
+      <img src={GUILD_MERCHANTS} alt="" aria-hidden="true" />
+      <span className={styles.payrollLabel}>Payroll: laid off</span>
+      <button
+        type="button"
+        className={styles.rehire}
+        onClick={onRehire}
+        disabled={!canRehire}
+        aria-label={`Rehire everyone for ${money} and ${knowledge} knowledge`}
+        title={canRehire
+          ? `Hires all ${rehire.count} auto-buyers on every open crop`
+          : `Needs ${money} and ${knowledge} knowledge for all ${rehire.count} at once`}
+      >
+        Rehire everyone
+        <img src={ICON_MONEY} alt="" aria-hidden="true" />{money}
+        {rehire.knowledge > 0 && <><img src={ICON_KNOWLEDGE} alt="" aria-hidden="true" />{knowledge}</>}
+      </button>
+    </div>
+  );
+};
+
 interface CropGardenProps {
   veggies: Veggie[];
   /** The kind of crop on show */
@@ -307,6 +358,8 @@ interface CropGardenProps {
   formatNumber: FormatNumber;
   /** The guild's effect on Auto Harvesters */
   guildState?: GuildState;
+  /** Payroll, for committed Merchants */
+  payroll?: PayrollControl;
 }
 
 const CropGarden: FC<CropGardenProps> = memo(({
@@ -324,7 +377,8 @@ const CropGarden: FC<CropGardenProps> = memo(({
   onToggleSell,
   onBuyHarvester,
   formatNumber,
-  guildState
+  guildState,
+  payroll
 }) => {
   const showFruits = group === 'fruits';
   const beds = veggies
@@ -360,9 +414,9 @@ const CropGarden: FC<CropGardenProps> = memo(({
             Vegetables <span className={styles.count}>{unlockedOf(false)}</span>
           </h3>
         )}
-        <span className={styles.hint}>
+        {!payroll && <span className={styles.hint}>
           {machines ? 'Machines harvest every bed. Click a bed to see its upgrades' : 'Click a bed to see its upgrades in the shed'}
-        </span>
+        </span>}
         <span className={styles.spacer} />
         {autoBuyersWorking && (
           <div className={styles.timer} title={`Auto-buyers buy a level of their upgrade every ${AUTO_PURCHASER_CYCLE_DAYS} days, when you can afford it`}>
@@ -373,6 +427,13 @@ const CropGarden: FC<CropGardenProps> = memo(({
             </span>
           </div>
         )}
+        {payroll && payroll.staff === 0 && (
+          <div className={`${styles.timer} ${styles.timerIdle}`}>
+            <img src={ICON_AUTOMATION} alt="" aria-hidden="true" />
+            No auto-buyers on staff
+          </div>
+        )}
+        {payroll && <PayrollSwitch payroll={payroll} formatNumber={formatNumber} />}
       </div>
 
       <ul className={styles.beds} aria-label={showFruits ? 'Fruits' : 'Vegetables'}>

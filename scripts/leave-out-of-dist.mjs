@@ -17,6 +17,8 @@ const NOT_SHIPPED = [
   // Stanley's full-size originals: the game loads the 256 px copies
   'Stanley.png',
   'Stanley Halloween.png',
+  // Ferdinand's full-size original: the game loads the 256 px copy
+  'Ferdinand.png',
   // Art for the itch.io page
   'Background_spring.png',
   'Cover Image.png',

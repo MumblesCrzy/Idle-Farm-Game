@@ -3,7 +3,7 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
-import { applyGuildPriceBonuses, awardGuildTokens, getUpgradeLevel, hasHandsOff, isCommittedTo } from '../utils/guildCalculations';
+import { applyGuildPriceBonuses, awardGuildTokens, getBulkDealsMultiplier, getUpgradeLevel, hasHandsOff, isCommittedTo } from '../utils/guildCalculations';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { useLatestRef } from './useLatestRef';
@@ -382,6 +382,13 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       }
     }
     if (soldVeggies.length === 0) return;
+
+    // Bulk Deals: a sale of 100 crops or more pays more on every line
+    const bulk = getBulkDealsMultiplier(guildState, soldVeggies.reduce((sum, s) => sum + s.quantity, 0));
+    if (bulk > 1) {
+      for (const sold of soldVeggies) sold.earnings *= bulk;
+      total *= bulk;
+    }
 
     // Remove only what was sold, so a harvest that lands meanwhile is kept
     const soldByName = new Map(soldVeggies.map(s => [s.name, s.quantity]));

@@ -7,7 +7,7 @@
 
 import { AUTO_HARVEST_EXPERIENCE_MULTIPLIER, AUTO_HARVEST_KNOWLEDGE_MULTIPLIER } from '../config/gameConstants';
 import type { GuildState } from '../types/guilds';
-import { getGrowersManualHarvestBonus, getBlessedCropChance, getQualityGradingExpBonus, getGuildBeeYieldBonus, getAutoHarvestYieldBonus, hasFullAutoHarvestRewards } from './guildCalculations';
+import { getGrowersManualHarvestBonus, getBlessedCropChance, getQualityGradingExpBonus, getGuildBeeYieldBonus, getAutoHarvestYieldBonus, getGuildKnowledgeMultiplier, hasFullAutoHarvestRewards } from './guildCalculations';
 
 /**
  * Result of harvest amount calculation
@@ -157,11 +157,12 @@ export function calculateHarvestRewards(
     guildState
   );
 
+  // Committed Merchants learn less: No Time to Learn
   const knowledgeGain = calculateKnowledgeGain(
     almanacLevel,
     farmTier,
     reducedRewards
-  );
+  ) * getGuildKnowledgeMultiplier(guildState);
 
   return {
     harvestAmount: harvestResult.amount,

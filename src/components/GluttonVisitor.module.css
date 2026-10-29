@@ -30,9 +30,10 @@
   white-space: nowrap;
 }
 
+/* Smaller than Archie's 80 px, because Dunkin fills more of his picture */
 .dog {
-  width: 96px;
-  height: 96px;
+  width: 72px;
+  height: 72px;
   filter: drop-shadow(0 0 8px rgba(139, 69, 19, 0.7));
   transition: transform 0.2s;
 }
@@ -42,7 +43,7 @@
 }
 
 .belly {
-  width: 80px;
+  width: 60px;
   height: 8px;
   overflow: hidden;
   border: 1px solid #3d2314;

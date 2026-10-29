@@ -14,7 +14,7 @@ import { sortRecipesByPreference, type RecipeValueContext, filterRecipesByCatego
 import { useDeferredEffects } from './useDeferredEffects';
 import { GAME_STEP_MS } from '../utils/gameClock';
 import { machineSpeed } from '../utils/stanley';
-import { getOfflineCapMs, isEngineer } from '../utils/guildCalculations';
+import { ADDITIVES_UPGRADE, getOfflineCapMs, isEngineer, withAdditives, withoutHotTip } from '../utils/guildCalculations';
 import {
   CANNER_INTERVAL_STEPS,
   FLOOR_CHECK_STEPS,
@@ -219,8 +219,9 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
   const onFloor = isEngineer(guildState);
   const onFloorRef = useLatestRef(onFloor);
 
-  // Guild upgrades decide which recipes exist: the Cellar recipes need Cellar Recipes, bought this
-  // Legacy or kept from an earlier one. One string, so the list is rebuilt only when the set changes.
+  // Guild upgrades decide which recipes exist and what they take: the Cellar recipes need Cellar
+  // Recipes, and Additives cut each crop by one, bought this Legacy or kept from an earlier one.
+  // One string, so the list is rebuilt only when the set changes.
   const ownedGuildUpgradesKey = guildState
     ? [...guildState.purchasedUpgrades, ...(guildState.legacy?.keptUnlocks ?? [])].join('|')
     : '';
@@ -234,6 +235,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
       const completed = new Map(prev.recipes.map(recipe => [recipe.id, recipe.timesCompleted]));
       const ownedGuildUpgrades = new Set(ownedGuildUpgradesKey.split('|'));
       const beeUpgradesOwned = new Set(ownedBeeUpgradesKey.split('|'));
+      const additives = ownedGuildUpgrades.has(ADDITIVES_UPGRADE);
       const available = INITIAL_RECIPES.filter(config =>
         (!config.requiredGuildUpgrade || ownedGuildUpgrades.has(config.requiredGuildUpgrade)) &&
         (!config.requiredBeeUpgrade || beeUpgradesOwned.has(config.requiredBeeUpgrade)));
@@ -243,7 +245,7 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
           return {
             veggieIndex,
             veggieName: ing.veggieName,
-            quantity: ing.quantity
+            quantity: withAdditives(ing.quantity, additives)
           };
         });
         
@@ -599,7 +601,8 @@ export function useCanningSystem<T extends {name: string, stash: number, salePri
         cannerOn,
         floor,
         heirloomOwned: heirloomOwnedRef.current,
-        guildState: guildStateRef.current,
+        // Batches finished while away pay their usual value, even if a Hot Tip was running
+        guildState: withoutHotTip(guildStateRef.current),
         random: seededRandom(seed)
       });
       scheduleAfterCommit(key, () => applyCatchUp(result));

@@ -1,7 +1,7 @@
 /**
  * Growing Tab: the garden.
  *
- * A plank along the top holds Growing Experience, the Growers' or the Engineers' bonuses, the
+ * A plank along the top holds Growing Experience, the Growers', Engineers' or Merchants' bonuses, the
  * Engineers' Gears, Ritual Harvest and Sell All. Below it every crop of a kind (vegetables, or fruits once the Growers' Fruit Cultivation
  * opens them) has a raised bed with its growth, Sell or Hold, the Auto Harvester, upgrade levels
  * with their auto-buyers, and Harvest. The tool shed on the right holds the picked crop's
@@ -15,16 +15,23 @@ import CropGarden, { type CropGroup } from './CropGarden';
 import CropUpgradesPanel from './CropUpgradesPanel';
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
-import { GUILD_ENGINEERS, GUILD_GROWERS, ICON_EXPERIENCE, ICON_GEARS, ICON_MONEY, ICON_RITUAL_HARVEST, ICON_SIGIL } from '../config/assetPaths';
+import type { PayrollControl } from '../hooks/usePayroll';
+import { GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, ICON_EXPERIENCE, ICON_GEARS, ICON_MONEY, ICON_RITUAL_HARVEST, ICON_SIGIL } from '../config/assetPaths';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import {
   applyGuildPriceBonuses,
   getBlessedCropChance,
+  getBulkDealsBonus,
+  getBulkDealsMultiplier,
   getEngineersHarvesterSpeedMultiplier,
   getGrowersBeePollinationBonus,
   getGrowersGrowthBonus,
   getGrowersManualHarvestBonus,
   getGrowersPriceBonus,
+  getGuildKnowledgeMultiplier,
+  getHotTipMultiplier,
+  getMerchantsCropPriceBonus,
+  getMerchantsJarValueBonus,
   getStandardGradeCropMultiplier,
   getStandardGradeJarMultiplier,
   getUpgradeLevel,
@@ -34,6 +41,8 @@ import {
 import styles from './GrowingTab.module.css';
 
 type CropHandler = (index: number) => void;
+/** Buys a crop upgrade; a price factor below 1 pays less, as with Wholesale */
+type PricedCropHandler = (index: number, priceFactor?: number) => void;
 
 /** Sigils spent by one Ritual Harvest */
 const RITUAL_HARVEST_COST = 5;
@@ -58,16 +67,18 @@ interface GrowingTabProps {
   handleToggleAutoHarvester: CropHandler;
   handleSell: () => void;
   handleRitualHarvestAll: () => void;
-  handleBuyFertilizer: CropHandler;
+  handleBuyFertilizer: PricedCropHandler;
   handleBuyHarvester: CropHandler;
-  handleBuyBetterSeeds: CropHandler;
-  handleBuyAdditionalPlot: CropHandler;
-  handleBuyHarvesterSpeed: CropHandler;
+  handleBuyBetterSeeds: PricedCropHandler;
+  handleBuyAdditionalPlot: PricedCropHandler;
+  handleBuyHarvesterSpeed: PricedCropHandler;
   handleBuyAutoPurchaser: (autoPurchaseId: string) => CropHandler;
   formatNumber: (num: number, decimalPlaces?: number) => string;
   guildState?: GuildState;
   /** Farm-wide upgrades, shown in the shed under the picked crop's upgrades */
   upgradesSidebar: ReactNode;
+  /** Payroll, for committed Merchants */
+  payroll?: PayrollControl;
 }
 
 /** Growers Guild bonuses, shown while committed to the guild */
@@ -123,6 +134,34 @@ const EngineersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
   );
 };
 
+/** Merchants Guild bonuses and their trade-off, shown while committed to the guild */
+const MerchantsBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
+  const cropBonus = getMerchantsCropPriceBonus(guildState);
+  const jarBonus = getMerchantsJarValueBonus(guildState);
+  const bulkBonus = getBulkDealsBonus(guildState);
+  const knowledgeCut = 1 - getGuildKnowledgeMultiplier(guildState);
+
+  return (
+    <div className={styles.guildBonuses} role="group" aria-label="Merchants Guild bonuses">
+      <img src={GUILD_MERCHANTS} alt="" aria-hidden="true" title="Merchants Guild" className={styles.guildEmblem} />
+      <span className={styles.tradeChip} title="Crop prices from Markup, Haggling and Shrewd Bargaining">
+        +{Math.round(cropBonus * 100)}% Crops
+      </span>
+      <span className={styles.tradeChip} title="Canned goods value from Markup and Price Gouging">
+        +{Math.round(jarBonus * 100)}% Jars
+      </span>
+      {bulkBonus > 0 && (
+        <span className={styles.tradeChip} title="Bulk Deals: a sale of 100 crops or more pays this much more">
+          +{Math.round(bulkBonus * 100)}% Bulk
+        </span>
+      )}
+      <span className={styles.tradeChip} title={`No Time to Learn: knowledge from harvests and canning is ${Math.round(knowledgeCut * 100)}% lower`}>
+        -{Math.round(knowledgeCut * 100)}% Knowledge
+      </span>
+    </div>
+  );
+};
+
 const GrowingTab: FC<GrowingTabProps> = memo(({
   veggies,
   activeVeggie,
@@ -149,7 +188,8 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
   handleBuyAutoPurchaser,
   formatNumber,
   guildState,
-  upgradesSidebar
+  upgradesSidebar,
+  payroll
 }) => {
   const crop: Veggie | undefined = veggies[activeVeggie];
   const farmFull = totalPlotsUsed >= maxPlots;
@@ -174,7 +214,12 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
     [guildState]
   );
   const hasSellable = veggies.some(v => v.sellEnabled && v.stash > 0);
-  const sellAllValue = veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * salePriceOf(v) : sum, 0);
+  // Ferdinand's Hot Tip: the prices are already doubled, and Sell All says so
+  const hotTip = getHotTipMultiplier(guildState) > 1;
+  const sellAllCrops = veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash : sum, 0);
+  // Bulk Deals pay more on a sale of 100 crops or more
+  const sellAllValue = veggies.reduce((sum, v) => v.sellEnabled ? sum + v.stash * salePriceOf(v) : sum, 0)
+    * getBulkDealsMultiplier(guildState, sellAllCrops);
 
   const ritualUnlocked = !!guildState && isCommittedTo(guildState, 'growers')
     && getUpgradeLevel(guildState, 'growers_ritual_circles') > 0;
@@ -194,6 +239,7 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
         </span>
         {guildState && isCommittedTo(guildState, 'growers') && <GrowersBonuses guildState={guildState} />}
         {guildState && engineer && <EngineersBonuses guildState={guildState} />}
+        {guildState && isCommittedTo(guildState, 'merchants') && <MerchantsBonuses guildState={guildState} />}
         <span className={styles.spacer} />
         {engineer && (
           <span className={styles.gearsChip} title="Gears, made by your machines">
@@ -219,13 +265,16 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
         )}
         <button
           type="button"
-          className={styles.sellAllButton}
+          className={`${styles.sellAllButton} ${hotTip ? styles.sellAllHot : ''}`}
           onClick={handleSell}
           disabled={!hasSellable}
-          title="Sells every crop marked Sell. Crops on Hold stay in the stash"
+          title={hotTip
+            ? "Ferdinand's Hot Tip: every crop marked Sell sells for double. Crops on Hold stay in the stash"
+            : 'Sells every crop marked Sell. Crops on Hold stay in the stash'}
         >
           <InlineIcon src={ICON_MONEY} size={22} gap={8} />
           {hasSellable ? `Sell All · $${formatNumber(sellAllValue, 2)}` : 'Nothing to sell'}
+          {hotTip && hasSellable && <span className={styles.timesTwo}>×2</span>}
         </button>
       </div>
 
@@ -245,6 +294,7 @@ const GrowingTab: FC<GrowingTabProps> = memo(({
         onBuyHarvester={handleBuyHarvester}
         formatNumber={formatNumber}
         guildState={guildState}
+        payroll={payroll}
       />
 
       <div className={styles.shed}>

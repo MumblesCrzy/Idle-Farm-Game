@@ -299,9 +299,9 @@ export const PATCH_UPGRADES: EventUpgrade[] = [
     owned: false,
     effect: '+10% Atlantic Giant weight',
     requires: 'unlock_giant',
+    // No top level: the rising price is the only limit
     repeatable: true,
     level: 0,
-    maxLevel: 10,
     costScaling: 1.6,
   },
   {
@@ -494,8 +494,8 @@ export const PUMPKIN_EVENT_CONSTANTS = {
   // County Fair weigh-off
   FAIR_INTERVAL_DAYS: 365,    // once a game year, about six real minutes
   RIVAL_COUNT: 3,
-  RIVAL_BASE_WEIGHT: 520,       // pounds at the first fair
-  RIVAL_GROWTH_PER_FAIR: 0.12,  // rivals get heavier each fair you enter
+  RIVAL_BASE_WEIGHT: 520,       // pounds until your first win
+  RIVAL_GROWTH_PER_WIN: 0.12,   // rivals get heavier only when you win first place
   RIVAL_SPREAD: 0.4,            // each rival is 80% to 120% of the base
 } as const;
 

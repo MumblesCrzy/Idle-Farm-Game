@@ -10,7 +10,7 @@ import type { GuildState } from '../types/guilds';
 import type { CanningProcess } from '../types/canning';
 import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
-import { getOfflineCapMs } from './guildCalculations';
+import { applyGuildPriceBonuses, getBulkDealsMultiplier, getMerchantDays, getOfflineCapMs, hasFutures } from './guildCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 
 /** One offline step, matching the 1-second interval of the live game loops */
@@ -30,7 +30,43 @@ export interface OfflineProgressResult {
   christmasElvesCraftingTicks: number; // number of elves crafting ticks processed
   christmasPassiveCheerGain: number; // passive Holiday Cheer earned
   beeProgress?: OfflineBeeProgress; // bee system offline progress (optional until fully implemented)
+  /** The Merchant's sales while away, with the Merchants' Futures */
+  awaySales: AwaySales;
 }
+
+/** What the Merchant sold during time away, with Futures */
+export interface AwaySales {
+  money: number;
+  /** Merchant days that sold something */
+  visits: number;
+  /** Each crop sold, added up across the visits */
+  sold: Array<{ name: string; quantity: number; earnings: number }>;
+}
+
+/**
+ * One Merchant visit during time away, as the live sale: every crop marked Sell at its guild
+ * price, with Bulk Deals on 100 crops or more. Adds to the sales and returns the crops after it.
+ */
+function sellAway(veggies: Veggie[], guildState: GuildState | undefined, sales: AwaySales): Veggie[] {
+  const selling = veggies.filter(v => v.sellEnabled && v.stash > 0);
+  if (selling.length === 0) return veggies;
+  const bulk = getBulkDealsMultiplier(guildState, selling.reduce((sum, v) => sum + v.stash, 0));
+  for (const v of selling) {
+    const price = guildState ? applyGuildPriceBonuses(v.salePrice, guildState, false) : v.salePrice;
+    const earnings = v.stash * price * bulk;
+    const line = sales.sold.find(s => s.name === v.name);
+    if (line) {
+      line.quantity += v.stash;
+      line.earnings += earnings;
+    } else {
+      sales.sold.push({ name: v.name, quantity: v.stash, earnings });
+    }
+    sales.money += earnings;
+  }
+  sales.visits += 1;
+  return veggies.map(v => (v.sellEnabled && v.stash > 0 ? { ...v, stash: 0 } : v));
+}
+
 
 /**
  * Calculate and simulate game progress for the time the player was away.
@@ -53,6 +89,8 @@ export function calculateOfflineProgress(
     canningUpgrades: Record<string, number>; // upgrade id -> level
     autoCanning: { enabled: boolean };
     guildState?: GuildState;
+    /** The Merchant farm upgrade, which sells during time away only with Futures */
+    autoSellOwned?: boolean;
     /** Crop yield bonus from bee hives, as the live harvest uses */
     beeYieldBonus?: number;
     /** Achievement bonuses such as Frost Fertilizer and Harvest Moon */
@@ -87,7 +125,8 @@ export function calculateOfflineProgress(
       autoCanningProcessed: 0,
       christmasTreeGrowthTicks: 0,
       christmasElvesCraftingTicks: 0,
-      christmasPassiveCheerGain: 0
+      christmasPassiveCheerGain: 0,
+      awaySales: { money: 0, visits: 0, sold: [] }
     };
   }
 
@@ -113,6 +152,11 @@ export function calculateOfflineProgress(
 
   // Track elapsed time for day counter
   let elapsedMs = 0;
+
+  // Futures: the Merchant keeps his days while the player is away
+  const merchantSells = !!gameState.autoSellOwned && hasFutures(gameState.guildState);
+  const merchantDays = getMerchantDays(gameState.guildState);
+  const awaySales: AwaySales = { money: 0, visits: 0, sold: [] };
 
   // Process veggie growth and auto-harvest
   for (let i = 0; i < ticks; i++) {
@@ -157,6 +201,10 @@ export function calculateOfflineProgress(
       currentDay = (currentDay % 365) + 1;
       currentTotalDays += 1;
       elapsedMs = 0;
+
+      if (merchantSells && currentDay % merchantDays === 0) {
+        currentVeggies = sellAway(currentVeggies, gameState.guildState, awaySales);
+      }
     }
   }
 
@@ -208,7 +256,8 @@ export function calculateOfflineProgress(
     autoCanningProcessed: autoCanningCycles,
     christmasTreeGrowthTicks,
     christmasElvesCraftingTicks,
-    christmasPassiveCheerGain
+    christmasPassiveCheerGain,
+    awaySales
   };
 }
 

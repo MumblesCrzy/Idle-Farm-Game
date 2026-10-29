@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useFarmManagement, type UseFarmManagementDeps } from './useFarmManagement';
 import type { EventLogCallbacks } from '../context/EventLogContext';
+import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
 
 // Mock gameCalculations
 vi.mock('../utils/gameCalculations', () => ({
@@ -27,7 +28,8 @@ vi.mock('../utils/gameCalculations', () => ({
     { cost: c3, level: 0, enabled: false },
     { cost: c4, level: 0, enabled: false }
   ]),
-  calculateExpRequirement: vi.fn((tier) => tier * 95)
+  calculateExpRequirement: vi.fn((tier) => tier * 95),
+  formatNumber: vi.fn((num: number) => String(num))
 }));
 
 /**
@@ -79,6 +81,7 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     setIrrigationOwned: vi.fn(),
     setGlobalAutoPurchaseTimer: vi.fn(),
     setFarmCost: vi.fn(),
+    setGuildState: vi.fn(),
     eventLogCallbacks: createMockEventLogCallbacks(),
     ...overrides
   };
@@ -263,6 +266,42 @@ describe('useFarmManagement', () => {
       });
       
       expect(deps.setActiveVeggie).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('handleHostileTakeover', () => {
+    it('raises the tier and max plots for ten times the farm price, keeping everything else', () => {
+      const deps = createDefaultDeps({ money: 10_000 });
+      const { result } = renderHook(() => useFarmManagement(deps));
+
+      act(() => {
+        result.current.handleHostileTakeover();
+      });
+
+      const pay = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(pay(10_000)).toBe(5_000);
+      // 4 plots + 500 experience / 100, capped at twice 4
+      expect(deps.setMaxPlots).toHaveBeenCalledWith(8);
+      expect(deps.setFarmTier).toHaveBeenCalledWith(2);
+      expect(deps.setFarmCost).toHaveBeenCalledWith(Math.ceil(500 * 1.85));
+      const count = vi.mocked(deps.setGuildState).mock.calls[0][0] as (s: GuildState) => GuildState;
+      expect(count(DEFAULT_GUILD_STATE).takeovers).toBe(1);
+      for (const reset of [deps.setVeggies, deps.setExperience, deps.setKnowledge, deps.setDay, deps.setAlmanacLevel, deps.setAutoSellOwned]) {
+        expect(reset).not.toHaveBeenCalled();
+      }
+      expect(deps.eventLogCallbacks.onAchievementUnlock).toHaveBeenCalledWith(expect.objectContaining({ name: 'Farm Tier 2' }));
+    });
+
+    it('does nothing without ten times the farm price', () => {
+      const deps = createDefaultDeps({ money: 4_999 });
+      const { result } = renderHook(() => useFarmManagement(deps));
+
+      act(() => {
+        result.current.handleHostileTakeover();
+      });
+
+      expect(deps.setMoney).not.toHaveBeenCalled();
+      expect(deps.setFarmTier).not.toHaveBeenCalled();
     });
   });
 

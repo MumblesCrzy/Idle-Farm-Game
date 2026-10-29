@@ -11,6 +11,7 @@ import type {
   EventTimestamp,
   EventMetadata 
 } from '../types/game';
+import { formatNumber } from './gameCalculations';
 import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, ICON_TREE_SHOP, ICON_UPGRADE, PUMPKIN_SUGAR_PIE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
 
 /**
@@ -245,7 +246,7 @@ export function buildMerchantSaleEvent(
 
   return {
     priority: 'important',
-    details: `Sold ${veggiesList} for $${totalMoney}`,
+    details: `Sold ${veggiesList} for $${formatNumber(totalMoney, 2)}`,
     icon: isAutoSell ? icons.merchant : icons.money,
     metadata: {
       moneyGained: totalMoney,

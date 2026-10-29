@@ -182,10 +182,10 @@ export function rollGiantWeight(quality: PumpkinQuality, tonicLevel: number, rol
   return Math.round(base * qualityMultiplier * (1 + tonicLevel * c.GIANT_TONIC_PER_LEVEL) * (1 + seedBonus));
 }
 
-/** Typical rival weight at the next fair; rivals grow with each fair entered */
-export function rivalBaseWeight(fairsEntered: number): number {
+/** Typical rival weight at the next fair; rivals grow only with the first places you win */
+export function rivalBaseWeight(firstPlaces: number): number {
   const c = PUMPKIN_EVENT_CONSTANTS;
-  return c.RIVAL_BASE_WEIGHT * (1 + fairsEntered * c.RIVAL_GROWTH_PER_FAIR);
+  return c.RIVAL_BASE_WEIGHT * (1 + firstPlaces * c.RIVAL_GROWTH_PER_WIN);
 }
 
 /** Candy Corn prize for a placing */
@@ -200,11 +200,12 @@ export function weighOffPrize(placing: FairPlacing, weight: number): number {
 
 /**
  * Judges a giant against the other entries at the fair.
+ * @param firstPlaces - First places won so far, which make the rivals heavier
  * @param rolls - One random number from 0 to 1 per rival
  */
-export function judgeWeighOff(weight: number, fairsEntered: number, rolls: readonly number[]): WeighOffResult {
+export function judgeWeighOff(weight: number, firstPlaces: number, rolls: readonly number[]): WeighOffResult {
   const c = PUMPKIN_EVENT_CONSTANTS;
-  const base = rivalBaseWeight(fairsEntered);
+  const base = rivalBaseWeight(firstPlaces);
   const rivalWeights = Array.from({ length: c.RIVAL_COUNT }, (_, i) =>
     Math.round(base * (1 - c.RIVAL_SPREAD / 2 + (rolls[i] ?? 0.5) * c.RIVAL_SPREAD))
   ).sort((a, b) => b - a);

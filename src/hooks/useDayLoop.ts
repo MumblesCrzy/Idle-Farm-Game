@@ -1,7 +1,6 @@
 import { useRef, useEffect, type Dispatch, type SetStateAction, type MutableRefObject } from 'react';
 import { useGameTick } from './useGameClock';
 import { useDeferredEffects } from './useDeferredEffects';
-import { MERCHANT_DAYS } from '../config/gameConstants';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { UsePumpkinEventReturn } from './usePumpkinEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
@@ -22,6 +21,9 @@ export interface UseDayLoopDependencies {
 
   // Latest auto-sell owned state
   autoSellOwnedRef: MutableRefObject<boolean>;
+
+  // Latest days between the Merchant's sales: 30, fewer with Trade Routes
+  merchantDaysRef: MutableRefObject<number>;
 
   // Latest Christmas event state
   christmasEventRef: MutableRefObject<UseChristmasEventReturn | null | undefined>;
@@ -50,7 +52,7 @@ export interface UseDayLoopDependencies {
  * - Advances the auto-purchase timer
  *
  * **Auto-Sell System:**
- * - Triggers the merchant's sale every MERCHANT_DAYS days when auto-sell is owned
+ * - Triggers the merchant's sale every 30 days when auto-sell is owned, sooner with Trade Routes
  *
  * **Christmas Event Integration:**
  * - Grows Christmas trees and pays out passive Holiday Cheer
@@ -66,6 +68,7 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     setTotalDaysElapsed,
     setGlobalAutoPurchaseTimer,
     autoSellOwnedRef,
+    merchantDaysRef,
     christmasEventRef,
     pumpkinEventRef,
     isPausedRef,
@@ -93,8 +96,8 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     setDay((d: number) => {
       const newDay = (d % 365) + 1; // Day cycles from 1-365, not 0-364
 
-      // Merchant auto-sale every MERCHANT_DAYS, run after the new day is committed
-      scheduleAfterCommit(tick, autoSellOwnedRef.current && newDay % MERCHANT_DAYS === 0
+      // Merchant auto-sale on his days, run after the new day is committed
+      scheduleAfterCommit(tick, autoSellOwnedRef.current && newDay % merchantDaysRef.current === 0
         ? () => handleSellRef.current(true) // true = auto-sell
         : undefined);
 

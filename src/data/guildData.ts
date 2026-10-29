@@ -5,7 +5,7 @@
  */
 
 import type { Guild, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
-import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS, ICON_GEARS, ICON_GUILDS, ICON_SIGIL, ICON_WAX_SEAL } from '../config/assetPaths';
+import { GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, GUILD_MERCHANTS, ICON_GEARS, ICON_MONEY, ICON_SIGIL, ICON_WAX_SEAL } from '../config/assetPaths';
 
 /** Maximum number of upgrades a player can sample from each guild before committing */
 export const MAX_SAMPLED_UPGRADES_PER_GUILD = 2;
@@ -607,36 +607,200 @@ export const ENGINEERS_UPGRADES: GuildUpgrade[] = [
 ];
 
 export const MERCHANTS_UPGRADES: GuildUpgrade[] = [
+  // Tier 1 - Available before commitment (sampling), bought with money like everything else
   {
     id: 'merchants_haggling',
     name: 'Haggling',
-    description: 'Better prices when selling',
+    description: 'Talk the buyers up on every crop',
     guild: 'merchants',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 1000,
+    baseCost: 1_000_000,
     costScaling: 1.5,
     currencyType: 'money',
-    effectPerLevel: 0.04,
-    effectTemplate: '+{value}% sale prices',
+    effectPerLevel: 0.02,
+    effectTemplate: '+{value}% crop sale prices',
     purchased: false
   },
   {
     id: 'merchants_bulk_deals',
     name: 'Bulk Deals',
-    description: 'Bonus money when selling large quantities',
+    description: 'Buyers pay a little more for a big lot',
     guild: 'merchants',
     tier: 1,
     level: 0,
     maxLevel: 5,
     isOneTime: false,
-    baseCost: 500,
+    baseCost: 1_000_000,
     costScaling: 1.5,
-    currencyType: 'knowledge',
+    currencyType: 'money',
     effectPerLevel: 0.02,
-    effectTemplate: '+{value}% bonus per 100 items sold at once',
+    effectTemplate: '+{value}% on a sale of 100 crops or more',
+    purchased: false
+  },
+  // Tier 2 - Post-commitment, bought with money
+  {
+    id: 'merchants_shrewd_bargaining',
+    name: 'Shrewd Bargaining',
+    description: 'Every crop sells for more',
+    guild: 'merchants',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 2_000_000,
+    costScaling: 1.8,
+    currencyType: 'money',
+    effectPerLevel: 0.03,
+    effectTemplate: 'Crops sell for +{value}%',
+    purchased: false
+  },
+  {
+    id: 'merchants_price_gouging',
+    name: 'Price Gouging',
+    description: 'Whatever the jar market will bear',
+    guild: 'merchants',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 2_000_000,
+    costScaling: 1.8,
+    currencyType: 'money',
+    effectPerLevel: 0.03,
+    effectTemplate: 'Jars sell for +{value}%',
+    purchased: false
+  },
+  {
+    id: 'merchants_wholesale',
+    name: 'Wholesale',
+    description: 'Crop upgrades cost less, bought by you or by the auto-buyers',
+    guild: 'merchants',
+    tier: 2,
+    level: 0,
+    maxLevel: 10,
+    isOneTime: false,
+    baseCost: 3_000_000,
+    costScaling: 1.8,
+    currencyType: 'money',
+    effectPerLevel: 0.02,
+    effectTemplate: 'Crop upgrades {value}% cheaper',
+    purchased: false
+  },
+  {
+    id: 'merchants_trade_routes',
+    name: 'Trade Routes',
+    description: 'The Merchant sells every 25, 20, 15 or 10 days instead of 30',
+    guild: 'merchants',
+    tier: 2,
+    level: 0,
+    maxLevel: 4,
+    isOneTime: false,
+    baseCost: 4_000_000,
+    costScaling: 2.5,
+    currencyType: 'money',
+    effectPerLevel: 5,
+    effectDisplay: 'number',
+    effectTemplate: 'Merchant {value} days sooner',
+    purchased: false
+  },
+  {
+    id: 'merchants_additives',
+    name: 'Additives',
+    description: 'Fill the jars with something cheaper. They sell for the same',
+    guild: 'merchants',
+    tier: 2,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 100_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'Recipes need one fewer of each crop, never fewer than 1',
+    purchased: false
+  },
+  // Tier 3 - Post-commitment, bought with money
+  {
+    id: 'merchants_head_hunters',
+    name: 'Head Hunters',
+    description: 'They know where the old crew went',
+    guild: 'merchants',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 250_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'Rehiring everyone costs half',
+    purchased: false
+  },
+  {
+    id: 'merchants_insider_trading',
+    name: 'Insider Trading',
+    description: 'Ferdinand hears things before anyone else',
+    guild: 'merchants',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 300_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'Hot Tips last 90 seconds instead of 60',
+    purchased: false
+  },
+  {
+    id: 'merchants_futures',
+    name: 'Futures',
+    description: "Sell next season's crop today",
+    guild: 'merchants',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 400_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'The Merchant keeps selling while you are away',
+    purchased: false
+  },
+  {
+    id: 'merchants_hostile_takeover',
+    name: 'Hostile Takeover',
+    description: 'Buy out the neighbors and keep everything',
+    guild: 'merchants',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 750_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'A larger farm without the reset, at ten times its price',
+    purchased: false
+  },
+  {
+    id: 'merchants_golden_parachute',
+    name: 'Golden Parachute',
+    description: 'Land softly when the Legacy ends',
+    guild: 'merchants',
+    tier: 3,
+    level: 0,
+    maxLevel: 1,
+    isOneTime: true,
+    baseCost: 1_500_000_000,
+    costScaling: 1,
+    currencyType: 'money',
+    effectPerLevel: 1,
+    effectTemplate: 'Ending a Legacy carries 10% of your money into the next',
     purchased: false
   }
 ];
@@ -857,27 +1021,43 @@ export const GUILDS: Guild[] = [
       border: '#581c87'
     },
     emblem: GUILD_MERCHANTS,
-    currency: { name: 'Guild Currency', icon: ICON_GUILDS, earnedFrom: 'Coming in a future update' },
-    joinable: false,
+    currency: { name: 'Money', icon: ICON_MONEY, earnedFrom: 'The Merchants have no currency of their own: every upgrade costs money', money: true },
+    joinable: true,
     upgrades: MERCHANTS_UPGRADES,
     passiveBonuses: [
       {
-        id: 'merchants_sale_bonus',
-        name: 'Golden Touch',
-        description: '+15% to all sale prices',
+        id: 'merchants_markup',
+        name: 'Markup',
+        description: 'Crops and jars sell for 15% more',
         type: 'price',
         value: 0.15,
+        target: 'all_sales'
+      },
+      {
+        id: 'merchants_payroll',
+        name: 'Payroll',
+        description: 'Lay off or rehire every auto-buyer with one switch',
+        type: 'special',
+        value: 0,
+        target: 'auto_buyers'
+      },
+      {
+        id: 'merchants_ferdinand',
+        name: 'Ferdinand',
+        description: 'Ferdinand visits with Hot Tips: 60 seconds of double prices',
+        type: 'special',
+        value: 2,
         target: 'all_sales'
       }
     ],
     tradeOffs: [
       {
-        id: 'merchants_growth_penalty',
-        name: 'Trade Focus',
-        description: 'Crop growth is 10% slower',
-        type: 'speed',
-        value: 0.1,
-        target: 'growth'
+        id: 'merchants_no_time_to_learn',
+        name: 'No Time to Learn',
+        description: 'Knowledge from harvests and canning is 15% lower',
+        type: 'yield',
+        value: 0.15,
+        target: 'knowledge'
       }
     ]
   }

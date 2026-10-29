@@ -152,6 +152,35 @@
   opacity: 0.55;
 }
 
+/* Ferdinand's Hot Tip, in the Merchants' purple and gold, the same size as the Tune-Up */
+.hotTip {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 240px;
+  height: 26px;
+  padding: 0 10px 0 6px;
+  border: 1px solid #f59e0b;
+  border-radius: 13px;
+  background: #4c1d95;
+  color: #fde68a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.hotTipIdle {
+  border-style: dashed;
+  border-color: #6e6e6e;
+  background: #2b2b2b;
+  color: #c8c8c8;
+  font-weight: 700;
+}
+
+.hotTipIdle img {
+  opacity: 0.55;
+}
+
 .stashButton {
   padding: 4px 8px;
   font-size: 0.85rem;
@@ -224,6 +253,69 @@
 
 .farmUpgradeText {
   color: #fff;
+}
+
+/* A Merchant's Hostile Takeover leads the row, in purple and gold */
+.takeoverButton {
+  gap: 0.75rem;
+  padding: 0 1.25rem;
+}
+
+.takeoverButton:enabled {
+  background: #4c1d95;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 8px 2px #f59e0b;
+}
+
+.takeoverLabel {
+  color: #fde68a;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.takeoverKeeps {
+  margin-left: 0.75rem;
+  color: #c4b5fd;
+}
+
+/* The ordinary larger farm beside the takeover, smaller, since it resets the farm */
+.plainFarmButton {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 44px;
+  margin-left: 14px;
+  padding: 0 14px;
+  border: 1px solid #4b7a4e;
+  border-radius: 8px;
+  background: #1e2a1f;
+  color: #c8e6c9;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.plainFarmButton:disabled {
+  border-color: #4a5568;
+  background: #1f2328;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.plainFarmTitle {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.plainFarmNote {
+  font-size: 11px;
+  color: #a5c9a8;
+}
+
+.plainFarmButton:disabled .plainFarmNote {
+  color: #94a3b8;
 }
 
 /* While plots are free: what the next farm costs and when it opens */

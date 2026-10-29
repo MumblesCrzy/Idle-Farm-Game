@@ -7,7 +7,8 @@ import InlineIcon from './InlineIcon';
 import type { GuildState } from '../types/guilds';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { describeDays, legacyKeepableUnlocks, legacyLevelPreview, legacyNumeral, type LegacyResetSummary } from '../utils/legacy';
-import { ICON_LOCK, ICON_MILESTONE, ICON_SCROLL, ICON_TROPHY } from '../config/assetPaths';
+import { ICON_LOCK, ICON_MILESTONE, ICON_MONEY, ICON_SCROLL, ICON_TROPHY } from '../config/assetPaths';
+import { getGoldenParachuteMoney } from '../utils/guildCalculations';
 import styles from './LegacyDialog.module.css';
 
 interface LegacyDialogProps {
@@ -24,7 +25,8 @@ interface LegacyDialogProps {
 const GUILD_ONLY_NOTES: Record<string, string> = {
   growers: 'Ritual Circles stays with the Growers: Ritual Harvest spends Sigils',
   preservers: 'Rush Batch stays with the Preservers: it spends Wax Seals',
-  engineers: 'Overclock stays with the Engineers: only members get Tune-Ups from Stanley'
+  engineers: 'Overclock stays with the Engineers: only members get Tune-Ups from Stanley',
+  merchants: "Hostile Takeover and Insider Trading stay with the Merchants: the larger farm's reset comes back after a Legacy, and Ferdinand visits members only"
 };
 
 /** One line under each unlock, in plain words */
@@ -40,7 +42,11 @@ const UNLOCK_NOTES: Record<string, string> = {
   engineers_sprinkler_network: 'Irrigation keeps its +30% and stops Heatwaves, in any guild',
   engineers_climate_control: 'The Greenhouse keeps adding +20% growth all year',
   engineers_sound_dampers: 'Only matters if you rejoin the Engineers: their bees lose less honey',
-  engineers_night_shift: 'Time away keeps counting up to 12 hours, in any guild'
+  engineers_night_shift: 'Time away keeps counting up to 12 hours, in any guild',
+  merchants_additives: 'Recipes keep needing one fewer of each crop, in any guild',
+  merchants_head_hunters: 'Only matters if you rejoin the Merchants: Payroll is for members',
+  merchants_futures: 'The Merchant keeps selling while you are away, in any guild',
+  merchants_golden_parachute: 'Every Legacy you end carries a tenth of your money into the next'
 };
 
 /** "3 hives", "1 hive" */
@@ -55,6 +61,8 @@ const LegacyDialog: FC<LegacyDialogProps> = memo(({ active, guildState, reset, o
   const [picked, setPicked] = useState<string | null>(keepable[0]?.id ?? null);
   const [understood, setUnderstood] = useState(false);
   const current = (guildState.legacy?.count ?? 0) + 1;
+  // Golden Parachute carries a tenth of the money into the next Legacy
+  const parachute = getGoldenParachuteMoney(guildState, reset.money);
   const guildOnlyNote = guildState.committedGuild ? GUILD_ONLY_NOTES[guildState.committedGuild] : undefined;
 
   return (
@@ -131,6 +139,9 @@ const LegacyDialog: FC<LegacyDialogProps> = memo(({ active, guildState, reset, o
               <h4 className={styles.caption}>Also kept</h4>
               <p className={styles.line}><InlineIcon src={ICON_TROPHY} size={20} gap={8} /><span><b>{plural(reset.achievementsKept, 'special and hidden achievement')}</b>, with the bonuses and outfits they grant</span></p>
               <p className={styles.line}><InlineIcon src={ICON_MILESTONE} size={20} gap={8} /><span>Pumpkin Rush and Christmas Tree Shop progress, and your settings</span></p>
+              {parachute > 0 && (
+                <p className={styles.line}><InlineIcon src={ICON_MONEY} size={20} gap={8} /><span><b>${formatNumber(parachute)}</b> from Golden Parachute, a tenth of your money</span></p>
+              )}
             </div>
           </section>
 
@@ -138,7 +149,9 @@ const LegacyDialog: FC<LegacyDialogProps> = memo(({ active, guildState, reset, o
             <h3 className={`${styles.columnTitle} ${styles.resetTitle}`}>Back to the start</h3>
             <ul className={styles.losses}>
               <li><b>Farm Tier {reset.farmTier} → Tier 1.</b> {plural(reset.maxPlots, 'plot')} → 4, {plural(reset.cropsUnlocked, 'crop')} → Radish only, every crop upgrade</li>
-              <li><b>${formatNumber(reset.money)}, {formatNumber(reset.knowledge)} knowledge and {formatNumber(reset.experience)} experience → 0</b></li>
+              <li><b>{parachute > 0
+                ? <>${formatNumber(reset.money)} → ${formatNumber(parachute)}, {formatNumber(reset.knowledge)} knowledge and {formatNumber(reset.experience)} experience → 0</>
+                : <>${formatNumber(reset.money)}, {formatNumber(reset.knowledge)} knowledge and {formatNumber(reset.experience)} experience → 0</>}</b></li>
               <li><b>Canning.</b> {plural(reset.recipesUnlocked, 'recipe')}, {plural(reset.canningUpgradeLevels, 'upgrade level')}, {formatNumber(reset.canningExperience)} canning experience</li>
               <li><b>Bees.</b> {plural(reset.hives, 'hive')}, {formatNumber(reset.honey, 1)} honey, {formatNumber(reset.goldenHoney, 1)} Golden Honey, {plural(reset.beeUpgrades, 'upgrade')}</li>
               <li><b>{reset.guildName} membership.</b> {formatNumber(reset.guildCurrency)} {reset.guildCurrencyName} and every other guild upgrade. You choose a guild again at Farm Tier 5</li>

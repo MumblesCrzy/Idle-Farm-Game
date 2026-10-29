@@ -43,6 +43,19 @@
   outline-offset: -2px;
 }
 
+/* Additives, from the Merchants: the counts in the book are already one fewer */
+.additivesTag {
+  align-self: center;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #6b21a8;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .option {
   display: inline-flex;
   align-items: center;

@@ -173,6 +173,8 @@ export const SPECIAL_GLUTTON_VAMPIRE = './Glutton Halloween Vampire 256.png';
 // Stanley, the Engineers' cat: 256 px copies of the user's art with the backgrounds cut out
 export const SPECIAL_STANLEY = './Stanley 256.png';
 export const SPECIAL_STANLEY_HALLOWEEN = './Stanley Halloween 256.png';
+// Ferdinand, the Merchants' cat: a 256 px copy of the user's art with the background cut out
+export const SPECIAL_FERDINAND = './Ferdinand 256.png';
 // Art for the itch.io page, not the game: the build leaves these out of dist
 export const SPECIAL_BACKGROUND_SPRING = './Background_spring.png';
 export const SPECIAL_COVER_IMAGE = './Cover Image.png';
@@ -376,6 +378,7 @@ export const ALL_IMAGES = [
   SPECIAL_GLUTTON_VAMPIRE,
   SPECIAL_STANLEY,
   SPECIAL_STANLEY_HALLOWEEN,
+  SPECIAL_FERDINAND,
 
   // Farm and guild icons
   ICON_FARM_TIER,

@@ -341,6 +341,15 @@
   color: #ffa726;
 }
 
+/* The Merchants' note that they spend money instead of a currency */
+.moneyNote {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: #fde68a;
+  font-size: 0.78rem;
+}
+
 /* With no guild picked, the panel explains the choice instead */
 .detailPanelEmpty {
   align-items: center;
@@ -805,6 +814,28 @@
 
 .statusLabel {
   color: #aaa;
+}
+
+/* The Merchants' ledger: three short lines in one row, each label over its value */
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.ledgerCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.ledgerCell .statusLabel {
+  font-size: 0.72rem;
 }
 
 .statusValue {

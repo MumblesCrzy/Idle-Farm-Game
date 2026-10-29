@@ -1,8 +1,8 @@
 import { useEffect, type Dispatch, type SetStateAction } from 'react';
-import { calculateOfflineProgress, type OfflineProgressResult } from '../utils/offlineProgress';
+import { calculateOfflineProgress, type AwaySales, type OfflineProgressResult } from '../utils/offlineProgress';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
 import { devTelemetry } from '../utils/devTelemetry';
-import { awardGears, awardGuildTokens } from '../utils/guildCalculations';
+import { awardGears, awardGuildTokens, withoutHotTip } from '../utils/guildCalculations';
 import type { Veggie, WeatherType } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
@@ -48,6 +48,8 @@ export interface OfflineGameState {
   farmTier: number;
   knowledge: number;
   guildState: GuildState;
+  /** The Merchant farm upgrade, which sells during time away with Futures */
+  autoSellOwned?: boolean;
   /** Crop yield bonus from bee hives */
   beeYieldBonus?: number;
   /** Achievement bonuses such as Frost Fertilizer and Harvest Moon */
@@ -69,9 +71,12 @@ export interface UseOfflineProgressDeps {
   setVeggies: Dispatch<SetStateAction<Veggie[]>>;
   setExperience: Dispatch<SetStateAction<number>>;
   setKnowledge: Dispatch<SetStateAction<number>>;
+  setMoney: Dispatch<SetStateAction<number>>;
   setDay: Dispatch<SetStateAction<number>>;
   setTotalDaysElapsed: Dispatch<SetStateAction<number>>;
   setGuildState: Dispatch<SetStateAction<GuildState>>;
+  /** Reports what the Merchant sold while the player was away, for the event log */
+  onAwaySales?: (sales: AwaySales) => void;
 }
 
 /**
@@ -101,7 +106,9 @@ function applyCatchUp(
     canningProcesses: [],
     canningUpgrades: {},
     autoCanning: { enabled: false },
-    guildState: state.guildState,
+    // A Hot Tip pays only in live play
+    guildState: withoutHotTip(state.guildState),
+    autoSellOwned: state.autoSellOwned,
     beeYieldBonus: state.beeYieldBonus,
     permanentBonuses: state.permanentBonuses,
     christmasEvent: state.christmasEvent
@@ -114,6 +121,10 @@ function applyCatchUp(
   deps.setKnowledge((prev: number) => prev + result.knowledgeGain);
   deps.setDay(result.day);
   deps.setTotalDaysElapsed(result.totalDaysElapsed);
+  if (result.awaySales.money > 0) {
+    deps.setMoney((prev: number) => prev + result.awaySales.money);
+    deps.onAwaySales?.(result.awaySales);
+  }
   if (result.autoHarvests > 0) {
     deps.setGuildState(prev => awardGears(
       awardGuildTokens(prev, 'autoHarvests', result.autoHarvests, state.farmTier),
@@ -192,6 +203,7 @@ export function useOfflineProgress(deps: UseOfflineProgressDeps): void {
       saveGameStateWithCanning({
         ...loaded,
         veggies: result.veggies,
+        money: (loaded.money || 0) + result.awaySales.money,
         experience: (loaded.experience || 0) + result.experienceGain,
         knowledge: (loaded.knowledge || 0) + result.knowledgeGain,
         day: result.day,

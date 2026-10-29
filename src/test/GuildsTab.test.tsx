@@ -170,13 +170,57 @@ describe('GuildsTab', () => {
       expect(screen.getByText('Current Effects (at 50%):').parentElement).toHaveTextContent('+1.0% Jar Value');
     });
 
-    it('leave guilds that are not open yet without a commit button', async () => {
+    it('open the Merchants, who spend money on everything, starters included', async () => {
       const user = userEvent.setup();
-      renderTab({ guildState: sampledPreservers });
+      renderTab({ guildState: sampledPreservers, money: 1_500_000 });
 
       await user.click(screen.getByRole('button', { name: /Merchants Guild/ }));
 
-      expect(screen.queryByRole('button', { name: 'Commit to Guild' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Commit to Guild' })).toBeDisabled();
+      expect(screen.getByText(/No guild currency: the Merchants spend money/)).toBeInTheDocument();
+      expect(buyButton('Haggling')).toHaveTextContent('$1000000');
+      expect(buyButton('Haggling')).toBeEnabled();
+    });
+
+    it('say in the commit dialog that the Merchants are paid in money', async () => {
+      const user = userEvent.setup();
+      const sampledMerchants: GuildState = {
+        ...DEFAULT_GUILD_STATE,
+        status: 'sampling',
+        sampledUpgrades: { ...DEFAULT_GUILD_STATE.sampledUpgrades, merchants: ['merchants_haggling'] },
+        purchasedUpgrades: ['merchants_haggling'],
+        upgradeLevels: { merchants_haggling: 1 }
+      };
+      const props = renderTab({ guildState: sampledMerchants });
+
+      await user.click(screen.getByRole('button', { name: /Merchants Guild/ }));
+      expect(screen.getByText('Current Effects (at 50%):').parentElement).toHaveTextContent('+1.0% Crop Prices');
+      await user.click(screen.getByRole('button', { name: 'Commit to Guild' }));
+
+      const dialog = screen.getByRole('dialog', { name: 'Commit to Merchants Guild?' });
+      expect(dialog).toHaveTextContent('Pay for guild upgrades with money');
+      await user.click(within(dialog).getByRole('button', { name: 'Commit Forever' }));
+      expect(props.onCommitToGuild).toHaveBeenCalledWith('merchants');
+    });
+
+    it('show money, Markup, the Merchant and the knowledge cut once a Merchant joins', () => {
+      const committedMerchants: GuildState = {
+        ...DEFAULT_GUILD_STATE,
+        status: 'committed',
+        committedGuild: 'merchants',
+        purchasedUpgrades: ['merchants_shrewd_bargaining', 'merchants_trade_routes'],
+        upgradeLevels: { merchants_shrewd_bargaining: 2, merchants_trade_routes: 1 }
+      };
+      renderTab({ guildState: committedMerchants, money: 5_000_000 });
+
+      expect(screen.getByText('Money').parentElement).toHaveTextContent('$5000000');
+      expect(screen.getByText('Crop prices:').parentElement).toHaveTextContent('Crop prices: +21%');
+      expect(screen.getByText('Jar value:').parentElement).toHaveTextContent('Jar value: +15%');
+      expect(screen.getByText('Merchant:').parentElement).toHaveTextContent('Merchant: every 25 days');
+      expect(screen.getByText('Knowledge:').parentElement).toHaveTextContent('Knowledge: -15%');
+      // $2M, x1.8 per level
+      expect(buyButton('Shrewd Bargaining')).toHaveTextContent('$6480000');
+      expect(buyButton('Additives')).toHaveTextContent('$100000000');
     });
 
     it('show Wax Seals, the guild effects and upgrades priced in Seals once joined', () => {
@@ -282,6 +326,36 @@ describe('GuildsTab', () => {
     });
   });
 
+  describe('Merchants', () => {
+    const merchantsMember: GuildState = {
+      ...DEFAULT_GUILD_STATE,
+      status: 'committed',
+      committedGuild: 'merchants',
+      takeovers: 2,
+      ferdinand: { hotTips: 12 },
+      purchasedUpgrades: ['merchants_head_hunters', 'merchants_insider_trading', 'merchants_futures', 'merchants_hostile_takeover', 'merchants_golden_parachute'],
+      upgradeLevels: { merchants_head_hunters: 1, merchants_insider_trading: 1, merchants_futures: 1, merchants_hostile_takeover: 1, merchants_golden_parachute: 1 }
+    };
+
+    it('list Payroll, Hot Tips and the takeovers in the sidebar, and every bought effect', () => {
+      renderTab({ guildState: merchantsMember, money: 2_000_000, payrollStaff: 56 });
+
+      expect(screen.getByText('Payroll').parentElement).toHaveTextContent('Payroll56');
+      expect(screen.getByText('Hot Tips').parentElement).toHaveTextContent('Hot Tips12');
+      expect(screen.getByText('Takeovers').parentElement).toHaveTextContent('Takeovers2');
+      expect(screen.getByText('Hot Tips:').parentElement).toHaveTextContent('Hot Tips: 90 s');
+      expect(screen.getByText('Rehiring:').parentElement).toHaveTextContent('Rehiring: half price');
+      expect(screen.getByText('Time away:').parentElement).toHaveTextContent('Time away: Merchant sells');
+      expect(screen.getByText('Larger farms:').parentElement).toHaveTextContent('Larger farms: keep everything');
+      expect(screen.getByText('Golden Parachute:').parentElement).toHaveTextContent('Golden Parachute: $200000.00');
+    });
+
+    it('say Payroll is laid off when no one is on staff', () => {
+      renderTab({ guildState: merchantsMember, payrollStaff: 0 });
+      expect(screen.getByText('Payroll').parentElement).toHaveTextContent('Payrolllaid off');
+    });
+  });
+
   describe('Legacy', () => {
     const reset: LegacyResetSummary = {
       guildName: 'Preservers Guild', guildCurrency: 238, guildCurrencyName: 'Wax Seals', farmTier: 6, maxPlots: 16, cropsUnlocked: 10,
@@ -335,6 +409,17 @@ describe('GuildsTab', () => {
       await user.click(end);
 
       expect(props.onEndLegacy).toHaveBeenCalledWith('preservers_family_cookbook');
+    });
+
+    it('carries a tenth of the money with a kept Golden Parachute', async () => {
+      const user = userEvent.setup();
+      const parachuting: GuildState = { ...member, legacy: { count: 1, keptLevels: {}, keptUnlocks: ['merchants_golden_parachute'], history: [] } };
+      renderTab({ guildState: parachuting, farmTier: 6, onEndLegacy: vi.fn(), legacyReset: reset });
+
+      await user.click(screen.getByRole('button', { name: /End Legacy/ }));
+      const dialog = screen.getByRole('dialog', { name: 'End your Legacy?' });
+      expect(dialog).toHaveTextContent('$500000 from Golden Parachute, a tenth of your money');
+      expect(dialog).toHaveTextContent('$5000000 → $500000');
     });
 
     it('shows the Legacy box while the guilds are still locked', () => {

@@ -1,5 +1,7 @@
 import type { Achievement, AchievementGameState } from '../types/achievements';
 import { 
+  ICON_FARM_TIER,
+  SPECIAL_FERDINAND,
   VEGGIE_CARROT, 
   ICON_PLOTS, 
   VEGGIE_EGGPLANT, 
@@ -364,6 +366,60 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       knowledge: 250,
       money: 25000,
       message: 'The machines run themselves now! +250 knowledge and $25,000'
+    },
+    hidden: true
+  },
+
+  // Merchants Guild: Ferdinand the cat, and the takeovers
+  {
+    id: 'ferdinand_little_bird',
+    name: 'A Little Bird',
+    description: 'Get a Hot Tip from Ferdinand',
+    icon: SPECIAL_FERDINAND,
+    category: 'farming',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => (gameState.guildState?.ferdinand?.hotTips ?? 0) >= 1
+    },
+    reward: {
+      knowledge: 50,
+      message: 'Ferdinand knows a buyer! +50 knowledge'
+    }
+  },
+  {
+    id: 'ferdinand_inside_track',
+    name: 'Inside Track',
+    description: 'Get 100 Hot Tips from Ferdinand',
+    icon: SPECIAL_FERDINAND,
+    category: 'farming',
+    requirement: {
+      type: 'custom',
+      value: 100,
+      customCheck: (gameState) => (gameState.guildState?.ferdinand?.hotTips ?? 0) >= 100,
+      getProgress: (gameState) => gameState.guildState?.ferdinand?.hotTips ?? 0
+    },
+    reward: {
+      knowledge: 150,
+      money: 5000,
+      message: 'Always one step ahead of the market! +150 knowledge and $5,000'
+    }
+  },
+  {
+    id: 'merchants_corporate_raider',
+    name: 'Corporate Raider',
+    description: 'Make 5 Hostile Takeovers',
+    icon: ICON_FARM_TIER,
+    category: 'farming',
+    requirement: {
+      type: 'custom',
+      value: 5,
+      customCheck: (gameState) => (gameState.guildState?.takeovers ?? 0) >= 5,
+      getProgress: (gameState) => gameState.guildState?.takeovers ?? 0
+    },
+    reward: {
+      knowledge: 250,
+      money: 25000,
+      message: 'The neighbors have stopped answering the door! +250 knowledge and $25,000'
     },
     hidden: true
   },

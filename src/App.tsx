@@ -2,12 +2,15 @@ import { useEffect, useRef, useState, useContext, useMemo, useCallback, lazy, Su
 import ArchieIcon from './components/ArchieIcon';
 import GluttonVisitor from './components/GluttonVisitor';
 import StanleyVisitor from './components/StanleyVisitor';
+import FerdinandVisitor from './components/FerdinandVisitor';
 import LiveAnnouncer from './components/LiveAnnouncer';
 import { useGluttonVisits } from './hooks/useGluttonVisits';
 import { useStanleyVisits } from './hooks/useStanleyVisits';
+import { useFerdinandVisits } from './hooks/useFerdinandVisits';
+import { FERDINAND_NAME, hotTipSteps, recordHotTip, tickHotTip } from './utils/ferdinand';
 import { GLUTTON_NAME, describeEaten, gluttonLook, recordShoo, recordStuffed, vetBill, type GluttonOutcome } from './utils/glutton';
 import { STANLEY_GEARS, STANLEY_NAME, machineSpeed, recordTuneUp, stanleyLook, tickTuneUp, tuneUpLeft, tuneUpSteps } from './utils/stanley';
-import { SPECIAL_GLUTTON, SPECIAL_GLUTTON_SWEATER, SPECIAL_GLUTTON_VAMPIRE, SPECIAL_STANLEY, SPECIAL_STANLEY_HALLOWEEN } from './config/assetPaths';
+import { SPECIAL_FERDINAND, SPECIAL_GLUTTON, SPECIAL_GLUTTON_SWEATER, SPECIAL_GLUTTON_VAMPIRE, SPECIAL_STANLEY, SPECIAL_STANLEY_HALLOWEEN } from './config/assetPaths';
 import AdvancedStashDisplay from './components/AdvancedStashDisplay';
 import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
@@ -37,12 +40,12 @@ import Toast from './components/Toast';
 import HarvestTutorial from './components/HarvestTutorial';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useEventLog } from './context/EventLogContext';
-import { ICON_BEE, ICON_GUILDS } from './config/assetPaths';
+import { GUILD_MERCHANTS, ICON_BEE, ICON_GUILDS } from './config/assetPaths';
 
 // Guild system imports
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
-import { awardGears, awardGuildTokens, awardWaxSeals, commitToGuild, getAutoBuyerPriceMultiplier, getGuildHoneyMultiplier, getOfflineCapMs, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, heirloomSeedsName, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
+import { awardGears, awardGuildTokens, awardWaxSeals, commitToGuild, getAutoBuyerPriceMultiplier, getGuildHoneyMultiplier, getHotTipLeft, getMerchantDays, getOfflineCapMs, getRehirePriceMultiplier, getWholesalePriceMultiplier, hasHostileTakeover, hasPayroll, isMerchant, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, heirloomSeedsName, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
 import { legacyResetSummary } from './utils/legacy';
 import { endLegacy } from './utils/legacyReset';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
@@ -94,6 +97,8 @@ import { usePurchaseHandlers } from './hooks/usePurchaseHandlers';
 import { useFarmManagement } from './hooks/useFarmManagement';
 import { useHarvestAndSell } from './hooks/useHarvestAndSell';
 import { useDayLoop } from './hooks/useDayLoop';
+import type { AwaySales } from './utils/offlineProgress';
+import { usePayroll } from './hooks/usePayroll';
 import { useOfflineProgress } from './hooks/useOfflineProgress';
 import { useWeatherRandomization } from './hooks/useWeatherRandomization';
 import { useAutoSave } from './hooks/useAutoSave';
@@ -408,8 +413,14 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const pumpkinEventRef = useLatestRef(pumpkinEvent);
   const experienceRef = useLatestRef(experience);
   const autoSellOwnedRef = useLatestRef(autoSellOwned);
+  const merchantDaysRef = useLatestRef(getMerchantDays(guildState));
   const guildStateRef = useLatestRef(guildState);
   const isPausedRef = useLatestRef(isPaused);
+
+  // Futures: what the Merchant sold while the player was away, as one sale in the log
+  const logAwaySales = useCallback((sales: AwaySales) => {
+    eventLogCallbacks.onMerchantSale(sales.money, sales.sold, true);
+  }, [eventLogCallbacks]);
 
   // Progress for time away: once at startup, and whenever a hidden tab comes back
   useOfflineProgress({
@@ -426,6 +437,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       farmTier,
       knowledge,
       guildState,
+      autoSellOwned,
       beeYieldBonus,
       permanentBonuses,
       christmasEvent,
@@ -435,9 +447,11 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setVeggies,
     setExperience,
     setKnowledge,
+    setMoney,
     setDay,
     setTotalDaysElapsed,
-    setGuildState
+    setGuildState,
+    onAwaySales: logAwaySales
   });
 
   
@@ -553,7 +567,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       handleBuyAdditionalPlot
     },
     initialTimer: loaded?.globalAutoPurchaseTimer ?? 0,
-    priceFactor: getAutoBuyerPriceMultiplier(guildState),
+    // Bulk Purchasing and Wholesale
+    priceFactor: getAutoBuyerPriceMultiplier(guildState) * getWholesalePriceMultiplier(guildState),
     onPurchaseCallback: eventLogCallbacks.onAutoPurchase
   });
 
@@ -561,7 +576,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // A new game replaces the save and reloads, so nothing from the old game carries over
   const resetGame = useCallback(() => startNewGame(), []);
 
-  const { handleBuyLargerFarm } = useFarmManagement({
+  const { handleBuyLargerFarm, handleHostileTakeover } = useFarmManagement({
     experience,
     money,
     farmTier,
@@ -585,6 +600,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIrrigationOwned,
     setGlobalAutoPurchaseTimer,
     setFarmCost,
+    setGuildState,
     eventLogCallbacks
   });
 
@@ -594,6 +610,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setTotalDaysElapsed,
     setGlobalAutoPurchaseTimer,
     autoSellOwnedRef,
+    merchantDaysRef,
     christmasEventRef,
     pumpkinEventRef,
     isPausedRef,
@@ -612,7 +629,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned,
     setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell,
     almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac,
-    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm,
+    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, handleHostileTakeover,
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
@@ -627,7 +644,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setGreenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, resetGame, heirloomOwned,
     setHeirloomOwned, handleBuyHeirloom, autoSellOwned, setAutoSellOwned, handleBuyAutoSell,
     almanacLevel, setAlmanacLevel, almanacCost, setAlmanacCost, handleBuyAlmanac,
-    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm,
+    handleBuyAdditionalPlot, maxPlots, setMaxPlots, farmCost, setFarmCost, handleBuyLargerFarm, handleHostileTakeover,
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
@@ -857,7 +874,7 @@ function App() {
     [beeState?.upgrades]
   );
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, handleHostileTakeover, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
 
   // Guild system handlers. Stable, so they never hold an old render's scope: memoized handlers
@@ -1292,6 +1309,47 @@ function App() {
     onArrive: handleStanleyArrive,
     onWanderOff: handleStanleyWanderOff
   });
+  // Ferdinand, the Merchants' cat: visits committed Merchants, and a click gives a Hot Tip
+  const handleFerdinandArrive = useCallback(() => {
+    addEvent('merchant', `${FERDINAND_NAME} came by the farm`, {
+      details: 'Click him for a Hot Tip before he wanders off',
+      icon: SPECIAL_FERDINAND
+    });
+  }, [addEvent]);
+  const handleHotTip = useCallback(() => {
+    const seconds = hotTipSteps(latestGuildStateRef.current);
+    setGuildState(prev => recordHotTip(prev));
+    addEvent('merchant', `${FERDINAND_NAME} gave you a Hot Tip`, {
+      details: `Crops and jars sell for double for ${seconds} seconds`,
+      icon: SPECIAL_FERDINAND
+    });
+  }, [latestGuildStateRef, setGuildState, addEvent]);
+  const handleHotTipStep = useCallback(() => {
+    if (getHotTipLeft(latestGuildStateRef.current) === 1) {
+      addEvent('merchant', 'The Hot Tip ran out', {
+        details: 'Prices are back to normal',
+        priority: 'minor',
+        icon: SPECIAL_FERDINAND
+      });
+    }
+    setGuildState(prev => tickHotTip(prev));
+  }, [latestGuildStateRef, setGuildState, addEvent]);
+  const handleFerdinandWanderOff = useCallback(() => {
+    addEvent('merchant', `${FERDINAND_NAME} wandered off`, {
+      details: 'He comes back in 4 to 8 minutes',
+      priority: 'minor',
+      icon: SPECIAL_FERDINAND
+    });
+  }, [addEvent]);
+  const { visit: ferdinandVisit, hotTip: hotTipFromFerdinand } = useFerdinandVisits({
+    active: isMerchant(guildState),
+    isPaused,
+    hotTipRunning: getHotTipLeft(guildState) > 0,
+    onHotTip: handleHotTip,
+    onHotTipStep: handleHotTipStep,
+    onArrive: handleFerdinandArrive,
+    onWanderOff: handleFerdinandWanderOff
+  });
   const stanleyImage = stanleyLook({ pumpkinActive: pumpkinEventEnabled && pumpkinEvent.isEventActive }) === 'halloween'
     ? SPECIAL_STANLEY_HALLOWEEN
     : SPECIAL_STANLEY;
@@ -1416,6 +1474,23 @@ function App() {
     veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0),
     [veggies]
   );
+
+  // Payroll, the Merchants' switch for every auto-buyer; shown only to members
+  const logPayroll = useCallback((message: string, details: string) => {
+    addEvent('auto-purchase', message, { details, priority: 'important', icon: GUILD_MERCHANTS });
+  }, [addEvent]);
+  const payroll = usePayroll({
+    veggies,
+    setVeggies,
+    money,
+    setMoney,
+    knowledge,
+    setKnowledge,
+    farmFull: totalPlotsUsed >= maxPlots,
+    priceFactor: getRehirePriceMultiplier(guildState),
+    onLog: logPayroll,
+    formatNumber
+  });
   
   // Refs for the growth-completion and season-change trackers below
   const previousSeasonRef = useRef(season);
@@ -1602,7 +1677,7 @@ function App() {
         isPaused={isPaused}
       />
     )}
-    {/* Screen readers hear toasts, unlocks, Dunkin and Stanley from here */}
+    {/* Screen readers hear toasts, unlocks, Dunkin, Stanley and Ferdinand from here */}
     <LiveAnnouncer />
     <GluttonVisitor
       visit={gluttonVisit}
@@ -1616,6 +1691,12 @@ function App() {
       image={stanleyImage}
       tuneUpSeconds={tuneUpSteps(guildState)}
       onTuneUp={tuneUpWithStanley}
+    />
+    <FerdinandVisitor
+      visit={ferdinandVisit}
+      image={SPECIAL_FERDINAND}
+      hotTipSeconds={hotTipSteps(guildState)}
+      onHotTip={hotTipFromFerdinand}
     />
     <ErrorBoundary fallback={<SectionError title="Game content" />} onReset={() => window.location.reload()}>
     {/* Skip link for keyboard navigation */}
@@ -1655,6 +1736,7 @@ function App() {
             farmCost={farmCost}
             farmTier={farmTier}
             handleBuyLargerFarm={handleBuyLargerFarm}
+            handleHostileTakeover={hasHostileTakeover(guildState) ? handleHostileTakeover : undefined}
             holidayCheer={christmasEvent?.holidayCheer ?? 0}
             isChristmasEventActive={christmasEvent?.isEventActive ?? false}
             candyCorn={pumpkinEvent.candyCorn}
@@ -1846,6 +1928,7 @@ function App() {
                 handleBuyAutoPurchaser={handleBuyAutoPurchaser}
                 formatNumber={formatNumber}
                 guildState={guildState}
+                payroll={hasPayroll(guildState) ? payroll : undefined}
                 upgradesSidebar={
                   <GlobalUpgradesPanel
                     money={money}
@@ -1942,6 +2025,7 @@ function App() {
             knowledge={knowledge}
             experience={experience}
             introShown={guildIntroShown}
+            payrollStaff={payroll.staff}
             onDismissIntro={handleDismissGuildIntro}
             onCommitToGuild={handleCommitToGuild}
             onPurchaseUpgrade={handlePurchaseGuildUpgrade}

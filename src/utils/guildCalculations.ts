@@ -3,7 +3,7 @@
  * Calculates all bonuses and penalties from guild upgrades
  */
 import type { GuildState, GuildTokenSource, GuildType, GuildUpgrade } from '../types/guilds';
-import { MAX_OFFLINE_MS } from '../config/gameConstants';
+import { MAX_OFFLINE_MS, MERCHANT_DAYS } from '../config/gameConstants';
 import {
   GUILD_TOKEN_SOURCES,
   GUILDS,
@@ -351,8 +351,9 @@ export function getRawCropPriceMultiplier(guildState: GuildState): number {
 
 /**
  * What guilds do to one canning batch's value, before counting jars: the Growers'
- * canning penalty, the Engineers' Standard Grade, and the Preservers' bonuses, which add
- * together: value upgrades, Recipe Mastery and, on honey recipes, Honey Glaze.
+ * canning penalty, the Engineers' Standard Grade, and the bonuses, which add together:
+ * the Preservers' value upgrades, Recipe Mastery and, on honey recipes, Honey Glaze, and
+ * the Merchants' Markup and Price Gouging. A Hot Tip doubles it all.
  */
 export function getRecipeValueMultiplier(
   guildState: GuildState | undefined,
@@ -360,8 +361,10 @@ export function getRecipeValueMultiplier(
 ): number {
   if (!guildState) return 1;
   const honey = recipe.honeyRequirement ? getHoneyGlazeBonus(guildState) : 0;
-  const bonus = getPreserversValueBonus(guildState) + getRecipeMasteryBonus(guildState, recipe.timesCompleted) + honey;
-  return getGrowerCanningProfitMultiplier(guildState) * getStandardGradeJarMultiplier(guildState) * (1 + bonus);
+  const bonus = getPreserversValueBonus(guildState) + getRecipeMasteryBonus(guildState, recipe.timesCompleted) + honey
+    + getMerchantsJarValueBonus(guildState);
+  return getGrowerCanningProfitMultiplier(guildState) * getStandardGradeJarMultiplier(guildState) * (1 + bonus)
+    * getHotTipMultiplier(guildState);
 }
 
 /** Wax Seals one Rush Batch costs */
@@ -565,6 +568,146 @@ export function awardGears(guildState: GuildState, work: GearWork): GuildState {
 }
 
 // =============================================================================
+// MERCHANTS GUILD
+// =============================================================================
+
+/** Markup: committed Merchants' crops and canned goods sell for this much more */
+export const MARKUP_BONUS = 0.15;
+
+/** No Time to Learn: committed Merchants earn this much less knowledge from harvests and canning */
+export const NO_TIME_TO_LEARN_PENALTY = 0.15;
+
+/** Bulk Deals pays on a sale of at least this many crops */
+export const BULK_DEAL_MIN_CROPS = 100;
+
+/** Additives: recipes need one fewer of each crop */
+export const ADDITIVES_UPGRADE = 'merchants_additives';
+
+/** Whether the player has joined the Merchants */
+export function isMerchant(guildState: GuildState | undefined): guildState is GuildState {
+  return !!guildState && isCommittedTo(guildState, 'merchants');
+}
+
+/**
+ * Added crop sale price from the Merchants: Markup for members, Haggling (half strength
+ * before joining) and Shrewd Bargaining. 0.15 means +15%.
+ */
+export function getMerchantsCropPriceBonus(guildState: GuildState): number {
+  const markup = isMerchant(guildState) ? MARKUP_BONUS : 0;
+  return markup
+    + softCappedLevels(guildState, 'merchants_haggling', 'merchants') * rateOf('merchants_haggling')
+    + levelEffect(guildState, 'merchants_shrewd_bargaining');
+}
+
+/** Added canned goods value from the Merchants: Markup for members, and Price Gouging. 0.15 means +15% */
+export function getMerchantsJarValueBonus(guildState: GuildState): number {
+  return (isMerchant(guildState) ? MARKUP_BONUS : 0) + levelEffect(guildState, 'merchants_price_gouging');
+}
+
+/** Bulk Deals: added money on a sale of 100 crops or more, half strength before joining. 0.1 means +10% */
+export function getBulkDealsBonus(guildState: GuildState | undefined): number {
+  return guildState ? softCappedLevels(guildState, 'merchants_bulk_deals', 'merchants') * rateOf('merchants_bulk_deals') : 0;
+}
+
+/** What a sale of this many crops pays, as a share of their price: more with Bulk Deals on 100 or more */
+export function getBulkDealsMultiplier(guildState: GuildState | undefined, crops: number): number {
+  return crops >= BULK_DEAL_MIN_CROPS ? 1 + getBulkDealsBonus(guildState) : 1;
+}
+
+/** Knowledge from harvests and canning as a share: committed Merchants earn 15% less */
+export function getGuildKnowledgeMultiplier(guildState: GuildState | undefined): number {
+  return isMerchant(guildState) ? 1 - NO_TIME_TO_LEARN_PENALTY : 1;
+}
+
+/** What crop upgrades cost with Wholesale, bought by the player or the auto-buyers: 0.96 means 4% less */
+export function getWholesalePriceMultiplier(guildState: GuildState | undefined): number {
+  return guildState ? 1 - levelEffect(guildState, 'merchants_wholesale') : 1;
+}
+
+/** Days between the Merchant's sales: 30, and 5 fewer per level of Trade Routes */
+export function getMerchantDays(guildState: GuildState | undefined): number {
+  return MERCHANT_DAYS - (guildState ? levelEffect(guildState, 'merchants_trade_routes') : 0);
+}
+
+/** Whether Additives are owned, bought this Legacy or kept from an earlier one */
+export function hasAdditives(guildState: GuildState | undefined): boolean {
+  return !!guildState && owns(guildState, ADDITIVES_UPGRADE);
+}
+
+/** How many of a crop a recipe needs: one fewer with Additives, never fewer than 1 */
+export function withAdditives(quantity: number, additives: boolean): number {
+  return additives ? Math.max(1, quantity - 1) : quantity;
+}
+
+/** Head Hunters: rehiring everyone costs this share of the price */
+export const HEAD_HUNTERS_REHIRE_SHARE = 0.5;
+
+/** Hostile Takeover costs this many times the larger farm */
+export const HOSTILE_TAKEOVER_PRICE_MULTIPLIER = 10;
+
+/** Golden Parachute: the share of money that carries into the next Legacy */
+export const GOLDEN_PARACHUTE_SHARE = 0.1;
+
+/** Ferdinand's Hot Tip: crops and jars sell for this many times their price while it runs */
+export const HOT_TIP_MULTIPLIER = 2;
+
+/** Game steps left on the running Hot Tip: 0 when none runs, or for anyone but a Merchant */
+export function getHotTipLeft(guildState: GuildState | undefined): number {
+  return isMerchant(guildState) ? guildState.ferdinand?.hotTipLeft ?? 0 : 0;
+}
+
+/** What sales are worth during a Hot Tip: twice as much */
+export function getHotTipMultiplier(guildState: GuildState | undefined): number {
+  return getHotTipLeft(guildState) > 0 ? HOT_TIP_MULTIPLIER : 1;
+}
+
+/** The guild state without a running Hot Tip, for time away: the tip pays only in live play */
+export function withoutHotTip<T extends GuildState | undefined>(guildState: T): T {
+  if (!guildState?.ferdinand?.hotTipLeft) return guildState;
+  return { ...guildState, ferdinand: { ...guildState.ferdinand, hotTipLeft: 0 } };
+}
+
+/** Payroll: committed Merchants lay off and rehire every auto-buyer with one switch */
+export function hasPayroll(guildState: GuildState | undefined): boolean {
+  return isMerchant(guildState);
+}
+
+/** What rehiring everyone costs as a share of the hire prices: half with Head Hunters */
+export function getRehirePriceMultiplier(guildState: GuildState | undefined): number {
+  return guildState && owns(guildState, 'merchants_head_hunters') ? HEAD_HUNTERS_REHIRE_SHARE : 1;
+}
+
+/** Whether Futures has the Merchant sell during time away, bought or kept from a Legacy */
+export function hasFutures(guildState: GuildState | undefined): boolean {
+  return !!guildState && owns(guildState, 'merchants_futures');
+}
+
+/** Whether Hostile Takeover is owned; it stays with the guild at a Legacy */
+export function hasHostileTakeover(guildState: GuildState | undefined): boolean {
+  return !!guildState && owns(guildState, 'merchants_hostile_takeover');
+}
+
+/** What a Hostile Takeover costs: ten times the larger farm */
+export function getHostileTakeoverPrice(farmCost: number): number {
+  return farmCost * HOSTILE_TAKEOVER_PRICE_MULTIPLIER;
+}
+
+/** Counts one more Hostile Takeover, for Corporate Raider */
+export function recordTakeover(guildState: GuildState): GuildState {
+  return { ...guildState, takeovers: (guildState.takeovers ?? 0) + 1 };
+}
+
+/** Whether Golden Parachute is owned, bought or kept from a Legacy */
+export function hasGoldenParachute(guildState: GuildState | undefined): boolean {
+  return !!guildState && owns(guildState, 'merchants_golden_parachute');
+}
+
+/** Money Golden Parachute carries into the next Legacy: a tenth of it */
+export function getGoldenParachuteMoney(guildState: GuildState | undefined, money: number): number {
+  return hasGoldenParachute(guildState) ? Math.floor(Math.max(0, money) * GOLDEN_PARACHUTE_SHARE) : 0;
+}
+
+// =============================================================================
 // COMPOSITE FUNCTIONS
 // =============================================================================
 
@@ -580,13 +723,16 @@ export function applyGuildPriceBonuses(
   applyQualityBonus: boolean = false
 ): number {
   // Apply percentage bonuses, the Preservers' raw crop penalty and the Engineers' Standard Grade
-  const percentBonus = getGrowersPriceBonus(guildState);
+  const percentBonus = getGuildCropPriceBonus(guildState);
   let price = basePrice * (1 + percentBonus) * getRawCropPriceMultiplier(guildState) * getStandardGradeCropMultiplier(guildState);
   
   // Apply Whispers of the Seed 10x multiplier
   if (hasWhispersOfSeed(guildState)) {
     price *= 10;
   }
+
+  // Ferdinand's Hot Tip doubles it
+  price *= getHotTipMultiplier(guildState);
   
   // Apply Quality Grading bonus (random chance per item)
   if (applyQualityBonus) {
@@ -597,6 +743,11 @@ export function applyGuildPriceBonuses(
   }
   
   return price;
+}
+
+/** Added crop sale price from every guild: the Growers' and the Merchants'. 0.15 means +15% */
+export function getGuildCropPriceBonus(guildState: GuildState): number {
+  return getGrowersPriceBonus(guildState) + getMerchantsCropPriceBonus(guildState);
 }
 
 /**

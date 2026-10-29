@@ -1,7 +1,7 @@
 import InlineIcon from './InlineIcon';
 import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, ICON_GEARS, SPECIAL_GLUTTON, SPECIAL_STANLEY, CANNING_CANNER, ICON_SCROLL } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, ICON_GEARS, SPECIAL_GLUTTON, SPECIAL_STANLEY, CANNING_CANNER, ICON_SCROLL, GUILD_MERCHANTS, SPECIAL_FERDINAND, ICON_MONEY } from '../config/assetPaths';
 import {
   AUTO_PURCHASER_CYCLE_DAYS,
   BEE_CONSTANTS,
@@ -605,14 +605,14 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <img src={ICON_GUILDS} alt="" aria-hidden="true" className={styles.sectionIcon} />
                   Guilds
                 </h4>
-                <p>Guilds unlock at Farm Tier 5. Try a few starter upgrades from each guild, then join one for good: you get its own currency, upgrades and bonuses, and accept its trade-offs.</p>
+                <p>Guilds unlock at Farm Tier 5. Try a few starter upgrades from each guild, then join one for good: you get its upgrades and bonuses, and its own currency except with the Merchants, and accept its trade-offs.</p>
 
                 <h5><InlineIcon src={ICON_GUILD_TOKEN} size={18} gap={4} /> Before You Join:</h5>
                 <ul>
                   <li><strong>Guild Tokens:</strong> +1 per manual harvest, +1 per 5 canned goods, +2 per batch of honey, +1 per 10 auto harvests</li>
-                  <li><strong>Sampling:</strong> Buy up to two starter upgrades from each guild with Guild Tokens; they work at half strength until you join that guild</li>
+                  <li><strong>Sampling:</strong> Buy up to two starter upgrades from each guild with Guild Tokens, or with money for the Merchants; they work at half strength until you join that guild</li>
                   <li><strong>Joining:</strong> Sample one of a guild's upgrades to join it. Unspent Guild Tokens don't carry over, and the guild's currency is earned only as a member. Only a Legacy lets you change guilds</li>
-                  <li><strong>Open Now:</strong> The Growers, the Preservers and the Engineers; the Merchants come in a later update</li>
+                  <li><strong>Open Now:</strong> All four: the Growers, the Preservers, the Engineers and the Merchants</li>
                 </ul>
 
                 <h5><InlineIcon src={GUILD_GROWERS} size={18} gap={4} /> Growers Guild:</h5>
@@ -668,14 +668,36 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Machines:</strong> The Auto Harvesters and the factory floor. The auto-buyers are people, not machines, so they keep their pace</li>
                 </ul>
 
+                <h5><InlineIcon src={GUILD_MERCHANTS} size={18} gap={4} /> Merchants Guild:</h5>
+                <ul>
+                  <li><strong>Money <InlineIcon src={ICON_MONEY} size={14} gap={2} />:</strong> The Merchants have no currency of their own. Every upgrade costs money, from $1M for a starter level to $1.5B for Golden Parachute</li>
+                  <li><strong>Bonuses:</strong> Crops and jars sell for 15% more (Markup)</li>
+                  <li><strong>Trade-off:</strong> Knowledge from harvests and canning is 15% lower (No Time to Learn)</li>
+                  <li><strong>Payroll:</strong> A switch in the Garden lays off every Assistant, Cultivator, Surveyor and Mechanic at once, so nothing more is bought while you save. Nothing is refunded, and rehiring is everyone or no one, at the full hire price</li>
+                  <li><strong>Selling:</strong> Haggling and Shrewd Bargaining raise crop prices, Price Gouging raises jar prices, and Bulk Deals pays more on a sale of 100 crops or more</li>
+                  <li><strong>Wholesale:</strong> Crop upgrades cost 2% less per level, up to 20%, bought by you or by the auto-buyers</li>
+                  <li><strong>Trade Routes:</strong> The Merchant sells every 25, 20, 15 or 10 days instead of 30</li>
+                  <li><strong>Additives:</strong> Every recipe needs one fewer of each crop, never fewer than 1, and the jars sell for the same</li>
+                  <li><strong>Hostile Takeover:</strong> Buy the larger farm for ten times its price and keep everything: crops, stash, upgrades, auto-buyers, experience and farm upgrades</li>
+                  <li><strong>More:</strong> Head Hunters halves the cost of rehiring, Futures lets the Merchant sell while you're away, and Golden Parachute carries a tenth of your money into the next Legacy</li>
+                </ul>
+
+                <h5><InlineIcon src={SPECIAL_FERDINAND} size={18} gap={4} /> Ferdinand the Cat:</h5>
+                <ul>
+                  <li><strong>Visits:</strong> Every 4 to 8 minutes of play he shows up somewhere on the screen and waits 20 seconds; never while paused or away. Missing him costs nothing</li>
+                  <li><strong>Hot Tip:</strong> Click him, and crops and jars sell for double for 60 seconds, or 90 with Insider Trading. The header shows the seconds left</li>
+                  <li><strong>What pays double:</strong> Sell All, the Merchant's sales and canning batches that finish during the tip. Switch held crops to Sell when he comes</li>
+                  <li><strong>Live play only:</strong> Time away pays the usual prices, even if a tip was running when you left</li>
+                </ul>
+
                 <h5><InlineIcon src={ICON_SCROLL} size={18} gap={4} /> Legacy:</h5>
                 <ul>
                   <li><strong>What it is:</strong> From Farm Tier 6, a guild member can end their Legacy from the Guilds tab. The farm starts over at Tier 1, and the guild's benefits carry on</li>
                   <li><strong>Kept levels:</strong> Half the levels bought this Legacy in your guild's upgrades, rounded down, added to what you kept before. They work at full strength in any guild, and count toward the max level</li>
-                  <li><strong>Kept unlock:</strong> One one-time upgrade of your guild, kept for good. Ritual Circles and Rush Batch stay with their guilds, since their abilities spend guild currency, and so does Overclock, since Stanley visits only Engineers</li>
+                  <li><strong>Kept unlock:</strong> One one-time upgrade of your guild, kept for good. Ritual Circles and Rush Batch stay with their guilds, since their abilities spend guild currency, and so does Overclock, since Stanley visits only Engineers. Hostile Takeover and Insider Trading stay with the Merchants too: a Legacy can't end the larger farm's reset for good, and Ferdinand visits members only</li>
                   <li><strong>Kept achievements:</strong> Special and hidden ones, with the bonuses and outfits they grant. The rest can be earned again</li>
                   <li><strong>Kept events:</strong> Pumpkin Rush and Christmas Tree Shop progress is untouched</li>
-                  <li><strong>Back to the start:</strong> Money, knowledge, experience, crops, canning, bees, achievements, guild membership and currency. You choose a guild again at Farm Tier 5, the same one or another</li>
+                  <li><strong>Back to the start:</strong> Money, knowledge, experience, crops, canning, bees, achievements, guild membership and currency. You choose a guild again at Farm Tier 5, the same one or another. Golden Parachute carries a tenth of your money over</li>
                 </ul>
               </div>
             )}
@@ -879,7 +901,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <ul>
                   <li><strong>Weigh-off:</strong> The fair opens once a game year (every 365 days). Enter one giant and it is weighed against three rivals</li>
                   <li><strong>Prizes:</strong> First, second and third place win ribbons and Candy Corn; heavier winners earn more</li>
-                  <li><strong>Rivals:</strong> The competition grows heavier with every fair you enter, so feed your giants Giant Vine Tonic</li>
+                  <li><strong>Rivals:</strong> The competition grows heavier each time you win first place. Giant Vine Tonic has no top level, so keep feeding your giants to stay ahead</li>
                   <li><strong>Champion seeds:</strong> Every first place saves seeds from your winner: future Atlantic Giants weigh 5% more, up to 40%</li>
                 </ul>
               </div>

@@ -713,7 +713,7 @@ export function usePumpkinEvent({
       const giant = state.giantShelf.find(g => g.id === giantId);
       if (!giant || state.weighOff.daysUntilFair > 0) return null;
 
-      const judged = judgeWeighOff(giant.weight, state.weighOff.fairsEntered, rolls);
+      const judged = judgeWeighOff(giant.weight, state.weighOff.ribbons.first, rolls);
       const ribbons = { ...state.weighOff.ribbons };
       if (judged.placing === 1) ribbons.first += 1;
       else if (judged.placing === 2) ribbons.second += 1;

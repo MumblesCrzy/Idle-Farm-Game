@@ -4,7 +4,7 @@ import type { GuildState } from '../types/guilds';
 import { GUILDS, GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { getSeasonImage, getWeatherImage, ICON_PLOTS, ICON_MONEY, ICON_KNOWLEDGE, ICON_HOLIDAY_CHEER, ICON_FARM_TIER, ICON_GEARS, ICON_GUILD_TOKEN } from '../config/assetPaths';
 import { tuneUpLeft } from '../utils/stanley';
-import { isCommittedTo } from '../utils/guildCalculations';
+import { getHostileTakeoverPrice, getHotTipLeft, isCommittedTo, isMerchant } from '../utils/guildCalculations';
 import EventArt from './EventArt';
 import { PUMPKIN_ART } from '../data/pumpkinEventData';
 import styles from './StatsDisplay.module.css';
@@ -25,6 +25,8 @@ interface StatsDisplayProps {
   farmCost: number;
   farmTier: number;
   handleBuyLargerFarm: () => void;
+  /** A Merchant's Hostile Takeover, once owned: it leads the Larger Farm row */
+  handleHostileTakeover?: () => void;
   holidayCheer?: number; // Optional: only shown during Christmas event
   isChristmasEventActive?: boolean;
   candyCorn?: number; // Optional: only shown during the Pumpkin Rush
@@ -48,6 +50,7 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   farmCost,
   farmTier,
   handleBuyLargerFarm,
+  handleHostileTakeover,
   holidayCheer,
   isChristmasEventActive,
   candyCorn,
@@ -66,6 +69,13 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   // Stanley's Tune-Up: Engineers keep its slot, so the row holds still as it starts and ends
   const engineer = isCommittedTo(guildState, 'engineers');
   const tuneUp = tuneUpLeft(guildState);
+  // Ferdinand's Hot Tip: Merchants keep its slot the same way
+  const merchant = isMerchant(guildState);
+  const hotTip = getHotTipLeft(guildState);
+  // The next farm by the usual rule: one more plot per 100 experience, up to double
+  const nextMaxPlots = Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2);
+  const nextPlotsCapped = maxPlots + Math.floor(experience / 100) > maxPlots * 2;
+  const takeoverPrice = getHostileTakeoverPrice(farmCost);
 
   return (
     <>
@@ -120,7 +130,7 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <img src={ICON_KNOWLEDGE} alt="" className={styles.statIcon} aria-hidden="true" />
           Knowledge: {formatNumber(knowledge, 2)}
         </span>
-        {isGuildsUnlocked && (
+        {isGuildsUnlocked && !committedGuild?.currency.money && (
           <span className={`${styles.statItem} ${styles.currencyStat}`} title={committedGuild
             ? `${guildCurrencyName} - ${committedGuild.currency.earnedFrom}`
             : 'Guild Tokens - Spend them on starter upgrades; they don\'t carry over when you join a guild'}>
@@ -137,6 +147,17 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <span className={`${styles.tuneUp} ${styles.tuneUpIdle}`} title="Stanley's Tune-Up: click Stanley when he visits, and every machine runs twice as fast">
             <img src={ICON_GEARS} alt="" className={styles.statIcon} aria-hidden="true" />
             No Tune-Up running
+          </span>
+        ))}
+        {merchant && (hotTip > 0 ? (
+          <span className={styles.hotTip} title="Ferdinand's Hot Tip: crops and jars sell for double">
+            <img src={ICON_MONEY} alt="" className={styles.statIcon} aria-hidden="true" />
+            Hot Tip {hotTip} s · prices ×2
+          </span>
+        ) : (
+          <span className={`${styles.hotTip} ${styles.hotTipIdle}`} title="Ferdinand's Hot Tip: click Ferdinand when he visits, and crops and jars sell for double">
+            <img src={ICON_MONEY} alt="" className={styles.statIcon} aria-hidden="true" />
+            No Hot Tip running
           </span>
         ))}
         {isChristmasEventActive && holidayCheer !== undefined && (
@@ -167,7 +188,36 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
       {/* The larger farm: its button once every plot is in use. Its room is kept either way, so
           the tabs below never move when the plots fill up or a larger farm is bought */}
       <div className={styles.farmUpgradeContainer}>
-        {totalPlotsUsed >= maxPlots ? (
+        {totalPlotsUsed >= maxPlots && handleHostileTakeover ? (
+          <>
+            <button
+              type="button"
+              onClick={handleHostileTakeover}
+              disabled={money < takeoverPrice}
+              className={`${styles.farmUpgradeButton} ${styles.takeoverButton}`}
+              aria-label="Hostile Takeover"
+              title="The next Farm Tier and its max plots, keeping your crops, upgrades, auto-buyers, experience and farm upgrades"
+            >
+              <span className={styles.farmUpgradeText}>
+                <span className={styles.takeoverLabel}>Hostile Takeover:</span> ${formatNumber(takeoverPrice, 2)}
+                <span className={styles.takeoverLabel}>New max plots:</span> {nextMaxPlots}
+                {nextPlotsCapped && <span className={styles.farmUpgradeCap}>(capped at 2x current)</span>}
+                <span className={styles.takeoverLabel}>Knowledge+:</span> +{((1.25 * farmTier)).toFixed(2)} Kn/harvest
+                <span className={styles.takeoverKeeps}>Keeps everything</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBuyLargerFarm}
+              disabled={money < farmCost}
+              className={styles.plainFarmButton}
+              aria-label="Buy Larger Farm"
+            >
+              <span className={styles.plainFarmTitle}>or Buy Larger Farm: ${formatNumber(farmCost, 2)}</span>
+              <span className={styles.plainFarmNote}>Resets crops and upgrades</span>
+            </button>
+          </>
+        ) : totalPlotsUsed >= maxPlots ? (
           <button
             onClick={handleBuyLargerFarm}
             disabled={money < farmCost}
@@ -177,8 +227,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           >
             <span className={styles.farmUpgradeText}>
               <span className={styles.farmUpgradeLabel}>Buy Larger Farm:</span> ${formatNumber(farmCost, 2)}
-              <span className={styles.farmUpgradeLabel}>New max plots:</span> {Math.min(maxPlots + Math.floor(experience / 100), maxPlots * 2)}
-              {(maxPlots + Math.floor(experience / 100)) > (maxPlots * 2) && (
+              <span className={styles.farmUpgradeLabel}>New max plots:</span> {nextMaxPlots}
+              {nextPlotsCapped && (
                 <span className={styles.farmUpgradeCap}>(capped at 2x current)</span>
               )}
               <span className={styles.farmUpgradeLabel}>Knowledge+:</span> +{((1.25 * farmTier)).toFixed(2)} Kn/harvest
@@ -187,6 +237,9 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           </button>
         ) : (
           <p className={styles.farmUpgradeWaiting}>
+            {handleHostileTakeover && (
+              <><span className={styles.farmUpgradeLabel}>Hostile Takeover:</span>&nbsp;${formatNumber(takeoverPrice, 2)} or</>
+            )}
             <span className={styles.farmUpgradeLabel}>Larger Farm:</span>&nbsp;${formatNumber(farmCost, 2)}, once all {maxPlots} plots are in use ({totalPlotsUsed} now)
           </p>
         )}

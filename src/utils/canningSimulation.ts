@@ -8,6 +8,7 @@ import type { GuildState } from '../types/guilds';
 import {
   getCannerRewardDivisor,
   getGuildCanningTimeMultiplier,
+  getGuildKnowledgeMultiplier,
   getJarsPerBatch,
   getPrizeJarChance,
   getRecipeValueMultiplier,
@@ -205,7 +206,8 @@ export function planFloorStarts({ machines, processes, recipes, crops, honey, wa
  * getRecipeValueMultiplier). The Pressure Canner and Mass Production make more jars, Heirloom Touch may
  * add one; each jar sells. A Prize Jar from Seal of Quality doubles the money. Knowledge
  * and canning experience come per batch, doubled by Heirloom Touch's bonus jar; batches
- * the Canner started give a tenth of them, or half with Trusted Apprentice.
+ * the Canner started give a tenth of them, or half with Trusted Apprentice. Committed
+ * Merchants get 15% less knowledge.
  */
 export function getBatchRewards(
   recipe: Recipe,
@@ -231,7 +233,7 @@ export function getBatchRewards(
   // Rolled only when the chance exists, so batches without it use one random number
   const prizeChance = guildState ? getPrizeJarChance(guildState) : 0;
   const prize = prizeChance > 0 && random() < prizeChance;
-  const knowledge = rewardIngredients(recipe) * 2 * (1 + bonusJar);
+  const knowledge = rewardIngredients(recipe) * 2 * (1 + bonusJar) * getGuildKnowledgeMultiplier(guildState);
   const experience = rewardIngredients(recipe) * 10 * (1 + bonusJar);
   const cannerDivisor = getCannerRewardDivisor(guildState);
 

@@ -3,7 +3,7 @@ import { ICON_GOLDEN_HONEY, ICON_HONEY } from '../config/assetPaths';
 import { memo, type FC, type ReactNode } from 'react';
 import type { Recipe } from '../types/canning';
 import type { GuildState } from '../types/guilds';
-import { getJarsPerBatch, getRecipeValueMultiplier } from '../utils/guildCalculations';
+import { getCannerRewardDivisor, getGuildKnowledgeMultiplier, getJarsPerBatch, getRecipeValueMultiplier, hasAdditives } from '../utils/guildCalculations';
 import { rewardIngredients } from '../utils/canningSimulation';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './RecipeDetailsModal.module.css';
@@ -109,9 +109,11 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
   const profit = effectiveSalePrice - rawValue;
   const profitMargin = rawValue === 0 ? 0 : (profit / rawValue) * 100;
 
-  // Rewards for manual canning; automatic canning earns a tenth, rounded up
-  const knowledgeReward = rewardIngredients(recipe) * 2;
+  // Rewards for manual canning, less knowledge for Merchants; the Canner earns a tenth or a half, rounded up
+  const knowledgeReward = Math.round(rewardIngredients(recipe) * 2 * getGuildKnowledgeMultiplier(guildState) * 100) / 100;
   const canningExperienceReward = rewardIngredients(recipe) * 10;
+  const cannerDivisor = getCannerRewardDivisor(guildState);
+  const additives = hasAdditives(guildState);
 
   const missingIngredientNames = ingredientRows
     .filter(row => !row.hasEnough)
@@ -136,9 +138,12 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
       >
         {/* Header */}
         <div className={styles.header}>
-          <h2 id="recipe-modal-title" className={styles.title}>
-            {recipe.name}
-          </h2>
+          <div className={styles.titleRow}>
+            <h2 id="recipe-modal-title" className={styles.title}>
+              {recipe.name}
+            </h2>
+            {additives && <span className={styles.additivesTag}>Additives</span>}
+          </div>
           <button
             onClick={onClose}
             aria-label={`Close ${recipe.name} details. Press Escape to close`}
@@ -168,6 +173,11 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
               />
             ))}
           </div>
+          {additives && (
+            <p className={styles.additivesNote}>
+              Additives: every recipe needs one fewer of each crop, never fewer than 1. The jars sell for the same.
+            </p>
+          )}
         </div>
 
         {/* Honey Requirements */}
@@ -243,7 +253,7 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
               <div className={`${styles.statValue} ${styles.knowledge}`}>
                 +{knowledgeReward}
                 <div className={styles.autoNote}>
-                  (Auto: +{Math.ceil(knowledgeReward / 10)})
+                  (Auto: +{Math.ceil(knowledgeReward / cannerDivisor)})
                 </div>
               </div>
             </div>
@@ -252,7 +262,7 @@ const RecipeDetailsModal: FC<RecipeDetailsModalProps> = memo(({
               <div className={`${styles.statValue} ${styles.experience}`}>
                 +{canningExperienceReward}
                 <div className={styles.autoNote}>
-                  (Auto: +{Math.ceil(canningExperienceReward / 10)})
+                  (Auto: +{Math.ceil(canningExperienceReward / cannerDivisor)})
                 </div>
               </div>
             </div>

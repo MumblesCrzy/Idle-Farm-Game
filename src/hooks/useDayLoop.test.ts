@@ -27,6 +27,7 @@ describe('useDayLoop', () => {
       setTotalDaysElapsed: vi.fn(),
       setGlobalAutoPurchaseTimer: vi.fn(),
       autoSellOwnedRef: { current: false },
+      merchantDaysRef: { current: 30 },
       christmasEventRef: { current: null as UseChristmasEventReturn | null },
       pumpkinEventRef: { current: null },
       isPausedRef: { current: false },
@@ -238,6 +239,29 @@ describe('useDayLoop', () => {
       // commits, so render once more to stand in for that commit
       rerender();
       
+      expect(handleSell).toHaveBeenCalledWith(true);
+    });
+
+    it('sells on the days Trade Routes set', () => {
+      const handleSell = vi.fn();
+      const deps = createMockDependencies({
+        autoSellOwnedRef: { current: true },
+        merchantDaysRef: { current: 20 },
+        handleSell,
+        setDay: vi.fn((updater) => {
+          if (typeof updater === 'function') {
+            updater(19); // Day 20: a sale every 20 days, not every 30
+          }
+        })
+      });
+
+      const { rerender } = renderHook(() => useDayLoop(deps));
+
+      act(() => {
+        triggerDayLoop();
+      });
+      rerender();
+
       expect(handleSell).toHaveBeenCalledWith(true);
     });
 

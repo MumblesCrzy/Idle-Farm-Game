@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Veggie } from '../types/game';
 import { canMakePurchase } from '../utils/gameCalculations';
+import { calculatePlotsUsed } from '../utils/unlockSystem';
 import { AUTO_PURCHASER_CYCLE_DAYS } from '../config/gameConstants';
 
 interface AutoPurchaseHandlers {
@@ -43,73 +44,82 @@ export const useAutoPurchase = ({
 }: AutoPurchaseParams) => {
   const [globalAutoPurchaseTimer, setGlobalAutoPurchaseTimer] = useState(initialTimer);
 
-  // Process auto-purchases when the timer completes a cycle
+  // Process auto-purchases when the timer completes a cycle. Every auto-buyer shops in the same
+  // cycle from one budget: each sees the money, knowledge and free plots the ones before it left,
+  // so together they never spend more than there is or buy plots past the farm's size.
   useEffect(() => {
     if (globalAutoPurchaseTimer >= AUTO_PURCHASER_CYCLE_DAYS) {
       setGlobalAutoPurchaseTimer(0);
 
+      let moneyLeft = money;
+      let knowledgeLeft = knowledge;
+      let plotsUsed = calculatePlotsUsed(veggies);
+      // Crops whose Surveyor stops because every plot is in use
+      const fullSurveyors = new Set<number>();
+
       veggies.forEach((v, veggieIndex) => {
         for (const ap of v.autoPurchasers) {
-          if (ap.owned && ap.active) {
-            // Check if we can afford and make the purchase
-            if (canMakePurchase(v, ap.purchaseType, money, knowledge, ap.currencyType, veggies, maxPlots, priceFactor)) {
-              // Get current upgrade level before purchase
-              let currentLevel = 0;
-              let upgradeCost = 0;
-              
-              switch (ap.purchaseType) {
-                case 'fertilizer':
-                  currentLevel = v.fertilizerLevel;
-                  upgradeCost = v.fertilizerCost;
-                  handlers.handleBuyFertilizer(veggieIndex, priceFactor);
-                  break;
-                case 'betterSeeds':
-                  currentLevel = v.betterSeedsLevel;
-                  upgradeCost = v.betterSeedsCost;
-                  handlers.handleBuyBetterSeeds(veggieIndex, priceFactor);
-                  break;
-                case 'harvesterSpeed':
-                  currentLevel = v.harvesterSpeedLevel || 0;
-                  upgradeCost = v.harvesterSpeedCost || 0;
-                  handlers.handleBuyHarvesterSpeed(veggieIndex, priceFactor);
-                  break;
-                case 'additionalPlot':
-                  currentLevel = v.additionalPlotLevel || 0;
-                  upgradeCost = v.additionalPlotCost;
-                  handlers.handleBuyAdditionalPlot(veggieIndex, priceFactor);
-                  break;
-              }
-              
-              // Log the purchase if callback provided
-              if (onPurchaseCallback) {
-                onPurchaseCallback(
-                  v.name,
-                  ap.name,
-                  ap.purchaseType,
-                  currentLevel + 1, // New level after purchase
-                  upgradeCost * priceFactor, // What the auto-buyer paid
-                  ap.currencyType
-                );
-              }
+          if (!ap.owned || !ap.active) continue;
+          const isPlot = ap.purchaseType === 'additionalPlot';
+
+          if (canMakePurchase(v, ap.purchaseType, moneyLeft, knowledgeLeft, ap.currencyType, undefined, undefined, priceFactor)
+            && (!isPlot || plotsUsed < maxPlots)) {
+            // Get current upgrade level before purchase
+            let currentLevel = 0;
+            let upgradeCost = 0;
+
+            switch (ap.purchaseType) {
+              case 'fertilizer':
+                currentLevel = v.fertilizerLevel;
+                upgradeCost = v.fertilizerCost;
+                handlers.handleBuyFertilizer(veggieIndex, priceFactor);
+                break;
+              case 'betterSeeds':
+                currentLevel = v.betterSeedsLevel;
+                upgradeCost = v.betterSeedsCost;
+                handlers.handleBuyBetterSeeds(veggieIndex, priceFactor);
+                break;
+              case 'harvesterSpeed':
+                currentLevel = v.harvesterSpeedLevel || 0;
+                upgradeCost = v.harvesterSpeedCost || 0;
+                handlers.handleBuyHarvesterSpeed(veggieIndex, priceFactor);
+                break;
+              case 'additionalPlot':
+                currentLevel = v.additionalPlotLevel || 0;
+                upgradeCost = v.additionalPlotCost;
+                handlers.handleBuyAdditionalPlot(veggieIndex, priceFactor);
+                break;
             }
 
-            // Special case: Disable surveyor if max plots reached
-            if (ap.purchaseType === 'additionalPlot') {
-              const totalPlotsUsed = veggies.filter(v => v.unlocked).length + veggies.reduce((sum, v) => sum + (v.additionalPlotLevel || 0), 0);
-              if (totalPlotsUsed >= maxPlots && ap.active) {
-                setVeggies((prev) => {
-                  const updated = [...prev];
-                  const surveyor = updated[veggieIndex].autoPurchasers.find((p) => p.id === 'surveyor');
-                  if (surveyor) {
-                    surveyor.active = false;
-                  }
-                  return updated;
-                });
-              }
+            // What the auto-buyer paid comes out of the cycle's budget
+            const paid = upgradeCost * priceFactor;
+            if (ap.currencyType === 'money') moneyLeft -= paid;
+            else knowledgeLeft -= paid;
+            if (isPlot) plotsUsed += 1;
+
+            // Log the purchase if callback provided
+            if (onPurchaseCallback) {
+              onPurchaseCallback(
+                v.name,
+                ap.name,
+                ap.purchaseType,
+                currentLevel + 1, // New level after purchase
+                paid,
+                ap.currencyType
+              );
             }
           }
+
+          // A Surveyor switches off once every plot is in use
+          if (isPlot && plotsUsed >= maxPlots) fullSurveyors.add(veggieIndex);
         }
       });
+
+      if (fullSurveyors.size > 0) {
+        setVeggies(prev => prev.map((v, index) => (fullSurveyors.has(index)
+          ? { ...v, autoPurchasers: v.autoPurchasers.map(p => (p.id === 'surveyor' ? { ...p, active: false } : p)) }
+          : v)));
+      }
     }
   }, [globalAutoPurchaseTimer, money, knowledge, maxPlots, veggies, handlers, setVeggies, priceFactor, onPurchaseCallback]);
 

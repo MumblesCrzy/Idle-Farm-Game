@@ -40,6 +40,7 @@ const simulated = (overrides: Partial<OfflineProgressResult> = {}): OfflineProgr
   christmasTreeGrowthTicks: 0,
   christmasElvesCraftingTicks: 0,
   christmasPassiveCheerGain: 0,
+  awaySales: { money: 0, visits: 0, sold: [] },
   ...overrides
 });
 
@@ -96,6 +97,7 @@ const createDeps = (overrides: Partial<UseOfflineProgressDeps> = {}): UseOffline
   setVeggies: vi.fn(),
   setExperience: vi.fn(),
   setKnowledge: vi.fn(),
+  setMoney: vi.fn(),
   setDay: vi.fn(),
   setTotalDaysElapsed: vi.fn(),
   setGuildState: vi.fn(),
@@ -260,6 +262,39 @@ describe('useOfflineProgress', () => {
       expect(member.guildCurrencies.engineers).toBe(2);
       expect(member.gearProgress?.autoHarvests).toBe(5);
       expect(member.guildTokens).toBe(0);
+    });
+
+    it("pays the Merchant's sales from time away and reports them, with Futures", () => {
+      const awaySales = { money: 1_200, visits: 2, sold: [{ name: 'Radish', quantity: 40, earnings: 1_200 }] };
+      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ awaySales }));
+      const onAwaySales = vi.fn();
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, autoSellOwned: true }, onAwaySales });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(vi.mocked(calculateOfflineProgress).mock.calls[0][1].autoSellOwned).toBe(true);
+      const pay = vi.mocked(deps.setMoney).mock.calls[0][0] as (m: number) => number;
+      expect(pay(100)).toBe(1_300);
+      expect(onAwaySales).toHaveBeenCalledWith(awaySales);
+      // The stored save started with $0
+      expect(saveGameStateWithCanning).toHaveBeenCalledWith(expect.objectContaining({ money: 1_200 }));
+    });
+
+    it("never pays Ferdinand's Hot Tip for time away", () => {
+      const tipping: GuildState = { ...commitToGuild(DEFAULT_GUILD_STATE, 'merchants', 1), ferdinand: { hotTips: 3, hotTipLeft: 40 } };
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, guildState: tipping } });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(vi.mocked(calculateOfflineProgress).mock.calls[0][1].guildState?.ferdinand).toEqual({ hotTips: 3, hotTipLeft: 0 });
+    });
+
+    it('leaves money alone when the Merchant sold nothing', () => {
+      const deps = createDeps({ loaded: savedGame() });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      expect(deps.setMoney).not.toHaveBeenCalled();
     });
 
     it('leaves guild state alone when nothing was auto harvested', () => {

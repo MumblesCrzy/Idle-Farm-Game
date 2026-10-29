@@ -90,7 +90,8 @@ describe('CountyFairTab', () => {
   });
 
   it('shows the expected competition for the next fair', () => {
-    render(<Harness initialState={{ weighOff: weighOff({ fairsEntered: 2 }) }} />);
+    // Rivals follow the first places won, not the fairs entered
+    render(<Harness initialState={{ weighOff: weighOff({ fairsEntered: 5, ribbons: { first: 2, second: 1, third: 0 } }) }} />);
     const competition = region('Expected competition');
     expect(within(competition).getByText(lb(rivalBaseWeight(2)))).toBeInTheDocument();
     expect(competition).toHaveTextContent(`${RIVAL_COUNT} rivals`);
@@ -128,7 +129,7 @@ describe('CountyFairTab', () => {
     expect(trophyStat('Fairs entered')).toBe('1');
     expect(trophyStat('Personal best')).toBe('2,000 lb');
 
-    // One entry per fair; rivals get heavier for the next one
+    // One entry per fair; the win makes the rivals heavier for the next one
     expect(screen.getByRole('heading', { name: `Next fair in ${FAIR_INTERVAL_DAYS} days` })).toBeInTheDocument();
     expect(within(shelf).getByRole('button', { name: /^Enter weigh-off/ })).toBeDisabled();
     expect(within(region('Expected competition')).getByText(lb(rivalBaseWeight(1)))).toBeInTheDocument();
@@ -146,6 +147,8 @@ describe('CountyFairTab', () => {
     expect(trophyStat('2nd place')).toBe('0');
     expect(trophyStat('3rd place')).toBe('0');
     expect(trophyStat('Fairs entered')).toBe('1');
+    // A loss leaves the rivals as they were
+    expect(within(region('Expected competition')).getByText(lb(rivalBaseWeight(0)))).toBeInTheDocument();
   });
 
   it('sells a giant for the price on its button', () => {

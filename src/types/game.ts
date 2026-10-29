@@ -134,11 +134,12 @@ export interface GameState {
   handleRitualHarvestAll: () => void;
   
   // Veggie Upgrades
-  handleBuyFertilizer: (index: number) => void;
+  // A price factor below 1 pays less: Wholesale, and Bulk Purchasing for auto-buyers
+  handleBuyFertilizer: (index: number, priceFactor?: number) => void;
   handleBuyHarvester: (index: number) => void;
-  handleBuyHarvesterSpeed: (index: number) => void;
-  handleBuyBetterSeeds: (index: number) => void;
-  handleBuyAdditionalPlot: (index: number) => void;
+  handleBuyHarvesterSpeed: (index: number, priceFactor?: number) => void;
+  handleBuyBetterSeeds: (index: number, priceFactor?: number) => void;
+  handleBuyAdditionalPlot: (index: number, priceFactor?: number) => void;
   handleBuyAutoPurchaser: (autoPurchaseId: string) => (index: number) => void;
   
   // Global Upgrades - Irrigation
@@ -180,6 +181,8 @@ export interface GameState {
   farmTier: number;
   setFarmTier: React.Dispatch<React.SetStateAction<number>>;
   handleBuyLargerFarm: () => void;
+  /** A Merchant's Hostile Takeover: the next farm, keeping everything */
+  handleHostileTakeover: () => void;
   
   // Progression Tracking
   highestUnlockedVeggie: number;

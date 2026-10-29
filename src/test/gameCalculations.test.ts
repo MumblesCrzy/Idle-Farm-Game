@@ -409,9 +409,14 @@ describe('canMakePurchase', () => {
   });
 
   describe('harvesterSpeed purchase', () => {
-    it('should allow purchase with enough money', () => {
-      const veggie = createVeggieForPurchase();
+    it('should allow purchase with enough money and an Auto Harvester', () => {
+      const veggie = { ...createVeggieForPurchase(), harvesterOwned: true };
       expect(canMakePurchase(veggie, 'harvesterSpeed', 350, 0)).toBe(true);
+    });
+
+    it('needs an Auto Harvester to speed up', () => {
+      const veggie = createVeggieForPurchase();
+      expect(canMakePurchase(veggie, 'harvesterSpeed', 350, 0)).toBe(false);
     });
 
     it('should not allow purchase with insufficient money', () => {

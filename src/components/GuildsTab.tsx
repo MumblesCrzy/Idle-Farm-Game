@@ -17,8 +17,9 @@ import BaseTab from './BaseTab';
 import LockedFeatureCard from './LockedFeatureCard';
 import InlineIcon from './InlineIcon';
 import { tuneUpSteps } from '../utils/stanley';
-import { AUTO_ASSISTANT, CANNING_BATCH_CANNING, CANNING_CANNER, CANNING_QUICK_HANDS, GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, GUILD_PRESERVERS, ICON_AUTOMATION, ICON_BEE, ICON_BLESSED_CROP, ICON_CANNING, ICON_GROWING, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_HARVEST, ICON_HONEY, ICON_IDEA, ICON_MONEY, ICON_SCROLL, ICON_UPGRADE, ICON_WARNING, RIBBON_BLUE, RIBBON_FIRST, SPECIAL_STANLEY, UPGRADE_AUTO_HARVESTER, UPGRADE_FERTILIZER, UPGRADE_GREENHOUSE, UPGRADE_HARVESTER_SPEED, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_IRRIGATION } from '../config/assetPaths';
-import { MAX_OFFLINE_MS } from '../config/gameConstants';
+import { hotTipSteps } from '../utils/ferdinand';
+import { AUTO_ASSISTANT, CANNING_BATCH_CANNING, CANNING_CANNER, CANNING_QUICK_HANDS, GUILD_ENGINEERS, GUILD_GROWERS, GUILD_MERCHANTS, GUILD_PRESERVERS, ICON_AUTOMATION, ICON_BEE, ICON_BLESSED_CROP, ICON_CANNING, ICON_GROWING, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_HARVEST, ICON_HONEY, ICON_IDEA, ICON_KNOWLEDGE, ICON_MONEY, ICON_SCROLL, ICON_UPGRADE, ICON_WARNING, RIBBON_BLUE, RIBBON_FIRST, SPECIAL_FERDINAND, SPECIAL_STANLEY, UPGRADE_AUTO_HARVESTER, UPGRADE_FERTILIZER, UPGRADE_GREENHOUSE, UPGRADE_HARVESTER_SPEED, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_IRRIGATION, UPGRADE_MERCHANT } from '../config/assetPaths';
+import { MAX_OFFLINE_MS, MERCHANT_DAYS } from '../config/gameConstants';
 import type { GuildType, GuildState, Guild, GuildUpgrade } from '../types/guilds';
 import { GUILDS, GUILDS_UNLOCK_TIER, GUILD_TOKEN_SOURCES, MAX_SAMPLED_UPGRADES_PER_GUILD, getSamplingUpgrades } from '../data/guildData';
 import LegacyPanel from './LegacyPanel';
@@ -56,6 +57,18 @@ import {
   getGuildUpgradeCost,
   getKeptLevel,
   getUpgradeLevel,
+  getBulkDealsBonus,
+  getGuildKnowledgeMultiplier,
+  getMerchantDays,
+  getMerchantsCropPriceBonus,
+  getMerchantsJarValueBonus,
+  getWholesalePriceMultiplier,
+  hasAdditives,
+  getGoldenParachuteMoney,
+  getRehirePriceMultiplier,
+  hasFutures,
+  hasGoldenParachute,
+  hasHostileTakeover,
 } from '../utils/guildCalculations';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import styles from './GuildsTab.module.css';
@@ -78,6 +91,8 @@ interface GuildsTabProps {
   experience: number;
   /** Whether the intro overlay has been shown before */
   introShown: boolean;
+  /** Auto-buyers on staff, for a Merchant's Payroll line */
+  payrollStaff?: number;
   /** Handler called when intro is dismissed */
   onDismissIntro: () => void;
   /** Handler to commit to a guild */
@@ -167,7 +182,7 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
         <h3 id={titleId} className={styles.detailEmptyTitle}>Pick a guild to see what it offers</h3>
         <ul className={styles.detailEmptyList}>
           <li>Each guild shows its benefits, its trade-offs and two starter upgrades.</li>
-          <li>Starter upgrades cost Guild Tokens and work at half strength until you join.</li>
+          <li>Starter upgrades cost Guild Tokens, or money for the Merchants, and work at half strength until you join.</li>
           <li>Sample at least one of a guild's starter upgrades before you join it.</li>
           <li>Joining is for good, until you end a Legacy at Farm Tier {LEGACY_FARM_TIER}.</li>
         </ul>
@@ -185,7 +200,10 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
   const timeCut = guild.id === 'preservers' ? 1 - getPreserversTimeMultiplier(guildState) : 0;
   const machineSpeed = guild.id === 'engineers' ? getEngineersHarvesterSpeedMultiplier(guildState) - 1 : 0;
   const machineYield = guild.id === 'engineers' ? getAutoHarvestYieldBonus(guildState) : 0;
-  const hasAnyBonus = growthBonus > 0 || priceBonus > 0 || jarBonus > 0 || timeCut > 0 || machineSpeed > 0 || machineYield > 0;
+  const cropPriceBonus = guild.id === 'merchants' ? getMerchantsCropPriceBonus(guildState) : 0;
+  const bulkBonus = guild.id === 'merchants' ? getBulkDealsBonus(guildState) : 0;
+  const hasAnyBonus = growthBonus > 0 || priceBonus > 0 || jarBonus > 0 || timeCut > 0 || machineSpeed > 0 || machineYield > 0
+    || cropPriceBonus > 0 || bulkBonus > 0;
 
   return (
     <section className={styles.detailPanel} style={guildColorVars(guild)} aria-labelledby={titleId}>
@@ -231,11 +249,16 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
               <li key={tradeoff.id}>{tradeoff.description}</li>
             ))}
           </ul>
+          {guild.currency.money && (
+            <p className={styles.moneyNote}>
+              <InlineIcon src={ICON_MONEY} size={14} gap={6} />No guild currency: the Merchants spend money on everything, starters included
+            </p>
+          )}
         </div>
 
         <div className={styles.detailColumn}>
           <h4 className={styles.detailCaption}>
-            <InlineIcon src={ICON_GUILD_TOKEN} size={16} gap={6} />Starter upgrades
+            <InlineIcon src={guild.currency.money ? ICON_MONEY : ICON_GUILD_TOKEN} size={16} gap={6} />Starter upgrades
             <span className={styles.sampleCount}>Sampled {sampled.length} of {MAX_SAMPLED_UPGRADES_PER_GUILD}</span>
           </h4>
           <p className={styles.softCapText}>
@@ -287,6 +310,12 @@ const GuildDetailPanel: FC<GuildDetailPanelProps> = ({
             )}
             {machineYield > 0 && (
               <span className={styles.samplingEffect}><InlineIcon src={ICON_HARVEST} size={14} gap={3} />+{formatNumber(machineYield * 100, 1)}% Auto Harvest Crops</span>
+            )}
+            {cropPriceBonus > 0 && (
+              <span className={styles.samplingEffect}><InlineIcon src={ICON_MONEY} size={14} gap={3} />+{formatNumber(cropPriceBonus * 100, 1)}% Crop Prices</span>
+            )}
+            {bulkBonus > 0 && (
+              <span className={styles.samplingEffect}><InlineIcon src={ICON_MONEY} size={14} gap={3} />+{formatNumber(bulkBonus * 100, 1)}% Bulk Sales</span>
             )}
           </div>
         </div>
@@ -455,8 +484,8 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
   // Combine tier 2 and tier 3 upgrades into one list
   const allUpgrades = guild.upgrades.filter(u => u.tier === 2 || u.tier === 3);
   
-  // The committed guild's own currency
-  const currencyAmount = guildState.guildCurrencies[guild.id] ?? 0;
+  // The committed guild's own currency, or money for the Merchants
+  const currencyAmount = guild.currency.money ? money : guildState.guildCurrencies[guild.id] ?? 0;
   
   // Calculate current effect values for Growers
   const growthBonus = guild.id === 'growers' ? getGrowersGrowthBonus(guildState) : 0;
@@ -494,7 +523,23 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
   const cropGradeCut = isEngineers ? 1 - getStandardGradeCropMultiplier(guildState) : 0;
   const jarGradeCut = isEngineers ? 1 - getStandardGradeJarMultiplier(guildState) : 0;
   const honeyCut = isEngineers ? 1 - getGuildHoneyMultiplier(guildState) : 0;
-  const hasEffects = growthBonus > 0 || priceBonus > 0 || manualHarvestBonus > 0 || jarValueBonus > 0 || canningTimeCut > 0 || machineSpeed > 0;
+
+  // Merchants effects and their trade-off
+  const isMerchants = guild.id === 'merchants';
+  const cropPriceBonus = isMerchants ? getMerchantsCropPriceBonus(guildState) : 0;
+  const jarPriceBonus = isMerchants ? getMerchantsJarValueBonus(guildState) : 0;
+  const bulkBonus = isMerchants ? getBulkDealsBonus(guildState) : 0;
+  const wholesaleCut = isMerchants ? 1 - getWholesalePriceMultiplier(guildState) : 0;
+  const merchantDays = isMerchants ? getMerchantDays(guildState) : MERCHANT_DAYS;
+  const additives = isMerchants && hasAdditives(guildState);
+  const knowledgeCut = isMerchants ? 1 - getGuildKnowledgeMultiplier(guildState) : 0;
+  const headHunters = isMerchants && getRehirePriceMultiplier(guildState) < 1;
+  const futures = isMerchants && hasFutures(guildState);
+  const takeovers = isMerchants && hasHostileTakeover(guildState);
+  const parachute = isMerchants && hasGoldenParachute(guildState);
+  const insiderTrading = isMerchants && getUpgradeLevel(guildState, 'merchants_insider_trading') > 0;
+  const hasEffects = growthBonus > 0 || priceBonus > 0 || manualHarvestBonus > 0 || jarValueBonus > 0 || canningTimeCut > 0 || machineSpeed > 0
+    || cropPriceBonus > 0;
 
   return (
     <div className={styles.committedPanel} style={guildColorVars(guild)}>
@@ -511,7 +556,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
         </div>
         <div className={styles.committedCurrency} title={`${guild.currency.name} - ${guild.currency.earnedFrom}`}>
           <InlineIcon src={guild.currency.icon} size={24} className={styles.currencyIcon} />
-          <span className={styles.currencyAmount}>{formatNumber(currencyAmount)}</span>
+          <span className={styles.currencyAmount}>{guild.currency.money ? `$${formatNumber(currencyAmount, 2)}` : formatNumber(currencyAmount)}</span>
           <span className={styles.currencyLabel}>{guild.currency.name}</span>
         </div>
       </div>
@@ -659,6 +704,72 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.bonusText}>Tune-Ups: <span className={styles.bonusValue}>{tuneUpSteps(guildState)} s</span></span>
               </div>
             )}
+            {cropPriceBonus > 0 && (
+              <div className={styles.bonusItem} title="From Markup, Haggling and Shrewd Bargaining">
+                <InlineIcon src={ICON_MONEY} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Crop prices: <span className={styles.bonusValue}>+{formatNumber(cropPriceBonus * 100, 0)}%</span></span>
+              </div>
+            )}
+            {jarPriceBonus > 0 && (
+              <div className={styles.bonusItem} title="From Markup and Price Gouging">
+                <InlineIcon src={ICON_CANNING} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Jar value: <span className={styles.bonusValue}>+{formatNumber(jarPriceBonus * 100, 0)}%</span></span>
+              </div>
+            )}
+            {bulkBonus > 0 && (
+              <div className={styles.bonusItem} title="From Bulk Deals - a sale of 100 crops or more pays more">
+                <InlineIcon src={ICON_MONEY} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Bulk sales: <span className={styles.bonusValue}>+{formatNumber(bulkBonus * 100, 0)}%</span></span>
+              </div>
+            )}
+            {wholesaleCut > 0 && (
+              <div className={styles.bonusItem} title="From Wholesale - crop upgrades cost less, bought by you or the auto-buyers">
+                <InlineIcon src={UPGRADE_FERTILIZER} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Crop upgrades: <span className={styles.bonusValue}>-{formatNumber(wholesaleCut * 100, 0)}%</span></span>
+              </div>
+            )}
+            {merchantDays < MERCHANT_DAYS && (
+              <div className={styles.bonusItem} title="From Trade Routes - the Merchant sells more often">
+                <InlineIcon src={UPGRADE_MERCHANT} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Merchant: <span className={styles.bonusValue}>every {merchantDays} days</span></span>
+              </div>
+            )}
+            {additives && (
+              <div className={styles.bonusItem} title="From Additives - recipes need one fewer of each crop, never fewer than 1">
+                <InlineIcon src={ICON_CANNING} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Recipes: <span className={styles.bonusValue}>1 fewer of each crop</span></span>
+              </div>
+            )}
+            {insiderTrading && (
+              <div className={styles.bonusItem} title="From Insider Trading - Ferdinand's Hot Tips last longer">
+                <InlineIcon src={SPECIAL_FERDINAND} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Hot Tips: <span className={styles.bonusValue}>{hotTipSteps(guildState)} s</span></span>
+              </div>
+            )}
+            {headHunters && (
+              <div className={styles.bonusItem} title="From Head Hunters - Payroll hires everyone back for half the hire prices">
+                <InlineIcon src={AUTO_ASSISTANT} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Rehiring: <span className={styles.bonusValue}>half price</span></span>
+              </div>
+            )}
+            {futures && (
+              <div className={styles.bonusItem} title="From Futures - the Merchant keeps selling during time away">
+                <InlineIcon src={UPGRADE_MERCHANT} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Time away: <span className={styles.bonusValue}>Merchant sells</span></span>
+              </div>
+            )}
+            {takeovers && (
+              <div className={styles.bonusItem} title="From Hostile Takeover - a larger farm without the reset, at ten times its price">
+                <InlineIcon src={ICON_UPGRADE} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Larger farms: <span className={styles.bonusValue}>keep everything</span></span>
+              </div>
+            )}
+            {parachute && (
+              <div className={styles.bonusItem} title="From Golden Parachute - ending a Legacy now carries this much into the next, a tenth of your money">
+                <InlineIcon src={ICON_MONEY} size={18} className={styles.bonusIcon} />
+                <span className={styles.bonusText}>Golden Parachute: <span className={styles.bonusValue}>${formatNumber(getGoldenParachuteMoney(guildState, money), 2)}</span></span>
+              </div>
+            )}
             {!hasEffects && (
               <div className={styles.bonusItem}>
                 <InlineIcon src={ICON_SCROLL} size={18} className={styles.bonusIcon} />
@@ -707,8 +818,14 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.tradeoffText}>Honey: <span className={styles.penaltyValue}>-{formatNumber(honeyCut * 100, 0)}%</span></span>
               </div>
             )}
+            {knowledgeCut > 0 && (
+              <div className={styles.tradeoffItem} title="No Time to Learn - harvests and canning give less knowledge">
+                <InlineIcon src={ICON_KNOWLEDGE} size={18} className={styles.tradeoffIcon} />
+                <span className={styles.tradeoffText}>Knowledge: <span className={styles.penaltyValue}>-{formatNumber(knowledgeCut * 100, 0)}%</span></span>
+              </div>
+            )}
             {/* Static trade-offs when there are no computed penalties */}
-            {!isEngineers && harvesterSpeedMult === 1 && canningProfitMult === 1 && guild.tradeOffs.map(tradeoff => (
+            {!isEngineers && !isMerchants && harvesterSpeedMult === 1 && canningProfitMult === 1 && guild.tradeOffs.map(tradeoff => (
               <div key={tradeoff.id} className={styles.tradeoffItem}>
                 <InlineIcon src={ICON_WARNING} size={18} className={styles.tradeoffIcon} />
                 <span className={styles.tradeoffText}>{tradeoff.description}</span>
@@ -802,6 +919,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
   knowledge,
   experience,
   introShown,
+  payrollStaff,
   onDismissIntro,
   onCommitToGuild,
   onPurchaseUpgrade,
@@ -849,8 +967,8 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
           <ul className={styles.lockedNoteGuilds}>
             <li><InlineIcon src={GUILD_GROWERS} size={18} gap={6} />Growers</li>
             <li><InlineIcon src={GUILD_PRESERVERS} size={18} gap={6} />Preservers</li>
-            <li><InlineIcon src={GUILD_ENGINEERS} size={18} gap={6} />Engineers, later</li>
-            <li><InlineIcon src={GUILD_MERCHANTS} size={18} gap={6} />Merchants, later</li>
+            <li><InlineIcon src={GUILD_ENGINEERS} size={18} gap={6} />Engineers</li>
+            <li><InlineIcon src={GUILD_MERCHANTS} size={18} gap={6} />Merchants</li>
           </ul>
         </section>
       </div>
@@ -908,6 +1026,23 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
             <span className={styles.statusLabel}>Legacy:</span>
             <span className={styles.statusValue}>{legacyNumeral((guildState.legacy?.count ?? 0) + 1)}</span>
           </div>
+          {/* The Merchants' ledger in one row, so the sidebar stays short */}
+          {committedGuild.id === 'merchants' && (
+            <div className={styles.ledger}>
+              <div className={styles.ledgerCell} title={payrollStaff ? `${payrollStaff} auto-buyers on staff` : 'Every auto-buyer is laid off'}>
+                <span className={styles.statusLabel}>Payroll</span>
+                <span className={styles.statusValue}>{payrollStaff ? payrollStaff : 'laid off'}</span>
+              </div>
+              <div className={styles.ledgerCell} title="Hot Tips from Ferdinand this Legacy">
+                <span className={styles.statusLabel}>Hot Tips</span>
+                <span className={styles.statusValue}>{guildState.ferdinand?.hotTips ?? 0}</span>
+              </div>
+              <div className={styles.ledgerCell} title="Hostile Takeovers this Legacy">
+                <span className={styles.statusLabel}>Takeovers</span>
+                <span className={styles.statusValue}>{guildState.takeovers ?? 0}</span>
+              </div>
+            </div>
+          )}
         </div>
         {onEndLegacy && legacyReset && (
           <button
@@ -1064,6 +1199,7 @@ const GuildsTab: FC<GuildsTabProps> = memo(({
               <li>Lose access to other guild upgrades</li>
               <li>Accept guild trade-offs and penalties</li>
               <li>Leave behind any unspent Guild Tokens</li>
+              {selectedGuildData.currency.money && <li>Pay for guild upgrades with money: the guild has no currency of its own</li>}
             </ul>
             <div className={styles.confirmButtons}>
               <button

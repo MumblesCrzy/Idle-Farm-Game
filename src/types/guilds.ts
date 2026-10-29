@@ -60,6 +60,8 @@ export interface GuildCurrency {
   icon: string;
   /** How members earn it, for tooltips */
   earnedFrom: string;
+  /** The guild spends money and has no currency of its own, as the Merchants */
+  money?: boolean;
 }
 
 /**
@@ -150,6 +152,16 @@ export interface StanleyRecord {
 }
 
 /**
+ * Ferdinand, the Merchants' cat: what the save keeps about his visits
+ */
+export interface FerdinandRecord {
+  /** Times he was clicked for a Hot Tip */
+  hotTips: number;
+  /** Game steps left on the Hot Tip running now, so a reload keeps it */
+  hotTipLeft?: number;
+}
+
+/**
  * One ended Legacy
  */
 export interface LegacyEntry {
@@ -207,6 +219,10 @@ export interface GuildState {
   glutton?: GluttonRecord;
   /** Stanley's visits to committed Engineers (missing in older saves) */
   stanley?: StanleyRecord;
+  /** Hostile Takeovers bought by a committed Merchant this Legacy (missing in older saves) */
+  takeovers?: number;
+  /** Ferdinand's visits to committed Merchants (missing in older saves) */
+  ferdinand?: FerdinandRecord;
   /** Benefits kept from earlier Legacies (missing until the first Legacy ends) */
   legacy?: LegacyRecord;
   /** Guild-specific currencies earned */

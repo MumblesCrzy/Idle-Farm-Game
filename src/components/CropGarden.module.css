@@ -117,6 +117,96 @@
   background: #6fbf5f;
 }
 
+/* With every auto-buyer laid off, the countdown's place says so, dimmed */
+.timerIdle {
+  color: #a8b8aa;
+}
+
+.timerIdle img {
+  opacity: 0.55;
+}
+
+/* Payroll, for committed Merchants, in the guild's purple and gold */
+.payroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 3px 0 10px;
+  border: 1px solid #7e5aa8;
+  border-radius: 8px;
+  background: #2b1a40;
+}
+
+.payrollOff {
+  border-style: dashed;
+  background: #241634;
+}
+
+.payroll > img {
+  width: 18px;
+  height: 18px;
+}
+
+.payrollLabel {
+  color: #e9d5ff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.layOff,
+.rehire {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font: 800 12px system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.layOff {
+  border: 1px solid #b91c1c;
+  background: #450a0a;
+  color: #fecaca;
+}
+
+.layOff:hover {
+  background: #5c1010;
+}
+
+.rehire {
+  border: 1px solid #fde68a;
+  background: #fbbf24;
+  color: #2d1a47;
+}
+
+.rehire:hover:enabled {
+  background: #fcd34d;
+}
+
+.rehire:disabled {
+  border-color: #78716c;
+  background: #57534e;
+  color: #f5f5f4;
+  cursor: not-allowed;
+}
+
+.rehire img {
+  width: 14px;
+  height: 14px;
+}
+
+.layOff:focus-visible,
+.rehire:focus-visible {
+  outline: 2px solid #f5c040;
+  outline-offset: 2px;
+}
+
 /* Two rows of five, each bed the same height whatever it holds */
 .beds {
   display: grid;
@@ -301,6 +391,15 @@
   border: 1px solid #c58a3a;
   background: #5a3d14;
   color: #ffe2b0;
+}
+
+/* Ferdinand's Hot Tip on a crop marked Sell */
+.hotTipMark {
+  padding: 0 4px;
+  border-radius: 6px;
+  background: #fbbf24;
+  color: #2d1a47;
+  font-size: 10px;
 }
 
 .sellPill:hover {

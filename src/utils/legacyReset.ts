@@ -3,7 +3,8 @@
  * path a save import uses, then a reload. The page comes up as a new game with the Legacy
  * record in place, so nothing from the old farm survives by accident.
  */
-import { createAllCrops } from './gameCalculations';
+import { createAllCrops, formatNumber } from './gameCalculations';
+import { getGoldenParachuteMoney } from './guildCalculations';
 import { createEventLogEntry } from './eventLogUtils';
 import { createSaveSnapshot, importGameState, type ExtendedGameState } from './saveSystem';
 import { FARM_BASE_COST, LAST_ACTIVE_KEY } from '../config/gameConstants';
@@ -16,12 +17,13 @@ import { describeDays, endLegacyRecord, guildDisplayName, legacyNumeral, legacyU
  * The save the next Legacy starts from. The farm is back at its first day; special and
  * hidden achievements stay unlocked with the permanent bonuses they granted; the seasonal
  * events, the settings and the tutorial flags carry over; the guild state is empty but for
- * the Legacy record.
+ * the Legacy record. With Golden Parachute, a tenth of the money carries over too.
  */
 export function buildLegacySave(current: ExtendedGameState, pickedUnlock: string | null, now: number = Date.now()): ExtendedGameState {
   const guildState = current.guildState ?? DEFAULT_GUILD_STATE;
   const legacy = endLegacyRecord(guildState, pickedUnlock, current.totalDaysElapsed ?? 0, now);
   const ended = legacy.history[legacy.history.length - 1];
+  const parachute = getGoldenParachuteMoney(guildState, current.money ?? 0);
 
   const achievements = (current.achievementState?.achievements ?? []).map(achievement => (
     achievement.unlocked && survivesLegacy(achievement)
@@ -43,14 +45,18 @@ export function buildLegacySave(current: ExtendedGameState, pickedUnlock: string
     0,
     {
       priority: 'important',
-      details: kept.length > 0 ? `Kept ${kept.join(' and ')}. Legacy ${legacyNumeral(legacy.count + 1)} begins.` : `Legacy ${legacyNumeral(legacy.count + 1)} begins.`,
+      details: [
+        kept.length > 0 ? `Kept ${kept.join(' and ')}.` : null,
+        parachute > 0 ? `Golden Parachute carried $${formatNumber(parachute, 2)}.` : null,
+        `Legacy ${legacyNumeral(legacy.count + 1)} begins.`
+      ].filter(Boolean).join(' '),
       icon: ICON_SCROLL
     }
   );
 
   const fresh: ExtendedGameState = {
     veggies: createAllCrops(),
-    money: 0,
+    money: parachute,
     experience: 0,
     knowledge: 0,
     activeVeggie: 0,

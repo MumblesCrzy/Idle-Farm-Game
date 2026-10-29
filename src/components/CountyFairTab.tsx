@@ -46,8 +46,8 @@ interface RivalRange {
   heaviest: number;
 }
 
-function rivalRange(fairsEntered: number): RivalRange {
-  const base = rivalBaseWeight(fairsEntered);
+function rivalRange(firstPlaces: number): RivalRange {
+  const base = rivalBaseWeight(firstPlaces);
   return {
     typical: Math.round(base),
     lightest: Math.round(base * (1 - C.RIVAL_SPREAD / 2)),
@@ -185,7 +185,7 @@ const CountyFairTab: FC<CountyFairTabProps> = memo(({ event, formatNumber }) => 
   const fairOpen = weighOff.daysUntilFair <= 0;
   const daysUntilFair = Math.max(0, Math.ceil(weighOff.daysUntilFair));
   const daysElapsed = Math.min(C.FAIR_INTERVAL_DAYS, Math.max(0, C.FAIR_INTERVAL_DAYS - daysUntilFair));
-  const range = useMemo(() => rivalRange(weighOff.fairsEntered), [weighOff.fairsEntered]);
+  const range = useMemo(() => rivalRange(weighOff.ribbons.first), [weighOff.ribbons.first]);
 
   const sortedGiants = useMemo(() => [...giantShelf].sort((a, b) => b.weight - a.weight), [giantShelf]);
   const saleMultiplier = getSaleMultiplier(upgrades);
@@ -234,7 +234,7 @@ const CountyFairTab: FC<CountyFairTabProps> = memo(({ event, formatNumber }) => 
             ({formatPounds(range.lightest)} to {formatPounds(range.heaviest)}).
           </p>
           <p className={styles.competitionHint}>
-            Rivals grow heavier with every fair you enter. A tie goes to you.
+            Rivals grow heavier each time you win 1st place. A tie goes to you.
           </p>
         </section>
 

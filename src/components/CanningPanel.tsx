@@ -10,7 +10,7 @@ import type { Recipe, CanningState, RushBatchControl } from '../types/canning';
 import type { RecipeFilter, RecipeSort } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import { formatNumber } from '../utils/gameCalculations';
-import { getGuildCanningTimeMultiplier, getJarsPerBatch, getRecipeMasteryBonus } from '../utils/guildCalculations';
+import { getGuildCanningTimeMultiplier, getJarsPerBatch, getRecipeMasteryBonus, hasAdditives } from '../utils/guildCalculations';
 import { filterRecipesByCategory, getEffectiveSalePrice, sortRecipesByPreference, type RecipeValueContext } from '../utils/recipeHelpers';
 import { RIBBON_FIRST, RIBBON_SECOND, RIBBON_THIRD } from '../config/assetPaths';
 import styles from './CanningPanel.module.css';
@@ -139,6 +139,11 @@ const CanningPanel: FC<CanningPanelProps> = memo(({
             </button>
           ))}
         </div>
+        {hasAdditives(guildState) && (
+          <span className={styles.additivesTag} title="Additives: every recipe needs one fewer of each crop, never fewer than 1. The jars sell for the same">
+            Additives: one fewer of each crop
+          </span>
+        )}
         <label className={styles.option}>
           <input type="checkbox" checked={canMakeOnly} onChange={e => onCanMakeOnlyChange(e.target.checked)} />
           Can make

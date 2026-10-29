@@ -12,7 +12,6 @@ import {
   UPGRADE_HEIRLOOM_SEEDS
 } from '../config/assetPaths';
 import {
-  MERCHANT_DAYS,
   MERCHANT_COST,
   MERCHANT_KN_COST,
   GREENHOUSE_COST_PER_PLOT,
@@ -23,7 +22,7 @@ import {
 import { VEGGIE_CONFIGS } from '../data/veggieConfigs';
 import { FRUIT_CONFIGS } from '../data/fruitConfigs';
 import type { GuildState } from '../types/guilds';
-import { getGreenhouseGrowthBonus, getIrrigationGrowthBonus, hasHeatwaveIrrigation, heirloomSeedsName } from '../utils/guildCalculations';
+import { getGreenhouseGrowthBonus, getIrrigationGrowthBonus, getMerchantDays, hasHeatwaveIrrigation, heirloomSeedsName } from '../utils/guildCalculations';
 import { glideFill, useGlide } from '../hooks/useGlide';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
@@ -148,7 +147,9 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
   formatNumber,
   guildState
 }) => {
-  const merchantDay = day % MERCHANT_DAYS;
+  // 30 days, fewer with Trade Routes
+  const merchantDays = getMerchantDays(guildState);
+  const merchantDay = day % merchantDays;
   const merchantGlides = useGlide(merchantDay);
   const irrigationPct = Math.round(getIrrigationGrowthBonus(guildState) * 100);
   const sprinklers = hasHeatwaveIrrigation(guildState);
@@ -189,16 +190,16 @@ const GlobalUpgradesPanel: FC<GlobalUpgradesPanelProps> = ({
         icon={UPGRADE_MERCHANT}
         name="Merchant"
         effect={autoSellOwned
-          ? `Next sale in ${MERCHANT_DAYS - merchantDay} days`
-          : `Sells the stash every ${MERCHANT_DAYS} days`}
+          ? `Next sale in ${merchantDays - merchantDay} days`
+          : `Sells the stash every ${merchantDays} days`}
         owned={autoSellOwned}
         cost={MERCHANT_COST}
         knowledgeCost={MERCHANT_KN_COST}
-        title={`Sells all veggies in your stash every ${MERCHANT_DAYS} days.`}
+        title={`Sells all veggies in your stash every ${merchantDays} days.`}
         onBuy={handleBuyAutoSell}
         footer={autoSellOwned ? (
           <span className={styles.merchantBar} aria-hidden="true">
-            <span className="glide" style={glideFill((merchantDay / MERCHANT_DAYS) * 100, merchantGlides)} />
+            <span className="glide" style={glideFill((merchantDay / merchantDays) * 100, merchantGlides)} />
           </span>
         ) : undefined}
       />
