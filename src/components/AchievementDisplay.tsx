@@ -5,12 +5,14 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICON_TROPHY } from '../config/assetPaths';
 import styles from './AchievementDisplay.module.css';
 
-/** The reward line: money, knowledge, Candy Corn and named unlocks joined, or the message when there are none */
+/** The reward line: money, knowledge, event currency and named unlocks joined, or the message when there are none */
 const rewardText = (reward: NonNullable<Achievement['reward']>): string => {
   const parts = [
     reward.money ? `$${reward.money.toLocaleString()}` : '',
     reward.knowledge ? `${reward.knowledge.toLocaleString()} Knowledge` : '',
     reward.candyCorn ? `${reward.candyCorn.toLocaleString()} Candy Corn` : '',
+    reward.holidayCheer ? `${reward.holidayCheer.toLocaleString()} Holiday Cheer` : '',
+    reward.petals ? `${reward.petals.toLocaleString()} Petals` : '',
     ...(reward.unlocks ?? [])
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' + ') : reward.message ?? '';

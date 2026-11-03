@@ -1,120 +1,99 @@
 /**
  * Tree Farm Tab Component
- * 
- * Main UI for the Christmas Tree Shop event's tree farming system.
- * Displays tree plots, seed selector, growth progress, and harvest controls.
+ *
+ * Christmas Tree Shop farming: choose a tree, plant, grow and harvest. Laid out
+ * like the Pumpkin Patch: a header bar with stock, the tree selector, the plot
+ * grid and Farming upgrades on the right.
  */
 
-import InlineIcon from './InlineIcon';
-import { memo, useCallback, useState, useEffect, type FC } from 'react';
+import { memo, useCallback, useState, type FC } from 'react';
 import BaseTab from './BaseTab';
-import ProgressBar from './ProgressBar';
+import EventArt from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
-import type { TreePlot, TreeType, CraftingMaterials, TreeInventory } from '../types/christmasEvent';
-import type { EventUpgrade } from '../types/christmasEvent';
-import { TREE_DEFINITIONS } from '../data/christmasEventData';
-import { ICON_AXE, TREE_SAPLING, TREE_PINE, TREE_SPRUCE, TREE_FIR, ICON_HOLIDAY_CHEER, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, ICON_GOLD_STAR, ICON_SPARKLES } from '../config/assetPaths';
+import ProgressBar from './ProgressBar';
+import { CHRISTMAS_ART, TREE_DEFINITIONS } from '../data/christmasEventData';
+import { countTrees, ownsUpgrade, treeGrowthSpeed } from '../utils/christmasTreePricing';
+import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
+import type { TreeInventory, TreePlot, TreeType } from '../types/christmasEvent';
+import frame from './TreeShopSections.module.css';
 import styles from './TreeFarmTab.module.css';
 
-/**
- * Helper function to get the appropriate tree image based on type and growth
- */
-const getTreeImage = (treeType: TreeType, growthPercent?: number): string => {
-  // If no growth percent or less than 33%, show sapling
-  if (growthPercent !== undefined && growthPercent < 33) {
-    return TREE_SAPLING;
-  }
-  
-  // Otherwise show the appropriate mature tree
-  switch (treeType) {
-    case 'pine':
-      return TREE_PINE;
-    case 'spruce':
-      return TREE_SPRUCE;
-    case 'fir':
-      return TREE_FIR;
-    default:
-      return TREE_PINE;
-  }
-};
+type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
 interface TreeFarmTabProps {
-  // State
-  treePlots: TreePlot[];
-  materials: CraftingMaterials;
-  treeInventory: TreeInventory;
-  upgrades: EventUpgrade[];
-  holidayCheer: number;
-  
-  // Actions
-  plantTree: (plotIndex: number, treeType: TreeType) => void;
-  harvestTree: (plotIndex: number) => void;
-  harvestAllTrees: () => void;
-  purchaseUpgrade: (upgradeId: string) => boolean;
-  
-  // Display
-  formatNumber: (num: number, decimalPlaces?: number) => string;
+  event: UseChristmasEventReturn;
+  formatNumber: FormatNumber;
 }
 
-/**
- * Tree type selector button
- */
+/** Trees in unlock order */
+const TREES: TreeType[] = ['pine', 'spruce', 'fir'];
+
+/** Growth shown as a sapling below this percentage */
+const SAPLING_PERCENT = 33;
+
+const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+// ============================================================================
+// TREE SELECTOR
+// ============================================================================
+
 interface TreeSelectorProps {
   treeType: TreeType;
   selected: boolean;
   unlocked: boolean;
-  cost: number;
-  holidayCheer: number;
+  canAfford: boolean;
   onSelect: (treeType: TreeType) => void;
-  onUnlock?: (treeType: TreeType) => void;
+  onUnlock: (treeType: TreeType) => void;
+  formatNumber: FormatNumber;
 }
 
-const TreeSelector: FC<TreeSelectorProps> = memo(({ 
-  treeType, 
-  selected, 
-  unlocked, 
-  cost, 
-  holidayCheer,
+const TreeSelector: FC<TreeSelectorProps> = memo(({
+  treeType,
+  selected,
+  unlocked,
+  canAfford,
   onSelect,
-  onUnlock
+  onUnlock,
+  formatNumber
 }) => {
   const definition = TREE_DEFINITIONS[treeType];
-  const canAfford = holidayCheer >= cost;
-  
+  // Two places, so Fir reads 1.25K rather than 1K
+  const cost = formatNumber(definition.unlockCost, 2);
+  const years = Math.round(definition.baseGrowthTime / 365);
+
   const handleClick = () => {
-    if (!unlocked && onUnlock) {
-      // Try to unlock the tree
-      if (canAfford) {
-        onUnlock(treeType);
-      }
-    } else if (unlocked) {
-      // Select the tree type
-      onSelect(treeType);
-    }
+    if (unlocked) onSelect(treeType);
+    else if (canAfford) onUnlock(treeType);
   };
-  
-  const getButtonText = () => {
-    if (unlocked) {
-      return definition.name;
-    }
-    return canAfford ? `Unlock ${definition.name}` : `${definition.name}`;
-  };
-  
+
+  const label = unlocked
+    ? `${definition.displayName}, ${years} years to grow`
+    : `Unlock ${definition.displayName} for ${cost} Holiday Cheer${canAfford ? '' : '. Not enough Holiday Cheer'}`;
+
+  const className = [
+    styles.treeSelector,
+    selected ? styles.selected : '',
+    unlocked ? '' : styles.locked,
+    !unlocked && !canAfford ? styles.cantAfford : ''
+  ].filter(Boolean).join(' ');
+
   return (
     <button
-      className={`${styles.treeSelector} ${selected ? styles.selected : ''} ${!unlocked ? styles.locked : ''} ${!unlocked && !canAfford ? styles.cantAfford : ''}`}
+      type="button"
+      className={className}
       onClick={handleClick}
       disabled={!unlocked && !canAfford}
-      title={!unlocked ? (canAfford ? `Click to unlock for ${cost} Holiday Cheer` : `Need ${cost} Holiday Cheer to unlock`) : `Select ${definition.displayName}`}
+      aria-pressed={unlocked ? selected : undefined}
+      aria-label={label}
     >
-      <div className={styles.treeSelectorIcon}>
-        <img src={getTreeImage(treeType)} alt={definition.displayName} className={styles.treeImage} />
-      </div>
-      <div className={styles.treeSelectorName}>{getButtonText()}</div>
+      <EventArt art={CHRISTMAS_ART[treeType]} size={24} />
+      <span className={styles.treeName}>
+        {unlocked || !canAfford ? definition.name : `Unlock ${definition.name}`}
+      </span>
       {!unlocked && (
-        <div className={styles.treeSelectorCost}>
-          {cost} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />
-        </div>
+        <span className={styles.treeCost}>
+          {cost} <EventArt art={CHRISTMAS_ART.cheer} size={14} />
+        </span>
       )}
     </button>
   );
@@ -122,391 +101,291 @@ const TreeSelector: FC<TreeSelectorProps> = memo(({
 
 TreeSelector.displayName = 'TreeSelector';
 
-/**
- * Individual tree plot display
- */
-interface TreePlotDisplayProps {
+// ============================================================================
+// PLOT
+// ============================================================================
+
+interface PlotCardProps {
   plot: TreePlot;
-  selectedTreeType: TreeType | null;
-  upgrades: EventUpgrade[];
   index: number;
+  selectedTree: TreeType;
+  /** Growth speed multiplier from Fertilized Soil */
+  speed: number;
   onPlant: (index: number) => void;
   onHarvest: (index: number) => void;
 }
 
-const TreePlotDisplay: FC<TreePlotDisplayProps> = memo(({
-  plot,
-  selectedTreeType,
-  upgrades,
-  index,
-  onPlant,
-  onHarvest
-}) => {
-  const isEmpty = plot.treeType === null;
-  const canPlant = isEmpty && selectedTreeType !== null;
-  const canHarvest = plot.harvestReady && !isEmpty;
-  const isPerfect = plot.quality === 'perfect';
-  const isLuxury = plot.quality === 'luxury';
-  
-  // Calculate speed bonus from upgrades
-  const fertilizedSoil = upgrades.find(u => u.id === 'fertilized_soil');
-  const fertilizedSoilLevel = fertilizedSoil?.level ?? 0;
-  const speedBonus = 1.0 + (fertilizedSoilLevel * 0.15); // +15% per level
-  
-  const definition = plot.treeType ? TREE_DEFINITIONS[plot.treeType] : null;
-  const growthPercent = plot.growthTime > 0 ? (plot.growth / plot.growthTime) * 100 : 0;
-  
-  // Calculate actual days remaining based on speed bonus
-  const growthRemaining = plot.growthTime - plot.growth;
-  const actualDaysRemaining = Math.ceil(growthRemaining / speedBonus);
-  
-  return (
-    <div className={`${styles.treePlot} ${isEmpty ? styles.empty : ''} ${canHarvest ? styles.ready : ''} ${isPerfect ? styles.perfect : ''} ${isLuxury ? styles.luxury : ''}`}>
-      {plot.quality !== 'normal' && !isEmpty && (
-        <div className={styles.qualityBadgeTop}>
-          {plot.quality === 'perfect'
-            ? <><InlineIcon src={ICON_GOLD_STAR} size={12} gap={3} />Perfect</>
-            : <><InlineIcon src={ICON_SPARKLES} size={12} gap={3} />Luxury</>}
+const QUALITY_BADGES = {
+  perfect: { label: 'Perfect', art: CHRISTMAS_ART.perfect },
+  luxury: { label: 'Luxury', art: CHRISTMAS_ART.luxury },
+} as const;
+
+const PlotCard: FC<PlotCardProps> = memo(({ plot, index, selectedTree, speed, onPlant, onHarvest }) => {
+  const plotNumber = index + 1;
+
+  if (plot.treeType === null) {
+    const seed = TREE_DEFINITIONS[selectedTree];
+    return (
+      <li className={`${styles.plot} ${styles.empty}`}>
+        <div className={styles.plotContent}>
+          <EventArt art={CHRISTMAS_ART.sapling} size={40} className={styles.emptyArt} />
+          <button
+            type="button"
+            className={styles.plantButton}
+            onClick={() => onPlant(index)}
+            aria-label={`Plant ${seed.displayName} in plot ${plotNumber}`}
+          >
+            Plant {seed.name}
+          </button>
         </div>
+      </li>
+    );
+  }
+
+  const definition = TREE_DEFINITIONS[plot.treeType];
+  const badge = plot.quality === 'normal' ? null : QUALITY_BADGES[plot.quality];
+  const ready = plot.harvestReady;
+  const percent = plot.growthTime > 0 ? Math.min(100, (plot.growth / plot.growthTime) * 100) : 100;
+  const daysLeft = Math.max(0, Math.ceil((plot.growthTime - plot.growth) / speed));
+  const art = ready || percent >= SAPLING_PERCENT ? CHRISTMAS_ART[plot.treeType] : CHRISTMAS_ART.sapling;
+
+  const className = [
+    styles.plot,
+    ready ? styles.ready : '',
+    badge ? styles.special : ''
+  ].filter(Boolean).join(' ');
+
+  return (
+    <li className={className}>
+      {badge && (
+        <span className={styles.qualityBadge}>
+          <EventArt art={badge.art} size={14} /> {badge.label}
+        </span>
       )}
-      
       <div className={styles.plotContent}>
-        {isEmpty ? (
-          <div className={styles.emptyPlot}>
-            <div className={styles.emptyPlotIcon}>
-              <img src={TREE_SAPLING} alt="Empty plot" className={styles.treeImage} />
-            </div>
-            <button
-              className={styles.plantButton}
-              onClick={() => onPlant(index)}
-              disabled={!canPlant}
-              title={canPlant ? `Plant ${TREE_DEFINITIONS[selectedTreeType!].displayName}` : 'Select a tree type'}
-            >
-              {canPlant ? `Plant ${TREE_DEFINITIONS[selectedTreeType!].name}` : 'Select Tree'}
-            </button>
-          </div>
+        <div className={styles.treeDisplay}>
+          <EventArt art={art} size={48} />
+          <div className={styles.plotName}>{definition.displayName}</div>
+        </div>
+
+        {ready ? (
+          <button
+            type="button"
+            className={styles.harvestButton}
+            onClick={() => onHarvest(index)}
+            aria-label={`Harvest ${badge ? `${badge.label} ` : ''}${definition.displayName} from plot ${plotNumber}`}
+          >
+            <EventArt art={CHRISTMAS_ART.axe} size={16} />
+            Harvest Ready!
+          </button>
         ) : (
-          <>
-            <div className={styles.treeDisplay}>
-              <div className={styles.treeIcon}>
-                <img 
-                  src={getTreeImage(plot.treeType!, growthPercent)} 
-                  alt={definition?.displayName} 
-                  className={styles.treeImage} 
-                />
-              </div>
-              <div className={styles.treeName}>{definition?.displayName}</div>
+          <div className={styles.progressSection}>
+            <div
+              className={styles.progressBarWrapper}
+              role="progressbar"
+              aria-label={`${definition.displayName} in plot ${plotNumber} growth`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.floor(percent)}
+            >
+              <ProgressBar value={percent} max={100} height={12} color="#23705D" />
+              <span className={styles.progressLabel} aria-hidden="true">{Math.floor(percent)}%</span>
             </div>
-            
-            {!canHarvest ? (
-            <div className={styles.progressSection}>
-              <div className={styles.progressContainer}>
-                <div className={styles.progressBarWrapper}>
-                  <ProgressBar value={growthPercent} max={100} height={12} color="#23705D" />
-                  <span className={styles.progressLabel}>
-                    {Math.floor(growthPercent)}%
-                  </span>
-                </div>
-                <span className={styles.progressText}>
-                  {actualDaysRemaining} days remaining
-                </span>
-              </div>
-            </div>
-            ) : (
-              <button
-                className={styles.harvestButton}
-                onClick={() => onHarvest(index)}
-                title={`Harvest ${definition?.displayName}`}
-              >
-                <img src={ICON_AXE} alt="" className={styles.harvestIcon} />
-                Harvest Ready!
-              </button>
-            )}
-          </>
+            <span className={styles.progressText}>{plural(daysLeft, 'day')} left</span>
+          </div>
         )}
       </div>
-    </div>
+    </li>
   );
 });
 
-TreePlotDisplay.displayName = 'TreePlotDisplay';
+PlotCard.displayName = 'PlotCard';
 
-/**
- * Materials inventory display
- */
-interface MaterialsDisplayProps {
-  materials: CraftingMaterials;
-  treeInventory: TreeInventory;
+// ============================================================================
+// STOCK
+// ============================================================================
+
+interface StockSummaryProps {
+  inventory: TreeInventory;
+  wood: number;
+  pinecones: number;
+  branches: number;
+  formatNumber: FormatNumber;
 }
 
-const MaterialsDisplay: FC<MaterialsDisplayProps> = memo(({ materials, treeInventory }) => {
-  // Count plain trees across all qualities (normal, perfect, luxury)
-  // New format: pine_normal_plain, pine_perfect_plain, pine_luxury_plain
-  const getPlainTreeCount = (treeType: string): number => {
-    let count = 0;
-    Object.keys(treeInventory).forEach(key => {
-      if (key.startsWith(`${treeType}_`) && key.endsWith('_plain')) {
-        count += treeInventory[key] || 0;
-      }
-    });
-    return count;
-  };
-  
-  const pineCount = getPlainTreeCount('pine');
-  const spruceCount = getPlainTreeCount('spruce');
-  const firCount = getPlainTreeCount('fir');
-  
+const StockSummary: FC<StockSummaryProps> = memo(({ inventory, wood, pinecones, branches, formatNumber }) => {
+  const items = [
+    ...TREES.map(treeType => ({
+      label: TREE_DEFINITIONS[treeType].name,
+      value: countTrees(inventory, treeType, 'plain'),
+      art: CHRISTMAS_ART[treeType],
+      title: `Undecorated ${TREE_DEFINITIONS[treeType].displayName}s in stock`
+    })),
+    { label: 'Wood', value: wood, art: CHRISTMAS_ART.wood, title: 'Wood' },
+    { label: 'Pinecones', value: pinecones, art: CHRISTMAS_ART.pinecones, title: 'Pinecones' },
+    { label: 'Branches', value: branches, art: CHRISTMAS_ART.branches, title: 'Branches' },
+  ];
+
   return (
-    <div className={styles.materialsDisplay}>
-      <h3 className={styles.materialsTitle}><InlineIcon src={MATERIAL_WOOD} size={18} gap={6} />Materials</h3>
-      <div className={styles.materialsList}>
-        {/* Trees Row */}
-        <div className={styles.materialItem}>
-          <span className={styles.materialIcon}>
-            <img src={TREE_PINE} alt="Pine" className={styles.materialImage} />
-          </span>
-          <span className={styles.materialLabel}>Pine:</span>
-          <span className={styles.materialValue}>{pineCount}</span>
-          <span className={styles.materialIcon}>
-            <img src={TREE_SPRUCE} alt="Spruce" className={styles.materialImage} />
-          </span>
-          <span className={styles.materialLabel}>Spruce:</span>
-          <span className={styles.materialValue}>{spruceCount}</span>
-          <span className={styles.materialIcon}>
-            <img src={TREE_FIR} alt="Fir" className={styles.materialImage} />
-          </span>
-          <span className={styles.materialLabel}>Fir:</span>
-          <span className={styles.materialValue}>{firCount}</span>
-        </div>
-        {/* Materials Row */}
-        <div className={styles.materialItem}>
-          <span className={styles.materialIcon}>
-            <img src={MATERIAL_WOOD} alt="Wood" className={styles.materialImage} />
-          </span>
-          <span className={styles.materialLabel}>Wood:</span>
-          <span className={styles.materialValue}>{materials.wood}</span>
-          <span className={styles.materialIcon}>
-            <img src={MATERIAL_PINECONE} alt="Pinecones" className={styles.materialImage} />
-          </span>
-          <span className={styles.materialLabel}>Pinecones:</span>
-          <span className={styles.materialValue}>{materials.pinecones}</span>
-            <img src={MATERIAL_BRANCH} alt="Branches" className={styles.materialImage} />
-          <span className={styles.materialLabel}>Branches:</span>
-          <span className={styles.materialValue}>{materials.branches}</span>
-        </div>
-      </div>
-    </div>
+    <ul className={frame.stockList} aria-label="Stock">
+      {items.map(item => (
+        <li key={item.label} className={frame.stockItem} title={item.title}>
+          <EventArt art={item.art} size={20} />
+          <span className={frame.stockLabel}>{item.label}</span>
+          <span className={frame.stockValue}>{formatNumber(item.value, 0)}</span>
+        </li>
+      ))}
+    </ul>
   );
 });
 
-MaterialsDisplay.displayName = 'MaterialsDisplay';
+StockSummary.displayName = 'StockSummary';
 
-/**
- * Main Tree Farm Tab Component
- */
-const TreeFarmTab: FC<TreeFarmTabProps> = ({
-  treePlots,
-  materials,
-  treeInventory,
-  upgrades,
-  holidayCheer,
-  plantTree,
-  harvestTree,
-  harvestAllTrees,
-  purchaseUpgrade,
-  formatNumber,
-}) => {
-  // Check which trees are unlocked
-  const pineUnlocked = upgrades.find(u => u.id === 'unlock_pine')?.owned ?? true;
-  const spruceUnlocked = upgrades.find(u => u.id === 'unlock_spruce')?.owned ?? false;
-  const firUnlocked = upgrades.find(u => u.id === 'unlock_fir')?.owned ?? false;
-  
-  // Check if special actions are unlocked
-  const harvestAllUnlocked = upgrades.find(u => u.id === 'harvest_all_upgrade')?.owned ?? false;
-  const plantAllUnlocked = upgrades.find(u => u.id === 'plant_all_upgrade')?.owned ?? false;
-  
-  // Determine the highest tier unlocked tree
-  const getHighestUnlockedTree = (): TreeType => {
-    if (firUnlocked) return 'fir';
-    if (spruceUnlocked) return 'spruce';
-    return 'pine';
-  };
-  
-  const [selectedTreeType, setSelectedTreeType] = useState<TreeType | null>(getHighestUnlockedTree());
-  
-  // Update selected tree when a higher tier is unlocked
-  useEffect(() => {
-    // Only move up when a higher tier than the current selection unlocks
-    setSelectedTreeType(current => {
-      if (current === 'pine' && (spruceUnlocked || firUnlocked)) return firUnlocked ? 'fir' : 'spruce';
-      if (current === 'spruce' && firUnlocked) return 'fir';
-      return current;
-    });
-  }, [spruceUnlocked, firUnlocked]);
-  
-  // Count ready trees and empty plots
-  const readyTreesCount = treePlots.filter(p => p.harvestReady).length;
-  const hasReadyTrees = readyTreesCount > 0;
-  const emptyPlotsCount = treePlots.filter(p => p.treeType === null).length;
-  const hasEmptyPlots = emptyPlotsCount > 0 && selectedTreeType !== null;
-  
-  // Unlocking a tree type also selects it
+// ============================================================================
+// TAB
+// ============================================================================
+
+const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
+  const {
+    treePlots,
+    materials,
+    holidayCheer,
+    plantTree,
+    harvestTree,
+    harvestAllTrees,
+    purchaseUpgrade
+  } = event;
+  const { upgrades, treeInventory } = event.eventState;
+
+  const unlocked = TREES.filter(treeType => ownsUpgrade(upgrades, `unlock_${treeType}`) || treeType === 'pine');
+  const bestUnlocked = unlocked[unlocked.length - 1] ?? 'pine';
+
+  const [chosenTree, setChosenTree] = useState<TreeType>(bestUnlocked);
+  // A reset can lock the chosen tree again; fall back to the best one still unlocked
+  const selectedTree = unlocked.includes(chosenTree) ? chosenTree : bestUnlocked;
+
+  // Fertilized Soil speeds growth, so days left counts down faster
+  const speed = treeGrowthSpeed(upgrades);
+
+  const harvestAllOwned = ownsUpgrade(upgrades, 'harvest_all_upgrade');
+  const plantAllOwned = ownsUpgrade(upgrades, 'plant_all_upgrade');
+  const readyCount = treePlots.filter(p => p.harvestReady).length;
+  const emptyCount = treePlots.filter(p => p.treeType === null).length;
+
+  // Unlocking a tree also selects it
   const unlockTree = useCallback((treeType: TreeType) => {
     if (purchaseUpgrade(`unlock_${treeType}`)) {
-      setSelectedTreeType(treeType);
+      setChosenTree(treeType);
     }
   }, [purchaseUpgrade]);
 
   const plantPlot = useCallback((index: number) => {
-    if (selectedTreeType) plantTree(index, selectedTreeType);
-  }, [plantTree, selectedTreeType]);
+    plantTree(index, selectedTree);
+  }, [plantTree, selectedTree]);
 
-  // Plant All function
-  const handlePlantAll = () => {
-    if (!selectedTreeType) return;
-    
+  const plantAll = () => {
     treePlots.forEach((plot, index) => {
-      if (plot.treeType === null) {
-        plantTree(index, selectedTreeType);
-      }
+      if (plot.treeType === null) plantTree(index, selectedTree);
     });
   };
-  
+
+  const selectedName = TREE_DEFINITIONS[selectedTree].displayName;
+
   const mainContent = (
-    <div className={styles.container}>
-        {/* Left Column: Materials, Tree Plots, Selection, and Grid */}
-        <div className={styles.leftColumn}>
-          {/* Materials Display */}
-          {/* Combined Header Row: Materials, Tree Plots Title, and Tree Selection */}
-          <div className={styles.headerRow}>          
-            {/* Tree Plots Title */}
-            <div className={styles.plotsHeaderCompact}>
-              <h2 className={styles.plotsTitle}>
-                <img src={TREE_PINE} alt="" className={styles.titleIcon} /> Tree Plots
-              </h2>
-              {harvestAllUnlocked && hasReadyTrees && (
-                <button
-                  className={styles.harvestAllButton}
-                  onClick={harvestAllTrees}
-                  title={`Harvest ${readyTreesCount} ready tree${readyTreesCount > 1 ? 's' : ''}`}
-                >
-                  <img src={ICON_AXE} alt="" className={styles.harvestAllIcon} />
-                  Harvest All ({readyTreesCount})
-                </button>
-              )}
-              {plantAllUnlocked && hasEmptyPlots && (
-                <button
-                  className={styles.plantAllButton}
-                  onClick={handlePlantAll}
-                  title={`Plant ${selectedTreeType ? TREE_DEFINITIONS[selectedTreeType].displayName : 'trees'} in all ${emptyPlotsCount} empty plot${emptyPlotsCount > 1 ? 's' : ''}`}
-                >
-                  <img src={TREE_SAPLING} alt="" className={styles.harvestAllIcon} />
-                  Plant All ({emptyPlotsCount})
-                </button>
-              )}
-            </div>
+    <div className={frame.container}>
+      {/* Left column: header, tree selection and plots */}
+      <div className={frame.leftColumn}>
+        <div className={frame.headerRow}>
+          <h2 className={frame.sectionTitle}>
+            <EventArt art={CHRISTMAS_ART.farm} size={24} /> Tree Farm
+          </h2>
 
-            {/* Materials */}
-            <div className={styles.materialsCompact}>
-              <div className={styles.materialsList}>
-                {/* Trees Row */}
-                <div className={styles.materialItem}>
-                    <span className={styles.materialIcon}>
-                      <img src={TREE_PINE} alt="Pine" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialLabel}>Pine:</span>
-                    <span className={styles.materialValue}>{(treeInventory['pine_plain'] ?? 0) || '0'}</span>
-                    <span className={styles.materialIcon}>
-                      <img src={TREE_SPRUCE} alt="Spruce" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialLabel}>Spruce:</span>
-                    <span className={styles.materialValue}>{(treeInventory['spruce_plain'] ?? 0) || '0'}</span>
-                    <span className={styles.materialIcon}>
-                      <img src={TREE_FIR} alt="Fir" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialLabel}>Fir:</span>
-                    <span className={styles.materialValue}>{(treeInventory['fir_plain'] ?? 0) || '0'}</span>
-                    <span className={styles.materialIcon}>
-                      <img src={MATERIAL_WOOD} alt="Wood" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialValue}>{(materials.wood ?? 0) || '0'}</span>
-                    <span className={styles.materialIcon}>
-                      <img src={MATERIAL_PINECONE} alt="Pinecones" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialValue}>{(materials.pinecones ?? 0) || '0'}</span>
-                    <span className={styles.materialIcon}>
-                      <img src={MATERIAL_BRANCH} alt="Branches" className={styles.materialImage} />
-                    </span>
-                    <span className={styles.materialValue}>{(materials.branches ?? 0) || '0'}</span>
-                </div>
-              </div>
-            </div>            
-
-            {/* Tree Selection */}
-            <div className={styles.treeSelectionCompact}>
-              <div className={styles.treeSelectorGrid}>
-                <TreeSelector
-                  treeType="pine"
-                  selected={selectedTreeType === 'pine'}
-                  unlocked={pineUnlocked}
-                  cost={TREE_DEFINITIONS.pine.unlockCost}
-                  holidayCheer={holidayCheer}
-                  onSelect={setSelectedTreeType}
-                  onUnlock={unlockTree}
-                />
-                <TreeSelector
-                  treeType="spruce"
-                  selected={selectedTreeType === 'spruce'}
-                  unlocked={spruceUnlocked}
-                  cost={TREE_DEFINITIONS.spruce.unlockCost}
-                  holidayCheer={holidayCheer}
-                  onSelect={setSelectedTreeType}
-                  onUnlock={unlockTree}
-                />
-                <TreeSelector
-                  treeType="fir"
-                  selected={selectedTreeType === 'fir'}
-                  unlocked={firUnlocked}
-                  cost={TREE_DEFINITIONS.fir.unlockCost}
-                  holidayCheer={holidayCheer}
-                  onSelect={setSelectedTreeType}
-                  onUnlock={unlockTree}
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Tree Plots Grid */}
-          <div className={styles.plotsGrid}>
-            {treePlots.map((plot, index) => (
-              <TreePlotDisplay
-                key={plot.id}
-                plot={plot}
-                selectedTreeType={selectedTreeType}
-                upgrades={upgrades}
-                index={index}
-                onPlant={plantPlot}
-                onHarvest={harvestTree}
-              />
-            ))}
-          </div>
-        </div>
-        
-        {/* Right Column: Upgrades */}
-        <div className={styles.rightColumn}>
-          <EventUpgradesPanel
-            title="Farming Upgrades"
-            category="farming"
-            upgrades={upgrades}
-            currency="cheer"
-            balance={holidayCheer}
-            purchaseUpgrade={purchaseUpgrade}
+          <StockSummary
+            inventory={treeInventory}
+            wood={materials.wood}
+            pinecones={materials.pinecones}
+            branches={materials.branches}
             formatNumber={formatNumber}
           />
         </div>
+
+        {/* The bulk buttons sit here rather than in the header, so 18 plots still fit the window */}
+        <div className={styles.treeRow}>
+          <div className={styles.treeGroup} role="group" aria-label="Tree to plant">
+            {TREES.map(treeType => (
+              <TreeSelector
+                key={treeType}
+                treeType={treeType}
+                selected={selectedTree === treeType}
+                unlocked={unlocked.includes(treeType)}
+                canAfford={holidayCheer >= TREE_DEFINITIONS[treeType].unlockCost}
+                onSelect={setChosenTree}
+                onUnlock={unlockTree}
+                formatNumber={formatNumber}
+              />
+            ))}
+          </div>
+          {!harvestAllOwned && !plantAllOwned && (
+            <p className={styles.treeHint}>
+              <EventArt art={CHRISTMAS_ART.workshop} size={16} /> Each harvest brings wood, pinecones and branches for the Workshop.
+            </p>
+          )}
+          <div className={styles.bulkActions}>
+            {harvestAllOwned && readyCount > 0 && (
+              <button
+                type="button"
+                className={frame.primaryAction}
+                onClick={harvestAllTrees}
+                aria-label={`Harvest All: ${plural(readyCount, 'ready tree')}`}
+              >
+                <EventArt art={CHRISTMAS_ART.axe} size={20} />
+                Harvest All ({readyCount})
+              </button>
+            )}
+            {plantAllOwned && emptyCount > 0 && (
+              <button
+                type="button"
+                className={frame.secondaryAction}
+                onClick={plantAll}
+                aria-label={`Plant All: ${selectedName} in ${plural(emptyCount, 'empty plot')}`}
+              >
+                <EventArt art={CHRISTMAS_ART.sapling} size={20} />
+                Plant All ({emptyCount})
+              </button>
+            )}
+          </div>
+        </div>
+
+        <ul className={styles.plotsGrid} aria-label="Tree plots">
+          {treePlots.map((plot, index) => (
+            <PlotCard
+              key={plot.id}
+              plot={plot}
+              index={index}
+              selectedTree={selectedTree}
+              speed={speed}
+              onPlant={plantPlot}
+              onHarvest={harvestTree}
+            />
+          ))}
+        </ul>
       </div>
+
+      {/* Right column: Farming upgrades */}
+      <div className={frame.rightColumn}>
+        <EventUpgradesPanel
+          title="Farming Upgrades"
+          category="farming"
+          upgrades={upgrades}
+          currency="cheer"
+          balance={holidayCheer}
+          purchaseUpgrade={purchaseUpgrade}
+          formatNumber={formatNumber}
+        />
+      </div>
+    </div>
   );
-  
+
   return (
     <BaseTab
       isUnlocked={true}
@@ -515,4 +394,7 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({
   );
 };
 
-export default memo(TreeFarmTab);
+const MemoizedTreeFarmTab = memo(TreeFarmTab);
+MemoizedTreeFarmTab.displayName = 'TreeFarmTab';
+
+export default MemoizedTreeFarmTab;

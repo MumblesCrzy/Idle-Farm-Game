@@ -15,6 +15,10 @@ export interface AchievementGameState {
   pumpkinsSold?: number;
   /** The heaviest Atlantic Giant grown this Pumpkin Rush, in pounds */
   heaviestGiant?: number;
+  /** Bunches sold at the Spring Market, in any finish */
+  flowersSold?: number;
+  /** Gift Bouquets sold on the real Mother's Day, this year */
+  mothersDayBouquets?: number;
   beeState?: BeeState | null;
   canningState?: CanningState | null;
   guildState?: GuildState | null;
@@ -29,7 +33,7 @@ export interface Achievement {
   
   // Unlock requirements
   requirement: {
-    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'pumpkins_sold' | 'custom';
+    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'pumpkins_sold' | 'flowers_sold' | 'custom';
     value?: number;
     customCheck?: (gameState: AchievementGameState) => boolean;
     getProgress?: (gameState: AchievementGameState) => number; // For custom achievements that want progress tracking
@@ -41,6 +45,10 @@ export interface Achievement {
     knowledge?: number;
     /** Fall Pumpkin Rush currency */
     candyCorn?: number;
+    /** Spring Farmer's Market currency */
+    petals?: number;
+    /** Christmas Tree Shop currency */
+    holidayCheer?: number;
     /** Named rewards the achievement list shows, like an Archie look or a permanent bonus */
     unlocks?: string[];
     message?: string;

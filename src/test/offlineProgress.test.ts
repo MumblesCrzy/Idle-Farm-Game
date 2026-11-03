@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { calculateOfflineProgress } from '../utils/offlineProgress';
 import { processVeggieGrowth, processAutoHarvest } from '../utils/gameLoopProcessors';
 import { createInitialVeggies, getSeason } from '../utils/gameCalculations';
@@ -92,6 +92,25 @@ describe('calculateOfflineProgress', () => {
 
     expect(harvests).toBeGreaterThan(0);
     expect(offline.autoHarvests).toBe(harvests);
+  });
+
+  it('lets ripe crops harvest themselves while away with Soilbound Pact', () => {
+    // Every roll lands: each ripening self-harvests, and none is a Blessed Crop
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const [radish, ...rest] = createInitialVeggies();
+    const veggies = [{ ...radish, unlocked: true }, ...rest];
+    const grower = commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1);
+    const pact = { ...grower, purchasedUpgrades: ['growers_soilbound_pact'] };
+
+    const without = calculateOfflineProgress(600_000, offlineState(veggies, { guildState: grower }));
+    const withPact = calculateOfflineProgress(600_000, offlineState(veggies, { guildState: pact }));
+    random.mockRestore();
+
+    expect(without.selfHarvests).toBe(0);
+    expect(without.veggies[0].stash).toBe(0);
+    expect(withPact.selfHarvests).toBeGreaterThan(1);
+    expect(withPact.veggies[0].stash).toBeGreaterThanOrEqual(withPact.selfHarvests * 2);
+    expect(withPact.experienceGain).toBeGreaterThan(without.experienceGain);
   });
 
   it('wraps the day at 365 like the live game, so seasons keep cycling', () => {

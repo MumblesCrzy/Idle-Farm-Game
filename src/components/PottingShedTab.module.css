@@ -1,0 +1,376 @@
+/* Potting Shed Tab Styles (Spring Farmer's Market). The frame, palette and
+   contrast notes are in SpringSections.module.css; the variables come from its .container.
+   Here also: Disabled #636E5C (cream text: 5.1), Cream Muted #F1F4EC for cards that can't craft,
+   Rose Dark #8E2C4C for missing amounts (on cream: 7.6). */
+
+/* =================================================================== */
+/* SECTIONS */
+/* =================================================================== */
+
+.section {
+  background: var(--cream);
+  border: 2px solid var(--leaf);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--deep-moss);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* CRAFT QUANTITY */
+/* =================================================================== */
+
+.quantityPicker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.quantityButton {
+  min-width: 2.75rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--moss);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quantityButton:hover {
+  background: var(--butter-tint);
+}
+
+.quantityButton[aria-pressed='true'] {
+  background: var(--moss);
+  color: var(--cream);
+}
+
+/* =================================================================== */
+/* RECIPE CARDS, FOUR TO A ROW */
+/* =================================================================== */
+
+.recipesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipeCard {
+  position: relative; /* For the crew indicator */
+  background: var(--cream);
+  border: 2px solid var(--moss);
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.2s;
+}
+
+.recipeCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(62, 107, 56, 0.25);
+}
+
+.recipeCard.cantCraft {
+  border-color: #636E5C;
+  background: #F1F4EC;
+}
+
+.recipeCard.locked {
+  border-style: dashed;
+  border-color: #636E5C;
+  background: #F1F4EC;
+}
+
+/* The Gnome Crew is working on this recipe */
+.recipeCard.active {
+  border-color: var(--lavender);
+  box-shadow: 0 0 0 2px rgba(107, 76, 154, 0.25), 0 0 14px rgba(107, 76, 154, 0.35);
+}
+
+.recipeName {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--deep-moss);
+  font-weight: 700;
+  text-align: center;
+}
+
+.recipeDescription {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.recipeIO {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  background: var(--butter-tint);
+  border: 1px solid var(--butter);
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.chip.insufficient {
+  background: var(--cream);
+  border-color: var(--rose);
+  color: #8E2C4C;
+}
+
+.outputChip {
+  background: var(--petal-tint);
+  border-color: var(--pink);
+}
+
+.arrow {
+  color: var(--moss);
+  font-weight: bold;
+}
+
+.stockLine {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.lockNote {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--lavender);
+  text-align: center;
+}
+
+.craftButton {
+  margin-top: auto;
+  padding: 0.45rem;
+  background: var(--moss);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.craftButton:hover:not(:disabled) {
+  background: var(--deep-moss);
+  transform: translateY(-1px);
+}
+
+.craftButton:disabled {
+  background: #636E5C;
+  cursor: not-allowed;
+}
+
+/* A gnome on the recipe the crew is working on */
+.crewIndicator {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px;
+  background: var(--cream);
+  border: 2px solid var(--lavender);
+  border-radius: 50%;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: gnomeBob 2.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes gnomeBob {
+  0%, 100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+/* =================================================================== */
+/* FINISHING STATION */
+/* =================================================================== */
+
+.supplies {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--deep-moss);
+}
+
+.flowerButtons {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.flowerButton {
+  flex: 1;
+  padding: 0.45rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--moss);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.flowerButton:hover:not(:disabled) {
+  background: var(--butter-tint);
+  transform: translateY(-1px);
+}
+
+.flowerButton[aria-pressed='true'] {
+  background: var(--moss);
+  color: var(--cream);
+}
+
+.flowerButton:disabled {
+  border-style: dashed;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.finishButtons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.finishButton {
+  padding: 0.45rem;
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.arrangeButton {
+  background: var(--moss);
+}
+
+.arrangeButton:hover:not(:disabled) {
+  background: var(--deep-moss);
+}
+
+.scentButton {
+  background: var(--rose);
+}
+
+.scentButton:hover:not(:disabled) {
+  background: var(--rose-dark);
+}
+
+.bouquetButton {
+  background: var(--lavender);
+}
+
+.bouquetButton:hover:not(:disabled) {
+  background: #553C7B;
+}
+
+.finishButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.finishButton:disabled {
+  background: #636E5C;
+  cursor: not-allowed;
+}
+
+.finishLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.finishDetail {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.finishedLine {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .crewIndicator {
+    animation: none;
+  }
+
+  .recipeCard,
+  .craftButton,
+  .quantityButton,
+  .flowerButton,
+  .finishButton {
+    transition: none;
+  }
+
+  .recipeCard:hover,
+  .craftButton:hover:not(:disabled),
+  .flowerButton:hover:not(:disabled),
+  .finishButton:hover:not(:disabled) {
+    transform: none;
+  }
+}

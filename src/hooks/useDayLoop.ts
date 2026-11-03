@@ -3,6 +3,7 @@ import { useGameTick } from './useGameClock';
 import { useDeferredEffects } from './useDeferredEffects';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { UsePumpkinEventReturn } from './usePumpkinEvent';
+import type { UseSpringEventReturn } from './useSpringEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 
 // ============================================================================
@@ -31,6 +32,9 @@ export interface UseDayLoopDependencies {
   // Latest Pumpkin Rush state
   pumpkinEventRef: MutableRefObject<UsePumpkinEventReturn | null | undefined>;
 
+  // Latest Spring Market state
+  springEventRef: MutableRefObject<UseSpringEventReturn | null | undefined>;
+
   // Latest pause state; nothing advances while paused
   isPausedRef: MutableRefObject<boolean>;
 
@@ -57,6 +61,7 @@ export interface UseDayLoopDependencies {
  * **Christmas Event Integration:**
  * - Grows Christmas trees and pays out passive Holiday Cheer
  * - Grows pumpkins, counts down to the County Fair and pays out Hayride Candy Corn
+ * - Grows flowers and herbs, holds Market Day and pays out the Busker's Petals
  * - Runs Elves' Bench crafting (separate loop)
  *
  * Both run on the game clock (useGameTick), which pauses while the tab is
@@ -71,6 +76,7 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     merchantDaysRef,
     christmasEventRef,
     pumpkinEventRef,
+    springEventRef,
     isPausedRef,
     handleSell
   } = deps;
@@ -118,6 +124,12 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
       pumpkinEventRef.current.processPumpkinGrowth();
       pumpkinEventRef.current.updatePassiveIncome(1000);
     }
+
+    // Grow flowers and herbs and count down to Market Day each day
+    if (springEventRef.current?.isEventActive) {
+      springEventRef.current.processSpringGrowth();
+      springEventRef.current.updatePassiveIncome(1000);
+    }
   }, { order: 30 });
 
   // Elves' Bench automation loop - runs every second
@@ -135,6 +147,10 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     // The Scarecrow Crew checks for itself whether it has been hired
     if (pumpkinEventRef.current?.isEventActive) {
       pumpkinEventRef.current.processScarecrowCrew();
+    }
+    // So does the Gnome Crew
+    if (springEventRef.current?.isEventActive) {
+      springEventRef.current.processGnomeCrew();
     }
   }, { order: 40 });
 }

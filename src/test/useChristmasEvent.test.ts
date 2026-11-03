@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useChristmasEvent } from '../hooks/useChristmasEvent';
+import { ALL_EVENT_UPGRADES, TREE_DEFINITIONS } from '../data/christmasEventData';
 
 describe('useChristmasEvent', () => {
   afterEach(() => {
@@ -10,7 +11,7 @@ describe('useChristmasEvent', () => {
   it('reports a successful purchase even when another update is already queued', () => {
     const { result } = renderHook(() => useChristmasEvent({ farmTier: 1 }));
     act(() => {
-      result.current.earnCheer(500);
+      result.current.earnCheer(600);
     });
     const cheerBefore = result.current.holidayCheer;
 
@@ -23,7 +24,8 @@ describe('useChristmasEvent', () => {
 
     expect(purchased).toBe(true);
     expect(result.current.eventState.upgrades.find(u => u.id === 'unlock_spruce')?.owned).toBe(true);
-    expect(result.current.holidayCheer).toBe(cheerBefore - 100);
+    // Unlocking charges the price the Tree Farm shows
+    expect(result.current.holidayCheer).toBe(cheerBefore - TREE_DEFINITIONS.spruce.unlockCost);
   });
 
   it('turns the event on when November 1 arrives in an open tab', () => {
@@ -64,7 +66,6 @@ describe('useChristmasEvent', () => {
         onTreeHarvested: vi.fn(),
         onTreeSold: vi.fn(),
         onItemCrafted: vi.fn(),
-        onMilestoneClaimed: vi.fn(),
         onUpgradePurchased: vi.fn()
       };
       const hook = renderHook(() => useChristmasEvent({ farmTier: 1, ...callbacks }));
@@ -183,8 +184,8 @@ describe('useChristmasEvent', () => {
       expect(second).toBe(false);
     });
 
-    it('claims a milestone once and logs it', () => {
-      const { result, callbacks } = setup();
+    it('pays a tree sales milestone once', () => {
+      const { result } = setup();
       growTrees(result, [0]);
       act(() => {
         result.current.harvestTree(0);
@@ -206,8 +207,6 @@ describe('useChristmasEvent', () => {
 
       expect(claimed).toBe(true);
       expect(claimedAgain).toBe(false);
-      expect(callbacks.onMilestoneClaimed).toHaveBeenCalledTimes(1);
-      expect(callbacks.onMilestoneClaimed).toHaveBeenCalledWith('First Sale');
       expect(result.current.holidayCheer - cheerBefore).toBe(50);
     });
   });
@@ -250,5 +249,37 @@ describe('useChristmasEvent', () => {
     expect(milestones.every(m => m.reward.type === 'currency' && (m.reward.cheerAmount ?? 0) > 0)).toBe(true);
     expect(milestones.find(m => m.id === 'milestone_50_trees')).toMatchObject({ claimed: true, reward: { cheerAmount: 150 } });
     expect(milestones.find(m => m.id === 'milestone_first_tree')?.claimed).toBe(false);
+  });
+
+  it('refuses a recipe until its upgrade is owned', () => {
+    const materials = { wood: 4, pinecones: 0, branches: 0, ornaments: 0, garlands: 0, naturalOrnaments: 0, candles: 0 };
+    const { result } = renderHook(() => useChristmasEvent({ farmTier: 1, initialState: { materials } }));
+
+    let crafted = true;
+    act(() => {
+      crafted = result.current.craftItem('craft_ornaments', 1);
+    });
+    expect(crafted).toBe(false);
+    expect(result.current.materials.wood).toBe(4);
+  });
+
+  it("gives the Elves one more job a second for each level of Cheerful Crafting", () => {
+    const materials = { wood: 20, pinecones: 0, branches: 0, ornaments: 0, garlands: 0, naturalOrnaments: 0, candles: 0 };
+    const jobsInOneSecond = (cheerfulLevel: number) => {
+      const upgrades = ALL_EVENT_UPGRADES.map(u => {
+        if (u.id === 'elves_bench') return { ...u, owned: true };
+        if (u.id === 'cheerful_crafting') return { ...u, owned: cheerfulLevel > 0, level: cheerfulLevel };
+        return u;
+      });
+      const { result } = renderHook(() => useChristmasEvent({ farmTier: 1, initialState: { materials, upgrades } }));
+      act(() => {
+        result.current.processDailyElvesCrafting();
+      });
+      return result.current.materials.candles;
+    };
+
+    expect(jobsInOneSecond(0)).toBe(1);
+    expect(jobsInOneSecond(1)).toBe(2);
+    expect(jobsInOneSecond(3)).toBe(4);
   });
 });

@@ -34,7 +34,7 @@ const UNLOCK_NOTES: Record<string, string> = {
   growers_verdant_glyphs: 'Every Fertilizer upgrade keeps its +25%',
   growers_whispers_of_seed: 'Crops keep selling for 10× in any guild',
   growers_fruit_cultivation: 'The 10 fruit crops stay open',
-  growers_soilbound_pact: 'Crops keep their Blessed Crop chance',
+  growers_soilbound_pact: 'Crops keep harvesting themselves, in any guild but the Engineers',
   preservers_cellar_recipes: 'The 10 Cellar recipes stay open, in any guild',
   preservers_family_cookbook: 'Recipe Mastery ribbons keep paying',
   preservers_trusted_apprentice: 'Canner batches keep paying half knowledge',
@@ -92,7 +92,7 @@ const LegacyDialog: FC<LegacyDialogProps> = memo(({ active, guildState, reset, o
             <h3 className={`${styles.columnTitle} ${styles.keepTitle}`}>You keep</h3>
 
             <div className={styles.section}>
-              <h4 className={styles.caption}>Half your levels, rounded down</h4>
+              <h4 className={styles.caption}>Half your levels, rounded down; a maxed upgrade keeps at least one</h4>
               {levels.length === 0 ? (
                 <p className={styles.hint}>No leveled upgrades bought this Legacy. Two levels of one carry one over.</p>
               ) : (

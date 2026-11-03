@@ -173,7 +173,7 @@ export const GROWERS_UPGRADES: GuildUpgrade[] = [
   {
     id: 'growers_soilbound_pact',
     name: 'Soilbound Pact',
-    description: 'Rare crops may awaken and harvest themselves once per growth cycle',
+    description: 'Crops may awaken and harvest themselves once per growth cycle, with the manual bonus, a Sigil and a chance of a Blessed Crop, as if harvested by hand',
     guild: 'growers',
     tier: 3,
     level: 0,
@@ -182,8 +182,8 @@ export const GROWERS_UPGRADES: GuildUpgrade[] = [
     baseCost: 600,
     costScaling: 1,
     currencyType: 'sigils',
-    effectPerLevel: 0.1,
-    effectTemplate: '{value}% chance for crops to self-harvest (with manual bonus)',
+    effectPerLevel: 0.5,
+    effectTemplate: '{value}% chance a ripe crop harvests itself',
     purchased: false
   },
   {

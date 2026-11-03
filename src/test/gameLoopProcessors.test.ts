@@ -1,12 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   calculateWeatherChange,
   processVeggieGrowth,
+  processSelfHarvests,
   processAutoHarvest,
   processVeggieUnlocks,
   getHarvesterInterval
 } from '../utils/gameLoopProcessors';
 import { commitToGuild } from '../utils/guildCalculations';
+import { calculateHarvestAmount } from '../utils/harvestCalculations';
 import { DEFAULT_GUILD_STATE } from '../types/guilds';
 import type { Veggie } from '../types/game';
 
@@ -306,6 +308,52 @@ describe('processAutoHarvest', () => {
     expect(result.veggies[0].stash).toBe(1); // First harvested (timer at max, growth at 100)
     expect(result.veggies[1].stash).toBe(0); // Second not ready yet
     expect(result.experienceGain).toBeGreaterThan(0);
+  });
+});
+
+describe('processSelfHarvests', () => {
+  const pact = { ...commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1), purchasedUpgrades: ['growers_soilbound_pact'] };
+  const selfHarvest = (veggies: Veggie[], ripened: number[], guildState = pact, roll = 0.49) =>
+    processSelfHarvests(veggies, ripened, 0, 1, 0, 0, 'Spring', [], guildState, () => roll);
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("harvests a crop that just ripened, as a manual harvest with the Growers' bonus", () => {
+    // No Blessed Crop this time
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const result = selfHarvest([createTestVeggie({ growth: 100 })], [0]);
+    const byHand = calculateHarvestAmount(0, 'Spring', [], 0, false, pact).amount;
+
+    expect(byHand).toBeGreaterThan(calculateHarvestAmount(0, 'Spring', [], 0, true, pact).amount);
+    expect(result.harvested).toHaveLength(1);
+    expect(result.veggies[0]).toMatchObject({ growth: 0, stash: byHand });
+    expect(result.experienceGain).toBeGreaterThan(0);
+  });
+
+  it('leaves the crop ripe when the roll misses', () => {
+    const veggies = [createTestVeggie({ growth: 100 })];
+    const result = selfHarvest(veggies, [0], pact, 0.5);
+
+    expect(result.harvested).toHaveLength(0);
+    expect(result.veggies).toBe(veggies);
+  });
+
+  it('rolls only for crops that ripened this step', () => {
+    const veggies = [createTestVeggie({ name: 'Waiting', growth: 100 }), createTestVeggie({ name: 'Fresh', growth: 100 })];
+    const result = selfHarvest(veggies, [1]);
+
+    expect(result.harvested.map(h => h.veggie.name)).toEqual(['Fresh']);
+    expect(result.veggies[0].growth).toBe(100);
+  });
+
+  it('needs Soilbound Pact, and never works for Engineers', () => {
+    const veggies = [createTestVeggie({ growth: 100 })];
+    const engineer = { ...commitToGuild(DEFAULT_GUILD_STATE, 'engineers', 1), purchasedUpgrades: ['growers_soilbound_pact'] };
+
+    expect(selfHarvest(veggies, [0], commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1), 0).harvested).toHaveLength(0);
+    expect(selfHarvest(veggies, [0], engineer, 0).harvested).toHaveLength(0);
   });
 });
 

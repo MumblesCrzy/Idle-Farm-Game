@@ -8,7 +8,7 @@
 import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { CanningProcess } from '../types/canning';
-import { processVeggieGrowth, processAutoHarvest } from './gameLoopProcessors';
+import { processVeggieGrowth, processAutoHarvest, processSelfHarvests } from './gameLoopProcessors';
 import { getSeason } from './gameCalculations';
 import { applyGuildPriceBonuses, getBulkDealsMultiplier, getMerchantDays, getOfflineCapMs, hasFutures } from './guildCalculations';
 import type { OfflineBeeProgress, BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
@@ -22,6 +22,8 @@ export interface OfflineProgressResult {
   experienceGain: number;
   knowledgeGain: number;
   autoHarvests: number; // auto harvests performed (they pay Guild Tokens)
+  /** Crops that harvested themselves (Soilbound Pact); each pays as a manual harvest */
+  selfHarvests: number;
   day: number;
   totalDaysElapsed: number;
   canningProgressUpdates: Map<string, number>; // recipeId -> progress gained
@@ -119,6 +121,7 @@ export function calculateOfflineProgress(
       experienceGain: 0,
       knowledgeGain: 0,
       autoHarvests: 0,
+      selfHarvests: 0,
       day: gameState.day,
       totalDaysElapsed: gameState.totalDaysElapsed,
       canningProgressUpdates: new Map(),
@@ -134,6 +137,7 @@ export function calculateOfflineProgress(
   let totalExperienceGain = 0;
   let totalKnowledgeGain = 0;
   let totalAutoHarvests = 0;
+  let totalSelfHarvests = 0;
   let currentDay = gameState.day;
   let currentTotalDays = gameState.totalDaysElapsed;
   
@@ -175,6 +179,25 @@ export function calculateOfflineProgress(
       gameState.guildState
     );
     currentVeggies = growthResult.veggies;
+
+    // Soilbound Pact: crops that ripened may harvest themselves, as manual harvests
+    if (growthResult.completedGrowth.length > 0) {
+      const selfResult = processSelfHarvests(
+        currentVeggies,
+        growthResult.completedGrowth.map(c => c.index),
+        gameState.almanacLevel,
+        gameState.farmTier,
+        gameState.knowledge + totalKnowledgeGain,
+        gameState.beeYieldBonus ?? 0,
+        currentSeason,
+        gameState.permanentBonuses ?? [],
+        gameState.guildState
+      );
+      currentVeggies = selfResult.veggies;
+      totalExperienceGain += selfResult.experienceGain;
+      totalKnowledgeGain += selfResult.knowledgeGain;
+      totalSelfHarvests += selfResult.harvested.length;
+    }
 
     // Auto-harvest (every tick), with the live loop's bee, achievement and guild bonuses
     const autoHarvestResult = processAutoHarvest(
@@ -250,6 +273,7 @@ export function calculateOfflineProgress(
     experienceGain: totalExperienceGain,
     knowledgeGain: totalKnowledgeGain,
     autoHarvests: totalAutoHarvests,
+    selfHarvests: totalSelfHarvests,
     day: currentDay,
     totalDaysElapsed: currentTotalDays,
     canningProgressUpdates,

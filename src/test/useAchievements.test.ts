@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAchievements } from '../hooks/useAchievements';
-import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
+import { INITIAL_ACHIEVEMENTS, PERMANENT_BONUS_ACHIEVEMENTS } from '../data/achievements';
 import { ARCHIE_LOOKS } from '../data/archieLooks';
 import type { AchievementGameState, AchievementState } from '../types/achievements';
 
@@ -158,5 +158,49 @@ describe('Pumpkin Rush sales achievements', () => {
       expect(reward?.candyCorn).toBeGreaterThan(0);
       expect((reward?.money ?? 0) + (reward?.knowledge ?? 0)).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('Spring Market sales achievements', () => {
+  const springIds = ['spring_first_sale', 'spring_50_sold', 'spring_250_sold', 'spring_1000_sold', 'spring_2500_sold'];
+
+  it('unlock from bunches sold, with progress toward the next', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    for (let i = 0; i < 5; i++) {
+      act(() => {
+        result.current.checkAchievements(gameState({ flowersSold: 60 }));
+      });
+    }
+
+    const unlocked = onUnlock.mock.calls.map(([achievement]) => achievement.id).filter(id => springIds.includes(id));
+    expect(unlocked).toEqual(['spring_first_sale', 'spring_50_sold']);
+    expect(result.current.achievements.find(a => a.id === 'spring_250_sold')?.progress).toEqual({ current: 60, goal: 250 });
+  });
+
+  it('pay Petals and a farm reward, and Market Legend adds April Showers', () => {
+    for (const id of springIds) {
+      const reward = INITIAL_ACHIEVEMENTS.find(a => a.id === id)?.reward;
+      expect(reward?.petals).toBeGreaterThan(0);
+      expect((reward?.money ?? 0) + (reward?.knowledge ?? 0)).toBeGreaterThan(0);
+    }
+    expect(INITIAL_ACHIEVEMENTS.find(a => a.id === 'spring_2500_sold')?.reward?.unlocks).toEqual(['April Showers']);
+    expect(PERMANENT_BONUS_ACHIEVEMENTS.spring_2500_sold).toBe('april_showers');
+  });
+
+  it("hide Best Mom until 50 Gift Bouquets sell on Mother's Day", () => {
+    const bestMom = INITIAL_ACHIEVEMENTS.find(a => a.id === 'spring_best_mom')!;
+    expect(bestMom.hidden).toBe(true);
+
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    act(() => {
+      result.current.checkAchievements(gameState({ mothersDayBouquets: 49 }));
+    });
+    expect(onUnlock).not.toHaveBeenCalled();
+    act(() => {
+      result.current.checkAchievements(gameState({ mothersDayBouquets: 50 }));
+    });
+    expect(onUnlock.mock.calls.map(([achievement]) => achievement.id)).toEqual(['spring_best_mom']);
   });
 });

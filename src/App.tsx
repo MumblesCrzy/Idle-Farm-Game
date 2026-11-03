@@ -16,7 +16,7 @@ import InfoOverlay from './components/InfoOverlay';
 import SettingsOverlay from './components/SettingsOverlay';
 import EventLogOverlay from './components/EventLogOverlay';
 import FeatureFlagsPanel from './components/FeatureFlagsPanel';
-import { useFeatureFlag } from './context/FeatureFlagsContext';
+import { useFeatureFlag, useFeatureFlags } from './context/FeatureFlagsContext';
 
 // Tab components - loaded eagerly to avoid per-tab loading delays
 import GrowingTab from './components/GrowingTab';
@@ -27,6 +27,10 @@ import TreeFarmTab from './components/TreeFarmTab';
 import WorkshopTab from './components/WorkshopTab';
 import ShopfrontTab from './components/ShopfrontTab';
 import PumpkinPatchTab from './components/PumpkinPatchTab';
+import FlowerBedsTab from './components/FlowerBedsTab';
+import HerbGardenTab from './components/HerbGardenTab';
+import PottingShedTab from './components/PottingShedTab';
+import MarketStallTab from './components/MarketStallTab';
 import CarvingBarnTab from './components/CarvingBarnTab';
 import FarmStandTab from './components/FarmStandTab';
 import CountyFairTab from './components/CountyFairTab';
@@ -45,7 +49,7 @@ import { GUILD_MERCHANTS, ICON_BEE, ICON_GUILDS } from './config/assetPaths';
 // Guild system imports
 import { DEFAULT_GUILD_STATE } from './types/guilds';
 import type { GuildState, GuildType } from './types/guilds';
-import { awardGears, awardGuildTokens, awardWaxSeals, commitToGuild, getAutoBuyerPriceMultiplier, getGuildHoneyMultiplier, getHotTipLeft, getMerchantDays, getOfflineCapMs, getRehirePriceMultiplier, getWholesalePriceMultiplier, hasHostileTakeover, hasPayroll, isMerchant, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, heirloomSeedsName, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
+import { awardGears, awardGuildTokens, awardHarvestCurrency, paysHarvestCurrency, awardWaxSeals, commitToGuild, getAutoBuyerPriceMultiplier, getGuildHoneyMultiplier, getHotTipLeft, getMerchantDays, getOfflineCapMs, getRehirePriceMultiplier, getWholesalePriceMultiplier, hasHostileTakeover, hasPayroll, isMerchant, getGuildUpgradeCost, getRushBatchCost, getUpgradeLevel, hasPantryLock, hasRushBatch, heirloomSeedsName, isCommittedTo, isGuildUpgradeMaxed, type BatchCount } from './utils/guildCalculations';
 import { legacyResetSummary } from './utils/legacy';
 import { endLegacy } from './utils/legacyReset';
 import { GUILDS_UNLOCK_TIER, GUILDS } from './data/guildData';
@@ -107,16 +111,19 @@ import { useDeferredEffects } from './hooks/useDeferredEffects';
 import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { usePumpkinEvent, isPumpkinSeason, claimedSalesMilestones } from './hooks/usePumpkinEvent';
+import { useSpringEvent, isSpringSeason } from './hooks/useSpringEvent';
 import { PERMANENT_BONUS_ACHIEVEMENTS } from './data/achievements';
 import { PUMPKIN_ART } from './data/pumpkinEventData';
+import { CHRISTMAS_ART, TREE_SALES_REWARDS } from './data/christmasEventData';
+import { FLOWER_VARIETIES, SPRING_ART } from './data/springEventData';
+import { bunchLabel, parseFlowerKey } from './utils/springPricing';
 import { loadGameStateWithCanning, startNewGame, type ExtendedGameState } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
 import type { Veggie, GameState, EventCategory, RecipeFilter } from './types/game';
 import type { BeeState, BeeContextValue } from './types/bees';
-import type { EventUpgrade } from './types/christmasEvent';
 import type { AchievementOrMilestone } from './types/achievements';
 import { ACTIVE_TAB_KEY, BEE_CONSTANTS, GROWTH_COMPLETE_THRESHOLD } from './config/gameConstants';
-import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, ICON_TREE_SHOP, ICON_TREE_WORKSHOP, ICON_TREE_STOREFRONT, TREE_DECORATED, DECORATION_WREATH, ICON_HOLIDAY_REGISTER, PUMPKIN_UPGRADE_FORTUNE_TELLER } from './config/assetPaths';
+import { ALL_IMAGES, ICON_GROWING, ICON_CANNING, ICON_AUTOMATION, ICON_HARVEST, ICON_BLESSED_CROP, ICON_MONEY, ICON_MERCHANT, SEASON_SPRING, SEASON_SUMMER, SEASON_FALL, SEASON_WINTER, TREE_DECORATED, ICON_HOLIDAY_REGISTER, PUMPKIN_UPGRADE_FORTUNE_TELLER } from './config/assetPaths';
 import styles from './components/App.module.css';
 import {
   formatNumber,
@@ -125,6 +132,7 @@ import {
 } from './utils/gameCalculations';
 import {
   processVeggieGrowth,
+  processSelfHarvests,
   processAutoHarvest,
   processVeggieUnlocks,
   fitFactoryHarvesters
@@ -155,6 +163,15 @@ function isChristmasTabVisible(): boolean {
   return month === 10 || month === 11; // November or December
 }
 
+type ChristmasSubTab = 'farm' | 'workshop' | 'shopfront';
+
+/** Sections of the Tree Shop tab */
+const CHRISTMAS_SUB_TABS: Array<{ id: ChristmasSubTab; label: string; art: EventArtSource }> = [
+  { id: 'farm', label: 'Tree Farm', art: CHRISTMAS_ART.farm },
+  { id: 'workshop', label: 'Workshop', art: CHRISTMAS_ART.workshop },
+  { id: 'shopfront', label: 'Shopfront', art: CHRISTMAS_ART.shopfront },
+];
+
 type PumpkinSubTab = 'patch' | 'barn' | 'stand' | 'fair';
 
 /** Sections of the Pumpkin Rush tab */
@@ -165,6 +182,16 @@ const PUMPKIN_SUB_TABS: Array<{ id: PumpkinSubTab; label: string; art: EventArtS
   { id: 'fair', label: 'County Fair', art: PUMPKIN_ART.fair },
 ];
 
+type SpringSubTab = 'beds' | 'garden' | 'shed' | 'stall';
+
+/** Sections of the Spring Market tab */
+const SPRING_SUB_TABS: Array<{ id: SpringSubTab; label: string; art: EventArtSource }> = [
+  { id: 'beds', label: 'Flower Beds', art: SPRING_ART.beds },
+  { id: 'garden', label: 'Herb Garden', art: SPRING_ART.garden },
+  { id: 'shed', label: 'Potting Shed', art: SPRING_ART.shed },
+  { id: 'stall', label: 'Market Stall', art: SPRING_ART.stall },
+];
+
 /** One line for the event log about a pumpkin sale */
 const pumpkinSaleMessage = (variety: string, quantity: number) =>
   variety === 'Pumpkin'
@@ -173,8 +200,24 @@ const pumpkinSaleMessage = (variety: string, quantity: number) =>
 
 const PLACING_NAMES = ['First place', 'Second place', 'Third place', 'No ribbon'] as const;
 
+/** One line for the event log about a sale at the Market Stall; no key is Sell all bunches */
+const springSaleMessage = (key: string | null, quantity: number) => {
+  if (key === null) return `Sold ${quantity} bunch${quantity === 1 ? '' : 'es'}`;
+  const { variety, finish } = parseFlowerKey(key);
+  return `Sold ${bunchLabel(variety, finish, quantity)}`;
+};
+
+/** One line for the event log about Market Day */
+const marketDayMessage = (bunches: number, goods: number) => {
+  const parts = [
+    bunches > 0 ? `${bunches} bunch${bunches === 1 ? '' : 'es'}` : '',
+    goods > 0 ? `${goods} good${goods === 1 ? '' : 's'}` : '',
+  ].filter(Boolean);
+  return `Market Day: sold ${parts.join(' and ')} from the Cart`;
+};
+
 /** The game's tabs. The open one is kept for the browser session, so a reload returns to it. */
-const GAME_TABS = ['growing', 'canning', 'bees', 'guilds', 'christmas', 'pumpkin'] as const;
+const GAME_TABS = ['growing', 'canning', 'bees', 'guilds', 'christmas', 'pumpkin', 'spring'] as const;
 type GameTab = typeof GAME_TABS[number];
 const rememberedTab = (): GameTab => {
   try {
@@ -283,9 +326,6 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     onUpgradePurchased: (upgradeName, cost) => {
       eventLogCallbacks.onUpgradePurchased(upgradeName, cost);
     },
-    onMilestoneClaimed: (milestoneName) => {
-      eventLogCallbacks.onMilestoneClaimed(milestoneName);
-    },
   });
 
   // Fall Pumpkin Rush
@@ -312,6 +352,28 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         `County Fair: ${PLACING_NAMES[result.placing - 1]} with a ${result.weight} lb giant`,
         `Won ${result.prize} Candy Corn`
       );
+    },
+  });
+
+  // Spring Farmer's Market. In dev, the Spring Market Preview flag opens it out of season.
+  const springPreview = useFeatureFlag('springPreview') && import.meta.env.DEV;
+  const springEvent = useSpringEvent({
+    initialState: loaded?.springEventState,
+    forceActive: springPreview,
+    onFlowersSold: (key, quantity, petals) => {
+      eventLogCallbacks.onSpringEvent(springSaleMessage(key, quantity), `Earned ${petals} Petals`);
+    },
+    onFlowerHarvested: (variety, quality) => {
+      eventLogCallbacks.onSpringEvent(`Harvested ${quality === 'prize' ? 'Prize Bloom ' : ''}${FLOWER_VARIETIES[variety].plural}`);
+    },
+    onItemCrafted: (itemName, quantity) => {
+      eventLogCallbacks.onSpringEvent(`Made ${quantity}x ${itemName}`);
+    },
+    onUpgradePurchased: (upgradeName, cost) => {
+      eventLogCallbacks.onSpringEvent(`Purchased upgrade: ${upgradeName}`, `Cost ${cost} Petals`);
+    },
+    onMarketDay: (result) => {
+      eventLogCallbacks.onSpringEvent(marketDayMessage(result.bunches, result.goods), `Earned ${result.petals} Petals`);
     },
   });
 
@@ -374,13 +436,16 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, [loaded, setHighestUnlockedVeggie]); // Runs once: loaded and the setter never change    
  
-  // Crop growth, first in each game step
+  // Crop growth, first in each game step. With Soilbound Pact a crop that ripens may harvest
+  // itself, worked out in the updater like the auto-harvest; its rewards, as a manual
+  // harvest's, are applied after the commit.
   useGameTick(() => {
     // Skip all processing while game is paused
     if (isPausedRef.current) return;
 
+    const tick = {};
     setVeggies((prev) => {
-      const { veggies: newVeggies } = processVeggieGrowth(
+      const { veggies: grown, completedGrowth } = processVeggieGrowth(
         prev,
         season,
         currentWeather,
@@ -388,7 +453,45 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
         irrigationOwned,
         guildStateRef.current
       );
-      return newVeggies;
+      const { veggies: harvested, experienceGain, knowledgeGain, harvested: selfHarvests } = processSelfHarvests(
+        grown,
+        completedGrowth.map(c => c.index),
+        almanacLevelRef.current,
+        farmTierRef.current,
+        knowledgeRef.current,
+        beeYieldBonusRef.current,
+        seasonRef.current,
+        permanentBonusesRef.current,
+        guildStateRef.current
+      );
+      if (selfHarvests.length === 0) {
+        scheduleAfterCommit(tick, undefined);
+        return grown;
+      }
+
+      const { veggies: unlocked, highestUnlockedIndex } = processVeggieUnlocks(
+        harvested,
+        experienceRef.current + experienceGain,
+        maxPlotsRef.current
+      );
+      const awardGains = dayRef.current >= 1 && dayRef.current <= 365;
+
+      scheduleAfterCommit(tick, () => {
+        selfHarvests.forEach(({ veggie, amount, expGain, knGain }) => {
+          logHarvest(veggie.name, amount, expGain, knGain, false, true);
+        });
+        if (paysHarvestCurrency(guildStateRef.current, farmTierRef.current)) {
+          setGuildState(prev => awardHarvestCurrency(prev, selfHarvests.length, farmTierRef.current));
+        }
+        if (awardGains) {
+          setKnowledge((k: number) => k + knowledgeGain);
+          setExperience((exp: number) => exp + experienceGain);
+        }
+        setTotalHarvests((count: number) => count + selfHarvests.length);
+        setHighestUnlockedVeggie(current => Math.max(current, highestUnlockedIndex));
+      });
+
+      return unlocked;
     });
   }, { order: 10 });
 
@@ -411,6 +514,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const permanentBonusesRef = useLatestRef(permanentBonuses);
   const christmasEventRef = useLatestRef(christmasEvent);
   const pumpkinEventRef = useLatestRef(pumpkinEvent);
+  const springEventRef = useLatestRef(springEvent);
   const experienceRef = useLatestRef(experience);
   const autoSellOwnedRef = useLatestRef(autoSellOwned);
   const merchantDaysRef = useLatestRef(getMerchantDays(guildState));
@@ -441,7 +545,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       beeYieldBonus,
       permanentBonuses,
       christmasEvent,
-      pumpkinEvent
+      pumpkinEvent,
+      springEvent
     },
     isPaused,
     setVeggies,
@@ -613,6 +718,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     merchantDaysRef,
     christmasEventRef,
     pumpkinEventRef,
+    springEventRef,
     isPausedRef,
     handleSell
   });
@@ -633,7 +739,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
-    christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
     guildState, setGuildState, isPaused, setIsPaused
   }), [
     veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge,
@@ -648,7 +754,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
-    christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
     guildState, setGuildState, isPaused, setIsPaused
   ]);
 
@@ -715,6 +821,9 @@ function App() {
   const beeSystemFlag = useFeatureFlag('beeSystem');
   const christmasEventFlag = useFeatureFlag('christmasEvent');
   const pumpkinEventFlag = useFeatureFlag('pumpkinEvent');
+  const springEventFlag = useFeatureFlag('springEvent');
+  const springPreviewFlag = useFeatureFlag('springPreview');
+  const { setFlag } = useFeatureFlags();
   const achievementSystemFlag = useFeatureFlag('achievementSystem');
   const archieCharacterFlag = useFeatureFlag('archieCharacter');
   const devToolsFlag = useFeatureFlag('enableDevTools');
@@ -725,6 +834,8 @@ function App() {
   const christmasEventEnabled = (isDev ? christmasEventFlag : true) && isChristmasTabVisible();
   // Pumpkin Rush tab only during the season (Sep 22 through Thanksgiving)
   const pumpkinEventEnabled = (isDev ? pumpkinEventFlag : true) && isPumpkinSeason();
+  // Spring Market tab only during the season (Mar 20 through Memorial Day), or in dev with the preview flag
+  const springEventEnabled = (isDev ? springEventFlag : true) && (isSpringSeason() || (isDev && springPreviewFlag));
   const achievementSystemEnabled = isDev ? achievementSystemFlag : true;
   const archieCharacterEnabled = isDev ? archieCharacterFlag : true;
   const devToolsEnabled = isDev ? devToolsFlag : false;
@@ -778,7 +889,8 @@ function App() {
     'milestone',
     'bees',
     'christmas',
-    'pumpkin'
+    'pumpkin',
+    'spring'
   ]);
 
   // Toast state for magical register bonus
@@ -809,8 +921,9 @@ function App() {
       // Storage unavailable: the tab just isn't remembered
     }
   }, [activeTab]);
-  const [christmasSubTab, setChristmasSubTab] = useState<'farm' | 'workshop' | 'shopfront'>('farm');
+  const [christmasSubTab, setChristmasSubTab] = useState<ChristmasSubTab>('farm');
   const [pumpkinSubTab, setPumpkinSubTab] = useState<PumpkinSubTab>('patch');
+  const [springSubTab, setSpringSubTab] = useState<SpringSubTab>('beds');
   
   // Guild UI state (guild data state is in GameProvider context)
   const [guildIntroShown, setGuildIntroShown] = useState(
@@ -874,7 +987,7 @@ function App() {
     [beeState?.upgrades]
   );
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, handleHostileTakeover, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, handleHostileTakeover, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
 
   // Guild system handlers. Stable, so they never hold an old render's scope: memoized handlers
@@ -1025,6 +1138,12 @@ function App() {
       if (candyCorn > 0 && !claimedPumpkinMilestones.has(achievement.id)) {
         pumpkinEvent.earnCandyCorn(candyCorn);
       }
+
+      // Spring Market sales achievements pay Petals
+      const petals = achievement.reward?.petals ?? 0;
+      if (petals > 0) {
+        springEvent.earnPetals(petals);
+      }
       
       // ── Telemetry: achievement_unlocked ──
       devTelemetry.emit('achievement_unlocked', {
@@ -1042,6 +1161,19 @@ function App() {
     [achievements]
   );
 
+
+  // A Christmas tree sales achievement pays its Holiday Cheer through the sales milestone at the
+  // same count, which pays only once: older saves may have claimed it on the Shopfront already,
+  // and a save that unlocked the achievement without claiming the milestone is paid on load
+  const claimTreeSalesMilestone = christmasEvent?.claimMilestone;
+  useEffect(() => {
+    if (!claimTreeSalesMilestone) return;
+    for (const reward of TREE_SALES_REWARDS) {
+      if (unlockedAchievementIds.includes(reward.achievementId)) {
+        claimTreeSalesMilestone(reward.milestoneId);
+      }
+    }
+  }, [unlockedAchievementIds, claimTreeSalesMilestone]);
 
   // Canned goods and hive harvests pay Guild Tokens until a guild is chosen
   const handleGoodsCanned = useCallback((count: number) => {
@@ -1155,12 +1287,13 @@ function App() {
   // Register all event logging callbacks with the context
   useEffect(() => {
     eventLogCallbacks.registerCallbacks({
-      onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
+      onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean, selfHarvest?: boolean) => {
         const opts = buildHarvestEvent(veggieName, amount, expGain, knGain, isAuto, {
           automation: ICON_AUTOMATION,
-          harvest: ICON_HARVEST
-        });
-        addEvent('harvest', `Harvested ${veggieName}`, opts);
+          harvest: ICON_HARVEST,
+          selfHarvest: ICON_BLESSED_CROP
+        }, selfHarvest);
+        addEvent('harvest', selfHarvest ? `${veggieName} harvested itself` : `Harvested ${veggieName}`, opts);
       },
       onAutoPurchase: (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => {
         const opts = buildAutoPurchaseEvent(veggieName, autoPurchaserName, upgradeType, upgradeLevel, cost, currencyType, ICON_AUTOMATION);
@@ -1196,6 +1329,12 @@ function App() {
       onMilestoneClaimed: (milestoneName: string) => {
         const opts = buildMilestoneClaimedEvent(milestoneName);
         addEvent('milestone', `Christmas milestone claimed: ${milestoneName}`, opts);
+      },
+      onPumpkinEvent: (message: string, details?: string) => {
+        addEvent('pumpkin', message, { details });
+      },
+      onSpringEvent: (message: string, details?: string) => {
+        addEvent('spring', message, { details });
       }
     });
 
@@ -1390,13 +1529,14 @@ function App() {
       eventLogState: eventLog.getState(),
       christmasEventState: christmasEvent?.eventState,
       pumpkinEventState: pumpkinEvent.eventState,
+      springEventState: springEvent.eventState,
       beeState: beeState || undefined,
       harvestTutorialShown,
       guildIntroShown,
       guildState,
       isPaused
     };
-  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, pumpkinEvent, beeState, harvestTutorialShown, guildIntroShown, guildState, isPaused]);
+  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, pumpkinEvent, springEvent, beeState, harvestTutorialShown, guildIntroShown, guildState, isPaused]);
 
   // Saves at most every 30 seconds, and always on page unload
   useAutoSave({ getGameState: buildSaveState });
@@ -1432,6 +1572,8 @@ function App() {
     const christmasTreesSold = christmasEvent?.totalTreesSold || 0;
     const pumpkinsSold = pumpkinEvent?.totalPumpkinsSold || 0;
     const heaviestGiant = pumpkinEvent?.eventState.weighOff.personalBest ?? 0;
+    const flowersSold = springEvent.totalFlowersSold;
+    const mothersDayBouquets = springEvent.eventState.mothersDayBouquets.sold;
 
     checkAchievements({
       money,
@@ -1444,11 +1586,13 @@ function App() {
       christmasTreesSold,
       pumpkinsSold,
       heaviestGiant,
+      flowersSold,
+      mothersDayBouquets,
       beeState,
       canningState,
       guildState
     });
-  }, [veggies, canningState, christmasEvent, pumpkinEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, guildState]);
+  }, [veggies, canningState, christmasEvent, pumpkinEvent, springEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, guildState]);
 
   // A tab that's locked or out of season falls back to Growing: after a reset, when an
   // event ends, or when the tab remembered across a reload isn't open any more
@@ -1460,7 +1604,8 @@ function App() {
     bees: beeSystemEnabled && farmTier >= BEE_CONSTANTS.UNLOCK_FARM_TIER,
     guilds: guildsTabOpen,
     christmas: christmasEventEnabled && !!christmasEvent?.isEventActive,
-    pumpkin: pumpkinEventEnabled && pumpkinEvent.isEventActive
+    pumpkin: pumpkinEventEnabled && pumpkinEvent.isEventActive,
+    spring: springEventEnabled && springEvent.isEventActive
   }[activeTab];
   useEffect(() => {
     if (!activeTabOpen) {
@@ -1617,6 +1762,21 @@ function App() {
     }
   }, [pumpkinEvent.lastFortuneTip]);
 
+  // Show a toast for each tip from the Spring Market's Regulars
+  const lastRegularsTipTimestamp = useRef(0);
+  const regularsIcon = springEvent.eventState.upgrades.find(u => u.id === 'regulars')?.icon;
+  useEffect(() => {
+    const tip = springEvent.lastRegularsTip;
+    if (tip.amount > 0 && tip.timestamp > lastRegularsTipTimestamp.current) {
+      setMagicalRegisterToast({
+        visible: true,
+        message: `A regular tipped! +${tip.amount} Petals`,
+        icon: regularsIcon,
+      });
+      lastRegularsTipTimestamp.current = tip.timestamp;
+    }
+  }, [springEvent.lastRegularsTip, regularsIcon]);
+
   // Preload all images to prevent loading delays when switching tabs
   useEffect(() => {
     // Preload using both methods for maximum browser compatibility
@@ -1674,6 +1834,9 @@ function App() {
         isPumpkinEventActive={pumpkinEventEnabled && pumpkinEvent.isEventActive}
         pumpkinsSold={pumpkinEvent.totalPumpkinsSold}
         earnCandyCorn={pumpkinEvent.earnCandyCorn}
+        isSpringEventActive={springEventEnabled && springEvent.isEventActive}
+        flowersSold={springEvent.totalFlowersSold}
+        earnPetals={springEvent.earnPetals}
         isPaused={isPaused}
       />
     )}
@@ -1741,6 +1904,8 @@ function App() {
             isChristmasEventActive={christmasEvent?.isEventActive ?? false}
             candyCorn={pumpkinEvent.candyCorn}
             isPumpkinEventActive={pumpkinEventEnabled && pumpkinEvent.isEventActive}
+            petals={springEvent.petals}
+            isSpringEventActive={springEventEnabled && springEvent.isEventActive}
             guildState={guildState}
           />
         </aside>
@@ -1886,6 +2051,22 @@ function App() {
                 <div className={styles.tabButtonContent}>
                   <EventArt art={PUMPKIN_ART.sugarPie} size={20} />
                   Pumpkin Rush
+                </div>
+              </button>
+            )}
+            {springEventEnabled && springEvent.isEventActive && (
+              <button
+                role="tab"
+                id="tab-spring"
+                aria-selected={activeTab === 'spring'}
+                aria-controls="panel-spring"
+                onClick={() => setActiveTab('spring')}
+                className={activeTab === 'spring' ? styles.tabButtonSpringActive : styles.tabButtonSpring}
+                title="Spring Farmer's Market (Mar 20 through Memorial Day)"
+              >
+                <div className={styles.tabButtonContent}>
+                  <EventArt art={SPRING_ART.tulip} size={20} />
+                  Spring Market
                 </div>
               </button>
             )}
@@ -2037,148 +2218,36 @@ function App() {
       </div>
 
       {/* Christmas Tree Shop Tab Content */}
-      {christmasEventEnabled && christmasEvent?.isEventActive && christmasEvent && (
-        <div 
-          role="tabpanel" 
-          id="panel-christmas" 
+      {christmasEventEnabled && christmasEvent?.isEventActive && (
+        <div
+          role="tabpanel"
+          id="panel-christmas"
           aria-labelledby="tab-christmas"
           className={activeTab !== 'christmas' ? styles.tabPanelHidden : undefined}
         >
-        <PerformanceWrapper id="ChristmasTab">
-          {/* Christmas Sub-Tab Navigation */}
-          <div 
-            role="tablist" 
-            aria-label="Christmas sections"
-            className={styles.christmasSubTabList}
-          >
-            <button
-              role="tab"
-              id="tab-christmas-farm"
-              aria-selected={christmasSubTab === 'farm'}
-              aria-controls="panel-christmas-farm"
-              onClick={() => setChristmasSubTab('farm')}
-              className={christmasSubTab === 'farm' ? styles.christmasSubTabFarmActive : styles.christmasSubTabFarm}
-            >
-              <img src={ICON_TREE_SHOP} alt="" aria-hidden="true" className={styles.tabIcon} />
-              Tree Farm
-            </button>
-            <button
-              role="tab"
-              id="tab-christmas-workshop"
-              aria-selected={christmasSubTab === 'workshop'}
-              aria-controls="panel-christmas-workshop"
-              onClick={() => setChristmasSubTab('workshop')}
-              className={christmasSubTab === 'workshop' ? styles.christmasSubTabWorkshopActive : styles.christmasSubTabWorkshop}
-            >
-              <img src={ICON_TREE_WORKSHOP} alt="" aria-hidden="true" className={styles.tabIcon} />
-              Workshop
-            </button>
-            <button
-              role="tab"
-              id="tab-christmas-shopfront"
-              aria-selected={christmasSubTab === 'shopfront'}
-              aria-controls="panel-christmas-shopfront"
-              onClick={() => setChristmasSubTab('shopfront')}
-              className={christmasSubTab === 'shopfront' ? styles.christmasSubTabShopfrontActive : styles.christmasSubTabShopfront}
-            >
-              <img src={ICON_TREE_STOREFRONT} alt="" aria-hidden="true" className={styles.tabIcon} />
-              Shopfront
-            </button>
-            
-            {/* Daily Customer Bonus - Only show if Wreath Sign upgrade is owned */}
-            {christmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'wreath_sign')?.owned && (
-              <div
-                className={
-                  christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
-                    ? styles.dailyBonusAvailable
-                    : styles.dailyBonusClaimed
-                }
-              >
-                <img 
-                  src={DECORATION_WREATH} 
-                  alt="Daily Bonus" 
-                  className={styles.dailyBonusIcon}
-                />
-                <span className={
-                  christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
-                    ? styles.dailyBonusTextAvailable
-                    : styles.dailyBonusTextClaimed
-                }>
-                  {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0]
-                    ? 'Daily Bonus!'
-                    : 'Claimed Today'}
-                </span>
-                {christmasEvent.eventState.dailyBonus.lastClaimDate !== new Date().toISOString().split('T')[0] && (
-                  <button
-                    onClick={christmasEvent.claimDailyBonus}
-                    className={styles.dailyBonusClaimButton}
-                  >
-                    Claim
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Tree Farm Sub-Tab */}
-          {christmasSubTab === 'farm' && (
-            <div role="tabpanel" id="panel-christmas-farm" aria-labelledby="tab-christmas-farm">
-            <TreeFarmTab
-              treePlots={christmasEvent.treePlots}
-              materials={christmasEvent.materials}
-              treeInventory={christmasEvent.eventState.treeInventory}
-              upgrades={christmasEvent.eventState.upgrades}
-              holidayCheer={christmasEvent.holidayCheer}
-              plantTree={christmasEvent.plantTree}
-              harvestTree={christmasEvent.harvestTree}
-              harvestAllTrees={christmasEvent.harvestAllTrees}
-              purchaseUpgrade={christmasEvent.purchaseUpgrade}
-              formatNumber={formatNumber}
-            />
+          <PerformanceWrapper id="ChristmasTab">
+            <div role="tablist" aria-label="Tree Shop sections" className={styles.christmasSubTabList}>
+              {CHRISTMAS_SUB_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  id={`tab-christmas-${tab.id}`}
+                  aria-selected={christmasSubTab === tab.id}
+                  aria-controls={`panel-christmas-${tab.id}`}
+                  onClick={() => setChristmasSubTab(tab.id)}
+                  className={christmasSubTab === tab.id ? styles.christmasSubTabActive : styles.christmasSubTab}
+                >
+                  <EventArt art={tab.art} size={20} />
+                  {tab.label}
+                </button>
+              ))}
             </div>
-          )}
-
-          {/* Workshop Sub-Tab */}
-          {christmasSubTab === 'workshop' && (
-            <div role="tabpanel" id="panel-christmas-workshop" aria-labelledby="tab-christmas-workshop">
-            <WorkshopTab
-              materials={christmasEvent.materials}
-              treeInventory={christmasEvent.eventState.treeInventory}
-              craftItem={(recipeId) => christmasEvent.craftItem(recipeId, 1)}
-              decorateTree={christmasEvent.decorateTree}
-              addToDecorationQueue={christmasEvent.addToDecorationQueue}
-              automationEnabled={christmasEvent.eventState.upgrades.find((u: EventUpgrade) => u.id === 'elves_bench')?.owned ?? false}
-              formatNumber={formatNumber}
-              upgrades={christmasEvent.eventState.upgrades}
-              holidayCheer={christmasEvent.holidayCheer}
-              purchaseUpgrade={christmasEvent.purchaseUpgrade}
-              currentElvesAction={(christmasEvent as UseChristmasEventReturn)?.currentElvesAction}
-            />
+            <div role="tabpanel" id={`panel-christmas-${christmasSubTab}`} aria-labelledby={`tab-christmas-${christmasSubTab}`}>
+              {christmasSubTab === 'farm' && <TreeFarmTab event={christmasEvent} formatNumber={formatNumber} />}
+              {christmasSubTab === 'workshop' && <WorkshopTab event={christmasEvent} formatNumber={formatNumber} />}
+              {christmasSubTab === 'shopfront' && <ShopfrontTab event={christmasEvent} formatNumber={formatNumber} />}
             </div>
-          )}
-
-          {/* Shopfront Sub-Tab */}
-          {christmasSubTab === 'shopfront' && (
-            <div role="tabpanel" id="panel-christmas-shopfront" aria-labelledby="tab-christmas-shopfront">
-            <ShopfrontTab
-              treeInventory={christmasEvent.eventState.treeInventory}
-              materials={christmasEvent.materials}
-              sellTrees={christmasEvent.sellTrees}
-              sellGarland={christmasEvent.sellGarland}
-              sellCandle={christmasEvent.sellCandle}
-              sellOrnament={christmasEvent.sellOrnament}
-              demandMultiplier={christmasEvent.eventState.marketDemand.demandMultiplier}
-              holidayCheer={christmasEvent.holidayCheer}
-              upgrades={christmasEvent.eventState.upgrades}
-              formatNumber={formatNumber}
-              purchaseUpgrade={christmasEvent.purchaseUpgrade}
-              milestones={christmasEvent.eventState.milestones}
-              totalTreesSold={christmasEvent.totalTreesSold}
-              claimMilestone={christmasEvent.claimMilestone}
-            />
-            </div>
-          )}
-        </PerformanceWrapper>
+          </PerformanceWrapper>
         </div>
       )}
 
@@ -2213,6 +2282,41 @@ function App() {
               {pumpkinSubTab === 'barn' && <CarvingBarnTab event={pumpkinEvent} formatNumber={formatNumber} />}
               {pumpkinSubTab === 'stand' && <FarmStandTab event={pumpkinEvent} formatNumber={formatNumber} />}
               {pumpkinSubTab === 'fair' && <CountyFairTab event={pumpkinEvent} formatNumber={formatNumber} />}
+            </div>
+          </PerformanceWrapper>
+        </div>
+      )}
+
+      {/* Spring Farmer's Market Tab Content */}
+      {springEventEnabled && springEvent.isEventActive && (
+        <div
+          role="tabpanel"
+          id="panel-spring"
+          aria-labelledby="tab-spring"
+          className={activeTab !== 'spring' ? styles.tabPanelHidden : undefined}
+        >
+          <PerformanceWrapper id="SpringTab">
+            <div role="tablist" aria-label="Spring Market sections" className={styles.springSubTabList}>
+              {SPRING_SUB_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  id={`tab-spring-${tab.id}`}
+                  aria-selected={springSubTab === tab.id}
+                  aria-controls={`panel-spring-${tab.id}`}
+                  onClick={() => setSpringSubTab(tab.id)}
+                  className={springSubTab === tab.id ? styles.springSubTabActive : styles.springSubTab}
+                >
+                  <EventArt art={tab.art} size={20} />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div role="tabpanel" id={`panel-spring-${springSubTab}`} aria-labelledby={`tab-spring-${springSubTab}`}>
+              {springSubTab === 'beds' && <FlowerBedsTab event={springEvent} formatNumber={formatNumber} />}
+              {springSubTab === 'garden' && <HerbGardenTab event={springEvent} formatNumber={formatNumber} />}
+              {springSubTab === 'shed' && <PottingShedTab event={springEvent} formatNumber={formatNumber} />}
+              {springSubTab === 'stall' && <MarketStallTab event={springEvent} formatNumber={formatNumber} />}
             </div>
           </PerformanceWrapper>
         </div>
@@ -2321,6 +2425,11 @@ function App() {
           onProcessTreeGrowth={christmasEvent?.processTreeGrowth}
           onAddCandyCorn={pumpkinEvent.earnCandyCorn}
           onGrowPumpkins={pumpkinEvent.processPumpkinGrowth}
+          springPreview={springPreviewFlag}
+          onSetSpringPreview={(on) => setFlag('springPreview', on)}
+          springOpen={springEventEnabled && springEvent.isEventActive}
+          onAddPetals={springEvent.earnPetals}
+          onGrowSpring={springEvent.processSpringGrowth}
           onAddTreeMaterials={() => {
             if (christmasEvent?.eventState) {
               // Add 100 of each material type

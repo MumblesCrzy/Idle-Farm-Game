@@ -1,0 +1,264 @@
+/* The frame shared by the Spring Farmer's Market sections: palette, columns,
+   header bar, stock chips and the Gnome Crew bar. Each section adds its own file.
+   Spring palette, with contrast ratios for the text pairs used:
+   Moss:        #3E6B38 - header bars, Plant and Gather buttons (cream text: 5.9)
+   Deep Moss:   #2E5230 - second bars, hovers (cream text: 8.4)
+   Rose:        #B33A61 - Harvest, Gather All, full slots (cream text: 5.4; on cream: 5.4)
+   Butter:      #F2C94C - chip borders, Plant All, Plant herb (ink text: 7.6)
+   Butter Tint: #FBEBB0 - selected flower (ink text: 10.1; on moss: 4.9)
+   Cream:       #FFF8F0 - cards and light text
+   Lavender:    #6B4C9A - Prize Blooms, the Gnome Crew, focus rings (cream text: 6.4; on cream: 6.4)
+   Leaf:        #B7D8A8 - card borders
+   Ink:         #2E3A24 - body text (on cream: 11.4)
+   Muted:       #5C6B52 - notes (on cream: 5.4)
+   Upgrade cards, on the pink panel (#FBD3DF to #F4A6BD; every card at least 3.6 against it):
+   Sage:        #4F5E47 - can't afford yet (cream text: 6.6; pale text: 5.7)
+   Pale:        #E3EBDD - cost and Owned lines (on slate: 6.2; on sage: 5.7)
+   Petal Tint:  #F9DDE6 - level numbers (on green: 5.6; on slate: 5.9; on sage: 5.5)
+   Panel title: Deep Moss on #FBD3DF: 6.6
+*/
+
+.container {
+  --moss: #3E6B38;
+  --deep-moss: #2E5230;
+  --rose: #B33A61;
+  --rose-dark: #8E2C4C;
+  --pink: #E8698B;
+  --petal-tint: #F9DDE6;
+  --butter: #F2C94C;
+  --butter-tint: #FBEBB0;
+  --cream: #FFF8F0;
+  --lavender: #6B4C9A;
+  --lavender-tint: #EDE6F7;
+  --leaf: #B7D8A8;
+  --mint-tint: #E3F2DC;
+  --ink: #2E3A24;
+  --muted: #5C6B52;
+
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.container button:focus-visible {
+  outline: 3px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+/* =================================================================== */
+/* COLUMNS */
+/* =================================================================== */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.rightColumn {
+  /* Upgrade cards: sage instead of light grey while they can't be afforded, and readable small text */
+  --upgrade-text: var(--cream);
+  --upgrade-cannot-afford-bg: #4F5E47;
+  --upgrade-level-text: var(--petal-tint);
+  --upgrade-muted-text: #E3EBDD;
+  --upgrade-effect-opacity: 1;
+
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #FBD3DF, #F4A6BD);
+  border: 3px solid var(--rose);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* The shared upgrades panel title is Christmas green; make it deep moss here */
+.rightColumn h2 {
+  color: var(--deep-moss);
+}
+
+/* =================================================================== */
+/* HEADER BAR: title, the section's big buttons, stock */
+/* =================================================================== */
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--moss);
+  border: 2px solid var(--deep-moss);
+  color: var(--cream);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.headerRow button:focus-visible {
+  outline-color: var(--butter);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--cream);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Harvest All, Gather All: rose, with a pulse while there is something to do */
+.primaryAction,
+.secondaryAction {
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.primaryAction {
+  background: var(--rose);
+  color: var(--cream);
+  animation: pulseRose 2s ease-in-out infinite;
+}
+
+.primaryAction:hover {
+  background: var(--rose-dark);
+  transform: translateY(-2px);
+  animation: none;
+}
+
+@keyframes pulseRose {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(232, 105, 139, 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(232, 105, 139, 0.75), 0 0 20px rgba(232, 105, 139, 0.4);
+  }
+}
+
+/* Plant All: butter */
+.secondaryAction {
+  background: var(--butter);
+  color: var(--ink);
+}
+
+.secondaryAction:hover {
+  background: var(--butter-tint);
+  transform: translateY(-2px);
+}
+
+/* =================================================================== */
+/* STOCK CHIPS */
+/* =================================================================== */
+
+.stockList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stockItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--cream);
+  border: 1px solid var(--butter);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.stockLabel {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.stockValue {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--moss);
+}
+
+/* =================================================================== */
+/* GNOME CREW BAR */
+/* =================================================================== */
+
+.crewBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0.3rem 0.75rem;
+  background: var(--cream);
+  border: 2px solid var(--lavender);
+  border-radius: 8px;
+  color: var(--lavender);
+  font-size: 0.9rem;
+}
+
+.crewPill {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--lavender);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.crewNow {
+  color: var(--ink);
+}
+
+.crewNow b {
+  color: var(--lavender);
+}
+
+.crewHint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--ink);
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction {
+    animation: none;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    transition: none;
+  }
+
+  .primaryAction:hover,
+  .secondaryAction:hover {
+    transform: none;
+  }
+}

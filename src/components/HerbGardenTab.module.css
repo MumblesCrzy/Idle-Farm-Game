@@ -1,0 +1,214 @@
+/* Herb Garden Tab Styles (Spring Farmer's Market). The frame, palette and
+   contrast notes are in SpringSections.module.css; the variables come from its .container. */
+
+/* =================================================================== */
+/* TILES, TWO BY TWO */
+/* =================================================================== */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  gap: 1rem;
+  box-sizing: border-box;
+  height: 220px;
+  padding: 1rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 10px;
+}
+
+.tile.full {
+  border-color: var(--rose);
+  box-shadow: 0 0 10px rgba(232, 105, 139, 0.5);
+}
+
+.tile.unplanted {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.iconBox {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--mint-tint);
+}
+
+.iconBox.chamomile {
+  background: var(--butter-tint);
+}
+
+.iconBox.lavender {
+  background: var(--lavender-tint);
+}
+
+.tile.unplanted .iconBox {
+  background: #F1F4EC;
+}
+
+.unplantedArt {
+  opacity: 0.35;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.herbName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tile.unplanted .herbName {
+  color: var(--muted);
+}
+
+.herbNote {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.pitch {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.sprigRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  margin-top: 0.2rem;
+}
+
+/* 25 small sprigs on one line with the Trellis */
+.sprigRowSmall {
+  gap: 2px;
+}
+
+.sprigEmpty {
+  opacity: 0.2;
+}
+
+.sprigCount {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.fullText {
+  color: var(--rose);
+}
+
+.nextRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.nextBar {
+  flex: 1;
+  max-width: 180px;
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.tile.unplanted .footer {
+  justify-content: flex-end;
+}
+
+.useText {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.gatherButton,
+.plantButton {
+  flex-shrink: 0;
+  padding: 0.5rem 1.3rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s;
+}
+
+.gatherButton {
+  background: var(--moss);
+  color: var(--cream);
+}
+
+.gatherButton:hover:not(:disabled) {
+  background: var(--deep-moss);
+  transform: translateY(-2px);
+}
+
+.gatherButton.gatherFull {
+  background: var(--rose);
+  box-shadow: 0 2px 10px rgba(232, 105, 139, 0.6);
+}
+
+.gatherButton.gatherFull:hover {
+  background: var(--rose-dark);
+}
+
+.plantButton {
+  background: var(--butter);
+  color: var(--ink);
+}
+
+.plantButton:hover:not(:disabled) {
+  background: var(--butter-tint);
+  transform: translateY(-2px);
+}
+
+.gatherButton:disabled,
+.plantButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .gatherButton,
+  .plantButton {
+    transition: none;
+  }
+
+  .gatherButton:hover:not(:disabled),
+  .plantButton:hover:not(:disabled) {
+    transform: none;
+  }
+}

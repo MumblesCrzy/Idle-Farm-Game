@@ -151,6 +151,35 @@ describe('ArchieIcon', () => {
     })
   })
 
+  it('finds Petals during the Spring Market, and says so in the toast', async () => {
+    const earnPetals = vi.fn()
+    renderArchieIcon({ isSpringEventActive: true, flowersSold: 999, earnPetals })
+
+    await userEvent.click(screen.getByTestId('archie-click'))
+
+    await waitFor(() => {
+      expect(earnPetals).toHaveBeenCalledTimes(1)
+    })
+    const petals = earnPetals.mock.calls[0][0]
+    expect(petals).toBeGreaterThanOrEqual(150) // 999 bunches sold, at least a first click
+    await waitFor(() => {
+      expect(screen.getByTestId('toast').textContent).toContain(`+${petals} Petals`)
+    })
+  })
+
+  it('finds no Petals outside the Spring Market', async () => {
+    const earnPetals = vi.fn()
+    renderArchieIcon({ isSpringEventActive: false, flowersSold: 999, earnPetals })
+
+    await userEvent.click(screen.getByTestId('archie-click'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('toast')).toBeInTheDocument()
+    })
+    expect(earnPetals).not.toHaveBeenCalled()
+    expect(screen.getByTestId('toast').textContent).not.toContain('Petals')
+  })
+
   it('should close toast when clicked', async () => {
     renderArchieIcon()
     

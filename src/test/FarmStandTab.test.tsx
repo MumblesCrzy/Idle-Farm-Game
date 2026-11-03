@@ -41,7 +41,9 @@ describe('FarmStandTab', () => {
   it('shows the demand multiplier', () => {
     render(<Harness />);
     expect(screen.getByText(`×${demand().toFixed(2)}`)).toBeInTheDocument();
-    expect(screen.getByText('(rises toward Halloween)')).toBeInTheDocument();
+    // Demand climbs to its peak on Halloween and holds there, so the hint depends on the day
+    const atPeak = demand() >= PUMPKIN_EVENT_CONSTANTS.MAX_DEMAND_MULTIPLIER;
+    expect(screen.getByText(atPeak ? '(holds until Thanksgiving)' : '(rises toward Halloween)')).toBeInTheDocument();
   });
 
   it('sells the selected pumpkins, Normal first, for the total the card shows', () => {

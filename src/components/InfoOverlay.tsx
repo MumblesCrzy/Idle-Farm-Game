@@ -1,7 +1,7 @@
 import InlineIcon from './InlineIcon';
 import { useState, memo, type FC } from 'react';
 import type { InfoCategory } from '../types/game';
-import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_ELVES, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, ICON_GEARS, SPECIAL_GLUTTON, SPECIAL_STANLEY, CANNING_CANNER, ICON_SCROLL, GUILD_MERCHANTS, SPECIAL_FERDINAND, ICON_MONEY } from '../config/assetPaths';
+import { ICON_GROWING, ICON_IDEA, ICON_CANNING, ICON_AUTOMATION, ICON_MILESTONE, ICON_UPGRADE, WEATHER_CLEAR, ICON_EXPERIENCE, ICON_KNOWLEDGE, ICON_PLOTS, UPGRADE_FERTILIZER, UPGRADE_HARVESTER_SPEED, UPGRADE_ADDITIONAL_PLOT, UPGRADE_BETTER_SEEDS, UPGRADE_FARMERS_ALMANAC, UPGRADE_IRRIGATION, UPGRADE_MERCHANT, UPGRADE_GREENHOUSE, UPGRADE_HEIRLOOM_SEEDS, UPGRADE_AUTO_HARVESTER, FRUIT_STRAWBERRY, AUTO_ASSISTANT, AUTO_CULTIVATOR, AUTO_SURVEYOR, AUTO_MECHANIC, ICON_RECIPE, ICON_LEARNING, TREE_DECORATED, TREE_PINE, ICON_TREE_STOREFRONT, ICON_TREE_WORKSHOP, ICON_BEE, ICON_HONEY, ICON_GOLDEN_HONEY, ICON_BEE_HIVE, BEE_BEEKEEPER, ICON_GUILDS, ICON_GUILD_TOKEN, ICON_SIGIL, ICON_WAX_SEAL, GUILD_GROWERS, GUILD_PRESERVERS, GUILD_ENGINEERS, ICON_GEARS, SPECIAL_GLUTTON, SPECIAL_STANLEY, CANNING_CANNER, ICON_SCROLL, GUILD_MERCHANTS, SPECIAL_FERDINAND, ICON_MONEY } from '../config/assetPaths';
 import {
   AUTO_PURCHASER_CYCLE_DAYS,
   BEE_CONSTANTS,
@@ -50,7 +50,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     { id: 'bees', label: 'Bee System' },
     { id: 'guilds', label: 'Guilds' },
     { id: 'christmas', label: 'Tree Shop' },
-    { id: 'pumpkin', label: 'Pumpkin Rush' }
+    { id: 'pumpkin', label: 'Pumpkin Rush' },
+    { id: 'spring', label: 'Spring Market' }
   ];
 
   const categoryTitles: Record<InfoCategory, string> = {
@@ -63,7 +64,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     bees: 'Bee System',
     guilds: 'Guilds',
     christmas: 'Christmas Tree Shop',
-    pumpkin: 'Fall Pumpkin Rush'
+    pumpkin: 'Fall Pumpkin Rush',
+    spring: "Spring Farmer's Market"
   };
 
   return (
@@ -693,7 +695,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <h5><InlineIcon src={ICON_SCROLL} size={18} gap={4} /> Legacy:</h5>
                 <ul>
                   <li><strong>What it is:</strong> From Farm Tier 6, a guild member can end their Legacy from the Guilds tab. The farm starts over at Tier 1, and the guild's benefits carry on</li>
-                  <li><strong>Kept levels:</strong> Half the levels bought this Legacy in your guild's upgrades, rounded down, added to what you kept before. They work at full strength in any guild, and count toward the max level</li>
+                  <li><strong>Kept levels:</strong> Half the levels bought this Legacy in your guild's upgrades, rounded down, added to what you kept before. An upgrade you bought up to its max always keeps at least one level, so kept levels can reach the max. They work at full strength in any guild, and count toward the max level</li>
+                  <li><strong>Guild mastery:</strong> Max out a guild for Guild Master. Keep a guild at its max through every Legacy, all its leveled upgrades kept at their max and its unlocks kept, for Rooted, then two guilds, three, and all four for Evergreen Legacy, the final achievement. Upgrades that stay with their guild don't count</li>
                   <li><strong>Kept unlock:</strong> One one-time upgrade of your guild, kept for good. Ritual Circles and Rush Batch stay with their guilds, since their abilities spend guild currency, and so does Overclock, since Stanley visits only Engineers. Hostile Takeover and Insider Trading stay with the Merchants too: a Legacy can't end the larger farm's reset for good, and Ferdinand visits members only</li>
                   <li><strong>Kept achievements:</strong> Special and hidden ones, with the bonuses and outfits they grant. The rest can be earned again</li>
                   <li><strong>Kept events:</strong> Pumpkin Rush and Christmas Tree Shop progress is untouched</li>
@@ -801,71 +804,30 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <h4 className={styles.sectionTitle}><img src={TREE_DECORATED} alt="" className={styles.sectionIcon} />
                    Christmas Tree Shop Event
                 </h4>
-                <p>The Christmas Tree Shop is a seasonal event available from <strong>November 1st - December 25th</strong>. Grow Christmas trees, craft decorations, and sell decorated trees to earn Holiday Cheer!</p>
-                
-                <h5><InlineIcon src={TREE_PINE} alt="Tree" size={20} gap={4} /> Tree Farming:</h5>
+                <p>The Christmas Tree Shop is a seasonal event from <strong>November 1st through December 25th</strong>. Grow Christmas trees, decorate them in the Workshop, and sell them at the Shopfront for Holiday Cheer!</p>
+
+                <h5><InlineIcon src={TREE_PINE} alt="" size={20} gap={4} /> Tree Farm:</h5>
                 <ul>
-                  <li><strong>Growth Time:</strong> Trees take 5-7 in-game years to grow (varies by type)</li>
-                  <li><strong>Tree Types:</strong> Pine (7 years), Spruce (6 years), Fir (5 years)</li>
-                  <li><strong>Harvesting:</strong> Harvest mature trees to collect Wood, Pinecones, and Branches</li>
-                  <li><strong>Perfect Trees:</strong> ⭐ Perfect trees give 2x materials and 10 Holiday Cheer (vs 5 for normal)</li>
-                  <li><strong>Luxury Trees:</strong> ✨ Luxury trees give 3x materials and 15 Holiday Cheer</li>
-                  <li><strong>Plot Expansion:</strong> Start with 6 plots, upgrade to unlock up to 12 plots</li>
+                  <li><strong>Trees:</strong> Pine (7 years to grow), Spruce (6 years, unlocked for 500 Holiday Cheer) and Fir (5 years, 1,250 Holiday Cheer). Faster trees also sell for more</li>
+                  <li><strong>Harvesting:</strong> Grown trees give Wood, Pinecones and Branches plus a little Holiday Cheer, and go to the shop undecorated</li>
+                  <li><strong>Perfect Trees:</strong> With Evergreen Essence, 1 tree in 10 grows Perfect and sells for double</li>
+                  <li><strong>Upgrades:</strong> Fertilized Soil speeds every tree up by 15% per level, and each Greenhouse Extension adds a plot</li>
                 </ul>
 
-                <h5><InlineIcon src={ICON_TREE_WORKSHOP} alt="Workshop" size={20} gap={4} /> Workshop:</h5>
+                <h5><InlineIcon src={ICON_TREE_WORKSHOP} alt="" size={20} gap={4} /> Workshop:</h5>
                 <ul>
-                  <li><strong>Craft Decorations:</strong> Use materials to craft ornaments, garland, and candles</li>
-                  <li><strong>Decorate Trees:</strong> Add decorations to trees before selling for bonus value</li>
-                  <li><strong>Elves' Bench:</strong> Once unlocked, automates crafting and decoration</li>
+                  <li><strong>Crafting:</strong> Weave garland and make candles, and ornaments once you buy the benches for them</li>
+                  <li><strong>Decorating:</strong> An ornament adds 5% to a tree's price, a candle 15%, and both make a Luxury tree worth double (triple with the Star Forge)</li>
+                  <li><strong>Elves' Bench:</strong> Once hired, the Elves craft and decorate for you, one job a second plus one for each level of Cheerful Crafting. Harvested trees get the best decorations on hand</li>
                 </ul>
 
-                <h5><InlineIcon src={ICON_ELVES} alt="Elves" size={20} gap={4} /> Elves' Bench Automation:</h5>
+                <h5><InlineIcon src={ICON_TREE_STOREFRONT} alt="" size={20} gap={4} /> Shopfront:</h5>
                 <ul>
-                  <li><strong>Daily Crafting:</strong> Elves automatically craft 1 decoration per in-game day</li>
-                  <li><strong>Crafting Priority:</strong>
-                    <ul>
-                      <li>Priority 1: Garland (3 Branches + 2 Pinecones → 1 Garland)</li>
-                      <li>Priority 2: Candles (2 Wood → 1 Candle)</li>
-                      <li>Priority 3: Ornaments (1 Wood → 2 Ornaments, requires Ornament Bench)</li>
-                      <li>Priority 4: Traditional Ornaments (5 Pinecones → 3 Ornaments, requires upgrade)</li>
-                    </ul>
-                  </li>
-                  <li><strong>Harvest Auto-Decoration:</strong> Trees are automatically decorated on harvest with the most valuable combination available</li>
-                  <li><strong>Decoration Priority:</strong>
-                    <ul>
-                      <li>Priority 1: Luxury (Ornament + Candle)</li>
-                      <li>Priority 2: Candled (Candle only)</li>
-                      <li>Priority 3: Ornamented (Ornament only)</li>
-                      <li>Default: Plain tree</li>
-                    </ul>
-                  </li>
-                </ul>
-
-                <h5><InlineIcon src={ICON_TREE_STOREFRONT} alt="Shopfront" size={20} gap={4} /> Shopfront:</h5>                <ul>
-                  <li><strong>Sell Trees:</strong> Sell decorated trees for Holiday Cheer</li>
-                  <li><strong>Sell Decorations:</strong> Sell excess ornaments (1 cheer), candles (2 cheer), or garland (4 cheer)</li>
-                  <li><strong>Price Bonuses:</strong> Decorations add value (+5% ornaments, +15% candles, double for luxury trees, triple with the Star Forge)</li>
-                  <li><strong>Demand Multiplier:</strong> Prices increase as Christmas approaches</li>
-                  <li><strong>Daily Bonus:</strong> Claim bonus Holiday Cheer each day (requires Wreath Sign upgrade)</li>
-                  <li><strong>Passive Income:</strong> Golden Bell Counter provides idle Holiday Cheer generation</li>
-                </ul>
-
-                <h5>⬆️ Stage 1 Upgrades (Evergreen Farming):</h5>
-                <ul>
-                  <li><strong>Pine/Spruce/Fir Saplings:</strong> Unlock new tree types</li>
-                  <li><strong>Fertilized Soil:</strong> +25% growth speed for all trees</li>
-                  <li><strong>Greenhouse Extension:</strong> Protect trees from snowstorms</li>
-                  <li><strong>Evergreen Essence:</strong> 10% chance for Perfect Trees</li>
-                </ul>
-
-                <h5>🎁 Event Strategy:</h5>
-                <ul>
-                  <li>Start by planting Pine trees (unlocked by default)</li>
-                  <li>Upgrade to faster-growing trees (Spruce, Fir) as you earn Holiday Cheer</li>
-                  <li>Purchase Fertilized Soil early for +25% growth speed on all trees</li>
-                  <li>Perfect trees are rare but very valuable - watch for the ⭐ badge!</li>
-                  <li>Event progress persists year-to-year, so you can continue next season</li>
+                  <li><strong>Selling:</strong> Sell trees, garland, candles and ornaments for Holiday Cheer</li>
+                  <li><strong>Demand:</strong> Prices rise every day toward Christmas, up to double</li>
+                  <li><strong>Wreath Sign and Golden Bell:</strong> A daily bonus to claim, then a steady trickle of Holiday Cheer</li>
+                  <li><strong>Achievements:</strong> Selling trees earns achievements that pay Holiday Cheer and farm rewards, plus two looks for Archie: a Winter Sweater at 50 trees sold and a Reindeer Hat at 250</li>
+                  <li><strong>Next year:</strong> Your trees, upgrades and Holiday Cheer wait for you until the shop opens again</li>
                 </ul>
               </div>
             )}
@@ -903,6 +865,41 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Prizes:</strong> First, second and third place win ribbons and Candy Corn; heavier winners earn more</li>
                   <li><strong>Rivals:</strong> The competition grows heavier each time you win first place. Giant Vine Tonic has no top level, so keep feeding your giants to stay ahead</li>
                   <li><strong>Champion seeds:</strong> Every first place saves seeds from your winner: future Atlantic Giants weigh 5% more, up to 40%</li>
+                </ul>
+              </div>
+            )}
+
+            {selectedInfoCategory === 'spring' && (
+              <div>
+                <h4 className={styles.sectionTitle}>🌷 Spring Farmer's Market</h4>
+                <p>The Spring Market is a seasonal event from <strong>March 20th through Memorial Day</strong>. Grow flowers, gather herbs, finish bunches into Gift Bouquets, and sell them at the Market Stall for Petals, right away or on Market Day!</p>
+
+                <h5>🌷 Flower Beds:</h5>
+                <ul>
+                  <li><strong>Flowers:</strong> Tulips (quick), Daffodils (more greenery) and Roses (slow, and worth the most)</li>
+                  <li><strong>Harvesting:</strong> Every harvest gives a bunch of flowers, Greenery and Seeds, plus a Petal</li>
+                  <li><strong>Prize Blooms:</strong> With Heirloom Bulbs, some bunches grow into Prize Blooms worth double</li>
+                </ul>
+
+                <h5>🌿 Herb Garden:</h5>
+                <ul>
+                  <li><strong>Perennials:</strong> Mint, Basil, Chamomile and Lavender are planted once and keep giving sprigs all spring</li>
+                  <li><strong>Full slots wait:</strong> Each herb holds 10 sprigs (25 with the Trellis), then waits until you gather it. While you are away, the herbs fill up and wait for you</li>
+                </ul>
+
+                <h5>🛖 Potting Shed:</h5>
+                <ul>
+                  <li><strong>Crafting:</strong> Steep Mint Tea and Chamomile Tea, make Pesto and press Seed Packets to sell</li>
+                  <li><strong>Finishing:</strong> Greenery arranges a bunch (+2 Petals), a lavender sprig scents it (+3 Petals), and both make a Gift Bouquet (triple value)</li>
+                  <li><strong>Gnome Crew:</strong> Once hired, gathers full herbs, makes teas and pesto and ties Gift Bouquets. With the Cart Loader, it loads the Cart too</li>
+                </ul>
+
+                <h5>🛒 Market Stall:</h5>
+                <ul>
+                  <li><strong>Selling:</strong> Sell bunches, teas, pesto, seed packets, greenery and lavender for Petals</li>
+                  <li><strong>The Cart:</strong> Everything on the Cart sells on Market Day, every 60 days (40 with the Pony Cart), for half again as much. Unload it any time</li>
+                  <li><strong>Demand:</strong> Prices rise every day until they double on Mother's Day, then stay doubled until the event ends on Memorial Day</li>
+                  <li><strong>Achievements:</strong> Selling bunches earns achievements that pay Petals and farm rewards. Market Legend, at 2,500 bunches, adds April Showers: a permanent +5% crop yield every spring</li>
                 </ul>
               </div>
             )}

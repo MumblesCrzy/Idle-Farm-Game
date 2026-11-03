@@ -10,7 +10,8 @@ import type { AchievementOrMilestone } from '../types/achievements';
 
 export interface EventLogCallbacks {
   // Harvest event callback
-  onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void;
+  /** selfHarvest: the crop harvested itself (Soilbound Pact) */
+  onHarvest: (veggieName: string, amount: number, expGain: number, knGain: number, isAuto: boolean, selfHarvest?: boolean) => void;
   
   // Auto-purchase event callback
   onAutoPurchase: (veggieName: string, autoPurchaserName: string, upgradeType: string, upgradeLevel: number, cost: number, currencyType: 'money' | 'knowledge') => void;
@@ -36,6 +37,9 @@ export interface EventLogCallbacks {
 
   // Fall Pumpkin Rush: one line for the log, with optional details
   onPumpkinEvent: (message: string, details?: string) => void;
+
+  // Spring Farmer's Market: one line for the log, with optional details
+  onSpringEvent: (message: string, details?: string) => void;
   
   // Register callbacks: App registers the logging for each system on mount
   registerCallbacks: (callbacks: Partial<EventLogCallbacks>) => void;
@@ -64,8 +68,8 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
   }, []);
   
   const onHarvest = useCallback<EventLogCallbacks['onHarvest']>(
-    (veggieName, amount, expGain, knGain, isAuto) => {
-      callbacksRef.current.onHarvest?.(veggieName, amount, expGain, knGain, isAuto);
+    (veggieName, amount, expGain, knGain, isAuto, selfHarvest) => {
+      callbacksRef.current.onHarvest?.(veggieName, amount, expGain, knGain, isAuto, selfHarvest);
     },
     []
   );
@@ -141,6 +145,13 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     []
   );
 
+  const onSpringEvent = useCallback<EventLogCallbacks['onSpringEvent']>(
+    (message, details) => {
+      callbacksRef.current.onSpringEvent?.(message, details);
+    },
+    []
+  );
+
   const value: EventLogCallbacks = {
     onHarvest,
     onAutoPurchase,
@@ -154,6 +165,7 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     onUpgradePurchased,
     onMilestoneClaimed,
     onPumpkinEvent,
+    onSpringEvent,
     registerCallbacks,
   };
   

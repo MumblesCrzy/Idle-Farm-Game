@@ -1,7 +1,8 @@
+/* A panel can set these variables to recolor its cards; the defaults are the game's usual colors */
 .button {
   padding: 0.4rem 0.6rem;
   background: #4a5568;
-  color: white;
+  color: var(--upgrade-text, white);
   border: none;
   border-radius: 3px;
   cursor: default;
@@ -28,7 +29,7 @@
 }
 
 .button.cannotAfford {
-  background: #aaa;
+  background: var(--upgrade-cannot-afford-bg, #aaa);
   cursor: not-allowed;
 }
 
@@ -102,29 +103,29 @@
 }
 
 .level {
-  color: #888;
+  color: var(--upgrade-level-text, #888);
   font-weight: normal;
 }
 
 .description {
   font-size: 11px;
-  color: #ccc;
+  color: var(--upgrade-muted-text, #ccc);
   margin-top: 2px;
 }
 
 .effect {
   font-size: 11px;
-  opacity: 0.9;
+  opacity: var(--upgrade-effect-opacity, 0.9);
 }
 
 .cost {
   font-size: 11px;
-  color: #ccc;
+  color: var(--upgrade-muted-text, #ccc);
   margin-top: 4px;
 }
 
 .unlock {
   font-size: 11px;
-  color: #ccc;
+  color: var(--upgrade-muted-text, #ccc);
   margin-top: 4px;
 }

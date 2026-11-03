@@ -14,6 +14,7 @@ import { DEFAULT_GUILD_STATE, type GuildState, type LegacyRecord } from '../type
 import type { ChristmasEventState } from '../types/christmasEvent';
 import type { AchievementGameState } from '../types/achievements';
 import { INITIAL_ACHIEVEMENTS } from '../data/achievements';
+import { GUILDS } from '../data/guildData';
 import { GAME_STORAGE_KEY, LAST_ACTIVE_KEY } from '../config/gameConstants';
 import {
   getBoughtLevel,
@@ -29,8 +30,12 @@ import {
   canEndLegacy,
   describeDays,
   endLegacyRecord,
+  guildsKeptAtMax,
+  guildsMaxedOut,
   halfKept,
   legacyKeepableUnlocks,
+  levelsCarried,
+  LEGACY_GUILD_ONLY,
   legacyLevelPreview,
   legacyNumeral,
   legacyResetSummary,
@@ -81,6 +86,27 @@ describe('kept levels', () => {
       preservers_copper_kettles: [3, 0, 1],
       preservers_honey_glaze: [1, 0, 0]
     });
+  });
+
+  it('carry at least one level for an upgrade bought up to its max, so kept levels reach the max', () => {
+    // A max-10 upgrade maxed every Legacy: 5, then 7, 8, 9 and 10 kept
+    let kept = 0;
+    const steps: number[] = [];
+    for (let legacy = 0; legacy < 6; legacy++) {
+      kept = Math.min(10, kept + levelsCarried(10 - kept, kept, 10));
+      steps.push(kept);
+    }
+    expect(steps).toEqual([5, 7, 8, 9, 10, 10]);
+    // Short of the max, one level bought still carries nothing
+    expect(levelsCarried(1, 3, 10)).toBe(0);
+
+    const lastLevel: GuildState = {
+      ...preserver,
+      legacy: { ...afterOne, keptLevels: { preservers_cellar_aging: 9 } },
+      upgradeLevels: { ...preserver.upgradeLevels, preservers_cellar_aging: 1 }
+    };
+    const aging = legacyLevelPreview(lastLevel).find(row => row.upgrade.id === 'preservers_cellar_aging')!;
+    expect(aging).toMatchObject({ bought: 1, keptBefore: 9, keptAfter: 10 });
   });
 
   it('add up across Legacies and stop at the max level', () => {
@@ -288,6 +314,59 @@ describe('Legacy achievements', () => {
   it('are special, so they survive the reset they celebrate', () => {
     expect(achievement('legacy_first').category).toBe('special');
     expect(achievement('legacy_two_trades').category).toBe('special');
+  });
+
+  /** A Legacy record holding every keepable upgrade of these guilds at its max */
+  const keptWhole = (...guildIds: string[]): LegacyRecord => {
+    const upgrades = GUILDS.filter(guild => guildIds.includes(guild.id))
+      .flatMap(guild => guild.upgrades)
+      .filter(upgrade => !LEGACY_GUILD_ONLY.includes(upgrade.id));
+    return {
+      ...afterOne,
+      keptLevels: Object.fromEntries(upgrades.filter(u => !u.isOneTime).map(u => [u.id, u.maxLevel])),
+      keptUnlocks: upgrades.filter(u => u.isOneTime).map(u => u.id)
+    };
+  };
+
+  it('Guild Master comes with every upgrade of one guild at its max, guild-only ones included', () => {
+    const preservers = GUILDS.find(guild => guild.id === 'preservers')!;
+    const maxed: GuildState = {
+      ...preserver,
+      purchasedUpgrades: preservers.upgrades.map(u => u.id),
+      upgradeLevels: Object.fromEntries(preservers.upgrades.map(u => [u.id, u.maxLevel]))
+    };
+    const allButRushBatch: GuildState = {
+      ...maxed,
+      purchasedUpgrades: maxed.purchasedUpgrades.filter(id => id !== 'preservers_rush_batch')
+    };
+
+    expect(guildsMaxedOut(maxed)).toBe(1);
+    expect(guildsMaxedOut(allButRushBatch)).toBe(0);
+    expect(achievement('guild_master').requirement.customCheck!({ ...state(), guildState: maxed })).toBe(true);
+    expect(achievement('guild_master').requirement.customCheck!({ ...state(), guildState: allButRushBatch })).toBe(false);
+  });
+
+  it('count a guild kept whole only with every keepable upgrade kept at its max', () => {
+    expect(guildsKeptAtMax({ ...DEFAULT_GUILD_STATE, legacy: keptWhole('preservers') })).toBe(1);
+
+    const oneShort = keptWhole('preservers');
+    oneShort.keptLevels = { ...oneShort.keptLevels, preservers_cellar_aging: 9 };
+    expect(guildsKeptAtMax({ ...DEFAULT_GUILD_STATE, legacy: oneShort })).toBe(0);
+
+    const noPantryLock = keptWhole('preservers');
+    noPantryLock.keptUnlocks = noPantryLock.keptUnlocks.filter(id => id !== 'preservers_pantry_lock');
+    expect(guildsKeptAtMax({ ...DEFAULT_GUILD_STATE, legacy: noPantryLock })).toBe(0);
+  });
+
+  it('Rooted, Branching Out, Full Canopy and Evergreen Legacy come with one, two, three and four guilds kept whole', () => {
+    const ids = ['legacy_rooted', 'legacy_branching_out', 'legacy_full_canopy', 'legacy_evergreen'];
+    const guilds = ['growers', 'preservers', 'engineers', 'merchants'];
+    for (let kept = 0; kept <= 4; kept++) {
+      const gameState = state(keptWhole(...guilds.slice(0, kept)));
+      expect(ids.map(id => achievement(id).requirement.customCheck!(gameState))).toEqual(ids.map((_, i) => i < kept));
+      expect(achievement('legacy_evergreen').requirement.getProgress!(gameState)).toBe(kept);
+    }
+    for (const id of ['guild_master', ...ids]) expect(achievement(id).category).toBe('special');
   });
 
   it('Turning the Page comes with the first Legacy, Two Trades with unlocks from two guilds', () => {

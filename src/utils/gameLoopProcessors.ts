@@ -6,7 +6,7 @@ import { getVeggieGrowthBonus } from './gameCalculations';
 import { RAIN_CHANCES, DROUGHT_CHANCES, STORM_CHANCES } from '../config/gameConstants';
 import { processUnlocks } from './unlockSystem';
 import { calculateHarvestRewards } from './harvestCalculations';
-import { getGuildHarvesterSpeedMultiplier, hasFactoryFittedHarvesters } from './guildCalculations';
+import { getGuildHarvesterSpeedMultiplier, getSelfHarvestChance, hasFactoryFittedHarvesters } from './guildCalculations';
 
 /**
  * Calculates new weather based on season and random chance
@@ -58,11 +58,11 @@ export function processVeggieGrowth(
   greenhouseOwned: boolean,
   irrigationOwned: boolean,
   guildState?: GuildState
-): { veggies: Veggie[]; needsUpdate: boolean; completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> } {
+): { veggies: Veggie[]; needsUpdate: boolean; completedGrowth: Array<{ veggie: Veggie; index: number; growthBonus: number }> } {
   let needsUpdate = false;
-  const completedGrowth: Array<{ veggie: Veggie; growthBonus: number }> = [];
+  const completedGrowth: Array<{ veggie: Veggie; index: number; growthBonus: number }> = [];
   
-  const newVeggies = veggies.map((v) => {
+  const newVeggies = veggies.map((v, index) => {
     if (!v.unlocked || v.growth >= GROWTH_COMPLETE_THRESHOLD) return v;
     
     const growthAmount = getVeggieGrowthBonus(v, season, currentWeather, greenhouseOwned, irrigationOwned, guildState);
@@ -74,7 +74,7 @@ export function processVeggieGrowth(
       
       // Track when a veggie completes growth (reaches 100%)
       if (v.growth < GROWTH_COMPLETE_THRESHOLD && newGrowth >= GROWTH_COMPLETE_THRESHOLD) {
-        completedGrowth.push({ veggie: updatedVeggie, growthBonus: growthAmount });
+        completedGrowth.push({ veggie: updatedVeggie, index, growthBonus: growthAmount });
       }
       
       return updatedVeggie;
@@ -83,6 +83,67 @@ export function processVeggieGrowth(
   });
   
   return { veggies: needsUpdate ? newVeggies : veggies, needsUpdate, completedGrowth };
+}
+
+/** A crop that harvested itself, and what it paid */
+export interface SelfHarvest {
+  veggie: Veggie;
+  amount: number;
+  expGain: number;
+  knGain: number;
+}
+
+/**
+ * Soilbound Pact: each crop that ripened this step may harvest itself, rewarded as a manual
+ * harvest (the Growers' +1, a Blessed Crop chance, full experience and knowledge). The roll is
+ * made once, as the crop ripens; a crop that stays ripe waits for a hand or a harvester.
+ * @param ripened - Indexes of the crops that ripened this step
+ * @param random - Source of the rolls, for tests
+ */
+export function processSelfHarvests(
+  veggies: Veggie[],
+  ripened: number[],
+  almanacLevel: number,
+  farmTier: number,
+  knowledge: number,
+  beeYieldBonus: number,
+  season: string,
+  permanentBonuses: string[],
+  guildState: GuildState | undefined,
+  random: () => number = Math.random
+): { veggies: Veggie[]; experienceGain: number; knowledgeGain: number; harvested: SelfHarvest[] } {
+  const harvested: SelfHarvest[] = [];
+  const chance = guildState ? getSelfHarvestChance(guildState) : 0;
+  if (chance <= 0 || ripened.length === 0) {
+    return { veggies, experienceGain: 0, knowledgeGain: 0, harvested };
+  }
+
+  let experienceGain = 0;
+  let knowledgeGain = 0;
+  let next = veggies;
+  for (const index of ripened) {
+    const v = next[index];
+    if (!v || v.growth < GROWTH_COMPLETE_THRESHOLD || random() >= chance) continue;
+
+    const rewards = calculateHarvestRewards(
+      v.additionalPlotLevel || 0,
+      season,
+      permanentBonuses,
+      beeYieldBonus,
+      almanacLevel,
+      farmTier,
+      knowledge,
+      false, // rewarded as a manual harvest
+      guildState
+    );
+    if (next === veggies) next = [...veggies];
+    next[index] = { ...v, stash: v.stash + rewards.harvestAmount, growth: 0 };
+    experienceGain += rewards.experienceGain;
+    knowledgeGain += rewards.knowledgeGain;
+    harvested.push({ veggie: v, amount: rewards.harvestAmount, expGain: rewards.experienceGain, knGain: rewards.knowledgeGain });
+  }
+
+  return { veggies: next, experienceGain, knowledgeGain, harvested };
 }
 
 /**

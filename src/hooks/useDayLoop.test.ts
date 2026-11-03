@@ -30,6 +30,7 @@ describe('useDayLoop', () => {
       merchantDaysRef: { current: 30 },
       christmasEventRef: { current: null as UseChristmasEventReturn | null },
       pumpkinEventRef: { current: null },
+      springEventRef: { current: null },
       isPausedRef: { current: false },
       handleSell: vi.fn(),
       ...overrides

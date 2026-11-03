@@ -1,16 +1,17 @@
 /**
  * Legacy: the guild-change prestige. From Farm Tier 6 a guild member can end their Legacy:
  * the farm starts over, and they keep half the levels bought this Legacy in their guild's
- * upgrades (rounded down), one one-time upgrade of their guild, and their special and hidden
+ * upgrades (rounded down, but at least one for an upgrade bought up to its max), one one-time
+ * upgrade of their guild, and their special and hidden
  * achievements. Ritual Circles and Rush Batch stay with their guilds, since Ritual Harvest
  * and Rush Batch spend the guild's currency.
  *
  * These are the pure rules. legacyReset.ts builds the fresh save and reloads.
  */
 import type { Achievement } from '../types/achievements';
-import type { GuildState, GuildType, GuildUpgrade, LegacyRecord } from '../types/guilds';
+import type { Guild, GuildState, GuildType, GuildUpgrade, LegacyRecord } from '../types/guilds';
 import { GUILDS } from '../data/guildData';
-import { findGuildUpgrade, getBoughtLevel } from './guildCalculations';
+import { findGuildUpgrade, getBoughtLevel, isGuildUpgradeMaxed } from './guildCalculations';
 
 /** Farm tier a member needs before they can end a Legacy */
 export const LEGACY_FARM_TIER = 6;
@@ -29,6 +30,16 @@ export function canEndLegacy(guildState: GuildState, farmTier: number): boolean 
 /** Levels kept from levels bought this Legacy: half, rounded down, so one level alone carries nothing */
 export function halfKept(bought: number): number {
   return Math.floor(Math.max(0, bought) / 2);
+}
+
+/**
+ * Kept levels an upgrade gains when the Legacy ends: half of the levels bought this Legacy,
+ * rounded down, but at least one when they took it to its max. Without that, kept levels
+ * would stop one short of the max: with all but one level kept, only one more can be bought.
+ */
+export function levelsCarried(bought: number, keptBefore: number, maxLevel: number): number {
+  const maxedOut = bought > 0 && keptBefore + bought >= maxLevel;
+  return Math.max(halfKept(bought), maxedOut ? 1 : 0);
 }
 
 /** One leveled upgrade of the guild being left: levels bought this Legacy and what stays */
@@ -54,7 +65,7 @@ export function legacyLevelPreview(guildState: GuildState): LegacyLevelPreview[]
     .map(upgrade => {
       const bought = getBoughtLevel(guildState, upgrade.id);
       const keptBefore = guildState.legacy?.keptLevels[upgrade.id] ?? 0;
-      const keptAfter = Math.min(upgrade.maxLevel, keptBefore + halfKept(bought));
+      const keptAfter = Math.min(upgrade.maxLevel, keptBefore + levelsCarried(bought, keptBefore, upgrade.maxLevel));
       return { upgrade, bought, keptBefore, keptAfter };
     })
     .filter(row => row.bought > 0 || row.keptBefore > 0);
@@ -100,6 +111,35 @@ export function endLegacyRecord(
     keptUnlocks: unlock ? [...before.keptUnlocks, unlock] : [...before.keptUnlocks],
     history: [...before.history, { guild: guildState.committedGuild ?? 'growers', endedAt, days, unlock, levelsKept }]
   };
+}
+
+/** Whether every upgrade of a guild is at its max level now, bought or kept */
+export function isGuildMaxedOut(guildState: GuildState, guild: Guild): boolean {
+  return guild.upgrades.every(upgrade => isGuildUpgradeMaxed(guildState, upgrade));
+}
+
+/** Guilds with every upgrade at its max level now */
+export function guildsMaxedOut(guildState: GuildState): number {
+  return GUILDS.filter(guild => isGuildMaxedOut(guildState, guild)).length;
+}
+
+/**
+ * Whether a guild is kept at its max through every Legacy: each leveled upgrade's kept levels
+ * at its max and each one-time upgrade among the kept unlocks. Guild-only upgrades can never
+ * be kept, so they don't count.
+ */
+export function isGuildKeptAtMax(legacy: LegacyRecord | undefined, guild: Guild): boolean {
+  if (!legacy) return false;
+  return guild.upgrades
+    .filter(upgrade => !LEGACY_GUILD_ONLY.includes(upgrade.id))
+    .every(upgrade => upgrade.isOneTime
+      ? legacy.keptUnlocks.includes(upgrade.id)
+      : (legacy.keptLevels[upgrade.id] ?? 0) >= upgrade.maxLevel);
+}
+
+/** Guilds kept at their max through every Legacy */
+export function guildsKeptAtMax(guildState: GuildState): number {
+  return GUILDS.filter(guild => isGuildKeptAtMax(guildState.legacy, guild)).length;
 }
 
 /** Achievements that outlive a Legacy: special ones, and hidden ones */

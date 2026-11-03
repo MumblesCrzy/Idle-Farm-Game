@@ -30,6 +30,7 @@ import {
   getGrowersPriceBonus,
   getGrowersManualHarvestBonus,
   getBlessedCropChance,
+  getSelfHarvestChance,
   getQualityGradingChance,
   getGrowersBeePollinationBonus,
   getGrowersHarvesterSpeedMultiplier,
@@ -492,6 +493,7 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
   const priceBonus = guild.id === 'growers' ? getGrowersPriceBonus(guildState) : 0;
   const manualHarvestBonus = guild.id === 'growers' ? getGrowersManualHarvestBonus(guildState) : 0;
   const blessedCropChance = guild.id === 'growers' ? getBlessedCropChance(guildState) : 0;
+  const selfHarvestChance = guild.id === 'growers' ? getSelfHarvestChance(guildState) : 0;
   const qualityGradingChance = guild.id === 'growers' ? getQualityGradingChance(guildState) : 0;
   const beePollinationBonus = guild.id === 'growers' ? getGrowersBeePollinationBonus(guildState) : 0;
   const harvesterSpeedMult = guild.id === 'growers' ? getGrowersHarvesterSpeedMultiplier(guildState) : 1;
@@ -590,10 +592,13 @@ const CommittedGuildPanel: FC<CommittedGuildPanelProps> = memo(({
                 <span className={styles.bonusText}>Manual: <span className={styles.bonusValue}>+{manualHarvestBonus}</span></span>
               </div>
             )}
-            {blessedCropChance > 0 && (
-              <div className={styles.bonusItem} title="From Soilbound Pact - chance for double yield on harvest">
+            {selfHarvestChance > 0 && (
+              <div
+                className={styles.bonusItem}
+                title={`From Soilbound Pact: a ripe crop harvests itself, as a manual harvest. ${formatNumber(blessedCropChance * 100, 0)}% of manual harvests are Blessed Crops (double yield)`}
+              >
                 <InlineIcon src={ICON_BLESSED_CROP} size={18} className={styles.bonusIcon} />
-                <span className={styles.bonusText}>Blessed: <span className={styles.bonusValue}>{formatNumber(blessedCropChance * 100, 0)}%</span></span>
+                <span className={styles.bonusText}>Self-harvest: <span className={styles.bonusValue}>{formatNumber(selfHarvestChance * 100, 0)}%</span></span>
               </div>
             )}
             {qualityGradingChance > 0 && (

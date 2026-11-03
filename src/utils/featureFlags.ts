@@ -49,6 +49,21 @@ export const FEATURE_FLAG_DEFINITIONS: Record<string, FeatureFlagDefinition> = {
     category: 'event',
     userConfigurable: false,
   },
+  springEvent: {
+    name: 'Spring Market',
+    defaultValue: true,
+    description: "Enable the Spring Farmer's Market event (Mar 20 through Memorial Day)",
+    category: 'event',
+    userConfigurable: false,
+  },
+  springPreview: {
+    name: 'Spring Market Preview',
+    defaultValue: false,
+    description: 'Open the Spring Market out of season, for play-testing',
+    category: 'event',
+    userConfigurable: true,
+    devOnly: true,
+  },
   
   // Features
   beeSystem: {

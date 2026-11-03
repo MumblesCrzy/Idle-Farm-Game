@@ -22,6 +22,13 @@ interface DevToolsProps {
   // Pumpkin Rush
   onAddCandyCorn?: (amount: number) => void;
   onGrowPumpkins?: (days: number) => void;
+  // Spring Market: play it out of season (the Spring Market Preview flag)
+  springPreview?: boolean;
+  onSetSpringPreview?: (on: boolean) => void;
+  /** Whether the Spring Market is open now, in season or by the switch */
+  springOpen?: boolean;
+  onAddPetals?: (amount: number) => void;
+  onGrowSpring?: (days: number) => void;
   // Bees
   onAddHoney?: (amount: number) => void;
   onAddGoldenHoney?: (amount: number) => void;
@@ -46,6 +53,11 @@ const DevTools: FC<DevToolsProps> = ({
   onProcessTreeGrowth,
   onAddCandyCorn,
   onGrowPumpkins,
+  springPreview = false,
+  onSetSpringPreview,
+  springOpen = false,
+  onAddPetals,
+  onGrowSpring,
   onAddHoney,
   onAddGoldenHoney,
   onHarvestAllHoney,
@@ -411,6 +423,48 @@ const DevTools: FC<DevToolsProps> = ({
                     title="Grows every pumpkin and opens the County Fair"
                   >
                     🌱 Grow Pumpkins (600 days)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Spring Market Section */}
+          {onSetSpringPreview && (
+            <div className={styles.section}>
+              <h4 className={styles.sectionTitle}>🌷 Spring Market</h4>
+              <div className={styles.actionButtons}>
+                <label className={styles.toggleRow}>
+                  <input
+                    type="checkbox"
+                    checked={springPreview}
+                    onChange={(e) => onSetSpringPreview(e.target.checked)}
+                  />
+                  Play it now, out of season
+                </label>
+                <p className={styles.note}>
+                  Opens the Spring Market tab before March 20. The same switch as the Spring Market Preview flag.
+                </p>
+                {springOpen && onAddPetals && (
+                  <>
+                    <button onClick={() => onAddPetals(100)} className={styles.actionButton}>
+                      +100 Petals
+                    </button>
+                    <button onClick={() => onAddPetals(1000)} className={styles.actionButton}>
+                      +1K Petals
+                    </button>
+                    <button onClick={() => onAddPetals(10000)} className={styles.actionButton}>
+                      +10K Petals
+                    </button>
+                  </>
+                )}
+                {springOpen && onGrowSpring && (
+                  <button
+                    onClick={() => onGrowSpring(400)}
+                    className={styles.actionButton}
+                    title="Grows every bed, fills every herb slot and holds Market Day"
+                  >
+                    🌱 Grow Flowers and Herbs (400 days)
                   </button>
                 )}
               </div>

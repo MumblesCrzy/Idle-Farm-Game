@@ -94,6 +94,7 @@ function createMockEventLogCallbacks(): EventLogCallbacks {
     onUpgradePurchased: vi.fn(),
     onMilestoneClaimed: vi.fn(),
     onPumpkinEvent: vi.fn(),
+    onSpringEvent: vi.fn(),
     registerCallbacks: vi.fn()
   };
 }
@@ -453,7 +454,7 @@ describe('useHarvestAndSell', () => {
       });
       
       expect(deps.eventLogCallbacks.onHarvest).toHaveBeenCalledWith(
-        'Carrot', 5, 10, 2, false
+        'Carrot', 5, 10, 2, false, undefined
       );
     });
 
@@ -468,7 +469,7 @@ describe('useHarvestAndSell', () => {
       });
       
       expect(deps.eventLogCallbacks.onHarvest).toHaveBeenCalledWith(
-        'Potato', 3, 5, 1, true
+        'Potato', 3, 5, 1, true, undefined
       );
     });
   });

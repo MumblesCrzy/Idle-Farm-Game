@@ -12,7 +12,7 @@ import type {
   EventMetadata 
 } from '../types/game';
 import { formatNumber } from './gameCalculations';
-import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, ICON_TREE_SHOP, ICON_UPGRADE, PUMPKIN_SUGAR_PIE, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
+import { ICON_AUTOMATION, ICON_BEE, ICON_CANNING, ICON_GROWING, ICON_HARVEST, ICON_MILESTONE, ICON_TREE_SHOP, ICON_UPGRADE, PUMPKIN_SUGAR_PIE, SPRING_TULIPS, UPGRADE_MERCHANT, WEATHER_CLEAR } from '../config/assetPaths';
 
 /**
  * Generate a unique ID for an event
@@ -91,6 +91,7 @@ export function getCategoryIcon(category: EventCategory): string {
     bees: ICON_BEE,
     christmas: ICON_TREE_SHOP,
     pumpkin: PUMPKIN_SUGAR_PIE,
+    spring: SPRING_TULIPS,
     upgrade: ICON_UPGRADE
   };
   return icons[category];
@@ -124,6 +125,7 @@ export function getCategoryColor(category: EventCategory): string {
     bees: '#FFA500',        // Orange/Amber (bee/honey color)
     christmas: '#C41E3A',   // Christmas Red
     pumpkin: '#E8711A',     // Pumpkin orange
+    spring: '#E8698B',      // Spring petal pink
     upgrade: '#00BCD4'      // Cyan (upgrade color)
   };
   return colors[category];
@@ -181,14 +183,18 @@ export function buildHarvestEvent(
   expGain: number,
   knGain: number,
   isAuto: boolean,
-  icons: { automation: string; harvest: string }
+  icons: { automation: string; harvest: string; selfHarvest?: string },
+  selfHarvest: boolean = false
 ): EventOptions {
+  const gains = `(+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`;
   return {
     priority: 'normal',
-    details: isAuto
-      ? `Auto-harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`
-      : `Manually harvested ${amount} × ${veggieName} (+${expGain.toFixed(1)} exp, +${knGain.toFixed(1)} knowledge)`,
-    icon: isAuto ? icons.automation : icons.harvest,
+    details: selfHarvest
+      ? `${amount} × ${veggieName} harvested itself, as a manual harvest ${gains}`
+      : isAuto
+        ? `Auto-harvested ${amount} × ${veggieName} ${gains}`
+        : `Manually harvested ${amount} × ${veggieName} ${gains}`,
+    icon: selfHarvest ? icons.selfHarvest ?? icons.harvest : isAuto ? icons.automation : icons.harvest,
     metadata: {
       veggieName,
       amount,
@@ -462,6 +468,7 @@ export function countEventsByCategory(
     bees: 0,
     christmas: 0,
     pumpkin: 0,
+    spring: 0,
     upgrade: 0
   };
   

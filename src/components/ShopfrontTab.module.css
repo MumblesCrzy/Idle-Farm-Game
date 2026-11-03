@@ -1,65 +1,34 @@
-/* Shopfront Tab Styles */
-/*
- * Christmas Tree Shop Color Palette:
- * Primary Red: #B80000 - Accents, important actions
- * Dark Red: #7D0000 - Depth, shadows
- * Gold: #D0A93D - Highlights, secondary actions
- * Light Gold: #F8E689 - Hover states, subtle highlights
- * Dark Green: #175034 - Primary UI, text
- * Teal: #23705D - Borders, accents
- * Off White: #ECEDE8 - Backgrounds, light elements
- * Dark Gray: #3A3638 - Secondary text, disabled states
- */
+/* Shopfront Tab Styles: the shop's bar, price cards and goods.
+   The palette and columns come from TreeShopSections.module.css. */
 
-.container {
-  padding: 0.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 0.75rem;
-  color: #3A3638;
-}
-
-.leftColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.rightColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  background: linear-gradient(135deg, #F8E689, #7D0000);
-  border: 3px solid #7D0000;
-  border-radius: 8px;
-  padding: 1rem;
+.currencyIcon {
+  margin: 0 2px;
 }
 
 /* =================================================================== */
-/* MAIN TITLE & DEMAND BANNER */
+/* SHOP BAR: market demand, the Golden Bell and the Wreath Sign */
 /* =================================================================== */
 
-.mainTitle {
-  margin: 0 0 0.35rem 0;
-  font-size: 1.3rem;
-  color: #175034;
-  text-align: center;
+.shopBar {
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+  border: 3px solid var(--red-dark);
+  border-radius: 8px;
+  padding: 0.2rem 0.4rem;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
 }
 
-.demandBanner {
-  background: linear-gradient(135deg, #B80000 0%, #7D0000 100%);
-  border: 3px solid #7D0000;
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+.demand {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  color: #ECEDE8;
+  color: var(--snow);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
 }
 
 .demandLabel {
@@ -69,96 +38,105 @@
 .demandMultiplier {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #F8E689;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: var(--snow);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .demandHint {
   font-size: 0.75rem;
-  opacity: 0.9;
   font-style: italic;
 }
 
-/* =================================================================== */
-/* PRICE CARDS GRID */
-/* =================================================================== */
-
-.priceCardsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 0.6rem;
-}
-
-/* =================================================================== */
-/* GARLAND SALES SECTION */
-/* =================================================================== */
-
-.decorationsRow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.garlandSection {
-  background: linear-gradient(135deg, #F8E689, #ECEDE8);
-  border: 2px solid #D0A93D;
-  border-radius: 6px;
-  padding: 0.4rem;
-}
-
-.garlandTitle {
-  margin: 0 0 0.35rem 0;
-  font-size: 0.9rem;
-  color: #175034;
-  text-align: center;
+/* The Golden Bell and the Wreath Sign, as tiles on the bar */
+.bell,
+.wreath {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.35rem;
+  border: 2px solid var(--gold);
+  border-radius: 6px;
 }
 
-.garlandCard {
-  background: #ECEDE8;
-  border: 2px solid #D0A93D;
-  border-radius: 4px;
-  padding: 0.4rem;
+.bell {
+  background: linear-gradient(135deg, var(--night) 0%, var(--night-dark) 100%);
+  color: var(--snow);
+}
+
+.wreath {
+  background: var(--snow);
+  color: var(--pine);
+}
+
+.barText {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  align-items: flex-start;
+  gap: 0.15rem;
 }
 
-.garlandInfo {
+.barTitle {
+  margin: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-}
-
-.garlandStock {
-  color: #175034;
   font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.garlandPrice {
-  color: #D0A93D;
-  font-size: 0.9rem;
+.barHint {
+  margin: 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  white-space: nowrap;
 }
 
-.garlandButtons {
-  display: flex;
-  gap: 0.35rem;
+.claimButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.15rem 0.6rem;
+  background: var(--red);
+  color: var(--snow);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: pulseRed 2s ease-in-out infinite;
+}
+
+.claimButton:hover:not(:disabled) {
+  background: var(--pine);
+  animation: none;
+}
+
+.claimButton:disabled {
+  background: var(--disabled);
+  cursor: not-allowed;
+  animation: none;
 }
 
 /* =================================================================== */
 /* PRICE CARDS */
 /* =================================================================== */
 
+/* Four to a row, so all twelve kinds of tree take three rows */
+.priceCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.5rem;
+}
+
 .priceCard {
-  background: #ECEDE8;
-  border: 3px solid #175034;
+  background: var(--snow);
+  border: 3px solid var(--pine);
   border-radius: 8px;
-  padding: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
   transition: all 0.2s;
 }
 
@@ -167,119 +145,101 @@
   box-shadow: 0 4px 12px rgba(23, 80, 52, 0.3);
 }
 
-/* =================================================================== */
-/* CARD HEADER */
-/* =================================================================== */
-
+/* The name and price on one line, the quality chips under both */
 .cardHeader {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "art name price"
+    "art chips chips";
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #23705D;
+  column-gap: 0.5rem;
+  row-gap: 0.15rem;
+  margin-bottom: 0.3rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid var(--gold);
 }
 
-.treeEmoji {
-  font-size: 2.5rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.treeEmoji .treeImage {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.cheerIcon {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  display: inline-block;
-  vertical-align: middle;
-  margin: 0 2px;
-}
-
-.titleIcon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px;
-}
-
-.cardTitle {
-  flex: 1;
+.cardArt {
+  grid-area: art;
+  filter: drop-shadow(0 1px 2px rgba(23, 80, 52, 0.3));
 }
 
 .treeName {
-  font-size: 1rem;
+  grid-area: name;
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.2;
   font-weight: 600;
-  color: #175034;
-  margin-bottom: 0.25rem;
+  color: var(--pine);
 }
 
-.treeQuantity {
-  font-size: 0.85rem;
-  color: #3A3638;
+.stockBreakdown {
+  grid-area: chips;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
 
-/* =================================================================== */
-/* PRICE INFO */
-/* =================================================================== */
-
-.priceInfo {
-  margin-bottom: 1rem;
-}
-
-.priceRow.finalPrice {
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 2px solid #23705D;
+.qualityChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--gold-tint);
+  color: var(--pine);
+  font-size: 0.7rem;
   font-weight: 600;
-  font-size: 1rem;
 }
 
-.priceLabel {
-  color: #3A3638;
+/* Perfect and Luxury trees */
+.specialChip {
+  background: var(--night);
+  color: var(--snow);
 }
 
 .priceValue {
-  color: #175034;
-  font-weight: 600;
-}
-
-.multiplierValue {
-  color: #175034;
-  font-weight: 600;
-}
-
-.demandValue {
-  color: #B80000;
-  font-weight: 600;
+  grid-area: price;
+  color: var(--red);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* =================================================================== */
 /* SELL CONTROLS */
 /* =================================================================== */
 
+/* At the bottom of the card, so the buttons line up across a row of cards */
 .sellControls {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+
+/* The slider with the count beside it */
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sellSlider {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 8px;
   border-radius: 4px;
-  background: #23705D;
+  background: var(--gold);
+  accent-color: var(--red);
   outline: none;
   cursor: pointer;
+}
+
+.sellSlider:focus-visible {
+  outline: 2px solid var(--night);
+  outline-offset: 4px;
 }
 
 .sellSlider::-webkit-slider-thumb {
@@ -287,9 +247,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #D0A93D;
+  background: var(--red);
   cursor: pointer;
-  border: 2px solid #ECEDE8;
+  border: 2px solid var(--snow);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -297,20 +257,22 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #D0A93D;
+  background: var(--red);
   cursor: pointer;
-  border: 2px solid #ECEDE8;
+  border: 2px solid var(--snow);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .sliderLabel {
-  font-size: 0.85rem;
-  color: #3A3638;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
 .totalValue {
-  color: #175034;
+  color: var(--red);
   font-weight: 600;
 }
 
@@ -322,7 +284,7 @@
 .sellButton,
 .sellAllButton {
   flex: 1;
-  padding: 0.4rem 0.5rem;
+  padding: 0.35rem 0.5rem;
   border: none;
   border-radius: 4px;
   font-weight: 600;
@@ -332,26 +294,34 @@
 }
 
 .sellButton {
-  background: #175034;
-  color: #ECEDE8;
+  background: var(--pine);
+  color: var(--snow);
 }
 
 .sellButton:hover:not(:disabled) {
-  background: #23705D;
+  background: var(--pine-dark);
   transform: translateY(-1px);
 }
 
-.sellButton:disabled {
-  background: #3A3638;
-  color: #ECEDE8;
-  cursor: not-allowed;
-  transform: none;
+.sellAllButton {
+  background: var(--red);
+  color: var(--snow);
+  animation: pulseRed 2s ease-in-out infinite;
 }
 
-.sellAllButton {
-  background: #B80000;
-  color: #ECEDE8;
-  animation: pulseRed 2s ease-in-out infinite;
+.sellAllButton:hover:not(:disabled) {
+  background: var(--red-dark);
+  transform: translateY(-1px);
+  animation: none;
+}
+
+.sellButton:disabled,
+.sellAllButton:disabled {
+  background: var(--disabled);
+  color: var(--snow);
+  cursor: not-allowed;
+  transform: none;
+  animation: none;
 }
 
 @keyframes pulseRed {
@@ -359,22 +329,29 @@
     box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
   }
   50% {
-    box-shadow: 0 4px 16px rgba(184, 0, 0, 0.7), 0 0 20px rgba(184, 0, 0, 0.4);
+    box-shadow: 0 4px 16px rgba(184, 0, 0, 0.6), 0 0 20px rgba(208, 169, 61, 0.4);
   }
 }
 
-.sellAllButton:hover:not(:disabled) {
-  background: #7D0000;
-  transform: translateY(-1px);
-  animation: none;
+.sellEverythingButton {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 1.1rem;
+  background: linear-gradient(135deg, var(--red), var(--red-dark));
+  color: var(--snow);
+  border: 2px solid var(--red-dark);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.sellAllButton:disabled {
-  background: #3A3638;
-  color: #ECEDE8;
-  cursor: not-allowed;
-  transform: none;
-  animation: none;
+.sellEverythingButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.4);
 }
 
 /* =================================================================== */
@@ -383,183 +360,107 @@
 
 .emptyState {
   text-align: center;
-  padding: 3rem 2rem;
-  background: #ECEDE8;
-  border: 2px dashed #23705D;
+  padding: 2rem;
+  background: var(--snow);
+  border: 2px dashed var(--red);
   border-radius: 8px;
-  color: #3A3638;
+  color: var(--pine);
 }
 
-.emptyState p:first-child {
+.emptyState p {
+  margin: 0.25rem 0;
+}
+
+.emptyStateTitle {
   font-size: 1.2rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
 }
 
-.emptyStateIcon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
 /* =================================================================== */
-/* PASSIVE INCOME DISPLAY */
+/* GOODS */
 /* =================================================================== */
 
-.passiveIncome {
-  background: linear-gradient(135deg, #D0A93D 0%, #B80000 100%);
-  border: 3px solid #7D0000;
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  color: #ECEDE8;
-  box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
+.goodsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
 }
 
-.passiveTitle {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.passiveValue {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.passiveHint {
-  font-size: 0.75rem;
-  opacity: 0.9;
-  font-style: italic;
-}
-
-/* =================================================================== */
-/* DAILY BONUS */
-/* =================================================================== */
-
-.dailyBonus {
-  background: #ECEDE8;
-  border: 3px solid #B80000;
-  border-radius: 8px;
-  padding: 0.6rem;
-}
-
-.bonusTitle {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #B80000;
-  text-align: center;
-}
-
-.bonusDescription {
-  font-size: 0.85rem;
-  color: #3A3638;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-
-.claimButton {
-  width: 100%;
-  padding: 0.5rem;
-  background: #B80000;
-  color: #ECEDE8;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.claimButton:hover {
-  background: #7D0000;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.3);
-}
-
-.bonusClaimed {
-  padding: 0.6rem;
-  background: #F8E689;
-  border-radius: 6px;
-  text-align: center;
-  color: #175034;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-/* =================================================================== */
-/* CUSTOMER FEED */
-/* =================================================================== */
-
-.customerFeed {
-  background: #ECEDE8;
-  border: 3px solid #175034;
-  border-radius: 8px;
-  padding: 0.6rem;
-}
-
-.feedTitle {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #175034;
-  text-align: center;
-}
-
-.feedMessages {
+.goodSection {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  max-height: 250px;
-  overflow-y: auto;
-}
-
-.feedMessage {
-  padding: 0.5rem 0.75rem;
-  background: #F8E689;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, var(--gold-tint), var(--snow));
+  border: 2px solid var(--gold);
   border-radius: 6px;
-  font-size: 0.85rem;
-  color: #175034;
-  font-style: italic;
+  padding: 0.4rem 0.5rem;
 }
 
-/* =================================================================== */
-/* CHEER DISPLAY */
-/* =================================================================== */
-
-.cheerDisplay {
-  background: linear-gradient(135deg, #175034 0%, #23705D 100%);
-  border: 3px solid #175034;
-  border-radius: 8px;
-  padding: 0.6rem;
-  text-align: center;
-  color: #ECEDE8;
-  box-shadow: 0 2px 8px rgba(23, 80, 52, 0.3);
+.goodHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.cheerLabel {
+.goodTitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--pine);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* The stock, then the sell buttons, on one line */
+.goodRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.goodStock {
+  color: var(--pine);
   font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.2rem;
-  opacity: 0.9;
+  white-space: nowrap;
 }
 
-.cheerValue {
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+.goodPrice {
+  display: inline-flex;
+  align-items: center;
+  color: var(--red);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.goodButtons {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.goodButtons .sellButton,
+.goodButtons .sellAllButton {
+  flex: 0 1 auto;
+  white-space: nowrap;
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .sellAllButton {
+  .sellAllButton,
+  .claimButton {
     animation: none;
+  }
+
+  .priceCard,
+  .priceCard:hover {
+    transition: none;
+    transform: none;
   }
 }

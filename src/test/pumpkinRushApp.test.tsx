@@ -80,6 +80,30 @@ describe('Pumpkin Rush in the game', { timeout: 20_000 }, () => {
     expect(saved.pumpkinEventState?.plots[0].growth).toBeGreaterThanOrEqual(4);
   });
 
+  it('writes its harvests and sales to the event log', () => {
+    vi.setSystemTime(new Date(2026, 9, 15, 12, 0, 0));
+    localStorage.setItem(GAME_STORAGE_KEY, JSON.stringify({
+      veggies: [], money: 0, experience: 0, knowledge: 0, activeVeggie: 0, day: 10, totalDaysElapsed: 9,
+      farmTier: 1, maxPlots: 4, farmCost: 500, highestUnlockedVeggie: 0, harvestTutorialShown: true,
+      lastSavedAt: Date.now(),
+      pumpkinEventState: { plots: [{ id: 'pumpkin_plot_0', variety: 'sugarPie', growth: 180, growthTime: 180, quality: 'normal', harvestReady: true }] }
+    }));
+    renderGame();
+
+    act(() => {
+      game!.pumpkinEvent.harvestPumpkin(0);
+    });
+    act(() => {
+      game!.pumpkinEvent.sellAllPumpkins();
+    });
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'));
+    });
+    const saved = JSON.parse(localStorage.getItem(GAME_STORAGE_KEY)!) as ExtendedGameState;
+    const lines = saved.eventLogState?.entries.filter(entry => entry.category === 'pumpkin').map(entry => entry.message);
+    expect(lines).toEqual(expect.arrayContaining(['Harvested a Sugar Pie pumpkin', 'Sold 1 pumpkin']));
+  });
+
   it('hides the tab out of season and leaves pumpkins alone', () => {
     vi.setSystemTime(new Date(2026, 11, 5, 12, 0, 0));
     renderGame();

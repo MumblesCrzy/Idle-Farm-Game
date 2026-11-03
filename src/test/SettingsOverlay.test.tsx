@@ -33,7 +33,7 @@ describe("SettingsOverlay: Archie's looks", () => {
 
     expect(screen.getByRole('button', { name: "Locked: Unlock 'Roadside Favorite' achievement" })).toBeDisabled();
     expect(screen.getByRole('button', { name: "Locked: Unlock 'Pumpkin Legend' achievement" })).toBeDisabled();
-    expect(screen.getByRole('button', { name: "Locked: Unlock 'Archie's Winter Sweater' achievement" })).toBeDisabled();
+    expect(screen.getByRole('button', { name: "Locked: Unlock 'Growing Business' achievement" })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Archie with pinecones' })).toBeEnabled();
   });
 

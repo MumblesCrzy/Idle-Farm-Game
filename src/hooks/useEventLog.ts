@@ -271,7 +271,8 @@ export function useEventLogFilter(initialCategories?: EventCategory[]) {
       'milestone',
       'bees',
       'christmas',
-      'pumpkin'
+      'pumpkin',
+      'spring'
     ]
   );
   const [searchTerm, setSearchTerm] = useState('');

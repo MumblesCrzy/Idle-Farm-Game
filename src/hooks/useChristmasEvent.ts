@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLatestRef } from './useLatestRef';
 import { getEventUpgradeCost } from '../utils/eventUpgrades';
-import { floorCheer, getTreePrice, getSaleCheerMultiplier, parseTreeKey, rollRegisterTips } from '../utils/christmasTreePricing';
+import { elvesJobsPerSecond, floorCheer, getTreePrice, getSaleCheerMultiplier, ownsUpgrade, parseTreeKey, rollRegisterTips, treeGrowthSpeed } from '../utils/christmasTreePricing';
 import type {
   ChristmasEventState,
   TreePlot,
@@ -32,7 +32,6 @@ interface UseChristmasEventParams {
   onTreeHarvested?: (treeType: string, quality: string) => void;
   onItemCrafted?: (itemName: string, quantity: number) => void;
   onUpgradePurchased?: (upgradeName: string, cost: number) => void;
-  onMilestoneClaimed?: (milestoneName: string) => void;
 }
 
 export interface UseChristmasEventReturn {
@@ -76,6 +75,7 @@ export interface UseChristmasEventReturn {
   
   // Upgrades
   purchaseUpgrade: (upgradeId: string) => boolean;
+  /** Pays a tree sales milestone's Holiday Cheer once; its achievement calls this when it unlocks */
   claimMilestone: (milestoneId: string) => boolean;
   
   // Cosmetics
@@ -312,7 +312,6 @@ export function useChristmasEvent({
   onTreeHarvested,
   onItemCrafted,
   onUpgradePurchased,
-  onMilestoneClaimed,
 }: UseChristmasEventParams): UseChristmasEventReturn {
   // Track last magical register bonus for toast display
   // Using object with timestamp ensures each bonus triggers a new toast
@@ -324,7 +323,6 @@ export function useChristmasEvent({
     onTreeHarvested,
     onItemCrafted,
     onUpgradePurchased,
-    onMilestoneClaimed,
   });
   
   // Update refs when callbacks change
@@ -334,9 +332,8 @@ export function useChristmasEvent({
       onTreeHarvested,
       onItemCrafted,
       onUpgradePurchased,
-      onMilestoneClaimed,
     };
-  }, [onTreeSold, onTreeHarvested, onItemCrafted, onUpgradePurchased, onMilestoneClaimed]);
+  }, [onTreeSold, onTreeHarvested, onItemCrafted, onUpgradePurchased]);
   
   // Initialize event state
   const [eventState, setEventState] = useState<ChristmasEventState>(() => {
@@ -649,6 +646,9 @@ export function useChristmasEvent({
     }
     
     const crafted = transact(state => {
+      // A recipe behind an upgrade waits for it
+      if (recipe.requiredUpgrade && !ownsUpgrade(state.upgrades, recipe.requiredUpgrade)) return null;
+
       // Check if player has enough materials
       const hasEnoughMaterials = Object.entries(recipe.inputs).every(([material, amount]) => {
         return state.materials[material as keyof CraftingMaterials] >= amount * quantity;
@@ -887,9 +887,7 @@ export function useChristmasEvent({
         return prev;
       }
       
-      // Garland sells for 4 Cheer each
-      const pricePerGarland = 4;
-      const totalCheer = pricePerGarland * quantity;
+      const totalCheer = EVENT_CONSTANTS.GOOD_PRICES.garlands * quantity;
       
       return {
         ...prev,
@@ -914,9 +912,7 @@ export function useChristmasEvent({
         return prev;
       }
       
-      // Candles sell for 2 Cheer each
-      const pricePerCandle = 2;
-      const totalCheer = pricePerCandle * quantity;
+      const totalCheer = EVENT_CONSTANTS.GOOD_PRICES.candles * quantity;
       
       return {
         ...prev,
@@ -941,9 +937,7 @@ export function useChristmasEvent({
         return prev;
       }
       
-      // Ornaments sell for 1 Cheer each
-      const pricePerOrnament = 1;
-      const totalCheer = pricePerOrnament * quantity;
+      const totalCheer = EVENT_CONSTANTS.GOOD_PRICES.ornaments * quantity;
       
       return {
         ...prev,
@@ -988,6 +982,7 @@ export function useChristmasEvent({
     return true;
   }, [transact]);
   
+  // The achievement at the same count logs the unlock, so a claim adds no log line of its own
   const claimMilestone = useCallback((milestoneId: string): boolean => {
     const milestoneName = transact(state => {
       const milestone = state.milestones.find(m => m.id === milestoneId);
@@ -1012,10 +1007,7 @@ export function useChristmasEvent({
       };
     });
 
-    // Log the milestone claim event
-    if (milestoneName === null) return false;
-    callbacksRef.current.onMilestoneClaimed?.(milestoneName);
-    return true;
+    return milestoneName !== null;
   }, [transact]);
   
   // ============================================================================
@@ -1064,10 +1056,8 @@ export function useChristmasEvent({
     // perfect-tree roll happens once at completion, so one pass is exact.
     const steps = typeof ticks === 'number' && ticks > 0 ? ticks : 1;
     setEventState(prev => {
-      // Check if any upgrades affect growth speed
-      const fertilizedSoil = prev.upgrades.find(u => u.id === 'fertilized_soil');
-      const fertilizedSoilLevel = fertilizedSoil?.level ?? 0;
-      const speedBonus = 1.0 + (fertilizedSoilLevel * 0.15); // +15% per level
+      // Fertilized Soil speeds growth
+      const speedBonus = treeGrowthSpeed(prev.upgrades);
       
       const evergreenEssenceOwned = prev.upgrades.find(u => u.id === 'evergreen_essence')?.owned ?? false;
       const perfectChance = evergreenEssenceOwned ? 0.10 : 0.0;
@@ -1125,9 +1115,8 @@ export function useChristmasEvent({
         }; // No automation if upgrade not owned
       }
       
-      // Get Cheerful Crafting level (how many items to craft per second)
-      const cheerfulCraftingUpgrade = prev.upgrades.find(u => u.id === 'cheerful_crafting');
-      const itemsPerSecond = cheerfulCraftingUpgrade?.owned ? (cheerfulCraftingUpgrade.level || 1) : 1;
+      // One job a second, plus one for each level of Cheerful Crafting
+      const itemsPerSecond = elvesJobsPerSecond(prev.upgrades);
       
       const newMaterials = { ...prev.materials };
       const newInventory = { ...prev.treeInventory };

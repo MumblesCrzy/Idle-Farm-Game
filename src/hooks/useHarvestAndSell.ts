@@ -3,9 +3,8 @@ import type { Veggie } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { EventLogCallbacks } from '../context/EventLogContext';
 import { calculateHarvestRewards } from '../utils/harvestCalculations';
-import { applyGuildPriceBonuses, awardGuildTokens, getBulkDealsMultiplier, getUpgradeLevel, hasHandsOff, isCommittedTo } from '../utils/guildCalculations';
+import { applyGuildPriceBonuses, awardHarvestCurrency, paysHarvestCurrency, getBulkDealsMultiplier, getUpgradeLevel, hasHandsOff, isCommittedTo } from '../utils/guildCalculations';
 import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
-import { GUILDS_UNLOCK_TIER } from '../data/guildData';
 import { useLatestRef } from './useLatestRef';
 import { useDeferredEffects } from './useDeferredEffects';
 
@@ -99,8 +98,8 @@ export interface UseHarvestAndSellReturn {
    */
   handleSell: (isAutoSell?: boolean) => void;
 
-  /** Safe harvest logger that defers logging to avoid setState during render */
-  logHarvest: (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => void;
+  /** Safe harvest logger that defers logging to avoid setState during render; selfHarvest marks a Soilbound Pact harvest */
+  logHarvest: (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean, selfHarvest?: boolean) => void;
 }
 
 /**
@@ -180,26 +179,11 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
       const newExperience = experience + experienceGain;
       const unlockKey = {};
 
-      // Award guild currency on harvest once guilds unlock:
-      // - Manual harvests always earn 1 currency
-      // - Blessed crop (Soilbound Pact) triggers earn 1 currency (even on auto-harvest)
-      // Members of other guilds earn their currency elsewhere (Preservers: canning).
+      // Manual harvests earn guild currency once guilds unlock: Sigils for committed Growers,
+      // Guild Tokens before a guild is chosen. Members of other guilds earn theirs elsewhere.
       const earnCurrency = !isAutoHarvest || blessedCropTriggered;
-      if (earnCurrency && farmTier >= GUILDS_UNLOCK_TIER) {
-        const committedGuild = guildStateRef.current.committedGuild;
-        if (committedGuild === 'growers') {
-          // After commitment: Growers earn Sigils
-          setGuildState(prev => ({
-            ...prev,
-            guildCurrencies: {
-              ...prev.guildCurrencies,
-              growers: prev.guildCurrencies.growers + 1
-            }
-          }));
-        } else if (committedGuild === null) {
-          // Before commitment: award generic guild tokens
-          setGuildState(prev => awardGuildTokens(prev, 'manualHarvest', 1, farmTier));
-        }
+      if (earnCurrency && paysHarvestCurrency(guildStateRef.current, farmTier)) {
+        setGuildState(prev => awardHarvestCurrency(prev, 1, farmTier));
       }
 
       setVeggies((prev) => {
@@ -284,9 +268,9 @@ export function useHarvestAndSell(deps: UseHarvestAndSellDeps): UseHarvestAndSel
    * Defers the event logging callback to avoid React warnings.
    */
   const logHarvest = useCallback(
-    (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean) => {
+    (name: string, amount: number, expGain: number, knGain: number, isAuto: boolean, selfHarvest?: boolean) => {
       setTimeout(() => {
-        eventLogCallbacks.onHarvest(name, amount, expGain, knGain, isAuto);
+        eventLogCallbacks.onHarvest(name, amount, expGain, knGain, isAuto, selfHarvest);
       }, 0);
     },
     [eventLogCallbacks]

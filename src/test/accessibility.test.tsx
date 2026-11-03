@@ -36,7 +36,7 @@ describe('lists the keyboard can scroll', () => {
     // jsdom has no element scrolling; the log scrolls itself to its newest event
     Object.defineProperty(Element.prototype, 'scrollTo', { value: vi.fn(), configurable: true, writable: true });
     const counts = Object.fromEntries(
-      ['weather', 'growth', 'harvest', 'auto-purchase', 'merchant', 'canning', 'milestone', 'bees', 'christmas', 'pumpkin', 'upgrade'].map(c => [c, 0])
+      ['weather', 'growth', 'harvest', 'auto-purchase', 'merchant', 'canning', 'milestone', 'bees', 'christmas', 'pumpkin', 'spring', 'upgrade'].map(c => [c, 0])
     ) as Record<EventCategory, number>;
     render(
       <EventLogOverlay

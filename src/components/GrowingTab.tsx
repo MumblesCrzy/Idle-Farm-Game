@@ -21,6 +21,7 @@ import { GROWTH_COMPLETE_THRESHOLD } from '../config/gameConstants';
 import {
   applyGuildPriceBonuses,
   getBlessedCropChance,
+  getSelfHarvestChance,
   getBulkDealsBonus,
   getBulkDealsMultiplier,
   getEngineersHarvesterSpeedMultiplier,
@@ -87,6 +88,7 @@ const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
   const priceBonus = getGrowersPriceBonus(guildState);
   const manualBonus = getGrowersManualHarvestBonus(guildState);
   const blessedChance = getBlessedCropChance(guildState);
+  const selfHarvestChance = getSelfHarvestChance(guildState);
   const beeBonus = getGrowersBeePollinationBonus(guildState);
 
   return (
@@ -101,8 +103,13 @@ const GrowersBonuses: FC<{ guildState: GuildState }> = ({ guildState }) => {
       {manualBonus > 0 && (
         <span className={styles.chip} title="Manual Harvest Bonus">+{manualBonus} Manual</span>
       )}
-      {blessedChance > 0 && (
-        <span className={styles.chip} title="Blessed Crop Chance (Double Yield)">{Math.round(blessedChance * 100)}% Blessed</span>
+      {selfHarvestChance > 0 && (
+        <span
+          className={styles.chip}
+          title={`Soilbound Pact: a ripe crop harvests itself ${Math.round(selfHarvestChance * 100)}% of the time, as a manual harvest. ${Math.round(blessedChance * 100)}% of manual harvests are Blessed Crops (double yield)`}
+        >
+          {Math.round(selfHarvestChance * 100)}% Self-harvest
+        </span>
       )}
       {beeBonus > 0 && (
         <span className={styles.chip} title="Bee Pollination Synergy">+{Math.round(beeBonus * 100)}% Bees</span>

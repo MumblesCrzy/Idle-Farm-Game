@@ -1,371 +1,418 @@
 /**
  * Workshop Tab Component
- * 
- * Handles decoration crafting and tree decoration for the Christmas Tree Shop event.
- * Features:
- * - Recipe rows for crafting ornaments, garlands, natural ornaments, and candles
- * - Decorate Tree section for applying decorations to harvested trees
- * - Elves' Bench automation queue for automated decoration
+ *
+ * Christmas Tree Shop crafting: weave garland, make candles and ornaments, then
+ * decorate plain trees. Laid out like the Carving Barn: the Elves' Bench status
+ * in a slim bar under the stock, recipe cards, a decorating station and Workshop
+ * upgrades on the right, all within a 1600x1000 window.
  */
 
 import InlineIcon from './InlineIcon';
-import { memo, useState, type FC, type ReactNode } from 'react';
-import type { CraftingRecipe, CraftingMaterials, TreeType, DecorationType, EventUpgrade, TreeInventory } from '../types/christmasEvent';
-import { CRAFTING_RECIPES } from '../data/christmasEventData';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, MATERIAL_WOOD, MATERIAL_PINECONE, MATERIAL_BRANCH, DECORATION_GARLAND, DECORATION_CANDLE, ICON_ORNAMENT, ICON_TRADITIONAL_ORNAMENT, ICON_ELVES_INDICATOR, ICON_ELVES, ICON_IDEA } from '../config/assetPaths';
+import { ICON_LOCK } from '../config/assetPaths';
+import { memo, useId, useState, type FC } from 'react';
 import BaseTab from './BaseTab';
+import EventArt, { type EventArtSource } from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
+import { CHRISTMAS_ART, CRAFTING_RECIPES, DECORATION_MULTIPLIERS, TREE_DEFINITIONS } from '../data/christmasEventData';
+import { countTrees, elvesJobsPerSecond, ownsUpgrade } from '../utils/christmasTreePricing';
+import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
+import type {
+  ChristmasEventState,
+  CraftingMaterials,
+  CraftingRecipe,
+  DecorationType,
+  EventUpgrade,
+  TreeInventory,
+  TreeType
+} from '../types/christmasEvent';
+import frame from './TreeShopSections.module.css';
 import styles from './WorkshopTab.module.css';
 
-/**
- * Helper function to get tree image
- */
-const getTreeImage = (treeType: TreeType): string => {
-  switch (treeType) {
-    case 'pine':
-      return TREE_PINE;
-    case 'spruce':
-      return TREE_SPRUCE;
-    case 'fir':
-      return TREE_FIR;
-    default:
-      return TREE_PINE;
-  }
-};
+type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
 interface WorkshopTabProps {
-  materials: CraftingMaterials;
-  treeInventory: TreeInventory;
-  craftItem: (recipeId: string) => boolean;
-  decorateTree: (treeType: TreeType, decorations: DecorationType[]) => boolean;
-  addToDecorationQueue: (treeType: TreeType, decorations: DecorationType[]) => void;
-  automationEnabled: boolean;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
-  upgrades: EventUpgrade[];
-  holidayCheer: number;
-  purchaseUpgrade: (upgradeId: string) => boolean;
-  currentElvesAction?: {
-    type: 'craft' | 'decorate';
-    recipeId?: string;
-    decorationType?: string;
-  };
+  event: UseChristmasEventReturn;
+  formatNumber: FormatNumber;
 }
 
-/**
- * Individual recipe card
- */
+type MaterialName = keyof CraftingMaterials;
+
+const MATERIALS: Record<MaterialName, { label: string; one: string; many: string; art: EventArtSource }> = {
+  wood: { label: 'Wood', one: 'wood', many: 'wood', art: CHRISTMAS_ART.wood },
+  pinecones: { label: 'Pinecones', one: 'pinecone', many: 'pinecones', art: CHRISTMAS_ART.pinecones },
+  branches: { label: 'Branches', one: 'branch', many: 'branches', art: CHRISTMAS_ART.branches },
+  garlands: { label: 'Garland', one: 'garland', many: 'garlands', art: CHRISTMAS_ART.garland },
+  candles: { label: 'Candles', one: 'candle', many: 'candles', art: CHRISTMAS_ART.candles },
+  ornaments: { label: 'Ornaments', one: 'ornament', many: 'ornaments', art: CHRISTMAS_ART.ornaments },
+  // Older saves only; Traditional Ornaments now makes ornaments
+  naturalOrnaments: { label: 'Traditional Ornaments', one: 'traditional ornament', many: 'traditional ornaments', art: CHRISTMAS_ART.traditional },
+};
+
+const MATERIAL_ORDER: MaterialName[] = ['wood', 'pinecones', 'branches', 'garlands', 'candles', 'ornaments'];
+
+/** How many to craft per click; 'max' crafts as many as the materials allow */
+type CraftQuantity = 1 | 5 | 10 | 'max';
+const QUANTITIES: CraftQuantity[] = [1, 5, 10, 'max'];
+
+const TREES: TreeType[] = ['pine', 'spruce', 'fir'];
+
+const amountsOf = (amounts: Partial<CraftingMaterials>) => Object.entries(amounts) as [MaterialName, number][];
+
+/** "3 branches and 2 pinecones" */
+function describeAmounts(amounts: [MaterialName, number][], times: number): string {
+  const parts = amounts.map(([material, amount]) => {
+    const total = amount * times;
+    return `${total} ${total === 1 ? MATERIALS[material].one : MATERIALS[material].many}`;
+  });
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts.join('');
+}
+
+/** How many times a recipe can be crafted from these materials */
+function maxCraftable(inputs: [MaterialName, number][], materials: CraftingMaterials): number {
+  if (inputs.length === 0) return 0;
+  return Math.min(...inputs.map(([material, amount]) => Math.floor(materials[material] / amount)));
+}
+
+type Finish = 'ornamented' | 'candled' | 'luxury';
+
+const FINISH_NAMES: Record<Finish, string> = { ornamented: 'Ornamented', candled: 'Candlelit', luxury: 'Luxury' };
+
+/** "+5% value", or "×3 value" for a Luxury tree with the Star Forge */
+function finishBonus(finish: Finish, upgrades: readonly EventUpgrade[]): string {
+  const starForge = upgrades.find(u => u.id === 'star_forge');
+  const multiplier = finish === 'luxury' && starForge?.owned
+    ? starForge.multiplier ?? DECORATION_MULTIPLIERS.luxury
+    : DECORATION_MULTIPLIERS[finish];
+  return multiplier >= 2 ? `×${multiplier} value` : `+${Math.round((multiplier - 1) * 100)}% value`;
+}
+
+/** What the Elves are doing, in words */
+function elvesActionText(action: ChristmasEventState['currentElvesAction']): string {
+  if (!action) return 'Waiting for materials';
+  if (action.type === 'craft') {
+    return CRAFTING_RECIPES.find(r => r.id === action.recipeId)?.name ?? 'Crafting';
+  }
+  const finishName = FINISH_NAMES[action.decorationType as Finish];
+  return finishName ? `Decorating a tree: ${finishName}` : 'Decorating a tree';
+}
+
+// ============================================================================
+// RECIPE CARD
+// ============================================================================
+
 interface RecipeCardProps {
   recipe: CraftingRecipe;
   materials: CraftingMaterials;
-  onCraft: (recipeId: string) => void;
-  isActive?: boolean; // Whether this recipe is currently being worked on by elves
+  quantity: CraftQuantity;
+  /** Name of the upgrade that unlocks this recipe, while it is locked */
+  lockedBy: string | null;
+  /** Whether the Elves are working on this recipe */
+  isActive: boolean;
+  onCraft: (recipeId: string, quantity: number) => boolean;
 }
 
-const RecipeCard: FC<RecipeCardProps> = memo(({ recipe, materials, onCraft, isActive }) => {
-  // Check if player has enough materials
-  const canCraft = Object.entries(recipe.inputs).every(([material, amount]) => {
-    return materials[material as keyof CraftingMaterials] >= amount;
-  });
-  
-  const handleCraft = () => {
-    onCraft(recipe.id);
-  };
-  
+const RecipeCard: FC<RecipeCardProps> = memo(({ recipe, materials, quantity, lockedBy, isActive, onCraft }) => {
+  const inputs = amountsOf(recipe.inputs);
+  const outputs = amountsOf(recipe.output);
+  const count = quantity === 'max' ? maxCraftable(inputs, materials) : quantity;
+  // Chips show the amounts for one craft when Max can't make any
+  const shown = Math.max(1, count);
+  const hasMaterials = count >= 1 && inputs.every(([material, amount]) => materials[material] >= amount * count);
+  const canCraft = lockedBy === null && hasMaterials;
+
+  const label = lockedBy
+    ? `${recipe.name}: locked, requires ${lockedBy}`
+    : `${recipe.name} ×${count}: uses ${describeAmounts(inputs, shown)} to make ${describeAmounts(outputs, shown)}${hasMaterials ? '' : '. Not enough materials'}`;
+
+  const className = [
+    styles.recipeCard,
+    lockedBy ? styles.locked : '',
+    !lockedBy && !hasMaterials ? styles.cantCraft : '',
+    isActive ? styles.active : ''
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className={`${styles.recipeCard} ${!canCraft ? styles.cantCraft : ''}`}>
+    <li className={className}>
       {isActive && (
-        <img 
-          src={ICON_ELVES_INDICATOR} 
-          alt="Elves working" 
+        <EventArt
+          art={CHRISTMAS_ART.elvesAtWork}
+          size={28}
+          alt="The Elves are working on this"
           className={styles.elvesIndicator}
-          title="Elves are currently working on this"
         />
       )}
-      <div className={styles.recipeHeader}>
-        <h4 className={styles.recipeName}>{recipe.name}</h4>
-      </div>
-      
-      <div className={styles.recipeInputs}>
-        {Object.entries(recipe.inputs).map(([material, amount]) => {
-          const available = materials[material as keyof CraftingMaterials];
-          const hasEnough = available >= amount;
-          
+      <h4 className={styles.recipeName}>{recipe.name}</h4>
+      <p className={styles.recipeDescription}>{recipe.description}</p>
+
+      <div className={styles.recipeIO}>
+        {inputs.map(([material, amount]) => {
+          const needed = amount * shown;
           return (
-            <span 
-              key={material} 
-              className={`${styles.materialItem} ${!hasEnough ? styles.insufficient : ''}`}
-              title={`${material}: ${available} available`}
+            <span
+              key={material}
+              className={`${styles.chip} ${materials[material] < needed ? styles.insufficient : ''}`}
+              title={`${MATERIALS[material].label}: ${materials[material]} available`}
             >
-              {getMaterialIcon(material)} {amount}
+              <EventArt art={MATERIALS[material].art} size={16} alt={MATERIALS[material].label} /> {needed}
             </span>
           );
         })}
-        <span className={styles.arrow}>→</span>
-        {Object.entries(recipe.output).map(([item, amount]) => (
-          <span key={item} className={styles.outputItem}>
-            {getMaterialIcon(item)} +{amount}
+        <span className={styles.arrow} aria-hidden="true">→</span>
+        {outputs.map(([material, amount]) => (
+          <span key={material} className={`${styles.chip} ${styles.outputChip}`}>
+            <EventArt art={MATERIALS[material].art} size={16} alt={MATERIALS[material].label} /> +{amount * shown}
           </span>
         ))}
       </div>
-      
+
+      {lockedBy && (
+        <p className={styles.lockNote}>
+          <InlineIcon src={ICON_LOCK} size={14} gap={4} />Requires {lockedBy}
+        </p>
+      )}
+
       <button
-        className={`${styles.craftButton} ${!canCraft ? styles.disabled : ''}`}
-        onClick={handleCraft}
+        type="button"
+        className={styles.craftButton}
+        onClick={() => onCraft(recipe.id, count)}
         disabled={!canCraft}
+        aria-label={label}
         title={recipe.description}
       >
-        Craft
+        {lockedBy ? 'Locked' : `Craft ×${count}`}
       </button>
-    </div>
+    </li>
   );
 });
 
 RecipeCard.displayName = 'RecipeCard';
 
-/**
- * Tree decoration interface
- */
-interface TreeDecorationSectionProps {
-  materials: CraftingMaterials;
-  treeInventory: TreeInventory;
+// ============================================================================
+// DECORATING STATION
+// ============================================================================
+
+interface DecorationOption {
+  label: string;
+  decorations: DecorationType[];
+  finish: Finish;
+  art: EventArtSource;
+  uses: string;
+}
+
+const DECORATION_OPTIONS: DecorationOption[] = [
+  { label: 'Ornaments', decorations: ['ornament'], finish: 'ornamented', art: CHRISTMAS_ART.ornaments, uses: '1 ornament' },
+  { label: 'Candles', decorations: ['candle'], finish: 'candled', art: CHRISTMAS_ART.candles, uses: '1 candle' },
+  { label: 'Luxury', decorations: ['ornament', 'candle'], finish: 'luxury', art: CHRISTMAS_ART.luxury, uses: '1 ornament and 1 candle' },
+];
+
+interface DecoratingStationProps {
+  inventory: TreeInventory;
+  ornaments: number;
+  candles: number;
+  upgrades: readonly EventUpgrade[];
   onDecorate: (treeType: TreeType, decorations: DecorationType[]) => boolean;
 }
 
-const TreeDecorationSection: FC<TreeDecorationSectionProps> = memo(({ 
-  materials,
-  treeInventory,
-  onDecorate
-}) => {
-  const [selectedTree, setSelectedTree] = useState<TreeType>('pine');
-  const [selectedDecorations, setSelectedDecorations] = useState<Set<DecorationType>>(new Set());
-  
-  const toggleDecoration = (decoration: DecorationType) => {
-    const newSet = new Set(selectedDecorations);
-    if (newSet.has(decoration)) {
-      newSet.delete(decoration);
-    } else {
-      newSet.add(decoration);
-    }
-    setSelectedDecorations(newSet);
-  };
-  
-  // Check if player has the required tree and materials
-  // Now need to check across all qualities: treeType_quality_plain
-  const getPlainTreeCount = (treeType: TreeType): number => {
-    let count = 0;
-    Object.keys(treeInventory).forEach(key => {
-      if (key.startsWith(`${treeType}_`) && key.endsWith('_plain')) {
-        count += treeInventory[key] || 0;
-      }
-    });
-    return count;
-  };
-  
-  const hasTree = getPlainTreeCount(selectedTree) > 0;
-  
-  const canDecorate = hasTree && selectedDecorations.size > 0 && 
-    Array.from(selectedDecorations).every(dec => {
-      if (dec === 'ornament') return materials.ornaments > 0;
-      if (dec === 'candle') return materials.candles > 0;
-      return false;
-    });
-  
-  const handleDecorate = () => {
-    if (canDecorate) {
-      const decorations = Array.from(selectedDecorations);
-      if (onDecorate(selectedTree, decorations)) {
-        // Only clear selections that don't have materials remaining
-        const newSet = new Set(selectedDecorations);
-        if (selectedDecorations.has('ornament') && materials.ornaments <= 1) {
-          newSet.delete('ornament');
-        }
-        if (selectedDecorations.has('candle') && materials.candles <= 1) {
-          newSet.delete('candle');
-        }
-        setSelectedDecorations(newSet);
-      }
-    }
-  };
-  
+const DecoratingStation: FC<DecoratingStationProps> = memo(({ inventory, ornaments, candles, upgrades, onDecorate }) => {
+  const titleId = useId();
+  const [treeType, setTreeType] = useState<TreeType>('pine');
+  const plain = countTrees(inventory, treeType, 'plain');
+  const treeName = TREE_DEFINITIONS[treeType].displayName;
+
   return (
-    <div className={styles.decorationSection}>    
-      <div className={styles.decorationControls}>
-        <div className={styles.treeSelector}>
-          <label>Decorate Tree - Select Tree Type:</label>
-          <div className={styles.treeButtons}>
-            {(['pine', 'spruce', 'fir'] as TreeType[]).map(type => {
-              const treeCount = getPlainTreeCount(type);
-              return (
-                <button
-                  key={type}
-                  className={`${styles.treeButton} ${selectedTree === type ? styles.selected : ''}`}
-                  onClick={() => setSelectedTree(type)}
-                  title={`${treeCount} ${type} tree${treeCount !== 1 ? 's' : ''} available`}
-                >
-                  <img src={getTreeImage(type)} alt={type} className={styles.treeButtonIcon} /> {type.charAt(0).toUpperCase() + type.slice(1)} ({treeCount})
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        
-        <div className={styles.decorationOptions}>
-          <label>Add Decorations:</label>
-          <div className={styles.decorationCheckboxes}>
-            <label className={`${styles.decorationOption} ${materials.ornaments <= 0 ? styles.unavailable : ''}`}>
-              <input
-                type="checkbox"
-                checked={selectedDecorations.has('ornament')}
-                onChange={() => toggleDecoration('ornament')}
-                disabled={materials.ornaments <= 0}
-              />
-              <span>
-                <img src={ICON_ORNAMENT} alt="Ornaments" className={styles.decorationIcon} />
-                Ornaments ({materials.ornaments})
-              </span>
-            </label>
-            
-            <label className={`${styles.decorationOption} ${materials.candles <= 0 ? styles.unavailable : ''}`}>
-              <input
-                type="checkbox"
-                checked={selectedDecorations.has('candle')}
-                onChange={() => toggleDecoration('candle')}
-                disabled={materials.candles <= 0}
-              />
-              <span>
-                <img src={DECORATION_CANDLE} alt="Candles" className={styles.decorationIcon} />
-                Candles ({materials.candles})
-              </span>
-            </label>
-          </div>
-        </div>
+    <section className={styles.stationSection} aria-labelledby={titleId}>
+      <div className={styles.sectionHeader}>
+        <h3 id={titleId} className={styles.sectionTitle}>
+          <EventArt art={CHRISTMAS_ART.decorated} size={20} /> Decorating Station
+        </h3>
+        <span className={styles.supplies}>
+          <EventArt art={CHRISTMAS_ART.ornaments} size={16} alt="Ornaments" /> {ornaments}
+          <EventArt art={CHRISTMAS_ART.candles} size={16} alt="Candles" /> {candles}
+        </span>
       </div>
-      
-      <button
-        className={`${styles.decorateButton} ${!canDecorate ? styles.disabled : ''}`}
-        onClick={handleDecorate}
-        disabled={!canDecorate}
-      >
-        Decorate {selectedTree.charAt(0).toUpperCase() + selectedTree.slice(1)} Tree
-      </button>
-    </div>
+
+      <div className={styles.treeButtons} role="group" aria-label="Tree to decorate">
+        {TREES.map(option => {
+          const count = countTrees(inventory, option, 'plain');
+          const name = TREE_DEFINITIONS[option].name;
+          return (
+            <button
+              key={option}
+              type="button"
+              className={styles.treeButton}
+              onClick={() => setTreeType(option)}
+              aria-pressed={treeType === option}
+              aria-label={`${name}: ${count} plain tree${count === 1 ? '' : 's'}`}
+            >
+              <EventArt art={CHRISTMAS_ART[option]} size={18} /> {name} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.decorateButtons}>
+        {DECORATION_OPTIONS.map(option => {
+          const missing = [
+            option.decorations.includes('ornament') && ornaments < 1 ? 'ornaments' : '',
+            option.decorations.includes('candle') && candles < 1 ? 'candles' : ''
+          ].filter(Boolean);
+          const disabled = plain < 1 || missing.length > 0;
+          const reason = plain < 1
+            ? `. No plain ${treeName}s`
+            : missing.length > 0 ? `. Not enough ${missing.join(' or ')}` : '';
+          return (
+            <button
+              key={option.finish}
+              type="button"
+              className={`${styles.decorateButton} ${option.finish === 'luxury' ? styles.luxuryButton : ''}`}
+              onClick={() => onDecorate(treeType, option.decorations)}
+              disabled={disabled}
+              aria-label={`Decorate a ${treeName} with ${option.label.toLowerCase()}. Uses ${option.uses}${reason}`}
+            >
+              <span className={styles.decorateLabel}>
+                <EventArt art={option.art} size={18} /> {option.label}
+              </span>
+              <span className={styles.decorateDetail}>Uses {option.uses} · {finishBonus(option.finish, upgrades)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className={styles.finishedLine}>
+        {treeName}s in stock: {plain} plain · {countTrees(inventory, treeType, 'ornamented')} ornamented
+        · {countTrees(inventory, treeType, 'candled')} candlelit · {countTrees(inventory, treeType, 'luxury')} luxury
+      </p>
+    </section>
   );
 });
 
-TreeDecorationSection.displayName = 'TreeDecorationSection';
+DecoratingStation.displayName = 'DecoratingStation';
 
-/**
- * Elves' Bench automation interface
- */
-interface ElvesBenchProps {
-  enabled: boolean;
-  onAddToQueue: (treeType: TreeType, decorations: DecorationType[]) => void;
+// ============================================================================
+// ELVES' BENCH
+// ============================================================================
+
+interface ElvesBarProps {
+  owned: boolean;
+  jobsPerSecond: number;
+  action?: ChristmasEventState['currentElvesAction'];
 }
 
-const ElvesBench: FC<ElvesBenchProps> = memo(({ enabled }) => {
-  if (!enabled) {
-    return (
-      <div className={styles.elvesBench}>
-        <h3 className={styles.sectionTitle}><InlineIcon src={ICON_ELVES} size={20} gap={6} />Elves' Bench</h3>
-        <div className={styles.lockedMessage}>
-          <p>Purchase the Elves' Bench upgrade to automate crafting and decoration!</p>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className={styles.elvesBench}>
-      <h3 
-        className={styles.sectionTitle}
-        title="Elves automatically craft 1 decoration per in-game day (priority: Garland > Candles > Ornaments). Trees are auto-decorated on harvest with the best decorations available."
-      >
-        <InlineIcon src={ICON_ELVES} size={20} gap={6} />Elves' Bench (Active) <InlineIcon src={ICON_IDEA} size={14} />
-      </h3>
-      <div className={styles.benchStatus}>
-        <span className={styles.automationActive}>✓ Auto-Crafting Enabled</span>
-        <span className={styles.automationActive}>✓ Auto-Decorating Enabled</span>
-      </div>
-    </div>
-  );
-});
+/** The Elves' status in one line, fixed-width parts first so the bar holds still as jobs change */
+const ElvesBar: FC<ElvesBarProps> = memo(({ owned, jobsPerSecond, action }) => (
+  <section
+    className={owned ? `${frame.crewBar} ${frame.crewActive}` : frame.crewBar}
+    aria-label="Elves' Bench"
+    title={owned ? 'Each job, the Elves weave garland, then make candles, then ornaments, and decorate plain trees when nothing is left to craft. Harvested trees get the best decorations available.' : undefined}
+  >
+    <h3 className={frame.crewTitle}>
+      <EventArt art={CHRISTMAS_ART.elves} size={22} /> Elves' Bench{owned ? ' (Active)' : ''}
+    </h3>
+    {owned ? (
+      <>
+        <p className={frame.crewRate}>
+          {jobsPerSecond} job{jobsPerSecond === 1 ? '' : 's'} per second
+        </p>
+        <p className={frame.crewNow}>
+          Now: <strong>{elvesActionText(action)}</strong>
+        </p>
+      </>
+    ) : (
+      <p className={frame.crewLocked}>
+        Buy the Elves' Bench upgrade to automate crafting and decorating!
+      </p>
+    )}
+  </section>
+));
 
-ElvesBench.displayName = 'ElvesBench';
+ElvesBar.displayName = 'ElvesBar';
 
-/**
- * Helper function to get material icon as JSX
- */
-function getMaterialIcon(material: string): ReactNode {
-  const iconMap: Record<string, ReactNode> = {
-    wood: <img src={MATERIAL_WOOD} alt="Wood" className={styles.materialIcon} />,
-    pinecones: <img src={MATERIAL_PINECONE} alt="Pinecones" className={styles.materialIcon} />,
-    branches: <img src={MATERIAL_BRANCH} alt="Branches" className={styles.materialIcon} />,
-    ornaments: <img src={ICON_ORNAMENT} alt="Ornaments" className={styles.materialIcon} />,
-    garlands: <img src={DECORATION_GARLAND} alt="Garlands" className={styles.materialIcon} />,
-    naturalOrnaments: <img src={ICON_TRADITIONAL_ORNAMENT} alt= "Traditional Ornament" className={styles.materialIcon} />,
-    candles: <img src={DECORATION_CANDLE} alt="Candles" className={styles.materialIcon} />,
+// ============================================================================
+// TAB
+// ============================================================================
+
+const WorkshopTab: FC<WorkshopTabProps> = ({ event, formatNumber }) => {
+  const { materials, holidayCheer, craftItem, decorateTree, currentElvesAction, purchaseUpgrade } = event;
+  const { upgrades, treeInventory } = event.eventState;
+  const recipesTitleId = useId();
+  const [quantity, setQuantity] = useState<CraftQuantity>(1);
+
+  const elvesOwned = ownsUpgrade(upgrades, 'elves_bench');
+  const jobsPerSecond = elvesJobsPerSecond(upgrades);
+  const activeRecipeId = elvesOwned && currentElvesAction?.type === 'craft' ? currentElvesAction.recipeId : null;
+
+  const lockedBy = (recipe: CraftingRecipe): string | null => {
+    if (!recipe.requiredUpgrade || ownsUpgrade(upgrades, recipe.requiredUpgrade)) return null;
+    return upgrades.find(u => u.id === recipe.requiredUpgrade)?.name ?? recipe.requiredUpgrade;
   };
-  return iconMap[material] || '❓';
-}
 
-/**
- * Main Workshop Tab Component
- */
-const WorkshopTab: FC<WorkshopTabProps> = ({
-  materials,
-  treeInventory,
-  craftItem,
-  decorateTree,
-  addToDecorationQueue,
-  automationEnabled,
-  formatNumber,
-  upgrades,
-  holidayCheer,
-  purchaseUpgrade,
-  currentElvesAction,
-}) => {
   const mainContent = (
-    <div className={styles.container}>      
-      {/* Left Column: Crafting, Decoration, and Automation */}
-      <div className={styles.leftColumn}>
-        {/* Crafting Recipes Section */}
-        <div className={styles.craftingSection}>
-          <div className={styles.recipesGrid}>
-            {CRAFTING_RECIPES.filter(recipe => {
-              // Show recipe if no upgrade required, or if the required upgrade is owned
-              if (!recipe.requiredUpgrade) return true;
-              return upgrades.find(u => u.id === recipe.requiredUpgrade)?.owned ?? false;
-            }).map(recipe => {
-              const isActive = currentElvesAction?.type === 'craft' && currentElvesAction.recipeId === recipe.id;
-              return (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  materials={materials}
-                  onCraft={craftItem}
-                  isActive={isActive}
-                />
-              );
-            })}
-          </div>
+    <div className={frame.container}>
+      {/* Left column: stock, the Elves, recipes and decorating */}
+      <div className={frame.leftColumn}>
+        <div className={frame.headerRow}>
+          <h2 className={frame.sectionTitle}>
+            <EventArt art={CHRISTMAS_ART.workshop} size={24} /> Workshop
+          </h2>
+          <ul className={frame.stockList} aria-label="Stock">
+            {MATERIAL_ORDER.map(material => (
+              <li key={material} className={frame.stockItem}>
+                <EventArt art={MATERIALS[material].art} size={20} />
+                <span className={frame.stockLabel}>{MATERIALS[material].label}</span>
+                <span className={frame.stockValue}>{formatNumber(materials[material], 0)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        
-        {/* Tree Decoration Section */}
-        <TreeDecorationSection
-          materials={materials}
-          treeInventory={treeInventory}
+
+        <ElvesBar owned={elvesOwned} jobsPerSecond={jobsPerSecond} action={currentElvesAction} />
+
+        <section className={styles.craftingSection} aria-labelledby={recipesTitleId}>
+          <div className={styles.sectionHeader}>
+            <h3 id={recipesTitleId} className={styles.sectionTitle}>
+              <EventArt art={CHRISTMAS_ART.garland} size={20} /> Recipes
+            </h3>
+            <div className={styles.quantityPicker} role="group" aria-label="Craft quantity">
+              {QUANTITIES.map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  className={styles.quantityButton}
+                  onClick={() => setQuantity(option)}
+                  aria-pressed={quantity === option}
+                  aria-label={option === 'max' ? 'Craft as many as possible' : `Craft ${option} at a time`}
+                >
+                  {option === 'max' ? 'Max' : `×${option}`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ul className={styles.recipesGrid}>
+            {CRAFTING_RECIPES.map(recipe => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                materials={materials}
+                quantity={quantity}
+                lockedBy={lockedBy(recipe)}
+                isActive={activeRecipeId === recipe.id}
+                onCraft={craftItem}
+              />
+            ))}
+          </ul>
+        </section>
+
+        <DecoratingStation
+          inventory={treeInventory}
+          ornaments={materials.ornaments}
+          candles={materials.candles}
+          upgrades={upgrades}
           onDecorate={decorateTree}
         />
-        
-        {/* Elves' Bench Automation */}
-        <ElvesBench
-          enabled={automationEnabled}
-          onAddToQueue={addToDecorationQueue}
-        />
       </div>
-      
-      {/* Right Column: Upgrades */}
-      <div className={styles.rightColumn}>
+
+      {/* Right column: Workshop upgrades */}
+      <div className={frame.rightColumn}>
         <EventUpgradesPanel
           title="Workshop Upgrades"
           category="workshop"
@@ -378,7 +425,7 @@ const WorkshopTab: FC<WorkshopTabProps> = ({
       </div>
     </div>
   );
-  
+
   return (
     <BaseTab
       isUnlocked={true}
@@ -387,4 +434,7 @@ const WorkshopTab: FC<WorkshopTabProps> = ({
   );
 };
 
-export default memo(WorkshopTab);
+const MemoizedWorkshopTab = memo(WorkshopTab);
+MemoizedWorkshopTab.displayName = 'WorkshopTab';
+
+export default MemoizedWorkshopTab;

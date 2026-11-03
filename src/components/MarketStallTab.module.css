@@ -1,0 +1,519 @@
+/* Market Stall Tab Styles (Spring Farmer's Market), mockup B. The frame, palette and
+   contrast notes are in SpringSections.module.css; the variables come from its .container.
+   Here also: Dusty Rose #D98AA6 card borders, Disabled #E3E7DE with muted text (4.5) for
+   empty rows and goods, Lavender Dark #553C7B hovers (cream text: 8.6). */
+
+.currencyIcon {
+  vertical-align: middle;
+}
+
+/* =================================================================== */
+/* STALL BAR: market demand, the Busker and the Sandwich Board */
+/* =================================================================== */
+
+.stallBar {
+  background: linear-gradient(135deg, var(--moss) 0%, var(--deep-moss) 100%);
+  border: 3px solid var(--deep-moss);
+  border-radius: 8px;
+  padding: 0.3rem 0.4rem;
+  min-height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.demand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.demandLabel {
+  font-size: 1rem;
+}
+
+.demandMultiplier {
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.demandHint {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* The Busker and the Sandwich Board, as tiles on the bar */
+.busker,
+.board {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.35rem;
+  border: 2px solid var(--butter);
+  border-radius: 6px;
+}
+
+.busker {
+  background: var(--lavender);
+  color: var(--cream);
+}
+
+.board {
+  background: var(--cream);
+  color: var(--deep-moss);
+}
+
+.barText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.barTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.barHint {
+  margin: 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.claimButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem 0.6rem;
+  background: var(--rose);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  animation: pulseClaim 2s ease-in-out infinite;
+}
+
+.claimButton:hover:not(:disabled) {
+  background: var(--rose-dark);
+  animation: none;
+}
+
+.claimButton:disabled {
+  background: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+  animation: none;
+}
+
+@keyframes pulseClaim {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(232, 105, 139, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(232, 105, 139, 0.7);
+  }
+}
+
+/* =================================================================== */
+/* THE CART */
+/* =================================================================== */
+
+.cart {
+  display: grid;
+  grid-template-columns: auto 200px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 78px;
+  box-sizing: border-box;
+  padding: 0.4rem 0.75rem;
+  background: var(--cream);
+  border: 3px solid var(--lavender);
+  border-radius: 8px;
+}
+
+.cartHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cartTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lavender);
+}
+
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.countdownBar {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.cartContents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  background: var(--lavender-tint);
+  border: 1px solid var(--lavender);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.cartEmpty {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.cartActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.cartValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.cartButtons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.loadButton,
+.unloadButton {
+  padding: 0.35rem 0.75rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loadButton {
+  background: var(--lavender);
+  color: var(--cream);
+  border: 2px solid var(--lavender);
+}
+
+.loadButton:hover:not(:disabled) {
+  background: #553C7B;
+  border-color: #553C7B;
+}
+
+.unloadButton {
+  background: var(--cream);
+  color: var(--lavender);
+  border: 2px solid var(--lavender);
+}
+
+.unloadButton:hover:not(:disabled) {
+  background: var(--lavender-tint);
+}
+
+.loadButton:disabled,
+.unloadButton:disabled {
+  background: #E3E7DE;
+  border-color: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* =================================================================== */
+/* FLOWER CARDS: one per flower, a row per finish */
+/* =================================================================== */
+
+.flowerCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.flowerCard {
+  background: var(--cream);
+  border: 3px solid #D98AA6;
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+}
+
+.flowerHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 2px solid var(--butter);
+}
+
+.flowerName {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--deep-moss);
+}
+
+.flowerStock {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.finishRows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finishRow {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 46px 50px auto auto;
+  align-items: center;
+  gap: 0.35rem;
+  height: 36px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--petal-tint);
+}
+
+.finishRow:last-child {
+  border-bottom: none;
+}
+
+.finishName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finishCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 700;
+}
+
+.prizeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 0.3rem;
+  background: var(--lavender);
+  color: var(--cream);
+  border-radius: 999px;
+  font-size: 0.68rem;
+}
+
+.finishPrice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  font-weight: 700;
+  color: var(--rose);
+  white-space: nowrap;
+}
+
+/* Nothing of this finish in stock: the row stays, quieter */
+.emptyRow .finishName,
+.emptyRow .finishCount,
+.emptyRow .finishPrice {
+  color: var(--muted);
+}
+
+.sellButton,
+.cartButton {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  color: var(--cream);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sellButton {
+  background: var(--rose);
+}
+
+.sellButton:hover:not(:disabled) {
+  background: var(--rose-dark);
+}
+
+.cartButton {
+  background: var(--lavender);
+}
+
+.cartButton:hover:not(:disabled) {
+  background: #553C7B;
+}
+
+.sellButton:disabled,
+.cartButton:disabled {
+  background: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* =================================================================== */
+/* SELL ALL BUNCHES */
+/* =================================================================== */
+
+.sellEverythingButton {
+  display: block;
+  text-align: center;
+  width: 100%;
+  padding: 0.55rem;
+  background: var(--rose);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sellEverythingButton:hover:not(:disabled) {
+  background: var(--rose-dark);
+}
+
+.sellEverythingButton:disabled {
+  background: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* =================================================================== */
+/* GOODS, SIX TO A ROW */
+/* =================================================================== */
+
+.goodsRow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.goodCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  background: var(--cream);
+  border: 2px solid var(--leaf);
+  border-radius: 6px;
+}
+
+.goodHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.goodTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--deep-moss);
+  line-height: 1.15;
+}
+
+.goodPrice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--rose);
+  white-space: nowrap;
+}
+
+.goodStock {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.emptyGood .goodStock {
+  color: var(--muted);
+}
+
+.goodButtons {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: auto;
+}
+
+.goodButtons button {
+  flex: 1;
+  padding: 0.25rem 0.2rem;
+  font-size: 0.72rem;
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .claimButton {
+    animation: none;
+  }
+
+  .loadButton,
+  .unloadButton,
+  .sellButton,
+  .cartButton,
+  .sellEverythingButton {
+    transition: none;
+  }
+}

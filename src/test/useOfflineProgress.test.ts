@@ -33,6 +33,7 @@ const simulated = (overrides: Partial<OfflineProgressResult> = {}): OfflineProgr
   experienceGain: 30,
   knowledgeGain: 5,
   autoHarvests: 0,
+  selfHarvests: 0,
   day: 50,
   totalDaysElapsed: 649,
   canningProgressUpdates: new Map(),
@@ -249,6 +250,16 @@ describe('useOfflineProgress', () => {
       expect(deps.setGuildState).toHaveBeenCalledTimes(1);
       const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
       expect(update(DEFAULT_GUILD_STATE).guildTokens).toBe(2);
+    });
+
+    it('pays a Sigil for each crop that harvested itself', () => {
+      vi.mocked(calculateOfflineProgress).mockReturnValue(simulated({ selfHarvests: 3 }));
+      const deps = createDeps({ loaded: savedGame(), state: { ...createDeps().state, farmTier: GUILDS_UNLOCK_TIER } });
+
+      renderHook(() => useOfflineProgress(deps));
+
+      const update = vi.mocked(deps.setGuildState).mock.calls[0][0] as (prev: GuildState) => GuildState;
+      expect(update(commitToGuild(DEFAULT_GUILD_STATE, 'growers', 1)).guildCurrencies.growers).toBe(3);
     });
 
     it('makes committed Engineers Gears from the auto harvests', () => {

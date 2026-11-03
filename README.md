@@ -5,32 +5,31 @@ Grow, harvest, preserve, and profit—build your farming empire one plot at a ti
 
 Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and process a variety of crops into preserved goods. Unlock powerful upgrades, weather the changing seasons, keep bees, join a guild, expand your farm, and prestige for bigger rewards. Balance active canning gameplay with passive farming automation to maximize your profits!
 
-The game features growing, canning and beekeeping systems, guilds, two seasonal events with their own farms and currencies, 47 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
+The game features growing, canning and beekeeping systems, guilds, three seasonal events with their own farms and currencies, 58 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
 
-## ✨ Latest Updates (v0.15.0)
-### 💰 The Merchants Guild - NOW OPEN!
-- **Join the Merchants**: The fourth and last guild, built around trade: a Merchant sells for more and buys for less
-- **Money is the currency**: The Merchants have no currency of their own. Every upgrade costs money, from $1M for a starter level to $1.5B for Golden Parachute
-- **Markup**: Crops and jars sell for 15% more
-- **No Time to Learn**: Knowledge from harvests and canning is 15% lower
-- **Two starters and 10 guild upgrades**: Better prices with Haggling, Shrewd Bargaining and Price Gouging, bigger sales with Bulk Deals, cheaper crop upgrades with Wholesale, a faster Merchant with Trade Routes, and Additives, which make every recipe need one fewer of each crop
+## ✨ Latest Updates (v0.16.0)
+### 🌷 The Spring Farmer's Market - Opens March 20
+- **Four Activity Tabs**: Flower Beds, Herb Garden, Potting Shed and Market Stall
+- **Flowers**: Grow Tulips, Daffodils and Roses; Heirloom Bulbs give a 10% chance of a Prize Bloom worth double
+- **Herb Garden**: Mint, Basil, Chamomile and Lavender are planted once and keep growing sprigs all season
+- **Finishes**: Greenery arranges a bunch (+2 Petals), a lavender sprig scents it (+3 Petals), and both make a Gift Bouquet worth triple
+- **Potting Shed**: Make Mint Tea, Chamomile Tea, Pesto and Seed Packets; the Gnome Crew gathers herbs, makes teas and ties bouquets for you
+- **Petals and Market Day**: Petals are the event currency. Demand doubles by Mother's Day, and the Cart sells everything on it every Market Day for half again as much
+- **Six achievements**: Five for bunches sold, the last giving April Showers, a permanent +5% spring crop yield, and Best Mom for 50 Gift Bouquets on Mother's Day itself
 
-### 👔 Payroll and Hostile Takeover
-- **Payroll**: One switch in the Garden lays off every auto-buyer, so nothing more is bought while you save. Rehiring is everyone or no one, at full price, or half with Head Hunters
-- **Hostile Takeover**: Buy the larger farm for ten times its price and keep everything: crops, stash, upgrades, auto-buyers and experience
-- **Futures and Golden Parachute**: The Merchant keeps selling while you're away, and ending a Legacy carries a tenth of your money into the next
+### 🎄 The Tree Shop Face Lift
+- **A new look**: The Tree Farm, Workshop and Shopfront are rebuilt on the Pumpkin Rush layouts, in a winter palette
+- **Milestones became achievements**: The six Christmas achievements now pay the old sales milestones' Holiday Cheer, from 50 to 8,000. Milestones you already claimed don't pay twice
+- **Fixes**: The header counts your trees again, unlock buttons charge the price they show, Cheerful Crafting's first level adds a job, and the Shopfront fits the window with every kind of tree
 
-### 🐱 Ferdinand the Cat
-- **Ferdinand**, the Merchants' orange tabby, visits every 4 to 8 minutes of play
-- **Hot Tip**: Click him, and crops and jars sell for double for 60 seconds, or 90 with Insider Trading
-- **Three achievements**: Two for Hot Tips, and a hidden one for Hostile Takeovers
-
-### Also New in v0.15.0
-- **Pumpkin Rush**: Giant Vine Tonic has no top level, and County Fair rivals grow heavier only when you win first place
-- **Visitors**: Dunkin and Stanley are drawn about Archie's size
-- **Fixes**: Auto-buyers no longer buy plots past the farm's size or spend money that isn't there
+### 🌾 Soilbound Pact and Guild Mastery
+- **Soilbound Pact**: Now does what its card always said: a ripe crop has a 50% chance to harvest itself, as a manual harvest with the Growers' bonus, a Sigil and full experience. It works while you're away too
+- **Guild Master**: Max out every upgrade of one guild
+- **Kept whole**: Rooted, Branching Out, Full Canopy and Evergreen Legacy, the final achievement, for one, two, three and four guilds kept at their max through a Legacy
+- **Legacy**: An upgrade bought up to its max always keeps at least one level, so kept levels can reach the max
 
 ### Earlier Updates
+- **v0.15.0**: The Merchants Guild, Payroll, Hostile Takeover and Ferdinand the cat
 - **v0.14.0**: The Engineers Guild, the Cannery, Stanley the cat, smooth progress bars and a steadier header
 - **v0.13.0**: The Preservers Guild, Dunkin the Glutton, Legacy, and the Garden, Kitchen and Honeycomb tabs
 - **v0.12.0**: Fall Pumpkin Rush event, cozy pixel art rework, more ways to earn Guild Tokens, canning in background tabs
@@ -80,7 +79,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 - **Guild Tokens:** Before you commit, earn tokens from manual harvests (+1 each), canned goods (+1 per 5), batches of honey (+2 per batch) and auto harvests (+1 per 10)
 - **Sampling:** Try up to two starter upgrades from each guild before you choose; unspent tokens don't carry over when you join, and a guild's currency is earned only as a member. The Merchants' starters cost money instead of tokens
 - **Growers Guild:** Commit to earn Sigils from manual harvests and spend them on 8 guild upgrades, including Fruit Cultivation
-  - **Bonuses:** Extra crops on manual harvests and stronger bee pollination
+  - **Bonuses:** Extra crops on manual harvests, stronger bee pollination, and with Soilbound Pact, ripe crops that harvest themselves
   - **Trade-offs:** Auto harvesters run 25% slower and canning pays 15% less
 - **Ritual Harvest:** With Ritual Circles, spend 5 Sigils to harvest every ready crop at once
 - **Preservers Guild:** Commit to earn Wax Seals from batches you start and spend them on 10 guild upgrades, including Cellar Recipes and the Pressure Canner
@@ -94,7 +93,8 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
   - **Bonuses:** Crops and jars sell for 15% more, Payroll lays off or rehires every auto-buyer at once, and Ferdinand brings Hot Tips
   - **Trade-off:** Knowledge from harvests and canning is 15% lower
 - **Hot Tip:** Click Ferdinand the cat when he visits, and crops and jars sell for double for a minute
-- **Legacy:** From Farm Tier 6, end your Legacy to start the farm over and keep half your guild levels, one unlock and your special achievements; then choose a guild again
+- **Legacy:** From Farm Tier 6, end your Legacy to start the farm over and keep half your guild levels, one unlock and your special achievements; then choose a guild again. An upgrade bought up to its max always keeps at least one level
+- **Guild Mastery:** Max out a guild for Guild Master, then keep guilds at their max through a Legacy for Rooted, Branching Out, Full Canopy and Evergreen Legacy, the final achievement
 
 ### 🏆 Progression Systems
 - **Experience Unlocking:** Gain experience from harvesting to unlock crops in sequence
@@ -125,11 +125,23 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
   - **Tree Farm**: Fertilized Soil (growth speed), Greenhouse Extension (more plots), Evergreen Essence (quality chance), Efficient Harvester, Bulk Planter
   - **Workshop**: Ornament Crafting Bench, Traditional Ornaments (pinecone ornaments), Elves' Bench (automation), Cheerful Crafting (automation speed), Star Forge (luxury trees sell for 3× instead of 2×)
   - **Shopfront**: Garland Borders (income boost), Wreath Sign (daily bonuses), Golden Bell Counter (1 Holiday Cheer every 10 seconds), Magical Register (bonus tips), Fireplace Display (luxury bonus)
-- **Sales Milestones**: Claim 50 to 8,000 Holiday Cheer as trees sold climb from 1 to 5,000
 - **Automation**: Elves' Bench crafts and decorates trees at 1-20 items/second
-- **Achievements**: Six achievements whose rewards include Archie's sweater and reindeer hat, Frost Fertilizer (+5% winter crop yield), a cocoa canning recipe and falling snow
+- **Achievements**: Six achievements for trees sold, from 1 to 5,000, pay 50 to 8,000 Holiday Cheer, and their rewards include Archie's sweater and reindeer hat, Frost Fertilizer (+5% winter crop yield), a cocoa canning recipe and falling snow
 - **Offline Progress**: Full support for tree growth, crafting, and passive income while away
 - **Toast Notifications**: Visual feedback for Magical Register bonuses and achievements
+
+### 🌷 Spring Farmer's Market Event (Seasonal: Mar 20 - Memorial Day)
+- **Four Activity Tabs**: Flower Beds, Herb Garden, Potting Shed and Market Stall
+- **Flower Beds**: Plant Tulips, Daffodils and Roses in six beds; each harvest gives a bunch, greenery and seeds
+- **Herb Garden**: Mint, Basil, Chamomile and Lavender are planted once and grow a sprig every 20 to 60 days, up to 10 each, or 25 with the Trellis
+- **Finishes**: Greenery makes a bunch Arranged (+2 Petals), a lavender sprig makes it Scented (+3 Petals), and both make a Gift Bouquet worth triple
+- **Potting Shed**: Mint Tea, Chamomile Tea, Pesto and, with the Packet Press, Seed Packets
+- **Petals**: Event currency from sales, harvests, the Busker and Archie; demand doubles by Mother's Day and holds until Memorial Day
+- **Market Day**: Load the Cart, and every 60 days, or 40 with the Pony Cart, it sells everything on it for 50% more
+- **Event Upgrades**: 19 upgrades for the Beds, Garden, Shed and Stall, from the Rain Barrel and Trellis to Silk Ribbons and the Busker
+- **Automation**: The Gnome Crew gathers herbs, makes teas, ties bouquets and, with the Cart Loader, loads the Cart
+- **Achievements**: Five for bunches sold pay Petals and farm rewards, the 5th April Showers, a permanent +5% spring crop yield; and Best Mom for 50 Gift Bouquets on Mother's Day
+- **Offline Progress**: Flowers and herbs grow, the crew works, Market Day sells the Cart and the Busker plays while you're away
 
 ### Upgrade Details
 
@@ -190,14 +202,14 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
   - **Greenhouse:** Removes Winter (-90%) and Snow (-100%) penalties (scales with farm size)
 
 ### 🏅 Achievements
-- **47 Achievements:** Across farming, wealth, progression, canning, bees, visits from Dunkin, Stanley and Ferdinand, the factory floor, Hostile Takeovers, Legacies and both seasonal events
-- **Rewards:** Money, knowledge, Candy Corn, Archie outfits, a cocoa recipe and permanent crop bonuses
-- **Permanent Bonuses:** Frost Fertilizer (+5% winter crop yield) and Harvest Moon (+5% fall crop yield)
+- **58 Achievements:** Across farming, wealth, progression, canning, bees, visits from Dunkin, Stanley and Ferdinand, the factory floor, Hostile Takeovers, Legacies, guild mastery and all three seasonal events
+- **Rewards:** Money, knowledge, Holiday Cheer, Candy Corn, Petals, Archie outfits, a cocoa recipe and permanent crop bonuses
+- **Permanent Bonuses:** Frost Fertilizer (+5% winter crop yield), Harvest Moon (+5% fall crop yield) and April Showers (+5% spring crop yield)
 
 ### 💾 Save & Progression
 - **Auto-Save System:** Progress saves to localStorage automatically every 30 seconds
 - **Export/Import:** Timestamped save files for backup and sharing
-- **Offline Progress:** Crops grow and auto-harvest, bees make honey, the Merchant sells with the Merchants' Futures, and both seasonal events keep running while you're away (the farm credits up to 8 hours, or 12 with the Engineers' Night Shift)
+- **Offline Progress:** Crops grow and auto-harvest, bees make honey, the Merchant sells with the Merchants' Futures, and the seasonal events keep running while you're away (the farm credits up to 8 hours, or 12 with the Engineers' Night Shift)
 - **Background Tabs:** The game catches up when you return to a hidden tab, canning included
 - **Backward Compatibility:** Seamless migration when new features are added
 - **Year & Day Tracking:** Long-term progression display showing "Year: X | Day: Y"
@@ -206,14 +218,14 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 
 ### 📚 Player Experience & Accessibility
 - **In-Game Documentation**: Help pages explain each system with strategy tips
-- **Help Categories**: Seasons & Weather, Farm & Experience, Crops & Upgrades, Farm Upgrades, Auto-Purchasers, Canning System, Bee System, Guilds, Tree Shop, Pumpkin Rush
+- **Help Categories**: Seasons & Weather, Farm & Experience, Crops & Upgrades, Farm Upgrades, Auto-Purchasers, Canning System, Bee System, Guilds, Tree Shop, Pumpkin Rush, Spring Market
 - **Beginner-Friendly**: A first-harvest tutorial and detailed explanations with strategic guides
 - **Pause Button**: Pause the whole game from the header; the button glows while paused
 - **Event Log**: A running record of harvests, sales, weather, unlocks, achievements and event activity
 - **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
 - **Unified Tab Interface**: Consistent UI across every tab
 - **Shorthand Numbers**: All large values displayed in readable format (K, M, B, etc.)
-- **Archie Bonus**: Archie shows up now and then; click him for bonus money, plus Holiday Cheer or Candy Corn during events, with streak multipliers and sound effects 🐕
+- **Archie Bonus**: Archie shows up now and then; click him for bonus money, plus Holiday Cheer, Candy Corn or Petals during events, with streak multipliers and sound effects 🐕
 - **Archie's Looks**: Choose Archie's look in Settings, including winter and fall outfits earned from achievements
 - **Dunkin**: Preservers get visits from Dunkin the French Bulldog; shoo him before he eats the pantry
 - **Stanley**: Engineers get visits from Stanley the cat; click him for a Tune-Up
@@ -229,19 +241,19 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 
 ## Roadmap
 
-### 🎯 Current Features (v0.15.0)
+### 🎯 Current Features (v0.16.0)
+- ✅ **Spring Farmer's Market**: Flower beds, an herb garden, a potting shed and a market stall with Market Day
 - ✅ **Fall Pumpkin Rush**: Pumpkin growing, carving, a farm stand and a County Fair weigh-off
 - ✅ **Christmas Tree Shop Event**: Complete seasonal event system with farming, crafting, and sales
 - ✅ **Bee System**: Honey, Golden Honey, pollination bonuses and honey recipes
 - ✅ **Guilds**: The Growers Guild with Sigils and 10 fruit crops, the Preservers Guild with Wax Seals, 10 Cellar recipes and Dunkin, the Engineers Guild with Gears, the Cannery and Stanley, and the Merchants Guild with Payroll, Hostile Takeover and Ferdinand
 - ✅ **Legacy**: A guild prestige that keeps half your guild levels, one unlock and your special achievements
-- ✅ **Achievement System**: 47 achievements with rewards across every system
+- ✅ **Achievement System**: 58 achievements with rewards across every system, ending with Evergreen Legacy
 - ✅ **Offline Progression**: Catch-up for time away and for hidden tabs
 - ✅ **Cozy Art**: Nearly every image redrawn in one pixel art style
 - ✅ **Toast Notifications**: Visual feedback for bonuses and events
 
 ### 🔮 Future Seasonal Events
-- **Spring Farmer's Market**: Flowers and Herbs
 - **Summer Watermelon Festival**: Competitive growing challenges
 
 ### 🌟 Planned Features
@@ -258,7 +270,7 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 7. **Sell Strategy**: Set valuable crops to Hold on their beds to stockpile them for canning, and leave cheaper ones on Sell
 8. **Upgrade Timing**: Major upgrades like Greenhouse scale with farm size - plan purchases carefully
 9. **Canning Strategy**: Once unlocked, balance selling raw crops vs. processing them for higher profits
-10. **Seasonal Events**: The Pumpkin Rush runs Sep 22 through Thanksgiving and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
+10. **Seasonal Events**: The Spring Market runs Mar 20 through Memorial Day, the Pumpkin Rush Sep 22 through Thanksgiving and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
 11. **Archie Hunting**: Keep an eye out for Archie - clicking him gives bonus money and builds streaks!
 12. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
 13. **Pick a Guild**: At Farm Tier 5, sample a few upgrades, then join the Growers for farming, the Preservers for canning, the Engineers for machines that run the farm or the Merchants for trade
@@ -268,11 +280,11 @@ The game features growing, canning and beekeeping systems, guilds, two seasonal 
 ## 🔧 For Developers
 
 - **React + TypeScript**: Modern React 19 with full TypeScript support and strict mode
-- **Vite Build System**: Fast development and optimized production builds (about 640 KB of JavaScript, 186 KB gzipped)
+- **Vite Build System**: Fast development and optimized production builds (about 850 KB of JavaScript, 250 KB gzipped)
 - **Game Clock**: one `GameClock` steps every system once per second, in a fixed order, so React renders once per step (`useGameTick` subscribes)
 - **Catch-Up**: `useOfflineProgress` replays time away and hidden-tab time, capped at 8 hours (`MAX_OFFLINE_MS`); canning catches up through `utils/canningSimulation.ts`
 - **State Management**: Centralized game state with localStorage persistence and ref-based access patterns
-- **Component Architecture**: Modular BaseTab system with reusable upgrade panels; both seasonal events share `EventUpgradesPanel` and `utils/eventUpgrades.ts`
+- **Component Architecture**: Modular BaseTab system with reusable upgrade panels; the seasonal events share `EventUpgradesPanel` and `utils/eventUpgrades.ts`
 - **Error Handling**: A top-level error boundary shows the error and a Retry button instead of a blank page
 - **Test Suite**: Comprehensive tests with Vitest, Testing Library, and coverage reporting
 - **Build Commands**:

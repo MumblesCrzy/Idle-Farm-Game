@@ -5,13 +5,79 @@
  * Includes tree definitions, crafting recipes, upgrades, and milestones.
  */
 
-import { DECORATION_GARLAND, DECORATION_WREATH, ICON_ELVES_BENCH, ICON_EVERGREEN_ESSENCE, ICON_FERTILIZED_SOIL, ICON_FIREPLACE, ICON_GREENHOUSE_EXTENSION, ICON_AXE, ICON_HOLIDAY_BELL, ICON_HOLIDAY_REGISTER, ICON_ORNAMENT_WORKBENCH, ICON_STAR_FORGE, ICON_TRADITIONAL_ORNAMENT, TREE_FIR, TREE_PINE, TREE_SAPLING, TREE_SPRUCE, ICON_CHEERFUL_CRAFTING } from '../config/assetPaths';
+import {
+  DECORATION_CANDLE,
+  DECORATION_GARLAND,
+  DECORATION_WREATH,
+  ICON_AXE,
+  ICON_CHEERFUL_CRAFTING,
+  ICON_ELVES,
+  ICON_ELVES_BENCH,
+  ICON_ELVES_INDICATOR,
+  ICON_EVERGREEN_ESSENCE,
+  ICON_FERTILIZED_SOIL,
+  ICON_FIREPLACE,
+  ICON_GOLD_STAR,
+  ICON_GREENHOUSE_EXTENSION,
+  ICON_HOLIDAY_BELL,
+  ICON_HOLIDAY_CHEER,
+  ICON_HOLIDAY_REGISTER,
+  ICON_ORNAMENT,
+  ICON_ORNAMENT_WORKBENCH,
+  ICON_SPARKLES,
+  ICON_STAR_FORGE,
+  ICON_TRADITIONAL_ORNAMENT,
+  ICON_TREE_SHOP,
+  ICON_TREE_STOREFRONT,
+  ICON_TREE_WORKSHOP,
+  MATERIAL_BRANCH,
+  MATERIAL_PINECONE,
+  MATERIAL_WOOD,
+  TREE_DECORATED,
+  TREE_FIR,
+  TREE_PINE,
+  TREE_SAPLING,
+  TREE_SPRUCE
+} from '../config/assetPaths';
+import type { EventArtSource } from '../components/EventArt';
 import type {
   TreeQuality,
   CraftingRecipe,
   EventUpgrade,
   EventMilestone,
 } from '../types/christmasEvent';
+
+// ============================================================================
+// ART
+// ============================================================================
+
+/** Tree Shop art: each image, with an emoji for when it cannot load */
+export const CHRISTMAS_ART = {
+  farm: { image: ICON_TREE_SHOP, emoji: '🌲' },
+  workshop: { image: ICON_TREE_WORKSHOP, emoji: '🛠️' },
+  shopfront: { image: ICON_TREE_STOREFRONT, emoji: '🏪' },
+  cheer: { image: ICON_HOLIDAY_CHEER, emoji: '🎅' },
+  sapling: { image: TREE_SAPLING, emoji: '🌱' },
+  pine: { image: TREE_PINE, emoji: '🌲' },
+  spruce: { image: TREE_SPRUCE, emoji: '🌲' },
+  fir: { image: TREE_FIR, emoji: '🎄' },
+  decorated: { image: TREE_DECORATED, emoji: '🎄' },
+  wood: { image: MATERIAL_WOOD, emoji: '🪵' },
+  pinecones: { image: MATERIAL_PINECONE, emoji: '🌰' },
+  branches: { image: MATERIAL_BRANCH, emoji: '🌿' },
+  garland: { image: DECORATION_GARLAND, emoji: '🎀' },
+  candles: { image: DECORATION_CANDLE, emoji: '🕯️' },
+  ornaments: { image: ICON_ORNAMENT, emoji: '🔴' },
+  traditional: { image: ICON_TRADITIONAL_ORNAMENT, emoji: '🌰' },
+  elves: { image: ICON_ELVES, emoji: '🧝' },
+  elvesAtWork: { image: ICON_ELVES_INDICATOR, emoji: '🧝' },
+  axe: { image: ICON_AXE, emoji: '🪓' },
+  wreath: { image: DECORATION_WREATH, emoji: '🎄' },
+  bell: { image: ICON_HOLIDAY_BELL, emoji: '🔔' },
+  starForge: { image: ICON_STAR_FORGE, emoji: '⭐' },
+  perfect: { image: ICON_GOLD_STAR, emoji: '⭐' },
+  luxury: { image: ICON_SPARKLES, emoji: '✨' },
+} satisfies Record<string, EventArtSource>;
 
 // ============================================================================
 // TREE DEFINITIONS
@@ -169,7 +235,7 @@ export const FARMING_UPGRADES: EventUpgrade[] = [
     description: 'Faster-growing tree with better yields',
     icon: TREE_SPRUCE,
     category: 'farming',
-    cost: 100,
+    cost: TREE_DEFINITIONS.spruce.unlockCost,
     owned: false,
     effect: 'Unlock Spruce trees',
   },
@@ -179,7 +245,7 @@ export const FARMING_UPGRADES: EventUpgrade[] = [
     description: 'Premium tree with fastest growth and highest value',
     icon: TREE_FIR,
     category: 'farming',
-    cost: 250,
+    cost: TREE_DEFINITIONS.fir.unlockCost,
     owned: false,
     effect: 'Unlock Fir trees',
   },
@@ -380,14 +446,27 @@ export const ALL_EVENT_UPGRADES: EventUpgrade[] = [
 ];
 
 // ============================================================================
-// MILESTONES
+// TREE SALES REWARDS
 // ============================================================================
 
 /**
- * Event milestones: Holiday Cheer for trees sold, claimed on the Shopfront.
- * The achievements at the same counts give the permanent rewards (Archie's
- * sweater and hat, Frost Fertilizer, the cocoa recipe and the snowfall).
+ * Holiday Cheer for trees sold. Each step is an achievement (data/achievements.ts)
+ * that pays its Cheer once, through the sales milestone with the same count: older
+ * saves claimed those milestones on the Shopfront, and a claimed one never pays again.
  */
+export const TREE_SALES_REWARDS = [
+  { achievementId: 'first_tree_sold', milestoneId: 'milestone_first_tree', name: 'First Sale', trees: 1, cheer: 50 },
+  { achievementId: 'winter_sweater', milestoneId: 'milestone_50_trees', name: 'Growing Business', trees: 50, cheer: 150 },
+  { achievementId: 'reindeer_hat', milestoneId: 'milestone_250_trees', name: 'Master Decorator', trees: 250, cheer: 500 },
+  { achievementId: 'frost_fertilizer', milestoneId: 'milestone_1000_trees', name: 'Winter Farmer', trees: 1000, cheer: 1500 },
+  { achievementId: 'canners_cocoa', milestoneId: 'milestone_2500_trees', name: 'Holiday Tradition', trees: 2500, cheer: 4000 },
+  { achievementId: 'snowfall_cosmetic', milestoneId: 'milestone_5000_trees', name: 'Christmas Legend', trees: 5000, cheer: 8000 },
+] as const;
+
+/** Holiday Cheer the tree sales achievement pays */
+export const treeSalesCheer = (achievementId: string): number =>
+  TREE_SALES_REWARDS.find(reward => reward.achievementId === achievementId)?.cheer ?? 0;
+
 const cheerMilestone = (id: string, name: string, requirement: number, cheerAmount: number): EventMilestone => ({
   id,
   name,
@@ -402,14 +481,10 @@ const cheerMilestone = (id: string, name: string, requirement: number, cheerAmou
   },
 });
 
-export const EVENT_MILESTONES: EventMilestone[] = [
-  cheerMilestone('milestone_first_tree', 'First Sale', 1, 50),
-  cheerMilestone('milestone_50_trees', 'Growing Business', 50, 150),
-  cheerMilestone('milestone_250_trees', 'Master Decorator', 250, 500),
-  cheerMilestone('milestone_1000_trees', 'Winter Farmer', 1000, 1500),
-  cheerMilestone('milestone_2500_trees', 'Holiday Tradition', 2500, 4000),
-  cheerMilestone('milestone_5000_trees', 'Christmas Legend', 5000, 8000),
-];
+/** The sales milestones, which record which tree sales rewards have been paid */
+export const EVENT_MILESTONES: EventMilestone[] = TREE_SALES_REWARDS.map(reward =>
+  cheerMilestone(reward.milestoneId, reward.name, reward.trees, reward.cheer)
+);
 
 // ============================================================================
 // EVENT CONSTANTS
@@ -444,6 +519,9 @@ export const EVENT_CONSTANTS = {
   
   // Daily bonus
   DAILY_BONUS_BASE: 25, // Base Holiday Cheer
+
+  // Holiday Cheer for each crafted good sold on its own
+  GOOD_PRICES: { garlands: 4, candles: 2, ornaments: 1 },
   
   // Currency
   STARTING_CHEER: 0,

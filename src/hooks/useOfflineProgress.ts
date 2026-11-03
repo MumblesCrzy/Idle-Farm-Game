@@ -2,11 +2,12 @@ import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { calculateOfflineProgress, type AwaySales, type OfflineProgressResult } from '../utils/offlineProgress';
 import { saveGameStateWithCanning, type ExtendedGameState } from '../utils/saveSystem';
 import { devTelemetry } from '../utils/devTelemetry';
-import { awardGears, awardGuildTokens, withoutHotTip } from '../utils/guildCalculations';
+import { awardGears, awardGuildTokens, awardHarvestCurrency, withoutHotTip } from '../utils/guildCalculations';
 import type { Veggie, WeatherType } from '../types/game';
 import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { UsePumpkinEventReturn } from './usePumpkinEvent';
+import type { UseSpringEventReturn } from './useSpringEvent';
 import { useLatestRef } from './useLatestRef';
 import { LAST_ACTIVE_KEY } from '../config/gameConstants';
 
@@ -52,10 +53,11 @@ export interface OfflineGameState {
   autoSellOwned?: boolean;
   /** Crop yield bonus from bee hives */
   beeYieldBonus?: number;
-  /** Achievement bonuses such as Frost Fertilizer and Harvest Moon */
+  /** Achievement bonuses such as Frost Fertilizer, Harvest Moon and April Showers */
   permanentBonuses?: string[];
   christmasEvent: UseChristmasEventReturn;
   pumpkinEvent?: UsePumpkinEventReturn;
+  springEvent?: UseSpringEventReturn;
 }
 
 /**
@@ -125,6 +127,10 @@ function applyCatchUp(
     deps.setMoney((prev: number) => prev + result.awaySales.money);
     deps.onAwaySales?.(result.awaySales);
   }
+  // Crops that harvested themselves pay as manual harvests: Sigils, or Guild Tokens
+  if (result.selfHarvests > 0) {
+    deps.setGuildState(prev => awardHarvestCurrency(prev, result.selfHarvests, state.farmTier));
+  }
   if (result.autoHarvests > 0) {
     deps.setGuildState(prev => awardGears(
       awardGuildTokens(prev, 'autoHarvests', result.autoHarvests, state.farmTier),
@@ -156,6 +162,18 @@ function applyCatchUp(
       pumpkins.processScarecrowCrew(ticks);
     }
     pumpkins.updatePassiveIncome(result.timeElapsed);
+  }
+
+  // Spring Market catch-up: beds grow, herbs grow until their slots are full, Market Day sells
+  // the Cart, the Gnome Crew works, the Busker pays out
+  const spring = state.springEvent;
+  if (spring?.isEventActive) {
+    const ticks = Math.floor(result.timeElapsed / 1000);
+    if (ticks > 0) {
+      spring.processSpringGrowth(ticks);
+      spring.processGnomeCrew(ticks);
+    }
+    spring.updatePassiveIncome(result.timeElapsed);
   }
 
   devTelemetry.emit('offline_catchup', {

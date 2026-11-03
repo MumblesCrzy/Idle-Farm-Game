@@ -1,88 +1,79 @@
 /**
  * Shopfront Tab Component
- * 
- * Handles tree sales for the Christmas Tree Shop event.
- * Features:
- * - Price cards for each tree variant with demand multipliers
- * - Sell sliders and buttons for managing inventory
- * - Customer Feed with cozy messages
- * - Daily Bonus claim (requires Wreath Sign upgrade)
+ *
+ * Sells trees and crafted goods for the Christmas Tree Shop. Laid out like the
+ * Farm Stand:
+ * - A bar with the market demand, Golden Bell income and the Wreath Sign's daily
+ *   bonus, so the tab fits a 1600x1000 window
+ * - Price cards for each tree and decoration, across qualities
+ * - Sell sliders and buttons, priced by the shared pricing module
+ * - Garland, candles and ornaments sold on their own
+ * Sales milestones are achievements now, so they live in the achievements list.
  */
 
-import InlineIcon from './InlineIcon';
-import { memo, useCallback, useMemo, useState, type FC, type ChangeEvent } from 'react';
-import type { TreeInventory, EventUpgrade, CraftingMaterials, EventMilestone } from '../types/christmasEvent';
-import { TREE_PINE, TREE_SPRUCE, TREE_FIR, TREE_DECORATED, DECORATION_CANDLE, DECORATION_GARLAND, ICON_HOLIDAY_CHEER, ICON_HOLIDAY_REGISTER, ICON_SPARKLES } from '../config/assetPaths';
+import { memo, useCallback, useMemo, useState, type ChangeEvent, type FC } from 'react';
 import BaseTab from './BaseTab';
+import EventArt, { type EventArtSource } from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
-import EventMilestones, { type EventMilestoneView } from './EventMilestones';
-import { getTreePrice, getTreeSaleCheer, parseTreeKey } from '../utils/christmasTreePricing';
+import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
+import type { EventUpgrade, TreeInventory, TreeQuality, TreeType } from '../types/christmasEvent';
+import { CHRISTMAS_ART, EVENT_CONSTANTS, TREE_DEFINITIONS } from '../data/christmasEventData';
+import {
+  getTreeSaleCheer,
+  inventorySaleCheer,
+  ownsUpgrade,
+  parseTreeKey
+} from '../utils/christmasTreePricing';
+import frame from './TreeShopSections.module.css';
 import styles from './ShopfrontTab.module.css';
 
-/**
- * Helper to get tree image from tree key
- */
-const getTreeImageFromKey = (treeKey: string): string | null => {
-  if (treeKey.includes('pine')) return TREE_PINE;
-  if (treeKey.includes('spruce')) return TREE_SPRUCE;
-  if (treeKey.includes('fir')) return TREE_FIR;
-  return null;
-};
+type FormatNumber = (num: number, decimalPlaces?: number) => string;
 
-interface ShopfrontTabProps {
-  treeInventory: TreeInventory;
-  materials: CraftingMaterials;
-  sellTrees: (treeKey: string, quantity: number) => void;
-  sellGarland: (quantity: number) => void;
-  sellCandle: (quantity: number) => void;
-  sellOrnament: (quantity: number) => void;
-  demandMultiplier: number;
-  holidayCheer: number;
-  upgrades: EventUpgrade[];
-  formatNumber: (num: number, decimalPlaces?: number) => string;
-  purchaseUpgrade: (upgradeId: string) => void;
-  milestones: EventMilestone[];
-  totalTreesSold: number;
-  claimMilestone: (milestoneId: string) => unknown;
-}
+const C = EVENT_CONSTANTS;
+
+/** Small Holiday Cheer icon that screen readers read as the currency name */
+const Cheer: FC<{ size?: number }> = ({ size = 16 }) => (
+  <EventArt art={CHRISTMAS_ART.cheer} size={size} alt="Holiday Cheer" className={styles.currencyIcon} />
+);
+
+// ============================================================================
+// PRICE CARD VARIANTS
+// ============================================================================
+
+type Finish = 'plain' | 'ornamented' | 'candled' | 'luxury';
 
 /** A price card: one tree type with one decoration, across all qualities */
 interface TreeVariant {
   key: string; // treeType_decoration
   name: string;
-  /** What finishes the tree, which picks its picture */
-  finish: 'plain' | 'ornamented' | 'candled' | 'luxury';
+  art: EventArtSource;
 }
 
-/**
- * Price card variants. Garland is sold as a standalone item now, so garlanded
- * trees from older saves are sold by Sell All only.
- * Luxury trees require both ornaments AND candles.
- */
-const TREE_VARIANTS: TreeVariant[] = [
-  { key: 'pine_plain', name: 'Pine Tree', finish: 'plain' },
-  { key: 'pine_ornamented', name: 'Ornamented Pine', finish: 'ornamented' },
-  { key: 'pine_candled', name: 'Candled Pine', finish: 'candled' },
-  { key: 'pine_luxury', name: 'Luxury Pine', finish: 'luxury' },
-  { key: 'spruce_plain', name: 'Spruce Tree', finish: 'plain' },
-  { key: 'spruce_ornamented', name: 'Ornamented Spruce', finish: 'ornamented' },
-  { key: 'spruce_candled', name: 'Candled Spruce', finish: 'candled' },
-  { key: 'spruce_luxury', name: 'Luxury Spruce', finish: 'luxury' },
-  { key: 'fir_plain', name: 'Fir Tree', finish: 'plain' },
-  { key: 'fir_ornamented', name: 'Ornamented Fir', finish: 'ornamented' },
-  { key: 'fir_candled', name: 'Candled Fir', finish: 'candled' },
-  { key: 'fir_luxury', name: 'Luxury Fir', finish: 'luxury' },
-];
+const TREES: TreeType[] = ['pine', 'spruce', 'fir'];
+const FINISHES: Finish[] = ['plain', 'ornamented', 'candled', 'luxury'];
 
-/** A price card's picture: the bare tree, or what finishes it */
-const variantImage = (variant: TreeVariant): string => {
-  switch (variant.finish) {
-    case 'ornamented': return TREE_DECORATED;
-    case 'candled': return DECORATION_CANDLE;
-    case 'luxury': return ICON_SPARKLES;
-    default: return getTreeImageFromKey(variant.key) || TREE_PINE;
-  }
+const FINISH_ART: Record<Finish, EventArtSource | null> = {
+  plain: null, // the tree's own art
+  ornamented: CHRISTMAS_ART.decorated,
+  candled: CHRISTMAS_ART.candles,
+  luxury: CHRISTMAS_ART.luxury,
 };
+
+const FINISH_NAMES: Record<Finish, string> = { plain: '', ornamented: 'Ornamented', candled: 'Candlelit', luxury: 'Luxury' };
+
+/**
+ * Every tree in every decoration, in display order. Garland is sold on its own
+ * now, so garlanded trees from older saves are sold by Sell All only.
+ */
+const TREE_VARIANTS: TreeVariant[] = TREES.flatMap(treeType =>
+  FINISHES.map(finish => ({
+    key: `${treeType}_${finish}`,
+    name: finish === 'plain'
+      ? TREE_DEFINITIONS[treeType].displayName
+      : `${FINISH_NAMES[finish]} ${TREE_DEFINITIONS[treeType].name}`,
+    art: FINISH_ART[finish] ?? CHRISTMAS_ART[treeType],
+  }))
+);
 
 /** Trees held under one inventory key (treeType_quality_decoration) */
 interface StockEntry {
@@ -90,15 +81,19 @@ interface StockEntry {
   quantity: number;
 }
 
+const QUALITY_NAMES: Record<TreeQuality, string> = { normal: 'Normal', perfect: 'Perfect', luxury: 'Luxury' };
+const QUALITY_ART: Partial<Record<TreeQuality, EventArtSource>> = { perfect: CHRISTMAS_ART.perfect, luxury: CHRISTMAS_ART.luxury };
+
 /** Lower qualities sell first */
 const QUALITY_SELL_ORDER: Record<string, number> = { normal: 0, perfect: 1, luxury: 2 };
 const sellOrder = (entry: StockEntry) => QUALITY_SELL_ORDER[parseTreeKey(entry.key).quality] ?? 999;
+const qualityOf = (key: string) => parseTreeKey(key).quality as TreeQuality;
 
 /** Groups inventory by price card variant, each list in selling order */
 function groupStockByVariant(inventory: TreeInventory): Record<string, StockEntry[]> {
   const groups: Record<string, StockEntry[]> = {};
   for (const [key, quantity] of Object.entries(inventory)) {
-    if (!quantity) continue;
+    if (!(quantity > 0)) continue;
     const { treeType, decoration } = parseTreeKey(key);
     (groups[`${treeType}_${decoration}`] ??= []).push({ key, quantity });
   }
@@ -112,7 +107,7 @@ function groupStockByVariant(inventory: TreeInventory): Record<string, StockEntr
 function stockSaleCheer(
   stock: StockEntry[],
   quantity: number,
-  upgrades: EventUpgrade[],
+  upgrades: readonly EventUpgrade[],
   demandMultiplier: number
 ): number {
   let remaining = quantity;
@@ -126,33 +121,43 @@ function stockSaleCheer(
   return cheer;
 }
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+// ============================================================================
+// PRICE CARD
+// ============================================================================
 
-/**
- * Individual tree variant price card
- */
 interface PriceCardProps {
   variant: TreeVariant;
   /** Inventory for this variant, in selling order */
   stock: StockEntry[];
-  upgrades: EventUpgrade[];
+  upgrades: readonly EventUpgrade[];
   demandMultiplier: number;
   onSell: (variantKey: string, quantity: number) => void;
-  formatNumber: (num: number, decimalPlaces?: number) => string;
+  formatNumber: FormatNumber;
 }
 
 const PriceCard: FC<PriceCardProps> = memo(({ variant, stock, upgrades, demandMultiplier, onSell, formatNumber }) => {
   const [sellQuantity, setSellQuantity] = useState(0);
 
   const quantity = stock.reduce((sum, entry) => sum + entry.quantity, 0);
-  // Price per tree for each quality held, priced the same way a sale is
-  const prices = stock.map(entry => getTreePrice(entry.key, upgrades, demandMultiplier));
+  // Stock can shrink while a quantity is picked, when the Elves decorate one
+  const selected = Math.min(sellQuantity, quantity);
+
+  // What selling one tree of each quality pays, priced the same way a sale is
+  const prices = stock.map(entry => getTreeSaleCheer(entry.key, 1, upgrades, demandMultiplier));
   const lowestPrice = Math.min(...prices);
   const highestPrice = Math.max(...prices);
   const priceTitle = stock
-    .map((entry, i) => `${capitalize(parseTreeKey(entry.key).quality)}: ${prices[i]}`)
+    .map((entry, i) => `${QUALITY_NAMES[qualityOf(entry.key)] ?? 'Normal'}: ${prices[i]}`)
     .join(' | ');
-  const totalValue = stockSaleCheer(stock, sellQuantity, upgrades, demandMultiplier);
+  const selectedValue = stockSaleCheer(stock, selected, upgrades, demandMultiplier);
+  const totalValue = stockSaleCheer(stock, quantity, upgrades, demandMultiplier);
+
+  const handleSellSelected = () => {
+    if (selected > 0) {
+      onSell(variant.key, selected);
+      setSellQuantity(0);
+    }
+  };
 
   const handleSellAll = () => {
     if (quantity > 0) {
@@ -161,104 +166,190 @@ const PriceCard: FC<PriceCardProps> = memo(({ variant, stock, upgrades, demandMu
     }
   };
 
-  const handleSellSelected = () => {
-    if (sellQuantity > 0) {
-      onSell(variant.key, sellQuantity);
-      setSellQuantity(0);
-    }
-  };
-
   const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSellQuantity(Math.min(parseInt(e.target.value) || 0, quantity));
+    setSellQuantity(Math.min(parseInt(e.target.value, 10) || 0, quantity));
   };
 
   if (quantity === 0) {
-    return null; // Don't show variants with no inventory
+    return null;
   }
 
   return (
-    <div className={styles.priceCard}>
+    <section className={styles.priceCard} aria-label={variant.name}>
       <div className={styles.cardHeader}>
-        <span className={styles.treeEmoji}>
-          <img src={variantImage(variant)} alt={variant.name} className={styles.treeImage} />
-        </span>
-        <div className={styles.cardTitle}>
-          <div className={styles.treeName}>{variant.name}</div>
-        </div>
-        <span className={styles.priceLabel}>Price:</span>
+        <EventArt art={variant.art} size={32} className={styles.cardArt} />
+        <h3 className={styles.treeName}>{variant.name}</h3>
         <span className={styles.priceValue} title={priceTitle}>
-          {highestPrice > lowestPrice ? `${lowestPrice}-${highestPrice}` : lowestPrice} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />
+          <span className="sr-only">Price: </span>
+          {highestPrice > lowestPrice ? `${lowestPrice}-${highestPrice}` : lowestPrice} <Cheer />
         </span>
+        <div className={styles.stockBreakdown}>
+            {stock.map(entry => {
+              const quality = qualityOf(entry.key);
+              const art = QUALITY_ART[quality];
+              return (
+                <span
+                  key={entry.key}
+                  className={art ? `${styles.qualityChip} ${styles.specialChip}` : styles.qualityChip}
+                >
+                  {art && <EventArt art={art} size={12} />}
+                  {entry.quantity} {QUALITY_NAMES[quality] ?? 'Normal'}
+                </span>
+              );
+            })}
+        </div>
       </div>
 
       <div className={styles.sellControls}>
-        <input
-          type="range"
-          min="0"
-          max={quantity}
-          value={sellQuantity}
-          onChange={handleSliderChange}
-          className={styles.sellSlider}
-          aria-label={`Number of ${variant.name} trees to sell`}
-        />
-        <div className={styles.sliderLabel}>
-          Sell: {sellQuantity} / {quantity}
-          {sellQuantity > 0 && (
-            <span className={styles.totalValue}> ({formatNumber(totalValue, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)</span>
-          )}
+        <div className={styles.sliderRow}>
+          <input
+            type="range"
+            min="0"
+            max={quantity}
+            value={selected}
+            onChange={handleSliderChange}
+            className={styles.sellSlider}
+            aria-label={`Number of ${variant.name} to sell`}
+            aria-valuetext={`${selected} of ${quantity}`}
+          />
+          <span className={styles.sliderLabel}>
+            {selected} / {quantity}
+            {selected > 0 && (
+              <span className={styles.totalValue}> · {formatNumber(selectedValue, 1)} <Cheer /></span>
+            )}
+          </span>
         </div>
         <div className={styles.sellButtons}>
           <button
+            type="button"
             className={styles.sellButton}
             onClick={handleSellSelected}
-            disabled={sellQuantity === 0}
+            disabled={selected === 0}
+            aria-label={`Sell Selected: ${selected} ${variant.name} for ${formatNumber(selectedValue, 1)} Holiday Cheer`}
           >
             Sell Selected
           </button>
           <button
+            type="button"
             className={styles.sellAllButton}
             onClick={handleSellAll}
+            aria-label={`Sell All: ${quantity} ${variant.name} for ${formatNumber(totalValue, 1)} Holiday Cheer`}
           >
             Sell All
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 });
 
 PriceCard.displayName = 'PriceCard';
 
-/**
- * Main Shopfront Tab Component
- */
-const ShopfrontTab: FC<ShopfrontTabProps> = ({
-  treeInventory,
-  materials,
-  sellTrees,
-  sellGarland,
-  sellCandle,
-  sellOrnament,
-  demandMultiplier,
-  holidayCheer,
-  upgrades,
-  formatNumber,
-  purchaseUpgrade,
-  milestones,
-  totalTreesSold,
-  claimMilestone,
-}) => {
-  const milestoneViews = useMemo<EventMilestoneView[]>(() => milestones.map(milestone => ({
-    id: milestone.id,
-    name: milestone.name,
-    description: milestone.description,
-    requirement: milestone.requirement,
-    claimed: milestone.claimed,
-    rewardAmount: milestone.reward.cheerAmount ?? 0,
-    rewardDescription: milestone.reward.description,
-  })), [milestones]);
+// ============================================================================
+// GOODS
+// ============================================================================
+
+type Good = keyof typeof C.GOOD_PRICES;
+
+interface GoodDefinition {
+  good: Good;
+  name: string;
+  singular: string;
+  hint: string;
+  art: EventArtSource;
+}
+
+const GOODS: GoodDefinition[] = [
+  { good: 'garlands', name: 'Festive Garland', singular: 'Garland', hint: 'Woven in the Workshop', art: CHRISTMAS_ART.garland },
+  { good: 'candles', name: 'Candles', singular: 'Candle', hint: 'Also decorates trees', art: CHRISTMAS_ART.candles },
+  { good: 'ornaments', name: 'Ornaments', singular: 'Ornament', hint: 'Also decorates trees', art: CHRISTMAS_ART.ornaments },
+];
+
+interface GoodCardProps {
+  definition: GoodDefinition;
+  stock: number;
+  onSell: (good: Good, quantity: number) => void;
+  formatNumber: FormatNumber;
+}
+
+const GoodCard: FC<GoodCardProps> = memo(({ definition, stock, onSell, formatNumber }) => {
+  const price = C.GOOD_PRICES[definition.good];
+  const totalValue = price * stock;
+
+  return (
+    <section className={styles.goodSection} aria-label={definition.name} title={definition.hint}>
+      <div className={styles.goodHeader}>
+        <h3 className={styles.goodTitle}>
+          <EventArt art={definition.art} size={22} />
+          {definition.name}
+        </h3>
+        <span className={styles.goodPrice}>{price} <Cheer /> each</span>
+      </div>
+      <div className={styles.goodRow}>
+        <span className={styles.goodStock}>In Stock: {formatNumber(stock, 1)}</span>
+        <div className={styles.goodButtons}>
+        <button
+          type="button"
+          className={styles.sellButton}
+          onClick={() => onSell(definition.good, 1)}
+          disabled={stock < 1}
+          aria-label={`Sell 1 ${definition.singular} for ${price} Holiday Cheer`}
+        >
+          Sell 1
+        </button>
+        <button
+          type="button"
+          className={styles.sellAllButton}
+          onClick={() => onSell(definition.good, stock)}
+          disabled={stock < 1}
+          aria-label={`Sell All: ${stock} ${definition.name} for ${formatNumber(totalValue, 1)} Holiday Cheer`}
+        >
+          Sell All ({formatNumber(totalValue, 1)} <Cheer />)
+        </button>
+        </div>
+      </div>
+    </section>
+  );
+});
+
+GoodCard.displayName = 'GoodCard';
+
+// ============================================================================
+// SHOPFRONT TAB
+// ============================================================================
+
+interface ShopfrontTabProps {
+  event: UseChristmasEventReturn;
+  formatNumber: FormatNumber;
+}
+
+const ShopfrontTab: FC<ShopfrontTabProps> = ({ event, formatNumber }) => {
+  const {
+    eventState,
+    materials,
+    holidayCheer,
+    sellTrees,
+    sellAllTrees,
+    sellGarland,
+    sellCandle,
+    sellOrnament,
+    claimDailyBonus,
+    dailyBonusAvailable,
+    demandMultiplier,
+    passiveCheerPerSecond,
+    purchaseUpgrade,
+  } = event;
+  const { treeInventory, upgrades, dailyBonus } = eventState;
 
   const stockByVariant = useMemo(() => groupStockByVariant(treeInventory), [treeInventory]);
+  const treesInStock = useMemo(
+    () => Object.values(treeInventory).reduce((sum, quantity) => sum + Math.max(0, quantity), 0),
+    [treeInventory]
+  );
+  const sellAllValue = useMemo(
+    () => inventorySaleCheer(treeInventory, upgrades, demandMultiplier),
+    [treeInventory, upgrades, demandMultiplier]
+  );
 
   // Sells lower qualities first, one inventory key at a time
   const sellVariant = useCallback((variantKey: string, quantity: number) => {
@@ -271,134 +362,123 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
     }
   }, [stockByVariant, sellTrees]);
 
+  const sellGood = useCallback((good: Good, quantity: number) => {
+    if (good === 'garlands') sellGarland(quantity);
+    else if (good === 'candles') sellCandle(quantity);
+    else sellOrnament(quantity);
+  }, [sellGarland, sellCandle, sellOrnament]);
+
+  const handleClaimDailyBonus = useCallback(() => {
+    claimDailyBonus();
+  }, [claimDailyBonus]);
+
+  const hasWreathSign = ownsUpgrade(upgrades, 'wreath_sign');
+
   const mainContent = (
-    <div className={styles.container}>
-      {/* Left Column: Price Cards */}
-      <div className={styles.leftColumn}>
-        <div className={styles.demandBanner}>
-          <span className={styles.demandLabel}><InlineIcon src={ICON_HOLIDAY_REGISTER} size={18} gap={4} />Market Demand:</span>
-          <span className={styles.demandMultiplier}>×{demandMultiplier.toFixed(2)}</span>
-          <span className={styles.demandHint}>(increases closer to Christmas)</span>
-        </div>
-        
-        <div className={styles.priceCardsGrid}>
-          {TREE_VARIANTS.map(variant => {
-            const stock = stockByVariant[variant.key];
-            return stock ? (
-              <PriceCard
-                key={variant.key}
-                variant={variant}
-                stock={stock}
-                upgrades={upgrades}
-                demandMultiplier={demandMultiplier}
-                onSell={sellVariant}
-                formatNumber={formatNumber}
-              />
-            ) : null;
-          })}
-        </div>
+    <div className={frame.container}>
+      {/* Left column: the shop's bar, price cards and goods */}
+      <div className={frame.leftColumn}>
+        {/* Market demand, then the Golden Bell and the Wreath Sign once they are owned */}
+        <div className={styles.shopBar}>
+          <div className={styles.demand}>
+            <EventArt art={CHRISTMAS_ART.shopfront} size={24} />
+            <span className={styles.demandLabel}>Market Demand:</span>
+            <span className={styles.demandMultiplier}>×{demandMultiplier.toFixed(2)}</span>
+            <span className={styles.demandHint}>
+              {demandMultiplier >= C.MAX_DEMAND_MULTIPLIER ? '(at its Christmas peak)' : '(rises toward Christmas)'}
+            </span>
+          </div>
 
-        {/* Decoration Sales Row */}
-        {/* Decoration Sales Row */}
-        <div className={styles.decorationsRow}>
-          {/* Garland Sales Section */}
-          <div className={styles.garlandSection}>
-            <h3 className={styles.garlandTitle}><img src={DECORATION_GARLAND} alt="Garland" className={styles.titleIcon} /> Festive Garland</h3>
-            <div className={styles.garlandCard}>
-              <div className={styles.garlandInfo}>
-                <span className={styles.garlandStock}>In Stock: {materials.garlands}</span>
-                <span className={styles.garlandPrice}>4 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
+          {passiveCheerPerSecond > 0 && (
+            <section className={styles.bell} aria-label="Golden Bell income">
+              <EventArt art={CHRISTMAS_ART.bell} size={32} />
+              <div className={styles.barText}>
+                <h3 className={styles.barTitle}>
+                  Golden Bell: +{formatNumber(passiveCheerPerSecond, 2)} <Cheer /> per second
+                </h3>
+                <p className={styles.barHint}>
+                  {passiveCheerPerSecond < 1
+                    ? `1 Holiday Cheer every ${formatNumber(1 / passiveCheerPerSecond, 1)} seconds`
+                    : 'The bell rings while you farm'}
+                </p>
               </div>
-              <div className={styles.garlandButtons}>
+            </section>
+          )}
+
+          {hasWreathSign && (
+            <section className={styles.wreath} aria-label="Daily bonus">
+              <EventArt art={CHRISTMAS_ART.wreath} size={32} />
+              <div className={styles.barText}>
+                <h3 className={styles.barTitle}>Wreath Sign</h3>
                 <button
-                  className={styles.sellButton}
-                  onClick={() => sellGarland(1)}
-                  disabled={materials.garlands < 1}
+                  type="button"
+                  className={styles.claimButton}
+                  onClick={handleClaimDailyBonus}
+                  disabled={!dailyBonusAvailable}
+                  title="Carolers stop by the sign once a day"
                 >
-                  Sell 1
-                </button>
-                <button
-                  className={styles.sellAllButton}
-                  onClick={() => sellGarland(materials.garlands)}
-                  disabled={materials.garlands < 1}
-                >
-                  Sell All ({formatNumber(materials.garlands * 4, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
+                  {dailyBonusAvailable
+                    ? <>Claim daily bonus +{dailyBonus.bonusAmount} <Cheer /></>
+                    : 'Claimed. Come back tomorrow!'}
                 </button>
               </div>
-            </div>
-          </div>
-
-          {/* Candle Sales Section */}
-          <div className={styles.garlandSection}>
-          <h3 className={styles.garlandTitle}><img src={DECORATION_CANDLE} alt="Candle" className={styles.titleIcon} /> Festive Candles</h3>
-          <div className={styles.garlandCard}>
-            <div className={styles.garlandInfo}>
-              <span className={styles.garlandStock}>In Stock: {materials.candles}</span>
-              <span className={styles.garlandPrice}>2 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
-            </div>
-            <div className={styles.garlandButtons}>
-              <button
-                className={styles.sellButton}
-                onClick={() => sellCandle(1)}
-                disabled={materials.candles < 1}
-              >
-                Sell 1
-              </button>
-              <button
-                className={styles.sellAllButton}
-                onClick={() => sellCandle(materials.candles)}
-                disabled={materials.candles < 1}
-              >
-                Sell All ({formatNumber(materials.candles * 2, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
-              </button>
-            </div>
-          </div>
+            </section>
+          )}
         </div>
 
-        {/* Ornament Sales Section */}
-        <div className={styles.garlandSection}>
-          <h3 className={styles.garlandTitle}><img src={TREE_DECORATED} alt="Ornament" className={styles.titleIcon} /> Festive Ornaments</h3>
-          <div className={styles.garlandCard}>
-            <div className={styles.garlandInfo}>
-              <span className={styles.garlandStock}>In Stock: {materials.ornaments}</span>
-              <span className={styles.garlandPrice}>1 <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} /> each</span>
+        {treesInStock > 0 ? (
+          <>
+            <div className={styles.priceCardsGrid}>
+              {TREE_VARIANTS.map(variant => {
+                const stock = stockByVariant[variant.key];
+                return stock ? (
+                  <PriceCard
+                    key={variant.key}
+                    variant={variant}
+                    stock={stock}
+                    upgrades={upgrades}
+                    demandMultiplier={demandMultiplier}
+                    onSell={sellVariant}
+                    formatNumber={formatNumber}
+                  />
+                ) : null;
+              })}
             </div>
-            <div className={styles.garlandButtons}>
-              <button
-                className={styles.sellButton}
-                onClick={() => sellOrnament(1)}
-                disabled={materials.ornaments < 1}
-              >
-                Sell 1
-              </button>
-              <button
-                className={styles.sellAllButton}
-                onClick={() => sellOrnament(materials.ornaments)}
-                disabled={materials.ornaments < 1}
-              >
-                Sell All ({formatNumber(materials.ornaments * 1, 1)} <img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />)
-              </button>
-            </div>
+            <button
+              type="button"
+              className={styles.sellEverythingButton}
+              onClick={sellAllTrees}
+              aria-label={`Sell all trees: ${treesInStock} for ${formatNumber(sellAllValue, 1)} Holiday Cheer`}
+            >
+              Sell all trees ({formatNumber(treesInStock, 1)} for {formatNumber(sellAllValue, 1)} <Cheer />)
+            </button>
+          </>
+        ) : (
+          <div className={styles.emptyState}>
+            <p className={styles.emptyStateTitle}>
+              <EventArt art={CHRISTMAS_ART.pine} size={24} />
+              No trees in the shop
+            </p>
+            <p>Harvest trees on the Tree Farm, then decorate them in the Workshop to raise their price.</p>
           </div>
-        </div>
-        </div>
+        )}
 
-        {/* Sales milestones */}
-        <EventMilestones
-          milestones={milestoneViews}
-          sold={totalTreesSold}
-          soldLabel="Trees sold"
-          currencyIcon={<img src={ICON_HOLIDAY_CHEER} alt="Holiday Cheer" className={styles.cheerIcon} />}
-          titleIcon={<img src={TREE_DECORATED} alt="" className={styles.cheerIcon} />}
-          theme="christmas"
-          onClaim={claimMilestone}
-          formatNumber={formatNumber}
-        />
+        {/* Goods sold on their own */}
+        <div className={styles.goodsRow}>
+          {GOODS.map(definition => (
+            <GoodCard
+              key={definition.good}
+              definition={definition}
+              stock={materials[definition.good]}
+              onSell={sellGood}
+              formatNumber={formatNumber}
+            />
+          ))}
+        </div>
       </div>
-      
-      {/* Right Column: Customer Feed & Bonuses */}
-      <div className={styles.rightColumn}>
-        {/* Shopfront Upgrades */}
+
+      {/* Right column: Shopfront Upgrades */}
+      <div className={`${frame.rightColumn} ${frame.shopColumn}`}>
         <EventUpgradesPanel
           title="Shopfront Upgrades"
           category="shopfront"
@@ -411,7 +491,7 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
       </div>
     </div>
   );
-  
+
   return (
     <BaseTab
       isUnlocked={true}
@@ -420,4 +500,7 @@ const ShopfrontTab: FC<ShopfrontTabProps> = ({
   );
 };
 
-export default memo(ShopfrontTab);
+const MemoizedShopfrontTab = memo(ShopfrontTab);
+MemoizedShopfrontTab.displayName = 'ShopfrontTab';
+
+export default MemoizedShopfrontTab;

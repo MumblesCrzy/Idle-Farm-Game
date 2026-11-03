@@ -7,6 +7,7 @@ import { tuneUpLeft } from '../utils/stanley';
 import { getHostileTakeoverPrice, getHotTipLeft, isCommittedTo, isMerchant } from '../utils/guildCalculations';
 import EventArt from './EventArt';
 import { PUMPKIN_ART } from '../data/pumpkinEventData';
+import { SPRING_ART } from '../data/springEventData';
 import styles from './StatsDisplay.module.css';
 
 interface StatsDisplayProps {
@@ -31,6 +32,8 @@ interface StatsDisplayProps {
   isChristmasEventActive?: boolean;
   candyCorn?: number; // Optional: only shown during the Pumpkin Rush
   isPumpkinEventActive?: boolean;
+  petals?: number; // Optional: only shown during the Spring Market
+  isSpringEventActive?: boolean;
   guildState: GuildState;
 }
 
@@ -55,6 +58,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   isChristmasEventActive,
   candyCorn,
   isPumpkinEventActive,
+  petals,
+  isSpringEventActive,
   guildState
 }) => {
   // Calculate guild currency display
@@ -170,6 +175,12 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <span className={`${styles.statItem} ${styles.eventStat}`}>
             <EventArt art={PUMPKIN_ART.candyCorn} size={18} />
             Candy Corn: {formatNumber(candyCorn)}
+          </span>
+        )}
+        {isSpringEventActive && petals !== undefined && (
+          <span className={`${styles.statItem} ${styles.eventStat}`}>
+            <EventArt art={SPRING_ART.petals} size={18} />
+            Petals: {formatNumber(petals)}
           </span>
         )}
         <span className={`${styles.statItemWithButton} ${styles.stashStat}`}>

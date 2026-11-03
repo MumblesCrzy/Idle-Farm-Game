@@ -1,0 +1,258 @@
+/* Flower Beds Tab Styles (Spring Farmer's Market). The frame, palette and
+   contrast notes are in SpringSections.module.css; the variables come from its .container. */
+
+/* =================================================================== */
+/* FLOWER SELECTION */
+/* =================================================================== */
+
+.flowerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--deep-moss);
+  border: 2px solid var(--moss);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--cream);
+}
+
+.flowerRow button:focus-visible {
+  outline-color: var(--butter);
+}
+
+.flowerGroup {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.flowerSelector {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--butter);
+  border-radius: 6px;
+  background: var(--moss);
+  color: var(--cream);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flowerSelector:hover:not(:disabled) {
+  background: var(--butter-tint);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.flowerSelector.selected {
+  background: var(--butter-tint);
+  border-color: var(--rose);
+  color: var(--ink);
+  font-weight: bold;
+}
+
+.flowerSelector.locked {
+  border-style: dashed;
+}
+
+/* The cost on a moss button; the selected tint never shows on a locked flower */
+.flowerSelector.locked .flowerCost {
+  color: var(--butter-tint);
+}
+
+.flowerSelector.locked:hover:not(:disabled) .flowerCost {
+  color: var(--ink);
+}
+
+.flowerSelector.cantAfford {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.flowerName {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.flowerCost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.roseHint {
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =================================================================== */
+/* BEDS */
+/* =================================================================== */
+
+.bedsGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bed {
+  position: relative;
+  box-sizing: border-box;
+  height: 140px;
+  padding: 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.bed.empty {
+  border-style: dashed;
+}
+
+.bed.ready {
+  border-color: var(--rose);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.bed.prize {
+  border-color: var(--lavender);
+  background: linear-gradient(135deg, var(--lavender-tint) 0%, var(--cream) 100%);
+}
+
+.bed.prize.ready {
+  animation: glowLavender 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(232, 105, 139, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(232, 105, 139, 0.6);
+  }
+}
+
+@keyframes glowLavender {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(107, 76, 154, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(107, 76, 154, 0.6), 0 0 30px rgba(232, 105, 139, 0.3);
+  }
+}
+
+.prizeBadge {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.3rem;
+  background: var(--lavender);
+  color: var(--cream);
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.emptyArt {
+  opacity: 0.35;
+}
+
+.bedName {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bed.empty .bedName {
+  color: var(--muted);
+}
+
+.bedNote {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.readyText {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--rose);
+}
+
+.progressBarWrapper {
+  width: 100%;
+  max-width: 120px;
+}
+
+.plantButton,
+.harvestButton {
+  margin-top: auto;
+  padding: 0.35rem 0.9rem;
+  border: none;
+  border-radius: 5px;
+  color: var(--cream);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plantButton {
+  background: var(--moss);
+}
+
+.plantButton:hover {
+  background: var(--deep-moss);
+  transform: translateY(-2px);
+}
+
+.harvestButton {
+  background: var(--rose);
+}
+
+.harvestButton:hover {
+  background: var(--rose-dark);
+  transform: scale(1.05);
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .bed.ready,
+  .bed.prize.ready {
+    animation: none;
+  }
+
+  .flowerSelector,
+  .plantButton,
+  .harvestButton,
+  .bed {
+    transition: none;
+  }
+
+  .flowerSelector:hover:not(:disabled),
+  .plantButton:hover,
+  .harvestButton:hover {
+    transform: none;
+  }
+}

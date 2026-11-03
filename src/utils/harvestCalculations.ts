@@ -45,6 +45,11 @@ export function calculateHarvestAmount(
   if (season === 'Fall' && permanentBonuses.includes('harvest_moon')) {
     harvestAmount = Math.ceil(harvestAmount * 1.05);
   }
+
+  // Apply April Showers bonus: +5% yield during spring, from the Market Legend achievement
+  if (season === 'Spring' && permanentBonuses.includes('april_showers')) {
+    harvestAmount = Math.ceil(harvestAmount * 1.05);
+  }
   
   // Apply bee yield bonus from bee boxes and Meadow Magic upgrades, the guild bee synergy
   // bonus and, on auto harvests, the Engineers' Precision Tools and Combine Header. One
@@ -60,8 +65,7 @@ export function calculateHarvestAmount(
     harvestAmount = Math.ceil(harvestAmount * (1 + yieldBonus));
   }
 
-  // Apply Blessed Crop chance (Soilbound Pact) - chance for double yield
-  // This triggers on manual harvest OR when soilbound pact causes self-harvest
+  // Apply Blessed Crop chance (Soilbound Pact) - chance for double yield on a manual harvest
   if (!isAutoHarvest && guildState) {
     const blessedChance = getBlessedCropChance(guildState);
     if (blessedChance > 0 && Math.random() < blessedChance) {

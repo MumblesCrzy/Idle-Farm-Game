@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { DEFAULT_GUILD_STATE, type GuildState } from '../types/guilds';
+import { getBlessedCropChance, getSelfHarvestChance } from './guildCalculations';
 import {
   calculateHarvestAmount,
   calculateExperienceGain,
@@ -28,9 +30,51 @@ describe('Harvest Calculations', () => {
       expect(result.amount).toBe(3); // No winter bonus
     });
 
+    it('should apply April Showers in Spring only', () => {
+      expect(calculateHarvestAmount(2, 'Spring', ['april_showers'], 0).amount).toBe(4); // ceil(3 * 1.05)
+      expect(calculateHarvestAmount(19, 'Spring', ['april_showers'], 0).amount).toBe(21); // ceil(20 * 1.05)
+      expect(calculateHarvestAmount(2, 'Summer', ['april_showers'], 0).amount).toBe(3);
+    });
+
     it('should apply bee yield bonus', () => {
       const result = calculateHarvestAmount(0, 'Spring', [], 0.2);
       expect(result.amount).toBe(2); // ceil(1 * 1.2) = ceil(1.2) = 2
+    });
+
+    describe('Soilbound Pact', () => {
+      const pact: GuildState = {
+        ...DEFAULT_GUILD_STATE,
+        committedGuild: 'growers',
+        status: 'committed',
+        purchasedUpgrades: ['growers_soilbound_pact']
+      };
+
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      it('gives a 50% self-harvest chance and a 5% Blessed Crop chance', () => {
+        expect(getSelfHarvestChance(pact)).toBe(0.5);
+        expect(getBlessedCropChance(pact)).toBe(0.05);
+        expect(getSelfHarvestChance(DEFAULT_GUILD_STATE)).toBe(0);
+        expect(getBlessedCropChance(DEFAULT_GUILD_STATE)).toBe(0);
+      });
+
+      it('doubles a manual harvest when the roll lands under 5%', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.04);
+        const blessed = calculateHarvestAmount(2, 'Spring', [], 0, false, pact);
+        expect(blessed.blessedCropTriggered).toBe(true);
+
+        vi.spyOn(Math, 'random').mockReturnValue(0.05);
+        const plain = calculateHarvestAmount(2, 'Spring', [], 0, false, pact);
+        expect(plain.blessedCropTriggered).toBe(false);
+        expect(blessed.amount).toBe(plain.amount * 2);
+      });
+
+      it('never blesses an auto harvest', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        expect(calculateHarvestAmount(2, 'Spring', [], 0, true, pact).blessedCropTriggered).toBe(false);
+      });
     });
 
     it('should apply both Frost Fertilizer and bee yield bonus', () => {

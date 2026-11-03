@@ -82,6 +82,7 @@ export function buildLegacySave(current: ExtendedGameState, pickedUnlock: string
     eventLogState: { entries: [entry], maxEntries: current.eventLogState?.maxEntries ?? 100, unreadCount: 1 },
     christmasEventState: current.christmasEventState,
     pumpkinEventState: current.pumpkinEventState,
+    springEventState: current.springEventState,
     harvestTutorialShown: true,
     guildIntroShown: true,
     guildState: { ...DEFAULT_GUILD_STATE, legacy },

@@ -56,6 +56,36 @@ export function getTreePrice(
   return floorCheer(basePrice * qualityMultiplier * decorationMultiplier * demandMultiplier * upgradeMultiplier);
 }
 
+/** Trees of a type with this decoration in the inventory, any quality */
+export function countTrees(inventory: Readonly<Record<string, number>>, treeType: string, decoration: string): number {
+  let count = 0;
+  for (const [key, quantity] of Object.entries(inventory)) {
+    const parts = parseTreeKey(key);
+    if (parts.treeType === treeType && parts.decoration === decoration) count += quantity;
+  }
+  return count;
+}
+
+/** Whether an upgrade has been bought */
+export function ownsUpgrade(upgrades: readonly EventUpgrade[], id: string): boolean {
+  return upgrades.some(u => u.id === id && u.owned);
+}
+
+/** Level of a repeatable upgrade, or 0 */
+function upgradeLevel(upgrades: readonly EventUpgrade[], id: string): number {
+  return upgrades.find(u => u.id === id)?.level ?? 0;
+}
+
+/** Tree growth per game day: 1, plus 15% for each level of Fertilized Soil */
+export function treeGrowthSpeed(upgrades: readonly EventUpgrade[]): number {
+  return 1 + upgradeLevel(upgrades, 'fertilized_soil') * 0.15;
+}
+
+/** Jobs the Elves do each second: 1, plus one for each level of Cheerful Crafting */
+export function elvesJobsPerSecond(upgrades: readonly EventUpgrade[]): number {
+  return 1 + upgradeLevel(upgrades, 'cheerful_crafting');
+}
+
 /** Multiplier on all Holiday Cheer from tree sales, from Garland Borders */
 export function getSaleCheerMultiplier(upgrades: readonly EventUpgrade[]): number {
   return 1 + ownedBonus(upgrades, 'garland_borders');
@@ -69,6 +99,19 @@ export function getTreeSaleCheer(
   demandMultiplier: number
 ): number {
   return floorCheer(getTreePrice(treeKey, upgrades, demandMultiplier) * quantity * getSaleCheerMultiplier(upgrades));
+}
+
+/** Holiday Cheer from Sell All, priced the way sellAllTrees prices it (tips excluded) */
+export function inventorySaleCheer(
+  inventory: Readonly<Record<string, number>>,
+  upgrades: readonly EventUpgrade[],
+  demandMultiplier: number
+): number {
+  let value = 0;
+  for (const [key, quantity] of Object.entries(inventory)) {
+    if (quantity > 0) value += getTreePrice(key, upgrades, demandMultiplier) * quantity;
+  }
+  return floorCheer(value * getSaleCheerMultiplier(upgrades));
 }
 
 /** Chance per tree that the Magical Register adds a tip */

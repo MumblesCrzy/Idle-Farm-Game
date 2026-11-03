@@ -1,0 +1,282 @@
+/* The frame shared by the Christmas Tree Shop sections: palette, columns,
+   header bar, stock chips and the Elves' Bench bar. Each section adds its own file.
+   Laid out like the Pumpkin Rush sections, in winter colors.
+   Winter palette, with contrast ratios for the text pairs used:
+   Pine:        #175034 - header bars, Plant, Craft and Sell buttons (snow text: 8.9)
+   Deep Pine:   #0F3A25 - second bars, hovers (snow text: 12.0)
+   Holly Red:   #B80000 - Harvest, decorate, Sell All, claims (snow text: 6.5; on snow: 6.5)
+   Dark Red:    #8A0000 - hovers on red (snow text: 9.5)
+   Spruce Teal: #23705D - growth bars, panel borders (snow text: 5.6)
+   Gold:        #D0A93D - chip borders, Plant All (ink text: 6.1)
+   Gold Tint:   #F8EDC4 - selected tree, chips (ink text: 11.6; pine text: 8.0)
+   Snow:        #FFF8EA - cards and light text
+   Night Blue:  #2B3F73 - Perfect trees, the Elves, Luxury, focus rings (snow text: 9.6; on snow: 9.6)
+   Ink:         #26302A - body text (on snow: 12.9)
+*/
+
+.container {
+  --pine: #175034;
+  --pine-dark: #0F3A25;
+  --red: #B80000;
+  --red-dark: #8A0000;
+  --teal: #23705D;
+  --gold: #D0A93D;
+  --gold-tint: #F8EDC4;
+  --snow: #FFF8EA;
+  --snow-muted: #ECE6D6;
+  --night: #2B3F73;
+  --night-dark: #1F2E57;
+  --ink: #26302A;
+  --disabled: #6B6F68;
+
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+
+.container button:focus-visible {
+  outline: 3px solid var(--night);
+  outline-offset: 2px;
+}
+
+/* =================================================================== */
+/* COLUMNS */
+/* =================================================================== */
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, var(--snow), var(--teal));
+  border: 3px solid var(--pine);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* The Shopfront's upgrades sit on red, as the Farm Stand's sit on gold */
+.shopColumn {
+  background: linear-gradient(135deg, var(--snow), var(--red));
+  border-color: var(--red-dark);
+}
+
+.rightColumn h2 {
+  color: var(--pine);
+}
+
+/* =================================================================== */
+/* HEADER BAR: title, the section's big buttons, stock */
+/* =================================================================== */
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--pine);
+  border: 2px solid var(--gold);
+  color: var(--snow);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.headerRow button:focus-visible {
+  outline-color: var(--gold);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--snow);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Harvest All: red, with a pulse while there is something to do. The Tree Farm shows these on its tree row */
+.primaryAction,
+.secondaryAction {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.primaryAction {
+  background: var(--red);
+  color: var(--snow);
+  animation: pulseRed 2s ease-in-out infinite;
+}
+
+.primaryAction:hover {
+  background: var(--red-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(184, 0, 0, 0.4);
+  animation: none;
+}
+
+@keyframes pulseRed {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(184, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(184, 0, 0, 0.6), 0 0 20px rgba(208, 169, 61, 0.4);
+  }
+}
+
+/* Plant All: gold */
+.secondaryAction {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.secondaryAction:hover {
+  background: var(--gold-tint);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(208, 169, 61, 0.4);
+}
+
+/* =================================================================== */
+/* STOCK CHIPS */
+/* =================================================================== */
+
+.stockList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stockItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--snow);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.stockLabel {
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.stockValue {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--pine);
+}
+
+/* =================================================================== */
+/* ELVES' BENCH BAR: one line under the header */
+/* =================================================================== */
+
+.crewBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.35rem 0.75rem;
+  background: var(--snow);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+}
+
+/* The tint is layered on opaque snow, so the page's own background never shows through */
+.crewActive {
+  border-color: var(--night);
+  border-left-width: 6px;
+  background: linear-gradient(90deg, rgba(43, 63, 115, 0.14), rgba(43, 63, 115, 0) 60%), var(--snow);
+}
+
+.crewTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--pine);
+  white-space: nowrap;
+}
+
+.crewActive .crewTitle {
+  color: var(--night);
+}
+
+.crewRate {
+  margin: 0;
+  padding: 0.1rem 0.55rem;
+  background: var(--gold-tint);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pine);
+  white-space: nowrap;
+}
+
+/* What the Elves are doing changes every job; it takes the rest of the line */
+.crewNow {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crewNow strong {
+  color: var(--night);
+}
+
+.crewLocked {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction {
+    animation: none;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    transition: none;
+  }
+
+  .primaryAction:hover,
+  .secondaryAction:hover {
+    transform: none;
+  }
+}

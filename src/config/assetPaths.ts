@@ -242,6 +242,44 @@ export const PUMPKIN_UPGRADE_HAYRIDE = './Hayride.png';
 export const PUMPKIN_UPGRADE_FORTUNE_TELLER = './Fortune Teller.png';
 export const PUMPKIN_UPGRADE_HARVEST_DISPLAY = './Harvest Display.png';
 
+// Spring Farmer's Market
+export const SPRING_TULIPS = './Tulips.png';
+export const SPRING_DAFFODILS = './Daffodils.png';
+export const SPRING_ROSES = './Roses.png';
+export const SPRING_SPROUT = './Flower Sprout.png';
+export const SPRING_PRIZE_BLOOM = './Prize Bloom.png';
+export const SPRING_BOUQUET = './Gift Bouquet.png';
+export const SPRING_GREENERY = './Greenery.png';
+export const SPRING_SEEDS = './Flower Seeds.png';
+export const SPRING_PACKETS = './Seed Packets.png';
+export const SPRING_MINT = './Mint.png';
+export const SPRING_BASIL = './Basil.png';
+export const SPRING_CHAMOMILE = './Chamomile.png';
+export const SPRING_LAVENDER = './Lavender.png';
+export const SPRING_MINT_TEA = './Mint Tea.png';
+export const SPRING_CHAMOMILE_TEA = './Chamomile Tea.png';
+export const SPRING_PESTO = './Pesto.png';
+export const ICON_PETALS = './Petals.png'; // Spring Market currency
+export const SPRING_GNOME = './Garden Gnome.png';
+export const SPRING_CART = './Market Cart.png';
+export const SPRING_SANDWICH_BOARD = './Sandwich Board.png';
+export const SPRING_BUSKER = './Busker.png';
+export const SPRING_BEDS = './Flower Beds.png';
+export const SPRING_GARDEN = './Herb Garden.png';
+export const SPRING_SHED = './Potting Shed.png';
+export const SPRING_STALL = './Market Stall.png';
+export const SPRING_MOTHERS_DAY_CARD = "./Mother's Day Card.png";
+export const SPRING_UPGRADE_RAIN_BARREL = './Rain Barrel.png';
+export const SPRING_UPGRADE_TRUG = './Trug.png';
+export const SPRING_UPGRADE_WATERING_CAN = './Watering Can.png';
+export const SPRING_UPGRADE_PACKET_PRESS = './Packet Press.png';
+export const SPRING_UPGRADE_GNOME_CREW = './Gnome Crew.png';
+export const SPRING_UPGRADE_BUSY_GNOMES = './Busy Gnomes.png';
+export const SPRING_UPGRADE_SILK_RIBBONS = './Silk Ribbons.png';
+export const SPRING_UPGRADE_BUNTING = './Spring Bunting.png';
+export const SPRING_UPGRADE_CART_LOADER = './Cart Loader.png';
+export const SPRING_UPGRADE_PONY_CART = './Pony Cart.png';
+
 // Helper function to get vegetable image by name
 export function getVeggieImage(veggieName: string): string {
   return `./${veggieName}.png`;
@@ -459,4 +497,42 @@ export const ALL_IMAGES = [
   PUMPKIN_UPGRADE_HAYRIDE,
   PUMPKIN_UPGRADE_FORTUNE_TELLER,
   PUMPKIN_UPGRADE_HARVEST_DISPLAY,
+
+  // Spring Farmer's Market
+  SPRING_TULIPS,
+  SPRING_DAFFODILS,
+  SPRING_ROSES,
+  SPRING_SPROUT,
+  SPRING_PRIZE_BLOOM,
+  SPRING_BOUQUET,
+  SPRING_GREENERY,
+  SPRING_SEEDS,
+  SPRING_PACKETS,
+  SPRING_MINT,
+  SPRING_BASIL,
+  SPRING_CHAMOMILE,
+  SPRING_LAVENDER,
+  SPRING_MINT_TEA,
+  SPRING_CHAMOMILE_TEA,
+  SPRING_PESTO,
+  ICON_PETALS,
+  SPRING_GNOME,
+  SPRING_CART,
+  SPRING_SANDWICH_BOARD,
+  SPRING_BUSKER,
+  SPRING_BEDS,
+  SPRING_GARDEN,
+  SPRING_SHED,
+  SPRING_STALL,
+  SPRING_MOTHERS_DAY_CARD,
+  SPRING_UPGRADE_RAIN_BARREL,
+  SPRING_UPGRADE_TRUG,
+  SPRING_UPGRADE_WATERING_CAN,
+  SPRING_UPGRADE_PACKET_PRESS,
+  SPRING_UPGRADE_GNOME_CREW,
+  SPRING_UPGRADE_BUSY_GNOMES,
+  SPRING_UPGRADE_SILK_RIBBONS,
+  SPRING_UPGRADE_BUNTING,
+  SPRING_UPGRADE_CART_LOADER,
+  SPRING_UPGRADE_PONY_CART,
 ];

@@ -11,7 +11,10 @@ import {
   ICON_CANNING,
   ICON_HOLIDAY_CHEER,
   TREE_DECORATED,
-  ICON_MILESTONE,
+  ICON_TREE_STOREFRONT,
+  DECORATION_WREATH,
+  ICON_FIREPLACE,
+  ICON_STAR_FORGE,
   ICON_BEE,
   ICON_HONEY,
   ICON_GOLDEN_HONEY,
@@ -24,10 +27,22 @@ import {
   RIBBON_BLUE,
   SPECIAL_GLUTTON,
   SPECIAL_STANLEY,
-  ICON_SCROLL
+  ICON_SCROLL,
+  ICON_GUILDS,
+  ICON_WAX_SEAL,
+  RIBBON_FIRST,
+  ICON_TROPHY,
+  SPRING_STALL,
+  SPRING_TULIPS,
+  SPRING_SANDWICH_BOARD,
+  SPRING_BOUQUET,
+  SPRING_PRIZE_BLOOM,
+  SPRING_MOTHERS_DAY_CARD
 } from '../config/assetPaths';
 import { PUMPKIN_EVENT_CONSTANTS } from './pumpkinEventData';
+import { treeSalesCheer } from './christmasEventData';
 import { INITIAL_BEE_UPGRADES } from './beeUpgrades';
+import { guildsKeptAtMax, guildsMaxedOut } from '../utils/legacy';
 
 /** The real Atlantic Giant world record, in pounds */
 const WORLD_RECORD = PUMPKIN_EVENT_CONSTANTS.WORLD_RECORD_WEIGHT;
@@ -47,7 +62,8 @@ const beeUpgradesPurchased = (beeState: AchievementGameState['beeState']): numbe
 /** Achievements that add a permanent bonus, by the id they add to permanentBonuses */
 export const PERMANENT_BONUS_ACHIEVEMENTS: Record<string, string> = {
   frost_fertilizer: 'frost_fertilizer',
-  pumpkin_2500_sold: 'harvest_moon'
+  pumpkin_2500_sold: 'harvest_moon',
+  spring_2500_sold: 'april_showers'
 };
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -456,6 +472,48 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       message: 'Skills from two guilds, one farm. +250 knowledge'
     }
   },
+
+  // Guild mastery: max out a guild, then keep guilds at their max through every Legacy.
+  // Special, so they outlive the Legacy that earns them; the last is the game's final achievement.
+  {
+    id: 'guild_master',
+    name: 'Guild Master',
+    description: "Max out every one of a guild's upgrades",
+    icon: ICON_GUILDS,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      customCheck: (gameState) => !!gameState.guildState && guildsMaxedOut(gameState.guildState) >= 1
+    },
+    reward: {
+      knowledge: 500,
+      message: 'Nothing left to learn from this guild. +500 knowledge'
+    }
+  },
+  ...([
+    { count: 1, id: 'legacy_rooted', name: 'Rooted', icon: ICON_SCROLL, knowledge: 500, message: 'A whole guild, carried from Legacy to Legacy.' },
+    { count: 2, id: 'legacy_branching_out', name: 'Branching Out', icon: ICON_WAX_SEAL, knowledge: 1000, message: 'Two guilds, kept whole.' },
+    { count: 3, id: 'legacy_full_canopy', name: 'Full Canopy', icon: RIBBON_FIRST, knowledge: 2500, message: 'Three guilds, kept whole.' },
+    { count: 4, id: 'legacy_evergreen', name: 'Evergreen Legacy', icon: ICON_TROPHY, knowledge: 10000, message: 'Every guild, kept whole. The farm will remember you.' },
+  ] as const).map(({ count, id, name, icon, knowledge, message }) => ({
+    id,
+    name,
+    description: count === 4
+      ? "Keep every guild's upgrades at their max through a Legacy: the final achievement"
+      : `Keep ${count === 1 ? "a guild's" : `${count} guilds'`} upgrades at their max through a Legacy`,
+    icon,
+    category: 'special' as const,
+    requirement: {
+      type: 'custom' as const,
+      value: count,
+      customCheck: (gameState: AchievementGameState) => !!gameState.guildState && guildsKeptAtMax(gameState.guildState) >= count,
+      getProgress: (gameState: AchievementGameState) => (gameState.guildState ? guildsKeptAtMax(gameState.guildState) : 0)
+    },
+    reward: {
+      knowledge,
+      message: `${message} +${knowledge.toLocaleString('en-US')} knowledge`
+    }
+  })),
   
   // Farm Tier Achievements
   {
@@ -491,52 +549,61 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     hidden: true
   },
   
-  // Christmas Tree Shop Achievements
+  // Christmas Tree Shop Achievements: the sales ladder that the Shopfront's milestones
+  // used to pay, with Holiday Cheer beside the farm rewards and Archie's looks
   {
     id: 'first_tree_sold',
     name: 'First Tree Sold',
     description: 'Sell your first Christmas tree',
-    icon: TREE_DECORATED,
+    icon: ICON_TREE_STOREFRONT,
     category: 'special',
     requirement: {
       type: 'christmas_trees_sold',
       value: 1
     },
     reward: {
-      message: 'Holiday Cheer unlocked! The spirit of Christmas is in the air.'
+      holidayCheer: treeSalesCheer('first_tree_sold'),
+      money: 100,
+      message: 'The Tree Shop is open! +50 Holiday Cheer and $100'
     }
   },
   {
     id: 'winter_sweater',
-    name: 'Archie\'s Winter Sweater',
+    name: 'Growing Business',
     description: 'Sell 50 Christmas trees',
-    icon: ICON_MILESTONE,
+    icon: DECORATION_WREATH,
     category: 'special',
     requirement: {
       type: 'christmas_trees_sold',
       value: 50
     },
     reward: {
-      message: 'Archie looks cozy in his new winter sweater!'
+      holidayCheer: treeSalesCheer('winter_sweater'),
+      knowledge: 25,
+      unlocks: ["Archie's Winter Sweater"],
+      message: 'Business is growing, and Archie gets a Winter Sweater! +150 Holiday Cheer and 25 knowledge'
     }
   },
   {
     id: 'reindeer_hat',
-    name: 'Archie\'s Reindeer Hat',
+    name: 'Master Decorator',
     description: 'Sell 250 Christmas trees',
-    icon: ICON_MILESTONE,
+    icon: TREE_DECORATED,
     category: 'special',
     requirement: {
       type: 'christmas_trees_sold',
       value: 250
     },
     reward: {
-      message: 'Archie is ready to help Santa!'
+      holidayCheer: treeSalesCheer('reindeer_hat'),
+      money: 1000,
+      unlocks: ["Archie's Reindeer Hat"],
+      message: 'Archie is ready to help Santa in his Reindeer Hat! +500 Holiday Cheer and $1,000'
     }
   },
   {
     id: 'frost_fertilizer',
-    name: 'Frost Fertilizer',
+    name: 'Winter Farmer',
     description: 'Sell 1,000 Christmas trees',
     icon: ICON_HOLIDAY_CHEER,
     category: 'special',
@@ -545,38 +612,43 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       value: 1000
     },
     reward: {
+      holidayCheer: treeSalesCheer('frost_fertilizer'),
       knowledge: 50,
-      message: 'Permanent +5% winter crop yield unlocked! +50 knowledge'
+      unlocks: ['Frost Fertilizer'],
+      message: 'Frost Fertilizer: permanent +5% winter crop yield! +1,500 Holiday Cheer and 50 knowledge'
     }
   },
   {
     id: 'canners_cocoa',
-    name: 'Canner\'s Cocoa Recipe',
+    name: 'Holiday Tradition',
     description: 'Sell 2,500 Christmas trees',
-    icon: ICON_CANNING,
+    icon: ICON_FIREPLACE,
     category: 'special',
     requirement: {
       type: 'christmas_trees_sold',
       value: 2500
     },
     reward: {
+      holidayCheer: treeSalesCheer('canners_cocoa'),
       knowledge: 100,
-      message: 'New canning recipe unlocked: Hot Cocoa! +100 knowledge'
+      unlocks: ["Canner's Cocoa recipe"],
+      message: "New canning recipe unlocked: Canner's Cocoa! +4,000 Holiday Cheer and 100 knowledge"
     }
   },
   {
     id: 'snowfall_cosmetic',
-    name: 'Eternal Snowfall',
+    name: 'Christmas Legend',
     description: 'Sell 5,000 Christmas trees',
-    icon: ICON_MILESTONE,
+    icon: ICON_STAR_FORGE,
     category: 'special',
     requirement: {
       type: 'christmas_trees_sold',
       value: 5000
     },
     reward: {
+      holidayCheer: treeSalesCheer('snowfall_cosmetic'),
       knowledge: 200,
-      message: 'Snowfall permanently added to farm background! +200 knowledge'
+      message: 'Snowfall permanently added to farm background! +8,000 Holiday Cheer and 200 knowledge'
     },
     hidden: true
   },
@@ -681,6 +753,109 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       candyCorn: 5000,
       knowledge: 250,
       message: 'The record books need a new page! +5,000 Candy Corn and 250 knowledge'
+    },
+    hidden: true
+  },
+
+  // Spring Farmer's Market Achievements: bunches sold in any finish, at the stall or from
+  // the Cart; crafted goods do not count.
+  {
+    id: 'spring_first_sale',
+    name: "Stall's Open",
+    description: 'Sell your first bunch of flowers',
+    icon: SPRING_STALL,
+    category: 'special',
+    requirement: {
+      type: 'flowers_sold',
+      value: 1
+    },
+    reward: {
+      petals: 50,
+      money: 100,
+      message: 'The Market Stall is open! +50 Petals and $100'
+    }
+  },
+  {
+    id: 'spring_50_sold',
+    name: 'Regular Customers',
+    description: 'Sell 50 bunches of flowers',
+    icon: SPRING_TULIPS,
+    category: 'special',
+    requirement: {
+      type: 'flowers_sold',
+      value: 50
+    },
+    reward: {
+      petals: 150,
+      knowledge: 25,
+      message: 'The same friendly faces every week! +150 Petals and 25 knowledge'
+    }
+  },
+  {
+    id: 'spring_250_sold',
+    name: 'Talk of the Market',
+    description: 'Sell 250 bunches of flowers',
+    icon: SPRING_SANDWICH_BOARD,
+    category: 'special',
+    requirement: {
+      type: 'flowers_sold',
+      value: 250
+    },
+    reward: {
+      petals: 500,
+      money: 1000,
+      message: 'Everyone is talking about your flowers! +500 Petals and $1,000'
+    }
+  },
+  {
+    id: 'spring_1000_sold',
+    name: 'In Full Bloom',
+    description: 'Sell 1,000 bunches of flowers',
+    icon: SPRING_BOUQUET,
+    category: 'special',
+    requirement: {
+      type: 'flowers_sold',
+      value: 1000
+    },
+    reward: {
+      petals: 1500,
+      knowledge: 100,
+      message: 'The whole market is in bloom! +1,500 Petals and 100 knowledge'
+    }
+  },
+  {
+    id: 'spring_2500_sold',
+    name: 'Market Legend',
+    description: 'Sell 2,500 bunches of flowers',
+    icon: SPRING_PRIZE_BLOOM,
+    category: 'special',
+    requirement: {
+      type: 'flowers_sold',
+      value: 2500
+    },
+    reward: {
+      petals: 4000,
+      knowledge: 200,
+      unlocks: ['April Showers'],
+      message: 'April Showers: permanent +5% spring crop yield! +4,000 Petals and 200 knowledge'
+    }
+  },
+  {
+    id: 'spring_best_mom',
+    name: 'Best Mom',
+    description: "Sell 50 Gift Bouquets on Mother's Day itself",
+    icon: SPRING_MOTHERS_DAY_CARD,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      value: 50,
+      customCheck: (gameState) => (gameState.mothersDayBouquets ?? 0) >= 50,
+      getProgress: (gameState) => gameState.mothersDayBouquets ?? 0
+    },
+    reward: {
+      petals: 2000,
+      knowledge: 100,
+      message: 'Every mom in town got flowers! +2,000 Petals and 100 knowledge'
     },
     hidden: true
   },

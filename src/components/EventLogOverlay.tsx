@@ -110,7 +110,8 @@ const EventLogOverlay: FC<EventLogOverlayProps> = memo(({
     { id: 'milestone', label: 'Milestones' },
     { id: 'bees', label: 'Bees' },
     { id: 'christmas', label: 'Tree Shop' },
-    { id: 'pumpkin', label: 'Pumpkin Rush' }
+    { id: 'pumpkin', label: 'Pumpkin Rush' },
+    { id: 'spring', label: 'Spring Market' }
   ];
 
   return (

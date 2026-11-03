@@ -181,16 +181,45 @@ export function getGrowersManualHarvestBonus(guildState: GuildState): number {
   return 1;
 }
 
+/** Chance a manual harvest is a Blessed Crop (double yield), for each level of Soilbound Pact */
+const BLESSED_CROP_CHANCE = 0.05;
+
 /**
- * Get Blessed Crop chance (Soilbound Pact) - chance for double yield
- * Returns probability (0.0 - 1.0)
+ * Get Blessed Crop chance (Soilbound Pact) - chance for double yield on a manual harvest,
+ * self-harvests included. Returns probability (0.0 - 1.0)
  */
 export function getBlessedCropChance(guildState: GuildState): number {
-  const soilboundPactLevel = getUpgradeLevel(guildState, 'growers_soilbound_pact');
-  
-  // Soilbound Pact: Chance for "Blessed Crop" event (double yield)
-  // Let's say 5% chance per level, max 1 level = 5%
-  return soilboundPactLevel * 0.05;
+  return getUpgradeLevel(guildState, 'growers_soilbound_pact') * BLESSED_CROP_CHANCE;
+}
+
+/**
+ * Soilbound Pact: chance that a crop harvests itself as it ripens, rewarded as a manual
+ * harvest; the chance its upgrade card shows. Engineers get none (Hands Off): their machines
+ * make Gears from every harvest.
+ */
+export function getSelfHarvestChance(guildState: GuildState): number {
+  if (hasHandsOff(guildState)) return 0;
+  return getUpgradeLevel(guildState, 'growers_soilbound_pact') * rateOf('growers_soilbound_pact');
+}
+
+/** Whether manual harvests pay guild currency: once guilds unlock, to Growers or before a guild is chosen */
+export function paysHarvestCurrency(guildState: GuildState, farmTier: number): boolean {
+  return farmTier >= GUILDS_UNLOCK_TIER && (guildState.committedGuild === 'growers' || guildState.committedGuild === null);
+}
+
+/**
+ * Guild currency for manual harvests (self-harvests included): a Sigil each for committed
+ * Growers, Guild Tokens before a guild is chosen, nothing for members of other guilds
+ */
+export function awardHarvestCurrency(guildState: GuildState, count: number, farmTier: number): GuildState {
+  if (count <= 0 || !paysHarvestCurrency(guildState, farmTier)) return guildState;
+  if (guildState.committedGuild === 'growers') {
+    return {
+      ...guildState,
+      guildCurrencies: { ...guildState.guildCurrencies, growers: guildState.guildCurrencies.growers + count }
+    };
+  }
+  return awardGuildTokens(guildState, 'manualHarvest', count, farmTier);
 }
 
 /**
