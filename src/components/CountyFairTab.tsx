@@ -17,6 +17,7 @@ import type { UsePumpkinEventReturn } from '../hooks/usePumpkinEvent';
 import type { FairPlacing, GiantPumpkin, WeighOffResult } from '../types/pumpkinEvent';
 import { PUMPKIN_ART, PUMPKIN_EVENT_CONSTANTS, PUMPKIN_VARIETIES } from '../data/pumpkinEventData';
 import { championSeedBonus, floorCandyCorn, getGiantPrice, getSaleMultiplier, ownsUpgrade, rivalBaseWeight } from '../utils/pumpkinPricing';
+import { RIVAL_NAMES } from '../data/rivals';
 import styles from './CountyFairTab.module.css';
 
 type FormatNumber = (num: number, decimalPlaces?: number) => string;
@@ -143,7 +144,7 @@ const ResultDetails: FC<ResultDetailsProps> = memo(({ result, formatNumber }) =>
   // Heaviest first; a tie goes to the player, so they list first
   const standings = [
     { label: 'Your giant', weight: result.weight, yours: true },
-    ...result.rivalWeights.map((weight, i) => ({ label: `Rival ${i + 1}`, weight, yours: false })),
+    ...result.rivalWeights.map((weight, i) => ({ label: RIVAL_NAMES[i] ?? `Rival ${i + 1}`, weight, yours: false })),
   ].sort((a, b) => b.weight - a.weight || Number(b.yours) - Number(a.yours));
 
   return (

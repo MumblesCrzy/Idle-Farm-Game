@@ -34,6 +34,7 @@ describe("SettingsOverlay: Archie's looks", () => {
     expect(screen.getByRole('button', { name: "Locked: Unlock 'Roadside Favorite' achievement" })).toBeDisabled();
     expect(screen.getByRole('button', { name: "Locked: Unlock 'Pumpkin Legend' achievement" })).toBeDisabled();
     expect(screen.getByRole('button', { name: "Locked: Unlock 'Growing Business' achievement" })).toBeDisabled();
+    expect(screen.getByRole('button', { name: "Locked: Unlock 'Regular Customers' achievement" })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Archie with pinecones' })).toBeEnabled();
   });
 
@@ -44,6 +45,14 @@ describe("SettingsOverlay: Archie's looks", () => {
     await userEvent.click(screen.getByRole('button', { name: "Archie's warlock costume" }));
 
     expect(setArchieAppearance.mock.calls).toEqual([['fallSweater'], ['warlock']]);
+  });
+
+  it('wears the Gardener Outfit after Regular Customers', async () => {
+    const setArchieAppearance = renderSettings(['spring_50_sold']);
+
+    await userEvent.click(screen.getByRole('button', { name: "Archie's gardener outfit" }));
+
+    expect(setArchieAppearance.mock.calls).toEqual([['gardener']]);
   });
 
   it('marks the look Archie is wearing', () => {

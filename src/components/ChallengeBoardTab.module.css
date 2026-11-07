@@ -1,0 +1,387 @@
+/* Challenge Board Tab Styles (Summer Watermelon Festival), mockup A. The frame, palette
+   and contrast notes are in SummerSections.module.css; the variables come from its .container.
+   Here also: Clock #F08A3C (a bar, no text), Rival Grey #7A8796 (bars only),
+   You Tint #E8F3DC with ink text (11.9), Case Green #234D27 with cream text (9.2),
+   Locked #E5DCC8 with Muted text (4.5), Maggie #C2393B, Earl #2B6CB0 and the Twins
+   #8C6D1F behind cream initials (5.0, 5.1, 4.6). */
+
+.barNote {
+  flex: 1;
+  min-width: 240px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--cream);
+}
+
+.boardEmpty {
+  margin: 0;
+  padding: 2rem;
+  background: var(--cream);
+  border: 3px dashed var(--leaf);
+  border-radius: 10px;
+  text-align: center;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* =================================================================== */
+/* CHALLENGE CARDS, THREE SIDE BY SIDE */
+/* =================================================================== */
+
+.challengeCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.challengeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  min-height: 336px;
+  padding: 0.6rem 0.7rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 10px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cardTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  color: var(--deep-rind);
+}
+
+.badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badgeFirst {
+  background: var(--rind);
+  color: var(--cream);
+}
+
+.badgePlaced {
+  background: var(--sugar);
+  color: var(--cream);
+}
+
+.badgeNone {
+  background: #E5DCC8;
+  color: var(--ink);
+}
+
+.cardDescription {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.72rem;
+}
+
+.standings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.standing {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 0.4rem;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 0.45rem;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.standing.you {
+  background: var(--rind-tint);
+  border-color: #5DA35A;
+  font-weight: 700;
+}
+
+.standingName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standingTrack {
+  height: 9px;
+  border-radius: 5px;
+  background: #E5DCC8;
+  overflow: hidden;
+}
+
+.standingBar {
+  display: block;
+  height: 100%;
+  background: #7A8796;
+  transition: width 0.4s ease;
+}
+
+.you .standingBar {
+  background: var(--melon);
+}
+
+.standingScore {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cardNote {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.cardFooter {
+  margin: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed #D9CBB0;
+  font-size: 0.75rem;
+}
+
+p.cardFooter {
+  justify-content: flex-start;
+}
+
+.spitButton {
+  min-height: 44px;
+  padding: 0 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--melon);
+  color: var(--cream);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(224, 75, 75, 0.4);
+  transition: all 0.2s;
+}
+
+.spitButton:hover:not(:disabled) {
+  background: var(--melon-dark);
+  transform: translateY(-1px);
+}
+
+.spitButton:disabled {
+  background: var(--disabled);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.spitCount {
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+/* =================================================================== */
+/* TROPHY CASE */
+/* =================================================================== */
+
+.trophyCase {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--deep-rind);
+  border: 2px solid var(--rind);
+  border-radius: 8px;
+  color: var(--cream);
+}
+
+.trophyTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.trophies {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trophy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 74px;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  background: var(--cream);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 0.75rem;
+}
+
+.trophyLocked {
+  background: #E5DCC8;
+}
+
+.trophyName {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ribbons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.ribbons span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.trophyNote {
+  color: var(--muted);
+}
+
+/* =================================================================== */
+/* RIGHT COLUMN: Board upgrades, then the rivals */
+/* =================================================================== */
+
+.rightStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+/* The shared upgrades panel starts at its own width; here it fills the column like the rivals */
+.rightStack > * {
+  align-self: stretch;
+}
+
+.rivals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 8px;
+}
+
+.rivalsTitle {
+  margin: 0 0 0.2rem;
+  text-align: center;
+  font-size: 1.15rem;
+  color: var(--deep-rind);
+}
+
+.rivalList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rival {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Each rival's portrait in a ring of their colour */
+.portrait {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.portrait_maggie {
+  background: #C2393B;
+}
+
+.portrait_earl {
+  background: #2B6CB0;
+}
+
+.portrait_vance {
+  background: #8C6D1F;
+}
+
+.rivalText {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+}
+
+.rivalText b {
+  font-size: 0.9rem;
+}
+
+.rivalsNote {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .standingBar,
+  .spitButton {
+    transition: none;
+  }
+
+  .spitButton:hover:not(:disabled) {
+    transform: none;
+  }
+}

@@ -5,30 +5,27 @@ Grow, harvest, preserve, and profit—build your farming empire one plot at a ti
 
 Farm Idle Game is a relaxing and strategic idle clicker where you plant, harvest, and process a variety of crops into preserved goods. Unlock powerful upgrades, weather the changing seasons, keep bees, join a guild, expand your farm, and prestige for bigger rewards. Balance active canning gameplay with passive farming automation to maximize your profits!
 
-The game features growing, canning and beekeeping systems, guilds, three seasonal events with their own farms and currencies, 58 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
+The game features growing, canning and beekeeping systems, guilds, four seasonal events with their own farms and currencies, 65 achievements, persistent progress that keeps going while you're away, a knowledge system and Legacy, a prestige built on the guilds, farm expansion, dynamic weather events, in-game help pages, automation throughout, and extensive accessibility features. Nearly every image is cozy 32×32 pixel art.
 
-## ✨ Latest Updates (v0.16.0)
-### 🌷 The Spring Farmer's Market - Opens March 20
-- **Four Activity Tabs**: Flower Beds, Herb Garden, Potting Shed and Market Stall
-- **Flowers**: Grow Tulips, Daffodils and Roses; Heirloom Bulbs give a 10% chance of a Prize Bloom worth double
-- **Herb Garden**: Mint, Basil, Chamomile and Lavender are planted once and keep growing sprigs all season
-- **Finishes**: Greenery arranges a bunch (+2 Petals), a lavender sprig scents it (+3 Petals), and both make a Gift Bouquet worth triple
-- **Potting Shed**: Make Mint Tea, Chamomile Tea, Pesto and Seed Packets; the Gnome Crew gathers herbs, makes teas and ties bouquets for you
-- **Petals and Market Day**: Petals are the event currency. Demand doubles by Mother's Day, and the Cart sells everything on it every Market Day for half again as much
-- **Six achievements**: Five for bunches sold, the last giving April Showers, a permanent +5% spring crop yield, and Best Mom for 50 Gift Bouquets on Mother's Day itself
+## ✨ Latest Updates (v0.17.0)
+### 🍉 The Summer Watermelon Festival - Opens June 21
+- **Four Activity Tabs**: Melon Patch, Juice Stand, Festival Grounds and Challenge Board
+- **Melons**: Grow Sugar Babies, Crimson Sweets and the giant Carolina Cross, which is weighed at harvest and sold by the pound
+- **Sweetness**: Every melon's sweetness is measured in Brix, and Sugar Seeds grow Sugar Melons worth double
+- **Juice Stand**: The Ice House freezes ice and the Melon Baller scoops melon balls. Ice chills a melon (+2 Tickets), a cup of melon balls carves it (+3 Tickets), and both make a Picnic Basket worth triple
+- **Tickets**: The event currency. Demand doubles by the Fourth of July, and in a Heatwave cold goods sell for half again as much
+- **Challenge Board**: Three challenges at once against Maggie Pickett, Earl Boone and the Vance Twins, from Harvest Race and Sales Sprint to Sweetest Melon, Seed Spitting and Heaviest Melon. The board runs only while you play
+- **Seven achievements**: Five for melons sold, the last giving Summer Sun, a permanent +5% summer crop yield; Record Breaker for a world record giant; and a hidden one
 
-### 🎄 The Tree Shop Face Lift
-- **A new look**: The Tree Farm, Workshop and Shopfront are rebuilt on the Pumpkin Rush layouts, in a winter palette
-- **Milestones became achievements**: The six Christmas achievements now pay the old sales milestones' Holiday Cheer, from 50 to 8,000. Milestones you already claimed don't pay twice
-- **Fixes**: The header counts your trees again, unlock buttons charge the price they show, Cheerful Crafting's first level adds a job, and the Shopfront fits the window with every kind of tree
+### 🌷 Archie's Gardener Outfit
+- **A spring look for Archie**: Earned with Regular Customers, 50 bunches sold at the Spring Market. Players who already have it can pick the outfit in Settings now
 
-### 🌾 Soilbound Pact and Guild Mastery
-- **Soilbound Pact**: Now does what its card always said: a ripe crop has a 50% chance to harvest itself, as a manual harvest with the Growers' bonus, a Sigil and full experience. It works while you're away too
-- **Guild Master**: Max out every upgrade of one guild
-- **Kept whole**: Rooted, Branching Out, Full Canopy and Evergreen Legacy, the final achievement, for one, two, three and four guilds kept at their max through a Legacy
-- **Legacy**: An upgrade bought up to its max always keeps at least one level, so kept levels can reach the max
+### 🛠️ Fixes
+- **Tree Farm buttons**: Harvest All and Plant All sit beside the title, as on the other events' patches
+- **Crop choice**: Each event's patch remembers the crop you picked, through tab switches and reloads
 
 ### Earlier Updates
+- **v0.16.0**: The Spring Farmer's Market, the Tree Shop face lift, Soilbound Pact and guild mastery
 - **v0.15.0**: The Merchants Guild, Payroll, Hostile Takeover and Ferdinand the cat
 - **v0.14.0**: The Engineers Guild, the Cannery, Stanley the cat, smooth progress bars and a steadier header
 - **v0.13.0**: The Preservers Guild, Dunkin the Glutton, Legacy, and the Garden, Kitchen and Honeycomb tabs
@@ -108,7 +105,7 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
 - **Materials and Crafting**: Harvests give Seeds, Pulp and Vines for pies, candles and carving stencils
 - **Carving**: A stencil carves a pumpkin (+2 Candy Corn), a candle lights it (+3 Candy Corn), and both make a Jack-o'-Lantern worth triple
 - **Candy Corn**: Event currency from sales, harvests, the Hayride and Archie; demand doubles by Halloween and holds until Thanksgiving
-- **County Fair Weigh-Off**: Once a game year, enter an Atlantic Giant against three rivals for ribbons and Candy Corn; each win gives champion seeds for heavier giants
+- **County Fair Weigh-Off**: Once a game year, enter an Atlantic Giant against Maggie Pickett, Earl Boone and the Vance Twins for ribbons and Candy Corn; each win gives champion seeds for heavier giants
 - **Event Upgrades**: 16 upgrades for the Patch, Barn and Stand, from Compost Heap and Prize Seeds to the Hayride and Fortune Teller
 - **Automation**: The Scarecrow Crew crafts supplies and finishes pumpkins for you
 - **Sales Achievements**: Five achievements for pumpkins sold pay Candy Corn and farm rewards; the 2nd unlocks Archie's Fall Sweater, and the 5th his Warlock Costume and a permanent +5% fall crop yield
@@ -140,8 +137,22 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
 - **Market Day**: Load the Cart, and every 60 days, or 40 with the Pony Cart, it sells everything on it for 50% more
 - **Event Upgrades**: 19 upgrades for the Beds, Garden, Shed and Stall, from the Rain Barrel and Trellis to Silk Ribbons and the Busker
 - **Automation**: The Gnome Crew gathers herbs, makes teas, ties bouquets and, with the Cart Loader, loads the Cart
-- **Achievements**: Five for bunches sold pay Petals and farm rewards, the 5th April Showers, a permanent +5% spring crop yield; and Best Mom for 50 Gift Bouquets on Mother's Day
+- **Achievements**: Five for bunches sold pay Petals and farm rewards, the 2nd Archie's Gardener Outfit and the 5th April Showers, a permanent +5% spring crop yield; and Best Mom for 50 Gift Bouquets on Mother's Day
 - **Offline Progress**: Flowers and herbs grow, the crew works, Market Day sells the Cart and the Busker plays while you're away
+
+### 🍉 Summer Watermelon Festival Event (Seasonal: Jun 21 - Labor Day)
+- **Four Activity Tabs**: Melon Patch, Juice Stand, Festival Grounds and Challenge Board
+- **Melon Patch**: Sugar Babies (free, 180 days), Crimson Sweets (200 Tickets, 240 days) and the Carolina Cross (1,000 Tickets, 540 days) in six plots, up to 12 with Patch Expansion; each harvest gives seeds, splits and a Ticket
+- **Sweetness and Weight**: Melons are measured in Brix, and one at 12.0 or more is a Sugar Melon worth double. The Carolina Cross is weighed at harvest and waits on a shelf of 12
+- **Juice Stand**: The Ice House freezes a block of ice every 20 days; Melon Balls, Agua Fresca, Pickled Rinds and Roasted Seeds come from splits, rinds and seeds
+- **Finishes**: Ice chills a melon (+2 Tickets), a cup of melon balls carves it (+3 Tickets), and both make a Picnic Basket worth triple
+- **Tickets**: Event currency from sales, harvests, the Parade Route, the Carousel, Dunk Tank tips, challenge prizes and Archie; demand doubles by the Fourth of July and holds until Labor Day
+- **Heatwave**: Chilled melons, Picnic Baskets, Snow Cones and Agua Fresca sell for 50% more while the farm has a Heatwave
+- **Challenge Board**: Three year-long challenges at once against Maggie Pickett, Earl Boone and the Vance Twins, from five kinds: Harvest Race, Sales Sprint, Sweetest Melon, Seed Spitting and Heaviest Melon. Prizes of 100, 50 and 25 Tickets, and champion bonuses for sweeter and heavier melons
+- **Event Upgrades**: 23 upgrades for the Patch, Stand, Grounds and Board, from Straw Mulch and the Ice House to the Carousel and Spitting Practice
+- **Automation**: The Picnic Crew packs baskets, scoops melon balls, mixes Agua Fresca, pickles rinds and roasts seeds
+- **Achievements**: Five for melons sold pay Tickets and farm rewards, the 5th Summer Sun, a permanent +5% summer crop yield; Record Breaker for a Carolina Cross past the world record; and a hidden one
+- **Offline Progress**: Melons grow, the Ice House fills, the crew works and the Carousel pays while you're away; the Challenge Board waits until you're back
 
 ### Upgrade Details
 
@@ -202,9 +213,9 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
   - **Greenhouse:** Removes Winter (-90%) and Snow (-100%) penalties (scales with farm size)
 
 ### 🏅 Achievements
-- **58 Achievements:** Across farming, wealth, progression, canning, bees, visits from Dunkin, Stanley and Ferdinand, the factory floor, Hostile Takeovers, Legacies, guild mastery and all three seasonal events
-- **Rewards:** Money, knowledge, Holiday Cheer, Candy Corn, Petals, Archie outfits, a cocoa recipe and permanent crop bonuses
-- **Permanent Bonuses:** Frost Fertilizer (+5% winter crop yield), Harvest Moon (+5% fall crop yield) and April Showers (+5% spring crop yield)
+- **65 Achievements:** Across farming, wealth, progression, canning, bees, visits from Dunkin, Stanley and Ferdinand, the factory floor, Hostile Takeovers, Legacies, guild mastery and all four seasonal events
+- **Rewards:** Money, knowledge, Holiday Cheer, Candy Corn, Petals, Tickets, Archie outfits, a cocoa recipe and permanent crop bonuses
+- **Permanent Bonuses:** Frost Fertilizer (+5% winter crop yield), Harvest Moon (+5% fall crop yield), April Showers (+5% spring crop yield) and Summer Sun (+5% summer crop yield)
 
 ### 💾 Save & Progression
 - **Auto-Save System:** Progress saves to localStorage automatically every 30 seconds
@@ -218,15 +229,15 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
 
 ### 📚 Player Experience & Accessibility
 - **In-Game Documentation**: Help pages explain each system with strategy tips
-- **Help Categories**: Seasons & Weather, Farm & Experience, Crops & Upgrades, Farm Upgrades, Auto-Purchasers, Canning System, Bee System, Guilds, Tree Shop, Pumpkin Rush, Spring Market
+- **Help Categories**: Seasons & Weather, Farm & Experience, Crops & Upgrades, Farm Upgrades, Auto-Purchasers, Canning System, Bee System, Guilds, Tree Shop, Pumpkin Rush, Spring Market, Summer Festival
 - **Beginner-Friendly**: A first-harvest tutorial and detailed explanations with strategic guides
 - **Pause Button**: Pause the whole game from the header; the button glows while paused
 - **Event Log**: A running record of harvests, sales, weather, unlocks, achievements and event activity
 - **Smart Warnings**: Plot limit alerts and tooltips prevent common player mistakes
 - **Unified Tab Interface**: Consistent UI across every tab
 - **Shorthand Numbers**: All large values displayed in readable format (K, M, B, etc.)
-- **Archie Bonus**: Archie shows up now and then; click him for bonus money, plus Holiday Cheer, Candy Corn or Petals during events, with streak multipliers and sound effects 🐕
-- **Archie's Looks**: Choose Archie's look in Settings, including winter and fall outfits earned from achievements
+- **Archie Bonus**: Archie shows up now and then; click him for bonus money, plus Holiday Cheer, Candy Corn, Petals or Tickets during events, with streak multipliers and sound effects 🐕
+- **Archie's Looks**: Choose Archie's look in Settings, including winter, fall and spring outfits earned from achievements
 - **Dunkin**: Preservers get visits from Dunkin the French Bulldog; shoo him before he eats the pantry
 - **Stanley**: Engineers get visits from Stanley the cat; click him for a Tune-Up
 - **Ferdinand**: Merchants get visits from Ferdinand the cat; click him for a Hot Tip
@@ -241,20 +252,18 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
 
 ## Roadmap
 
-### 🎯 Current Features (v0.16.0)
+### 🎯 Current Features (v0.17.0)
+- ✅ **Summer Watermelon Festival**: Melon growing, a juice stand, festival grounds and a Challenge Board against three rivals
 - ✅ **Spring Farmer's Market**: Flower beds, an herb garden, a potting shed and a market stall with Market Day
 - ✅ **Fall Pumpkin Rush**: Pumpkin growing, carving, a farm stand and a County Fair weigh-off
 - ✅ **Christmas Tree Shop Event**: Complete seasonal event system with farming, crafting, and sales
 - ✅ **Bee System**: Honey, Golden Honey, pollination bonuses and honey recipes
 - ✅ **Guilds**: The Growers Guild with Sigils and 10 fruit crops, the Preservers Guild with Wax Seals, 10 Cellar recipes and Dunkin, the Engineers Guild with Gears, the Cannery and Stanley, and the Merchants Guild with Payroll, Hostile Takeover and Ferdinand
 - ✅ **Legacy**: A guild prestige that keeps half your guild levels, one unlock and your special achievements
-- ✅ **Achievement System**: 58 achievements with rewards across every system, ending with Evergreen Legacy
+- ✅ **Achievement System**: 65 achievements with rewards across every system, ending with Evergreen Legacy
 - ✅ **Offline Progression**: Catch-up for time away and for hidden tabs
 - ✅ **Cozy Art**: Nearly every image redrawn in one pixel art style
 - ✅ **Toast Notifications**: Visual feedback for bonuses and events
-
-### 🔮 Future Seasonal Events
-- **Summer Watermelon Festival**: Competitive growing challenges
 
 ### 🌟 Planned Features
 - **Root Cellar**: Somewhere for finished jars to rest and gain value before they sell
@@ -270,7 +279,7 @@ The game features growing, canning and beekeeping systems, guilds, three seasona
 7. **Sell Strategy**: Set valuable crops to Hold on their beds to stockpile them for canning, and leave cheaper ones on Sell
 8. **Upgrade Timing**: Major upgrades like Greenhouse scale with farm size - plan purchases carefully
 9. **Canning Strategy**: Once unlocked, balance selling raw crops vs. processing them for higher profits
-10. **Seasonal Events**: The Spring Market runs Mar 20 through Memorial Day, the Pumpkin Rush Sep 22 through Thanksgiving and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
+10. **Seasonal Events**: The Spring Market runs Mar 20 through Memorial Day, the Summer Festival Jun 21 through Labor Day, the Pumpkin Rush Sep 22 through Thanksgiving and the Christmas Tree Shop Nov 1-Dec 25, each with its own farm and currency
 11. **Archie Hunting**: Keep an eye out for Archie - clicking him gives bonus money and builds streaks!
 12. **Tooltips**: Hover over buttons and UI elements for detailed information about mechanics and formulas
 13. **Pick a Guild**: At Farm Tier 5, sample a few upgrades, then join the Growers for farming, the Preservers for canning, the Engineers for machines that run the farm or the Merchants for trade

@@ -95,6 +95,12 @@
   outline-color: var(--gold);
 }
 
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
 .sectionTitle {
   margin: 0;
   font-size: 1.3rem;
@@ -106,7 +112,7 @@
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Harvest All: red, with a pulse while there is something to do. The Tree Farm shows these on its tree row */
+/* Harvest All: red, with a pulse while there is something to do */
 .primaryAction,
 .secondaryAction {
   padding: 0.6rem 1rem;

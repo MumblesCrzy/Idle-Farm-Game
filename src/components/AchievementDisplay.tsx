@@ -13,6 +13,7 @@ const rewardText = (reward: NonNullable<Achievement['reward']>): string => {
     reward.candyCorn ? `${reward.candyCorn.toLocaleString()} Candy Corn` : '',
     reward.holidayCheer ? `${reward.holidayCheer.toLocaleString()} Holiday Cheer` : '',
     reward.petals ? `${reward.petals.toLocaleString()} Petals` : '',
+    reward.tickets ? `${reward.tickets.toLocaleString()} Tickets` : '',
     ...(reward.unlocks ?? [])
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' + ') : reward.message ?? '';

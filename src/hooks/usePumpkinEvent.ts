@@ -75,6 +75,8 @@ export interface UsePumpkinEventReturn {
   // Pumpkin Patch
   plots: PumpkinPlot[];
   plantPumpkin: (plotIndex: number, variety: PumpkinVariety) => void;
+  /** Remembers the variety to plant, so the Pumpkin Patch keeps it when you leave the tab */
+  choosePumpkin: (variety: PumpkinVariety) => void;
   harvestPumpkin: (plotIndex: number) => void;
   harvestAllPumpkins: () => void;
 
@@ -780,6 +782,10 @@ export function usePumpkinEvent({
 
   // Memoized so the game context stays stable between changes.
   // dailyBonusAvailable is a getter because it depends on today's date.
+  const choosePumpkin = useCallback((variety: PumpkinVariety) => {
+    setEventState(prev => prev.chosenPumpkin === variety ? prev : { ...prev, chosenPumpkin: variety });
+  }, []);
+
   return useMemo<UsePumpkinEventReturn>(() => ({
     eventState,
     isEventActive,
@@ -787,6 +793,7 @@ export function usePumpkinEvent({
     earnCandyCorn,
     plots: eventState.plots,
     plantPumpkin,
+    choosePumpkin,
     harvestPumpkin,
     harvestAllPumpkins,
     materials: eventState.materials,
@@ -817,6 +824,7 @@ export function usePumpkinEvent({
     lastFortuneTip,
     earnCandyCorn,
     plantPumpkin,
+    choosePumpkin,
     harvestPumpkin,
     harvestAllPumpkins,
     craftItem,

@@ -29,6 +29,15 @@ interface DevToolsProps {
   springOpen?: boolean;
   onAddPetals?: (amount: number) => void;
   onGrowSpring?: (days: number) => void;
+  // Summer Festival: play it out of season (the Summer Festival Preview flag)
+  summerPreview?: boolean;
+  onSetSummerPreview?: (on: boolean) => void;
+  /** Whether the Summer Festival is open now, in season or by the switch */
+  summerOpen?: boolean;
+  onAddTickets?: (amount: number) => void;
+  onGrowSummer?: (days: number) => void;
+  /** Runs the Challenge Board on, as live play would */
+  onRunChallenges?: (days: number) => void;
   // Bees
   onAddHoney?: (amount: number) => void;
   onAddGoldenHoney?: (amount: number) => void;
@@ -58,6 +67,12 @@ const DevTools: FC<DevToolsProps> = ({
   springOpen = false,
   onAddPetals,
   onGrowSpring,
+  summerPreview = false,
+  onSetSummerPreview,
+  summerOpen = false,
+  onAddTickets,
+  onGrowSummer,
+  onRunChallenges,
   onAddHoney,
   onAddGoldenHoney,
   onHarvestAllHoney,
@@ -465,6 +480,57 @@ const DevTools: FC<DevToolsProps> = ({
                     title="Grows every bed, fills every herb slot and holds Market Day"
                   >
                     🌱 Grow Flowers and Herbs (400 days)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Summer Festival Section */}
+          {onSetSummerPreview && (
+            <div className={styles.section}>
+              <h4 className={styles.sectionTitle}>🍉 Summer Festival</h4>
+              <div className={styles.actionButtons}>
+                <label className={styles.toggleRow}>
+                  <input
+                    type="checkbox"
+                    checked={summerPreview}
+                    onChange={(e) => onSetSummerPreview(e.target.checked)}
+                  />
+                  Play the festival now, out of season
+                </label>
+                <p className={styles.note}>
+                  Opens the Summer Festival tab before June 21. The same switch as the Summer Festival Preview flag.
+                </p>
+                {summerOpen && onAddTickets && (
+                  <>
+                    <button onClick={() => onAddTickets(100)} className={styles.actionButton}>
+                      +100 Tickets
+                    </button>
+                    <button onClick={() => onAddTickets(1000)} className={styles.actionButton}>
+                      +1K Tickets
+                    </button>
+                    <button onClick={() => onAddTickets(10000)} className={styles.actionButton}>
+                      +10K Tickets
+                    </button>
+                  </>
+                )}
+                {summerOpen && onGrowSummer && (
+                  <button
+                    onClick={() => onGrowSummer(600)}
+                    className={styles.actionButton}
+                    title="Grows every plot and fills the Ice House"
+                  >
+                    🌱 Grow Melons and Ice (600 days)
+                  </button>
+                )}
+                {summerOpen && onRunChallenges && (
+                  <button
+                    onClick={() => onRunChallenges(100)}
+                    className={styles.actionButton}
+                    title="Counts the Challenge Board down 100 days, as live play would"
+                  >
+                    ⏱️ Run the Board (100 days)
                   </button>
                 )}
               </div>

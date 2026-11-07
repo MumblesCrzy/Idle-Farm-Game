@@ -85,6 +85,8 @@ export interface UseSpringEventReturn {
   // Flower Beds
   beds: FlowerBed[];
   plantFlower: (bedIndex: number, variety: FlowerVariety) => void;
+  /** Remembers the flower to plant, so the Flower Beds keeps it when you leave the tab */
+  chooseFlower: (variety: FlowerVariety) => void;
   harvestFlower: (bedIndex: number) => void;
   harvestAllFlowers: () => void;
 
@@ -944,6 +946,10 @@ export function useSpringEvent({
 
   // Memoized so the game context stays stable between changes.
   // dailyBonusAvailable is a getter because it depends on today's date.
+  const chooseFlower = useCallback((variety: FlowerVariety) => {
+    setEventState(prev => prev.chosenFlower === variety ? prev : { ...prev, chosenFlower: variety });
+  }, []);
+
   return useMemo<UseSpringEventReturn>(() => ({
     eventState,
     isEventActive,
@@ -951,6 +957,7 @@ export function useSpringEvent({
     earnPetals,
     beds: eventState.beds,
     plantFlower,
+    chooseFlower,
     harvestFlower,
     harvestAllFlowers,
     herbs: eventState.herbs,
@@ -987,6 +994,7 @@ export function useSpringEvent({
     lastRegularsTip,
     earnPetals,
     plantFlower,
+    chooseFlower,
     harvestFlower,
     harvestAllFlowers,
     gatherHerb,

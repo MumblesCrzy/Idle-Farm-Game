@@ -4,6 +4,7 @@ import type { BeeBox, BeeUpgrade, BeekeeperAssistant } from '../types/bees';
 import type { ChristmasEventState } from '../types/christmasEvent';
 import type { PumpkinEventState } from '../types/pumpkinEvent';
 import type { SpringEventState } from '../types/springEvent';
+import type { SummerEventState } from '../types/summerEvent';
 import type { AchievementState } from '../types/achievements';
 import { INITIAL_RECIPES } from '../data/recipes';
 import { PERMANENT_BONUS_ACHIEVEMENTS } from '../data/achievements';
@@ -293,6 +294,7 @@ export interface ExtendedGameState {
   christmasEventState?: ChristmasEventState;
   pumpkinEventState?: PumpkinEventState;
   springEventState?: SpringEventState;
+  summerEventState?: SummerEventState;
   
   // Bee system state
   beeState?: SavedBeeState;
@@ -335,7 +337,7 @@ function backupRawSave(raw: string): void {
 }
 
 /**
- * Restores permanent bonuses that achievements grant (Frost Fertilizer, Harvest Moon, April Showers).
+ * Restores permanent bonuses that achievements grant (Frost Fertilizer, Harvest Moon, April Showers, Summer Sun).
  * Saves made before October 2026 left out permanentBonuses, so a player who had earned
  * Frost Fertilizer lost the bonus on the next reload and could never earn it again.
  */

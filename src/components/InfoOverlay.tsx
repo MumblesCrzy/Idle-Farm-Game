@@ -51,7 +51,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     { id: 'guilds', label: 'Guilds' },
     { id: 'christmas', label: 'Tree Shop' },
     { id: 'pumpkin', label: 'Pumpkin Rush' },
-    { id: 'spring', label: 'Spring Market' }
+    { id: 'spring', label: 'Spring Market' },
+    { id: 'summer', label: 'Summer Festival' }
   ];
 
   const categoryTitles: Record<InfoCategory, string> = {
@@ -65,7 +66,8 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
     guilds: 'Guilds',
     christmas: 'Christmas Tree Shop',
     pumpkin: 'Fall Pumpkin Rush',
-    spring: "Spring Farmer's Market"
+    spring: "Spring Farmer's Market",
+    summer: 'Summer Watermelon Festival'
   };
 
   return (
@@ -863,7 +865,7 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                 <ul>
                   <li><strong>Weigh-off:</strong> The fair opens once a game year (every 365 days). Enter one giant and it is weighed against three rivals</li>
                   <li><strong>Prizes:</strong> First, second and third place win ribbons and Candy Corn; heavier winners earn more</li>
-                  <li><strong>Rivals:</strong> The competition grows heavier each time you win first place. Giant Vine Tonic has no top level, so keep feeding your giants to stay ahead</li>
+                  <li><strong>Rivals:</strong> Maggie Pickett, Earl Boone and the Vance Twins grow heavier giants each time you win first place. Giant Vine Tonic has no top level, so keep feeding your giants to stay ahead</li>
                   <li><strong>Champion seeds:</strong> Every first place saves seeds from your winner: future Atlantic Giants weigh 5% more, up to 40%</li>
                 </ul>
               </div>
@@ -899,7 +901,50 @@ const InfoOverlay: FC<InfoOverlayProps> = memo(({
                   <li><strong>Selling:</strong> Sell bunches, teas, pesto, seed packets, greenery and lavender for Petals</li>
                   <li><strong>The Cart:</strong> Everything on the Cart sells on Market Day, every 60 days (40 with the Pony Cart), for half again as much. Unload it any time</li>
                   <li><strong>Demand:</strong> Prices rise every day until they double on Mother's Day, then stay doubled until the event ends on Memorial Day</li>
-                  <li><strong>Achievements:</strong> Selling bunches earns achievements that pay Petals and farm rewards. Market Legend, at 2,500 bunches, adds April Showers: a permanent +5% crop yield every spring</li>
+                  <li><strong>Achievements:</strong> Selling bunches earns achievements that pay Petals and farm rewards, plus a new look for Archie: a Gardener Outfit at 50 bunches sold. Market Legend, at 2,500 bunches, adds April Showers: a permanent +5% crop yield every spring</li>
+                </ul>
+              </div>
+            )}
+
+            {selectedInfoCategory === 'summer' && (
+              <div>
+                <h4 className={styles.sectionTitle}>🍉 Summer Watermelon Festival</h4>
+                <p>The Summer Festival is a seasonal event from <strong>June 21st through Labor Day</strong>. Grow watermelons, chill and carve them at the Juice Stand, sell them at the Festival Grounds for Tickets, and take on three rivals at the Challenge Board!</p>
+
+                <h5>🍉 Melon Patch:</h5>
+                <ul>
+                  <li><strong>Melons:</strong> Sugar Babies (quick), Crimson Sweets (more seeds and splits, worth more) and the Carolina Cross (slow, grown for its weight)</li>
+                  <li><strong>Harvesting:</strong> Every melon gives Seeds and Splits plus a Ticket. Its sweetness is measured in Brix as it comes in</li>
+                  <li><strong>Sugar Melons:</strong> A melon at 12.0 Brix or more is a Sugar Melon, with twice the seeds, splits and value. Sugar Seeds grow one in 10, and Sun-Ripening sweetens every melon</li>
+                  <li><strong>Carolina Cross:</strong> Weighed at harvest and kept on the shelf at the Festival Grounds, up to 12. When the shelf is full, the next one sells on the spot</li>
+                </ul>
+
+                <h5>🥤 Juice Stand:</h5>
+                <ul>
+                  <li><strong>Ice House:</strong> Once built, freezes a block of ice every 20 days and holds 10 (25 with Sawdust Packing)</li>
+                  <li><strong>Crafting:</strong> Scoop Melon Balls (with the Melon Baller), mix Agua Fresca, pickle the rinds and roast seeds</li>
+                  <li><strong>Finishing:</strong> A block of ice chills a melon (+2 Tickets), a cup of melon balls carves it (+3 Tickets), and both make a Picnic Basket (triple value)</li>
+                  <li><strong>Picnic Crew:</strong> Once hired, packs Picnic Baskets, scoops melon balls, mixes Agua Fresca, pickles rinds and roasts seeds, keeping 50 seeds for Seed Spitting</li>
+                </ul>
+
+                <h5>🎪 Festival Grounds:</h5>
+                <ul>
+                  <li><strong>Selling:</strong> Sell melons, Carolina Cross giants by the pound, and Snow Cones, Melon Balls, Agua Fresca, Pickled Rinds and Roasted Seeds for Tickets</li>
+                  <li><strong>Demand:</strong> Prices rise every day until they double on the Fourth of July, then stay doubled until the event ends on Labor Day</li>
+                  <li><strong>Heatwave:</strong> During a Heatwave on the farm, Chilled melons, Picnic Baskets, Snow Cones and Agua Fresca sell for half again as much</li>
+                  <li><strong>Parade Route, Carousel and Dunk Tank:</strong> A daily bonus to claim, a steady trickle of Tickets, and tips on melon sales</li>
+                  <li><strong>Achievements:</strong> Selling melons earns achievements that pay Tickets and farm rewards. Festival Legend, at 2,500 melons, adds Summer Sun: a permanent +5% crop yield every summer</li>
+                </ul>
+
+                <h5>📋 Challenge Board:</h5>
+                <ul>
+                  <li><strong>Challenges:</strong> Three are open at once, each a game year long. When one ends, a new one takes its place</li>
+                  <li><strong>Five kinds:</strong> Harvest Race (most melons harvested), Sales Sprint (most Tickets from sales), Sweetest Melon (highest Brix), Seed Spitting (the longest of 10 spits, 5 seeds each) and Heaviest Melon (the heaviest Carolina Cross, once you grow them)</li>
+                  <li><strong>Nothing to enter:</strong> Every challenge counts what you do on its own, except Seed Spitting, where you spit from the card</li>
+                  <li><strong>Rivals:</strong> Maggie Pickett, Earl Boone and the Vance Twins, the County Fair regulars. They get tougher in a kind each time you win it, and never easier</li>
+                  <li><strong>Prizes:</strong> 100 Tickets for 1st place, 50 for 2nd, 25 for 3rd and 5 for taking part. A tie goes to you</li>
+                  <li><strong>Champion bonuses:</strong> Each Sweetest Melon win adds 0.1 Brix to every melon, up to 0.8, and each Heaviest Melon win adds 5% Carolina Cross weight, up to 40%</li>
+                  <li><strong>Play time only:</strong> The board's clocks run only while you play. While you're away, melons grow, the Ice House fills, the crew works and the Carousel pays, and the challenges wait for you</li>
                 </ul>
               </div>
             )}

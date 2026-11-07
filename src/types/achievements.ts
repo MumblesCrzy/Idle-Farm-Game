@@ -19,6 +19,12 @@ export interface AchievementGameState {
   flowersSold?: number;
   /** Gift Bouquets sold on the real Mother's Day, this year */
   mothersDayBouquets?: number;
+  /** Melons sold at the Summer Festival, in any finish, Carolina Cross giants included */
+  melonsSold?: number;
+  /** The heaviest Carolina Cross grown, in pounds */
+  heaviestMelon?: number;
+  /** Challenge kinds won in first place this summer */
+  summerSweepKinds?: number;
   beeState?: BeeState | null;
   canningState?: CanningState | null;
   guildState?: GuildState | null;
@@ -33,7 +39,7 @@ export interface Achievement {
   
   // Unlock requirements
   requirement: {
-    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'pumpkins_sold' | 'flowers_sold' | 'custom';
+    type: 'money' | 'experience' | 'knowledge' | 'veggies_unlocked' | 'canning_items' | 'farm_tier' | 'total_harvests' | 'christmas_trees_sold' | 'pumpkins_sold' | 'flowers_sold' | 'melons_sold' | 'custom';
     value?: number;
     customCheck?: (gameState: AchievementGameState) => boolean;
     getProgress?: (gameState: AchievementGameState) => number; // For custom achievements that want progress tracking
@@ -47,6 +53,8 @@ export interface Achievement {
     candyCorn?: number;
     /** Spring Farmer's Market currency */
     petals?: number;
+    /** Summer Watermelon Festival currency */
+    tickets?: number;
     /** Christmas Tree Shop currency */
     holidayCheer?: number;
     /** Named rewards the achievement list shows, like an Archie look or a permanent bonus */

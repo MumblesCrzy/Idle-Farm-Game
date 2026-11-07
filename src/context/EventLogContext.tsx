@@ -40,6 +40,9 @@ export interface EventLogCallbacks {
 
   // Spring Farmer's Market: one line for the log, with optional details
   onSpringEvent: (message: string, details?: string) => void;
+
+  // Summer Watermelon Festival: one line for the log, with optional details
+  onSummerEvent: (message: string, details?: string) => void;
   
   // Register callbacks: App registers the logging for each system on mount
   registerCallbacks: (callbacks: Partial<EventLogCallbacks>) => void;
@@ -152,6 +155,13 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     []
   );
 
+  const onSummerEvent = useCallback<EventLogCallbacks['onSummerEvent']>(
+    (message, details) => {
+      callbacksRef.current.onSummerEvent?.(message, details);
+    },
+    []
+  );
+
   const value: EventLogCallbacks = {
     onHarvest,
     onAutoPurchase,
@@ -166,6 +176,7 @@ export function EventLogProvider({ children }: EventLogProviderProps) {
     onMilestoneClaimed,
     onPumpkinEvent,
     onSpringEvent,
+    onSummerEvent,
     registerCallbacks,
   };
   

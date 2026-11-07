@@ -37,6 +37,8 @@ function checkRequirement(achievement: Achievement, gameState: GameStateForAchie
       return (gameState.pumpkinsSold || 0) >= (requirement.value || 0);
     case 'flowers_sold':
       return (gameState.flowersSold || 0) >= (requirement.value || 0);
+    case 'melons_sold':
+      return (gameState.melonsSold || 0) >= (requirement.value || 0);
     case 'custom':
       return requirement.customCheck ? requirement.customCheck(gameState) : false;
     default:
@@ -80,6 +82,9 @@ function getProgress(achievement: Achievement, gameState: GameStateForAchievemen
       break;
     case 'flowers_sold':
       current = gameState.flowersSold || 0;
+      break;
+    case 'melons_sold':
+      current = gameState.melonsSold || 0;
       break;
     case 'total_harvests':
       current = gameState.totalHarvests || 0;

@@ -1,15 +1,16 @@
 /**
  * Upgrade types shared by the seasonal events (Christmas Tree Shop, Fall Pumpkin Rush,
- * Spring Farmer's Market).
+ * Spring Farmer's Market, Summer Watermelon Festival).
  */
 
 /** Currency an event's upgrades are bought with */
-export type EventCurrency = 'cheer' | 'candyCorn' | 'petals';
+export type EventCurrency = 'cheer' | 'candyCorn' | 'petals' | 'tickets';
 
 /**
- * Event-specific upgrade categories. `garden` is the Spring Market's Herb Garden.
+ * Event-specific upgrade categories. `garden` is the Spring Market's Herb Garden,
+ * `board` the Summer Festival's Challenge Board.
  */
-export type EventUpgradeCategory = 'farming' | 'garden' | 'workshop' | 'shopfront';
+export type EventUpgradeCategory = 'farming' | 'garden' | 'workshop' | 'shopfront' | 'board';
 
 /**
  * Individual event upgrade

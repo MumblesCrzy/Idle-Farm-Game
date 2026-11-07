@@ -8,6 +8,7 @@ import type { GuildState } from '../types/guilds';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { UsePumpkinEventReturn } from './usePumpkinEvent';
 import type { UseSpringEventReturn } from './useSpringEvent';
+import type { UseSummerEventReturn } from './useSummerEvent';
 import { useLatestRef } from './useLatestRef';
 import { LAST_ACTIVE_KEY } from '../config/gameConstants';
 
@@ -53,11 +54,12 @@ export interface OfflineGameState {
   autoSellOwned?: boolean;
   /** Crop yield bonus from bee hives */
   beeYieldBonus?: number;
-  /** Achievement bonuses such as Frost Fertilizer, Harvest Moon and April Showers */
+  /** Achievement bonuses such as Frost Fertilizer, Harvest Moon, April Showers and Summer Sun */
   permanentBonuses?: string[];
   christmasEvent: UseChristmasEventReturn;
   pumpkinEvent?: UsePumpkinEventReturn;
   springEvent?: UseSpringEventReturn;
+  summerEvent?: UseSummerEventReturn;
 }
 
 /**
@@ -174,6 +176,19 @@ function applyCatchUp(
       spring.processGnomeCrew(ticks);
     }
     spring.updatePassiveIncome(result.timeElapsed);
+  }
+
+  // Summer Festival catch-up: melons grow, the Ice House fills to its cap, the Picnic Crew
+  // works, the Carousel pays out. The Challenge Board runs only in live play, so its clocks,
+  // scores and rivals wait.
+  const summer = state.summerEvent;
+  if (summer?.isEventActive) {
+    const ticks = Math.floor(result.timeElapsed / 1000);
+    if (ticks > 0) {
+      summer.processSummerGrowth(ticks);
+      summer.processPicnicCrew(ticks);
+    }
+    summer.updatePassiveIncome(result.timeElapsed);
   }
 
   devTelemetry.emit('offline_catchup', {

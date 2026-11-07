@@ -6,7 +6,7 @@
  * grid and Farming upgrades on the right.
  */
 
-import { memo, useCallback, useState, type FC } from 'react';
+import { memo, useCallback, type FC } from 'react';
 import BaseTab from './BaseTab';
 import EventArt from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
@@ -251,6 +251,7 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
     materials,
     holidayCheer,
     plantTree,
+    chooseTree,
     harvestTree,
     harvestAllTrees,
     purchaseUpgrade
@@ -260,9 +261,10 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
   const unlocked = TREES.filter(treeType => ownsUpgrade(upgrades, `unlock_${treeType}`) || treeType === 'pine');
   const bestUnlocked = unlocked[unlocked.length - 1] ?? 'pine';
 
-  const [chosenTree, setChosenTree] = useState<TreeType>(bestUnlocked);
-  // A reset can lock the chosen tree again; fall back to the best one still unlocked
-  const selectedTree = unlocked.includes(chosenTree) ? chosenTree : bestUnlocked;
+  // The event keeps the chosen tree, so it stays chosen after leaving the tab.
+  // A reset can lock it again; fall back to the best one still unlocked
+  const chosenTree = event.eventState.chosenTree;
+  const selectedTree = chosenTree && unlocked.includes(chosenTree) ? chosenTree : bestUnlocked;
 
   // Fertilized Soil speeds growth, so days left counts down faster
   const speed = treeGrowthSpeed(upgrades);
@@ -275,9 +277,9 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
   // Unlocking a tree also selects it
   const unlockTree = useCallback((treeType: TreeType) => {
     if (purchaseUpgrade(`unlock_${treeType}`)) {
-      setChosenTree(treeType);
+      chooseTree(treeType);
     }
-  }, [purchaseUpgrade]);
+  }, [purchaseUpgrade, chooseTree]);
 
   const plantPlot = useCallback((index: number) => {
     plantTree(index, selectedTree);
@@ -296,41 +298,10 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
       {/* Left column: header, tree selection and plots */}
       <div className={frame.leftColumn}>
         <div className={frame.headerRow}>
-          <h2 className={frame.sectionTitle}>
-            <EventArt art={CHRISTMAS_ART.farm} size={24} /> Tree Farm
-          </h2>
-
-          <StockSummary
-            inventory={treeInventory}
-            wood={materials.wood}
-            pinecones={materials.pinecones}
-            branches={materials.branches}
-            formatNumber={formatNumber}
-          />
-        </div>
-
-        {/* The bulk buttons sit here rather than in the header, so 18 plots still fit the window */}
-        <div className={styles.treeRow}>
-          <div className={styles.treeGroup} role="group" aria-label="Tree to plant">
-            {TREES.map(treeType => (
-              <TreeSelector
-                key={treeType}
-                treeType={treeType}
-                selected={selectedTree === treeType}
-                unlocked={unlocked.includes(treeType)}
-                canAfford={holidayCheer >= TREE_DEFINITIONS[treeType].unlockCost}
-                onSelect={setChosenTree}
-                onUnlock={unlockTree}
-                formatNumber={formatNumber}
-              />
-            ))}
-          </div>
-          {!harvestAllOwned && !plantAllOwned && (
-            <p className={styles.treeHint}>
-              <EventArt art={CHRISTMAS_ART.workshop} size={16} /> Each harvest brings wood, pinecones and branches for the Workshop.
-            </p>
-          )}
-          <div className={styles.bulkActions}>
+          <div className={frame.titleGroup}>
+            <h2 className={frame.sectionTitle}>
+              <EventArt art={CHRISTMAS_ART.farm} size={24} /> Tree Farm
+            </h2>
             {harvestAllOwned && readyCount > 0 && (
               <button
                 type="button"
@@ -354,6 +325,34 @@ const TreeFarmTab: FC<TreeFarmTabProps> = ({ event, formatNumber }) => {
               </button>
             )}
           </div>
+
+          <StockSummary
+            inventory={treeInventory}
+            wood={materials.wood}
+            pinecones={materials.pinecones}
+            branches={materials.branches}
+            formatNumber={formatNumber}
+          />
+        </div>
+
+        <div className={styles.treeRow}>
+          <div className={styles.treeGroup} role="group" aria-label="Tree to plant">
+            {TREES.map(treeType => (
+              <TreeSelector
+                key={treeType}
+                treeType={treeType}
+                selected={selectedTree === treeType}
+                unlocked={unlocked.includes(treeType)}
+                canAfford={holidayCheer >= TREE_DEFINITIONS[treeType].unlockCost}
+                onSelect={chooseTree}
+                onUnlock={unlockTree}
+                formatNumber={formatNumber}
+              />
+            ))}
+          </div>
+          <p className={styles.treeHint}>
+            <EventArt art={CHRISTMAS_ART.workshop} size={16} /> Each harvest brings wood, pinecones and branches for the Workshop.
+          </p>
         </div>
 
         <ul className={styles.plotsGrid} aria-label="Tree plots">

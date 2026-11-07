@@ -4,6 +4,7 @@ import { useDeferredEffects } from './useDeferredEffects';
 import type { UseChristmasEventReturn } from './useChristmasEvent';
 import type { UsePumpkinEventReturn } from './usePumpkinEvent';
 import type { UseSpringEventReturn } from './useSpringEvent';
+import type { UseSummerEventReturn } from './useSummerEvent';
 import type { EventUpgrade } from '../types/christmasEvent';
 
 // ============================================================================
@@ -34,6 +35,9 @@ export interface UseDayLoopDependencies {
 
   // Latest Spring Market state
   springEventRef: MutableRefObject<UseSpringEventReturn | null | undefined>;
+
+  // Latest Summer Festival state. Its Challenge Board counts down only here, in live play.
+  summerEventRef?: MutableRefObject<UseSummerEventReturn | null | undefined>;
 
   // Latest pause state; nothing advances while paused
   isPausedRef: MutableRefObject<boolean>;
@@ -77,6 +81,7 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     christmasEventRef,
     pumpkinEventRef,
     springEventRef,
+    summerEventRef,
     isPausedRef,
     handleSell
   } = deps;
@@ -130,6 +135,14 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
       springEventRef.current.processSpringGrowth();
       springEventRef.current.updatePassiveIncome(1000);
     }
+
+    // Grow melons, fill the Ice House and count the Challenge Board down each day.
+    // Time away and hidden-tab catch-up never run the board, so the rivals wait.
+    if (summerEventRef?.current?.isEventActive) {
+      summerEventRef.current.processSummerGrowth();
+      summerEventRef.current.updatePassiveIncome(1000);
+      summerEventRef.current.processChallenges();
+    }
   }, { order: 30 });
 
   // Elves' Bench automation loop - runs every second
@@ -151,6 +164,10 @@ export function useDayLoop(deps: UseDayLoopDependencies): void {
     // So does the Gnome Crew
     if (springEventRef.current?.isEventActive) {
       springEventRef.current.processGnomeCrew();
+    }
+    // And the Picnic Crew
+    if (summerEventRef?.current?.isEventActive) {
+      summerEventRef.current.processPicnicCrew();
     }
   }, { order: 40 });
 }

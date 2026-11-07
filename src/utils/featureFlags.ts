@@ -64,6 +64,21 @@ export const FEATURE_FLAG_DEFINITIONS: Record<string, FeatureFlagDefinition> = {
     userConfigurable: true,
     devOnly: true,
   },
+  summerEvent: {
+    name: 'Summer Festival',
+    defaultValue: true,
+    description: 'Enable the Summer Watermelon Festival event (Jun 21 through Labor Day)',
+    category: 'event',
+    userConfigurable: false,
+  },
+  summerPreview: {
+    name: 'Summer Festival Preview',
+    defaultValue: false,
+    description: 'Open the Summer Festival out of season, for play-testing',
+    category: 'event',
+    userConfigurable: true,
+    devOnly: true,
+  },
   
   // Features
   beeSystem: {

@@ -8,6 +8,7 @@ import { getHostileTakeoverPrice, getHotTipLeft, isCommittedTo, isMerchant } fro
 import EventArt from './EventArt';
 import { PUMPKIN_ART } from '../data/pumpkinEventData';
 import { SPRING_ART } from '../data/springEventData';
+import { SUMMER_ART } from '../data/summerEventData';
 import styles from './StatsDisplay.module.css';
 
 interface StatsDisplayProps {
@@ -34,6 +35,8 @@ interface StatsDisplayProps {
   isPumpkinEventActive?: boolean;
   petals?: number; // Optional: only shown during the Spring Market
   isSpringEventActive?: boolean;
+  tickets?: number; // Optional: only shown during the Summer Festival
+  isSummerEventActive?: boolean;
   guildState: GuildState;
 }
 
@@ -60,6 +63,8 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
   isPumpkinEventActive,
   petals,
   isSpringEventActive,
+  tickets,
+  isSummerEventActive,
   guildState
 }) => {
   // Calculate guild currency display
@@ -181,6 +186,12 @@ const StatsDisplay: FC<StatsDisplayProps> = memo(({
           <span className={`${styles.statItem} ${styles.eventStat}`}>
             <EventArt art={SPRING_ART.petals} size={18} />
             Petals: {formatNumber(petals)}
+          </span>
+        )}
+        {isSummerEventActive && tickets !== undefined && (
+          <span className={`${styles.statItem} ${styles.eventStat}`}>
+            <EventArt art={SUMMER_ART.tickets} size={18} />
+            Tickets: {formatNumber(tickets)}
           </span>
         )}
         <span className={`${styles.statItemWithButton} ${styles.stashStat}`}>

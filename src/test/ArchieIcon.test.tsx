@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import ArchieIcon from '../components/ArchieIcon'
 import { ArchieProvider } from '../context/ArchieContext'
-import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_FALL_SWEATER, SPECIAL_ARCHIE_WARLOCK } from '../config/assetPaths'
+import { SPECIAL_ARCHIE, SPECIAL_ARCHIE_PINECONES, SPECIAL_ARCHIE_FALL_SWEATER, SPECIAL_ARCHIE_WARLOCK, SPECIAL_ARCHIE_SPRING } from '../config/assetPaths'
 
 // Mock RandomIcon component
 vi.mock('../components/RandomIcon', () => ({
@@ -180,6 +180,35 @@ describe('ArchieIcon', () => {
     expect(screen.getByTestId('toast').textContent).not.toContain('Petals')
   })
 
+  it('finds Tickets during the Summer Festival, and says so in the toast', async () => {
+    const earnTickets = vi.fn()
+    renderArchieIcon({ isSummerEventActive: true, melonsSold: 999, earnTickets })
+
+    await userEvent.click(screen.getByTestId('archie-click'))
+
+    await waitFor(() => {
+      expect(earnTickets).toHaveBeenCalledTimes(1)
+    })
+    const tickets = earnTickets.mock.calls[0][0]
+    expect(tickets).toBeGreaterThanOrEqual(150) // 999 melons sold, at least a first click
+    await waitFor(() => {
+      expect(screen.getByTestId('toast').textContent).toContain(`+${tickets} Tickets`)
+    })
+  })
+
+  it('finds no Tickets outside the Summer Festival', async () => {
+    const earnTickets = vi.fn()
+    renderArchieIcon({ isSummerEventActive: false, melonsSold: 999, earnTickets })
+
+    await userEvent.click(screen.getByTestId('archie-click'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('toast')).toBeInTheDocument()
+    })
+    expect(earnTickets).not.toHaveBeenCalled()
+    expect(screen.getByTestId('toast').textContent).not.toContain('Tickets')
+  })
+
   it('should close toast when clicked', async () => {
     renderArchieIcon()
     
@@ -262,7 +291,8 @@ describe('ArchieIcon', () => {
 
   it.each([
     ['fallSweater', SPECIAL_ARCHIE_FALL_SWEATER],
-    ['warlock', SPECIAL_ARCHIE_WARLOCK]
+    ['warlock', SPECIAL_ARCHIE_WARLOCK],
+    ['gardener', SPECIAL_ARCHIE_SPRING]
   ])('should wear the %s look when it is chosen', (appearance, image) => {
     localStorage.setItem('archieAppearance', appearance)
     renderArchieIcon()

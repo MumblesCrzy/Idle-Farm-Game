@@ -115,6 +115,8 @@ export interface PumpkinEventState {
   // Pumpkin Patch
   plots: PumpkinPlot[];
   maxPlots: number;
+  /** The variety chosen to plant, kept across tab switches and reloads */
+  chosenPumpkin?: PumpkinVariety;
 
   // Materials and goods
   materials: PumpkinMaterials;

@@ -50,6 +50,11 @@ export function calculateHarvestAmount(
   if (season === 'Spring' && permanentBonuses.includes('april_showers')) {
     harvestAmount = Math.ceil(harvestAmount * 1.05);
   }
+
+  // Apply Summer Sun bonus: +5% yield during summer, from the Festival Legend achievement
+  if (season === 'Summer' && permanentBonuses.includes('summer_sun')) {
+    harvestAmount = Math.ceil(harvestAmount * 1.05);
+  }
   
   // Apply bee yield bonus from bee boxes and Meadow Magic upgrades, the guild bee synergy
   // bonus and, on auto harvests, the Engineers' Precision Tools and Combine Header. One

@@ -4,6 +4,7 @@ import { useArchie } from '../context/ArchieContext';
 import Toast from './Toast';
 import { archieCandyCornReward } from '../utils/pumpkinPricing';
 import { archiePetalsReward } from '../utils/springPricing';
+import { archieTicketsReward } from '../utils/summerPricing';
 import { archieLookImage } from '../data/archieLooks';
 
 interface ArchieIconProps {
@@ -20,6 +21,9 @@ interface ArchieIconProps {
   isSpringEventActive?: boolean;
   flowersSold?: number;
   earnPetals?: (amount: number) => void;
+  isSummerEventActive?: boolean;
+  melonsSold?: number;
+  earnTickets?: (amount: number) => void;
   isPaused?: boolean;
 }
 
@@ -39,6 +43,9 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   isSpringEventActive = false,
   flowersSold = 0,
   earnPetals,
+  isSummerEventActive = false,
+  melonsSold = 0,
+  earnTickets,
   isPaused = false
 }) => {
   const { lastClickTime, handleArchieClick, handleArchieAppear, archieReward, setArchieReward, archieClickStreak, archieCheerReward, setArchieCheerReward, archieAppearance } = useArchie();
@@ -48,6 +55,7 @@ const ArchieIcon: FC<ArchieIconProps> = ({
   const [pendingCheerReward, setPendingCheerReward] = useState(0);
   const [pendingCandyCornReward, setPendingCandyCornReward] = useState(0);
   const [pendingPetalsReward, setPendingPetalsReward] = useState(0);
+  const [pendingTicketsReward, setPendingTicketsReward] = useState(0);
   
   // When archieReward changes (i.e., Archie is clicked), add the reward to money
   useEffect(() => {
@@ -71,11 +79,18 @@ const ArchieIcon: FC<ArchieIconProps> = ({
         earnPetals(petals);
         setPendingPetalsReward(petals);
       }
+
+      // During the Summer Festival he finds Tickets
+      if (isSummerEventActive && earnTickets) {
+        const tickets = archieTicketsReward(melonsSold, archieClickStreak);
+        earnTickets(tickets);
+        setPendingTicketsReward(tickets);
+      }
       
       // Reset the reward
       setArchieReward(0);
     }
-  }, [archieReward, setMoney, setArchieReward, isPumpkinEventActive, earnCandyCorn, pumpkinsSold, isSpringEventActive, earnPetals, flowersSold, archieClickStreak]);
+  }, [archieReward, setMoney, setArchieReward, isPumpkinEventActive, earnCandyCorn, pumpkinsSold, isSpringEventActive, earnPetals, flowersSold, isSummerEventActive, earnTickets, melonsSold, archieClickStreak]);
   
   // When archieCheerReward changes (during Christmas event), add Holiday Cheer
   useEffect(() => {
@@ -96,7 +111,8 @@ const ArchieIcon: FC<ArchieIconProps> = ({
     if (pendingMoneyReward > 0 || pendingCheerReward > 0) {
       const streakMessage = archieClickStreak > 1 ? ` (${archieClickStreak}x streak!)` : '';
       const candyCornMessage = (pendingCandyCornReward > 0 ? ` & +${pendingCandyCornReward} Candy Corn` : '')
-        + (pendingPetalsReward > 0 ? ` & +${pendingPetalsReward} Petals` : '');
+        + (pendingPetalsReward > 0 ? ` & +${pendingPetalsReward} Petals` : '')
+        + (pendingTicketsReward > 0 ? ` & +${pendingTicketsReward} Tickets` : '');
       
       // During Christmas event, show both rewards
       if (isChristmasEventActive && pendingCheerReward > 0 && pendingMoneyReward > 0) {
@@ -116,8 +132,9 @@ const ArchieIcon: FC<ArchieIconProps> = ({
       setPendingCheerReward(0);
       setPendingCandyCornReward(0);
       setPendingPetalsReward(0);
+      setPendingTicketsReward(0);
     }
-  }, [pendingMoneyReward, pendingCheerReward, pendingCandyCornReward, pendingPetalsReward, archieClickStreak, isChristmasEventActive]);
+  }, [pendingMoneyReward, pendingCheerReward, pendingCandyCornReward, pendingPetalsReward, pendingTicketsReward, archieClickStreak, isChristmasEventActive]);
   
   // Check if cooldown has passed
   const currentTime = Date.now();

@@ -13,7 +13,7 @@
   background: var(--pine-dark);
   border: 2px solid var(--pine);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   color: var(--snow);
 }
 
@@ -80,16 +80,6 @@
   font-size: 0.8rem;
 }
 
-.bulkActions {
-  display: flex;
-  gap: 0.6rem;
-  margin-left: auto;
-}
-
-.bulkActions:empty {
-  display: none;
-}
-
 .treeHint {
   margin: 0;
   font-size: 0.8rem;
@@ -117,7 +107,8 @@
   border: 3px solid var(--gold);
   border-radius: 8px;
   padding: 0.5rem;
-  min-height: 120px;
+  /* A ready card's contents, so growing, ready and empty cards match */
+  min-height: 112px;
   display: flex;
   flex-direction: column;
   transition: all 0.2s;
@@ -183,7 +174,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .emptyArt {
@@ -219,6 +210,7 @@
   font-weight: 600;
   color: var(--pine);
   font-size: 0.9rem;
+  line-height: 1.25;
 }
 
 .progressSection {
@@ -226,14 +218,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .progressBarWrapper {
   position: relative;
   width: 100%;
   height: 12px;
-  margin-bottom: 0.25rem;
 }
 
 .progressLabel {

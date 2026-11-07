@@ -224,6 +224,20 @@
   color: #FFF8F0;
 }
 
+.tabButtonSummer {
+  composes: tabButton;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Melon red, cream text 5.0 */
+.tabButtonSummerActive {
+  composes: tabButtonSummer;
+  composes: tabButtonActive;
+  background: #C2393B;
+  color: #FFF8EA;
+}
+
 .tabEmoji {
   font-size: 18px;
   line-height: 1;
@@ -305,6 +319,45 @@
 }
 
 .springSubTabActive:hover {
+  filter: none;
+}
+
+/* Summer Festival Sub-Tabs: rind text on cream (6.0), cream on melon red (5.0) */
+.summerSubTabList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #A8D08D;
+  padding-bottom: 0.5rem;
+}
+
+.summerSubTab {
+  padding: 0.75rem 1.5rem;
+  background: #FFF8EA;
+  color: #2F6B3A;
+  border: none;
+  border-radius: 6px;
+  font-weight: normal;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summerSubTab:hover {
+  filter: brightness(0.95);
+}
+
+.summerSubTabActive {
+  composes: summerSubTab;
+  background: #C2393B;
+  color: #FFF8EA;
+  font-weight: bold;
+}
+
+.summerSubTabActive:hover {
   filter: none;
 }
 

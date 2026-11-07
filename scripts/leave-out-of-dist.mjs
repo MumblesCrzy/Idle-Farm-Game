@@ -10,6 +10,7 @@ const NOT_SHIPPED = [
   'Archie Sweater.png',
   'Archie Fall Sweater.png',
   'Archie Warlock Costume.png',
+  'Archie Spring.png',
   // The Glutton's full-size originals: the game loads the 256 px copies
   'Glutton.png',
   'Glutton Sweater.png',

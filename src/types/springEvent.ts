@@ -136,6 +136,8 @@ export interface SpringEventState {
   // Flower Beds
   beds: FlowerBed[];
   maxBeds: number;
+  /** The flower chosen to plant, kept across tab switches and reloads */
+  chosenFlower?: FlowerVariety;
 
   // Herb Garden
   herbs: Record<HerbKind, HerbSlot>;

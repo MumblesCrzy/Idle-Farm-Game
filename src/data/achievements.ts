@@ -37,15 +37,26 @@ import {
   SPRING_SANDWICH_BOARD,
   SPRING_BOUQUET,
   SPRING_PRIZE_BLOOM,
-  SPRING_MOTHERS_DAY_CARD
+  SPRING_MOTHERS_DAY_CARD,
+  SUMMER_GROUNDS,
+  SUMMER_SNOW_CONE,
+  SUMMER_CAROUSEL,
+  SUMMER_BASKET,
+  SUMMER_SUGAR_MELON,
+  SUMMER_BOARD,
+  SUMMER_HEAVIEST
 } from '../config/assetPaths';
 import { PUMPKIN_EVENT_CONSTANTS } from './pumpkinEventData';
+import { SUMMER_EVENT_CONSTANTS } from './summerEventData';
 import { treeSalesCheer } from './christmasEventData';
 import { INITIAL_BEE_UPGRADES } from './beeUpgrades';
 import { guildsKeptAtMax, guildsMaxedOut } from '../utils/legacy';
 
 /** The real Atlantic Giant world record, in pounds */
 const WORLD_RECORD = PUMPKIN_EVENT_CONSTANTS.WORLD_RECORD_WEIGHT;
+
+/** The real Carolina Cross world record, in pounds; weights are whole pounds, so 351 beats it */
+const MELON_WORLD_RECORD = SUMMER_EVENT_CONSTANTS.WORLD_RECORD_WEIGHT;
 
 /** Every bee upgrade, and the Beekeeper Assistant */
 const ALL_BEE_UPGRADES = INITIAL_BEE_UPGRADES.length + 1;
@@ -63,7 +74,8 @@ const beeUpgradesPurchased = (beeState: AchievementGameState['beeState']): numbe
 export const PERMANENT_BONUS_ACHIEVEMENTS: Record<string, string> = {
   frost_fertilizer: 'frost_fertilizer',
   pumpkin_2500_sold: 'harvest_moon',
-  spring_2500_sold: 'april_showers'
+  spring_2500_sold: 'april_showers',
+  summer_2500_sold: 'summer_sun'
 };
 
 export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[] = [
@@ -788,7 +800,8 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
     reward: {
       petals: 150,
       knowledge: 25,
-      message: 'The same friendly faces every week! +150 Petals and 25 knowledge'
+      unlocks: ["Archie's Gardener Outfit"],
+      message: 'The same friendly faces every week, and Archie gets a Gardener Outfit! +150 Petals and 25 knowledge'
     }
   },
   {
@@ -858,6 +871,127 @@ export const INITIAL_ACHIEVEMENTS: Omit<Achievement, 'unlocked' | 'unlockedAt'>[
       message: 'Every mom in town got flowers! +2,000 Petals and 100 knowledge'
     },
     hidden: true
+  },
+
+  // Summer Watermelon Festival Achievements: melons sold in any finish, Carolina Cross giants
+  // included; crafted goods do not count. Icons are borrowed until the summer art is drawn.
+  {
+    id: 'summer_first_sale',
+    name: 'Opening Day',
+    description: 'Sell your first melon',
+    icon: SUMMER_GROUNDS,
+    category: 'special',
+    requirement: {
+      type: 'melons_sold',
+      value: 1
+    },
+    reward: {
+      tickets: 50,
+      money: 100,
+      message: 'The Festival Grounds are open! +50 Tickets and $100'
+    }
+  },
+  {
+    id: 'summer_50_sold',
+    name: 'Cool Customer',
+    description: 'Sell 50 melons',
+    icon: SUMMER_SNOW_CONE,
+    category: 'special',
+    requirement: {
+      type: 'melons_sold',
+      value: 50
+    },
+    reward: {
+      tickets: 150,
+      knowledge: 25,
+      message: 'Folks line up for a cold slice! +150 Tickets and 25 knowledge'
+    }
+  },
+  {
+    id: 'summer_250_sold',
+    name: 'Fair Favorite',
+    description: 'Sell 250 melons',
+    icon: SUMMER_CAROUSEL,
+    category: 'special',
+    requirement: {
+      type: 'melons_sold',
+      value: 250
+    },
+    reward: {
+      tickets: 500,
+      money: 1000,
+      message: 'The whole fair knows your melons! +500 Tickets and $1,000'
+    }
+  },
+  {
+    id: 'summer_1000_sold',
+    name: 'Melon Mania',
+    description: 'Sell 1,000 melons',
+    icon: SUMMER_BASKET,
+    category: 'special',
+    requirement: {
+      type: 'melons_sold',
+      value: 1000
+    },
+    reward: {
+      tickets: 1500,
+      knowledge: 100,
+      message: 'Melon Mania sweeps the county! +1,500 Tickets and 100 knowledge'
+    }
+  },
+  {
+    id: 'summer_2500_sold',
+    name: 'Festival Legend',
+    description: 'Sell 2,500 melons',
+    icon: SUMMER_SUGAR_MELON,
+    category: 'special',
+    requirement: {
+      type: 'melons_sold',
+      value: 2500
+    },
+    reward: {
+      tickets: 4000,
+      knowledge: 200,
+      unlocks: ['Summer Sun'],
+      message: 'Summer Sun: permanent +5% summer crop yield! +4,000 Tickets and 200 knowledge'
+    }
+  },
+  {
+    id: 'summer_clean_sweep',
+    name: 'Clean Sweep',
+    description: 'Win first place in all five challenge kinds in one summer',
+    icon: SUMMER_BOARD,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      value: 5,
+      customCheck: (gameState) => (gameState.summerSweepKinds ?? 0) >= 5,
+      getProgress: (gameState) => gameState.summerSweepKinds ?? 0
+    },
+    reward: {
+      tickets: 2000,
+      knowledge: 100,
+      message: 'First place in every challenge, all in one summer! +2,000 Tickets and 100 knowledge'
+    },
+    hidden: true
+  },
+  {
+    id: 'summer_record_breaker',
+    name: 'Record Breaker',
+    description: `Grow a Carolina Cross heavier than the ${MELON_WORLD_RECORD} lb world record`,
+    icon: SUMMER_HEAVIEST,
+    category: 'special',
+    requirement: {
+      type: 'custom',
+      value: Math.ceil(MELON_WORLD_RECORD),
+      customCheck: (gameState) => (gameState.heaviestMelon ?? 0) > MELON_WORLD_RECORD,
+      getProgress: (gameState) => gameState.heaviestMelon ?? 0
+    },
+    reward: {
+      tickets: 5000,
+      knowledge: 250,
+      message: 'A new world record watermelon! +5,000 Tickets and 250 knowledge'
+    }
   },
 
   // Bee System Achievements

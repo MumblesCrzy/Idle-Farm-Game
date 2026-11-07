@@ -118,7 +118,7 @@ describe('useAchievements checks', () => {
 describe("Archie's looks", () => {
   it('each look earned from an achievement names one that exists', () => {
     const earned = ARCHIE_LOOKS.filter(look => look.achievementId);
-    expect(earned.map(look => look.id)).toEqual(['sweater', 'reindeer', 'fallSweater', 'warlock']);
+    expect(earned.map(look => look.id)).toEqual(['sweater', 'reindeer', 'fallSweater', 'warlock', 'gardener']);
     for (const look of earned) {
       expect(INITIAL_ACHIEVEMENTS.some(a => a.id === look.achievementId)).toBe(true);
     }
@@ -178,6 +178,11 @@ describe('Spring Market sales achievements', () => {
     expect(result.current.achievements.find(a => a.id === 'spring_250_sold')?.progress).toEqual({ current: 60, goal: 250 });
   });
 
+  it("unlock Archie's Gardener Outfit on the 2nd", () => {
+    expect(ARCHIE_LOOKS.find(look => look.id === 'gardener')?.achievementId).toBe(springIds[1]);
+    expect(INITIAL_ACHIEVEMENTS.find(a => a.id === springIds[1])?.reward?.unlocks).toEqual(["Archie's Gardener Outfit"]);
+  });
+
   it('pay Petals and a farm reward, and Market Legend adds April Showers', () => {
     for (const id of springIds) {
       const reward = INITIAL_ACHIEVEMENTS.find(a => a.id === id)?.reward;
@@ -202,5 +207,62 @@ describe('Spring Market sales achievements', () => {
       result.current.checkAchievements(gameState({ mothersDayBouquets: 50 }));
     });
     expect(onUnlock.mock.calls.map(([achievement]) => achievement.id)).toEqual(['spring_best_mom']);
+  });
+});
+
+describe('Summer Festival achievements', () => {
+  const summerIds = ['summer_first_sale', 'summer_50_sold', 'summer_250_sold', 'summer_1000_sold', 'summer_2500_sold'];
+
+  it('unlock from melons sold, with progress toward the next', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    for (let i = 0; i < 5; i++) {
+      act(() => {
+        result.current.checkAchievements(gameState({ melonsSold: 60 }));
+      });
+    }
+
+    const unlocked = onUnlock.mock.calls.map(([achievement]) => achievement.id).filter(id => summerIds.includes(id));
+    expect(unlocked).toEqual(['summer_first_sale', 'summer_50_sold']);
+    expect(result.current.achievements.find(a => a.id === 'summer_250_sold')?.progress).toEqual({ current: 60, goal: 250 });
+  });
+
+  it('pay Tickets and a farm reward, and Festival Legend adds Summer Sun', () => {
+    for (const id of [...summerIds, 'summer_clean_sweep', 'summer_record_breaker']) {
+      const reward = INITIAL_ACHIEVEMENTS.find(a => a.id === id)?.reward;
+      expect(reward?.tickets).toBeGreaterThan(0);
+      expect((reward?.money ?? 0) + (reward?.knowledge ?? 0)).toBeGreaterThan(0);
+    }
+    expect(INITIAL_ACHIEVEMENTS.find(a => a.id === 'summer_2500_sold')?.reward?.unlocks).toEqual(['Summer Sun']);
+    expect(PERMANENT_BONUS_ACHIEVEMENTS.summer_2500_sold).toBe('summer_sun');
+  });
+
+  it('hide Clean Sweep until all five kinds are won in one summer', () => {
+    expect(INITIAL_ACHIEVEMENTS.find(a => a.id === 'summer_clean_sweep')?.hidden).toBe(true);
+
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    act(() => {
+      result.current.checkAchievements(gameState({ summerSweepKinds: 4 }));
+    });
+    expect(onUnlock).not.toHaveBeenCalled();
+    act(() => {
+      result.current.checkAchievements(gameState({ summerSweepKinds: 5 }));
+    });
+    expect(onUnlock.mock.calls.map(([achievement]) => achievement.id)).toEqual(['summer_clean_sweep']);
+  });
+
+  it('give Record Breaker for a Carolina Cross over the 350.5 lb world record', () => {
+    const onUnlock = vi.fn();
+    const { result } = renderHook(() => useAchievements(freshState(), undefined, onUnlock));
+    act(() => {
+      result.current.checkAchievements(gameState({ heaviestMelon: 350 }));
+    });
+    expect(onUnlock).not.toHaveBeenCalled();
+    expect(result.current.achievements.find(a => a.id === 'summer_record_breaker')?.progress).toEqual({ current: 350, goal: 351 });
+    act(() => {
+      result.current.checkAchievements(gameState({ heaviestMelon: 351 }));
+    });
+    expect(onUnlock.mock.calls.map(([achievement]) => achievement.id)).toEqual(['summer_record_breaker']);
   });
 });

@@ -11,7 +11,7 @@ export interface UpgradeButtonProps {
   money?: number;
   knowledge?: number;
   cost: number;
-  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney' | 'cheer' | 'candyCorn' | 'petals';
+  currencyType: 'money' | 'knowledge' | 'regularHoney' | 'goldenHoney' | 'cheer' | 'candyCorn' | 'petals' | 'tickets';
   onClick: () => void;
   disabled?: boolean;
   isOwned?: boolean;
@@ -25,7 +25,7 @@ export interface UpgradeButtonProps {
   knowledgeCost?: number; // Add optional knowledge cost for dual-cost items
   regularHoney?: number; // Honey currency for bee upgrades
   goldenHoney?: number; // Golden honey currency for bee upgrades
-  eventCurrency?: number; // Holiday Cheer, Candy Corn or Petals, for seasonal event upgrades
+  eventCurrency?: number; // Holiday Cheer, Candy Corn, Petals or Tickets, for seasonal event upgrades
   formatNumber: (num: number, decimalPlaces?: number) => string;
   // Togglable support - for items that become on/off toggles after purchase
   isTogglable?: boolean;
@@ -73,6 +73,7 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
       case 'cheer':
       case 'candyCorn':
       case 'petals':
+      case 'tickets':
         return eventCurrency >= cost;
       default:
         return false;
@@ -96,6 +97,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
         return 'Candy Corn';
       case 'petals':
         return 'Petals';
+      case 'tickets':
+        return 'Tickets';
       default:
         return '';
     }
@@ -210,6 +213,8 @@ const UpgradeButton: FC<UpgradeButtonProps> = memo(({
                 ? `Costs ${formatNumber(cost, 1)} Candy Corn`
                 : currencyType === 'petals'
                 ? `Costs ${formatNumber(cost, 1)} Petals`
+                : currencyType === 'tickets'
+                ? `Costs ${formatNumber(cost, 1)} Tickets`
                 : `Costs ${formatNumber(cost, 1)} knowledge`;
       label += `. ${costText}`;
       if (!canAfford) {

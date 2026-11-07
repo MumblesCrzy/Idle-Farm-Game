@@ -166,6 +166,7 @@ export const SPECIAL_ARCHIE_REINDEER = './Archie Reindeer 256.png';
 export const SPECIAL_ARCHIE_SWEATER = './Archie Sweater 256.png';
 export const SPECIAL_ARCHIE_FALL_SWEATER = './Archie Fall Sweater 256.png';
 export const SPECIAL_ARCHIE_WARLOCK = './Archie Warlock Costume 256.png';
+export const SPECIAL_ARCHIE_SPRING = './Archie Spring 256.png';
 // Dunkin, the Preservers' Glutton: 256 px copies of the user's art, like Archie's
 export const SPECIAL_GLUTTON = './Glutton 256.png';
 export const SPECIAL_GLUTTON_SWEATER = './Glutton Sweater 256.png';
@@ -279,6 +280,56 @@ export const SPRING_UPGRADE_SILK_RIBBONS = './Silk Ribbons.png';
 export const SPRING_UPGRADE_BUNTING = './Spring Bunting.png';
 export const SPRING_UPGRADE_CART_LOADER = './Cart Loader.png';
 export const SPRING_UPGRADE_PONY_CART = './Pony Cart.png';
+
+// Summer Watermelon Festival
+export const SUMMER_SUGAR_BABY = './Sugar Baby.png';
+export const SUMMER_CRIMSON_SWEET = './Crimson Sweet.png';
+export const SUMMER_CAROLINA_CROSS = './Carolina Cross.png';
+export const SUMMER_SUGAR_MELON = './Sugar Melon.png';
+export const SUMMER_SPLITS = './Split Melon.png';
+export const SUMMER_SEEDS = './Melon Seeds.png';
+export const SUMMER_RINDS = './Melon Rinds.png';
+export const SUMMER_ICE = './Block of Ice.png';
+export const SUMMER_CUPS = './Melon Balls.png';
+export const SUMMER_AGUA = './Agua Fresca.png';
+export const SUMMER_PICKLES = './Pickled Rinds.png';
+export const SUMMER_ROASTED = './Roasted Seeds.png';
+export const SUMMER_SNOW_CONE = './Snow Cone.png';
+export const SUMMER_CHILLED = './Chilled Melon.png';
+export const SUMMER_CARVED = './Carved Melon.png';
+export const SUMMER_BASKET = './Picnic Basket.png';
+export const SUMMER_SPROUT = './Melon Sprout.png';
+export const ICON_TICKETS = './Tickets.png'; // Summer Festival currency
+export const SUMMER_CREW = './Picnic Crew.png';
+export const SUMMER_CAROUSEL = './Carousel.png';
+export const SUMMER_DUNK_TANK = './Dunk Tank.png';
+export const SUMMER_PARADE = './Parade.png';
+export const SUMMER_PATCH = './Melon Patch.png';
+export const SUMMER_JUICE_STAND = './Juice Stand.png';
+export const SUMMER_GROUNDS = './Festival Grounds.png';
+export const SUMMER_BOARD = './Challenge Board.png';
+export const SUMMER_HARVEST_RACE = './Stopwatch.png';
+export const SUMMER_SALES_SPRINT = './Cash Box.png';
+export const SUMMER_SWEETEST = './Sugar Cube.png';
+export const SUMMER_SPITTING = './Seed Spitting.png';
+export const SUMMER_HEAVIEST = './Melon Scale.png';
+export const SUMMER_UPGRADE_STRAW_MULCH = './Straw Mulch.png';
+export const SUMMER_UPGRADE_PATCH_EXPANSION = './New Melon Hill.png';
+export const SUMMER_UPGRADE_SUGAR_SEEDS = './Sugar Seeds.png';
+export const SUMMER_UPGRADE_WAGON = './Red Wagon.png';
+export const SUMMER_UPGRADE_JAB_PLANTER = './Jab Planter.png';
+export const SUMMER_UPGRADE_SAWDUST_PACKING = './Sawdust Packing.png';
+export const SUMMER_UPGRADE_FANCY_CARVING = './Fancy Carving.png';
+export const SUMMER_UPGRADE_EXTRA_HANDS = './Extra Hands.png';
+export const SUMMER_UPGRADE_GINGHAM_CLOTH = './Gingham Cloth.png';
+export const SUMMER_UPGRADE_BUNTING = './Summer Bunting.png';
+export const SUMMER_UPGRADE_TASTING_TABLE = './Tasting Table.png';
+export const SUMMER_UPGRADE_SUN_RIPENING = './Sun-Ripening.png';
+export const SUMMER_UPGRADE_VINE_PRUNING = './Vine Pruning.png';
+export const SUMMER_UPGRADE_SPITTING_PRACTICE = './Spitting Practice.png';
+export const RIVAL_MAGGIE = './Maggie Pickett.png';
+export const RIVAL_EARL = './Earl Boone.png';
+export const RIVAL_VANCE = './Vance Twins.png';
 
 // Helper function to get vegetable image by name
 export function getVeggieImage(veggieName: string): string {
@@ -411,6 +462,7 @@ export const ALL_IMAGES = [
   SPECIAL_ARCHIE_SWEATER,
   SPECIAL_ARCHIE_FALL_SWEATER,
   SPECIAL_ARCHIE_WARLOCK,
+  SPECIAL_ARCHIE_SPRING,
   SPECIAL_GLUTTON,
   SPECIAL_GLUTTON_SWEATER,
   SPECIAL_GLUTTON_VAMPIRE,
@@ -435,6 +487,7 @@ export const ALL_IMAGES = [
   ICON_LOCK,
   ICON_GOLD_STAR,
   ICON_SPARKLES,
+  ICON_TROPHY,
   
   // Bee upgrade images
   BEE_BUSY_BEES,
@@ -535,4 +588,52 @@ export const ALL_IMAGES = [
   SPRING_UPGRADE_BUNTING,
   SPRING_UPGRADE_CART_LOADER,
   SPRING_UPGRADE_PONY_CART,
+  SUMMER_SUGAR_BABY,
+  SUMMER_CRIMSON_SWEET,
+  SUMMER_CAROLINA_CROSS,
+  SUMMER_SUGAR_MELON,
+  SUMMER_SPLITS,
+  SUMMER_SEEDS,
+  SUMMER_RINDS,
+  SUMMER_ICE,
+  SUMMER_CUPS,
+  SUMMER_AGUA,
+  SUMMER_PICKLES,
+  SUMMER_ROASTED,
+  SUMMER_SNOW_CONE,
+  SUMMER_CHILLED,
+  SUMMER_CARVED,
+  SUMMER_BASKET,
+  SUMMER_SPROUT,
+  ICON_TICKETS,
+  SUMMER_CREW,
+  SUMMER_CAROUSEL,
+  SUMMER_DUNK_TANK,
+  SUMMER_PARADE,
+  SUMMER_PATCH,
+  SUMMER_JUICE_STAND,
+  SUMMER_GROUNDS,
+  SUMMER_BOARD,
+  SUMMER_HARVEST_RACE,
+  SUMMER_SALES_SPRINT,
+  SUMMER_SWEETEST,
+  SUMMER_SPITTING,
+  SUMMER_HEAVIEST,
+  SUMMER_UPGRADE_STRAW_MULCH,
+  SUMMER_UPGRADE_PATCH_EXPANSION,
+  SUMMER_UPGRADE_SUGAR_SEEDS,
+  SUMMER_UPGRADE_WAGON,
+  SUMMER_UPGRADE_JAB_PLANTER,
+  SUMMER_UPGRADE_SAWDUST_PACKING,
+  SUMMER_UPGRADE_FANCY_CARVING,
+  SUMMER_UPGRADE_EXTRA_HANDS,
+  SUMMER_UPGRADE_GINGHAM_CLOTH,
+  SUMMER_UPGRADE_BUNTING,
+  SUMMER_UPGRADE_TASTING_TABLE,
+  SUMMER_UPGRADE_SUN_RIPENING,
+  SUMMER_UPGRADE_VINE_PRUNING,
+  SUMMER_UPGRADE_SPITTING_PRACTICE,
+  RIVAL_MAGGIE,
+  RIVAL_EARL,
+  RIVAL_VANCE,
 ];

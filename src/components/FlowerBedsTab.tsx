@@ -6,7 +6,7 @@
  * stock in the header and Bed upgrades on the right.
  */
 
-import { memo, useCallback, useId, useState, type FC } from 'react';
+import { memo, useCallback, useId, type FC } from 'react';
 import BaseTab from './BaseTab';
 import EventArt from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
@@ -250,6 +250,7 @@ const FlowerBedsTab: FC<FlowerBedsTabProps> = ({ event, formatNumber }) => {
     petals,
     demandMultiplier,
     plantFlower,
+    chooseFlower,
     harvestFlower,
     harvestAllFlowers,
     purchaseUpgrade
@@ -260,9 +261,10 @@ const FlowerBedsTab: FC<FlowerBedsTabProps> = ({ event, formatNumber }) => {
   const unlocked = FLOWER_ORDER.filter(variety => ownsUpgrade(upgrades, FLOWER_VARIETIES[variety].unlockUpgrade));
   const bestUnlocked = unlocked[unlocked.length - 1] ?? 'tulip';
 
-  const [chosenVariety, setChosenVariety] = useState<FlowerVariety>(bestUnlocked);
-  // A new season can lock the chosen flower again; fall back to the best one still unlocked
-  const selectedVariety = unlocked.includes(chosenVariety) ? chosenVariety : bestUnlocked;
+  // The event keeps the chosen flower, so it stays chosen after leaving the tab.
+  // A new season can lock it again; fall back to the best one still unlocked
+  const chosenVariety = event.eventState.chosenFlower;
+  const selectedVariety = chosenVariety && unlocked.includes(chosenVariety) ? chosenVariety : bestUnlocked;
 
   // The Rain Barrel speeds growth, so days left counts down faster
   const speed = flowerGrowthSpeed(upgrades);
@@ -275,9 +277,9 @@ const FlowerBedsTab: FC<FlowerBedsTabProps> = ({ event, formatNumber }) => {
   // Unlocking a flower also selects it
   const unlockFlower = useCallback((variety: FlowerVariety) => {
     if (purchaseUpgrade(FLOWER_VARIETIES[variety].unlockUpgrade)) {
-      setChosenVariety(variety);
+      chooseFlower(variety);
     }
-  }, [purchaseUpgrade]);
+  }, [purchaseUpgrade, chooseFlower]);
 
   const plantBed = useCallback((index: number) => {
     plantFlower(index, selectedVariety);
@@ -341,7 +343,7 @@ const FlowerBedsTab: FC<FlowerBedsTabProps> = ({ event, formatNumber }) => {
                 unlocked={unlocked.includes(variety)}
                 canAfford={petals >= FLOWER_VARIETIES[variety].unlockCost}
                 describedBy={variety === 'rose' ? roseHintId : undefined}
-                onSelect={setChosenVariety}
+                onSelect={chooseFlower}
                 onUnlock={unlockFlower}
                 formatNumber={formatNumber}
               />

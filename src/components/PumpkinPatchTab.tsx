@@ -6,7 +6,7 @@
  * materials summary and Patch upgrades on the right.
  */
 
-import { memo, useCallback, useId, useState, type FC } from 'react';
+import { memo, useCallback, useId, type FC } from 'react';
 import BaseTab from './BaseTab';
 import EventArt from './EventArt';
 import EventUpgradesPanel from './EventUpgradesPanel';
@@ -258,6 +258,7 @@ const PumpkinPatchTab: FC<PumpkinPatchTabProps> = ({ event, formatNumber }) => {
     candyCorn,
     giantShelf,
     plantPumpkin,
+    choosePumpkin,
     harvestPumpkin,
     harvestAllPumpkins,
     purchaseUpgrade
@@ -268,9 +269,10 @@ const PumpkinPatchTab: FC<PumpkinPatchTabProps> = ({ event, formatNumber }) => {
   const unlocked = VARIETIES.filter(variety => ownsUpgrade(upgrades, PUMPKIN_VARIETIES[variety].unlockUpgrade));
   const bestUnlocked = unlocked[unlocked.length - 1] ?? 'sugarPie';
 
-  const [chosenVariety, setChosenVariety] = useState<PumpkinVariety>(bestUnlocked);
-  // A reset can lock the chosen variety again; fall back to the best one still unlocked
-  const selectedVariety = unlocked.includes(chosenVariety) ? chosenVariety : bestUnlocked;
+  // The event keeps the chosen variety, so it stays chosen after leaving the tab.
+  // A reset can lock it again; fall back to the best one still unlocked
+  const chosenVariety = event.eventState.chosenPumpkin;
+  const selectedVariety = chosenVariety && unlocked.includes(chosenVariety) ? chosenVariety : bestUnlocked;
 
   // Compost Heap speeds growth, so days left counts down faster
   const speed = pumpkinGrowthSpeed(upgrades);
@@ -283,9 +285,9 @@ const PumpkinPatchTab: FC<PumpkinPatchTabProps> = ({ event, formatNumber }) => {
   // Unlocking a variety also selects it
   const unlockVariety = useCallback((variety: PumpkinVariety) => {
     if (purchaseUpgrade(PUMPKIN_VARIETIES[variety].unlockUpgrade)) {
-      setChosenVariety(variety);
+      choosePumpkin(variety);
     }
-  }, [purchaseUpgrade]);
+  }, [purchaseUpgrade, choosePumpkin]);
 
   const plantPlot = useCallback((index: number) => {
     plantPumpkin(index, selectedVariety);
@@ -353,7 +355,7 @@ const PumpkinPatchTab: FC<PumpkinPatchTabProps> = ({ event, formatNumber }) => {
                 unlocked={unlocked.includes(variety)}
                 canAfford={candyCorn >= PUMPKIN_VARIETIES[variety].unlockCost}
                 describedBy={variety === 'giant' ? giantHintId : undefined}
-                onSelect={setChosenVariety}
+                onSelect={choosePumpkin}
                 onUnlock={unlockVariety}
                 formatNumber={formatNumber}
               />

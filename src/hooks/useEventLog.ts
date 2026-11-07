@@ -272,7 +272,8 @@ export function useEventLogFilter(initialCategories?: EventCategory[]) {
       'bees',
       'christmas',
       'pumpkin',
-      'spring'
+      'spring',
+      'summer'
     ]
   );
   const [searchTerm, setSearchTerm] = useState('');

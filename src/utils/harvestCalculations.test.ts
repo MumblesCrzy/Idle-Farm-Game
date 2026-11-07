@@ -36,6 +36,12 @@ describe('Harvest Calculations', () => {
       expect(calculateHarvestAmount(2, 'Summer', ['april_showers'], 0).amount).toBe(3);
     });
 
+    it('should apply Summer Sun in Summer only', () => {
+      expect(calculateHarvestAmount(2, 'Summer', ['summer_sun'], 0).amount).toBe(4); // ceil(3 * 1.05)
+      expect(calculateHarvestAmount(19, 'Summer', ['summer_sun'], 0).amount).toBe(21); // ceil(20 * 1.05)
+      expect(calculateHarvestAmount(2, 'Spring', ['summer_sun'], 0).amount).toBe(3);
+    });
+
     it('should apply bee yield bonus', () => {
       const result = calculateHarvestAmount(0, 'Spring', [], 0.2);
       expect(result.amount).toBe(2); // ceil(1 * 1.2) = ceil(1.2) = 2

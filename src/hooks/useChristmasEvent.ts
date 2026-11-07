@@ -47,6 +47,8 @@ export interface UseChristmasEventReturn {
   // Tree Management
   treePlots: TreePlot[];
   plantTree: (plotIndex: number, treeType: TreeType) => void;
+  /** Remembers the tree to plant, so the Tree Farm keeps it when you leave the tab */
+  chooseTree: (treeType: TreeType) => void;
   harvestTree: (plotIndex: number) => void;
   harvestAllTrees: () => void;
   
@@ -1263,6 +1265,10 @@ export function useChristmasEvent({
   // Memoized so the game context stays stable between changes. Every value it
   // reads is listed below. dailyBonusAvailable is a getter because it depends on
   // today's date, which no dependency tracks.
+  const chooseTree = useCallback((treeType: TreeType) => {
+    setEventState(prev => prev.chosenTree === treeType ? prev : { ...prev, chosenTree: treeType });
+  }, []);
+
   return useMemo<UseChristmasEventReturn>(() => ({
     eventState,
     isEventActive,
@@ -1271,6 +1277,7 @@ export function useChristmasEvent({
     spendCheer,
     treePlots: eventState.treePlots,
     plantTree,
+    chooseTree,
     harvestTree,
     harvestAllTrees,
     materials: eventState.materials,
@@ -1307,6 +1314,7 @@ export function useChristmasEvent({
     earnCheer,
     spendCheer,
     plantTree,
+    chooseTree,
     harvestTree,
     harvestAllTrees,
     craftItem,

@@ -114,6 +114,19 @@ describe('TreeFarmTab', () => {
     expect(screen.queryByRole('button', { name: /^Plant All/ })).toBeNull();
   });
 
+  it('shows Harvest All and Plant All beside the title, as the other events do', () => {
+    render(<FarmHarness initialState={{
+      treePlots: [readyPlot(0), emptyPlot(1)],
+      upgrades: owning('harvest_all_upgrade', 'plant_all_upgrade')
+    }} />);
+
+    const titleGroup = screen.getByRole('heading', { name: /Tree Farm/ }).parentElement!;
+    expect(titleGroup).toContainElement(screen.getByRole('button', { name: /^Harvest All:/ }));
+    expect(titleGroup).toContainElement(screen.getByRole('button', { name: /^Plant All:/ }));
+    // The tree row keeps its hint now that the buttons have moved out of it
+    expect(screen.getByText(/Each harvest brings wood, pinecones and branches/)).toBeInTheDocument();
+  });
+
   it('plants every empty plot and harvests every ready one with their upgrades', () => {
     render(<FarmHarness initialState={{
       treePlots: [readyPlot(0), readyPlot(1), emptyPlot(2), emptyPlot(3)],

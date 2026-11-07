@@ -31,6 +31,10 @@ import FlowerBedsTab from './components/FlowerBedsTab';
 import HerbGardenTab from './components/HerbGardenTab';
 import PottingShedTab from './components/PottingShedTab';
 import MarketStallTab from './components/MarketStallTab';
+import MelonPatchTab from './components/MelonPatchTab';
+import JuiceStandTab from './components/JuiceStandTab';
+import FestivalGroundsTab from './components/FestivalGroundsTab';
+import ChallengeBoardTab from './components/ChallengeBoardTab';
 import CarvingBarnTab from './components/CarvingBarnTab';
 import FarmStandTab from './components/FarmStandTab';
 import CountyFairTab from './components/CountyFairTab';
@@ -112,10 +116,15 @@ import { useEventLog as useEventLogSystem } from './hooks/useEventLog';
 import { useChristmasEvent, type UseChristmasEventReturn } from './hooks/useChristmasEvent';
 import { usePumpkinEvent, isPumpkinSeason, claimedSalesMilestones } from './hooks/usePumpkinEvent';
 import { useSpringEvent, isSpringSeason } from './hooks/useSpringEvent';
+import { useSummerEvent, isSummerSeason } from './hooks/useSummerEvent';
 import { PERMANENT_BONUS_ACHIEVEMENTS } from './data/achievements';
 import { PUMPKIN_ART } from './data/pumpkinEventData';
 import { CHRISTMAS_ART, TREE_SALES_REWARDS } from './data/christmasEventData';
 import { FLOWER_VARIETIES, SPRING_ART } from './data/springEventData';
+import { MELON_VARIETIES, SUMMER_ART } from './data/summerEventData';
+import { melonLabel, parseMelonKey } from './utils/summerPricing';
+import { resultSummary } from './utils/challenges';
+import type { MelonHarvest } from './types/summerEvent';
 import { bunchLabel, parseFlowerKey } from './utils/springPricing';
 import { loadGameStateWithCanning, startNewGame, type ExtendedGameState } from './utils/saveSystem';
 import { devTelemetry } from './utils/devTelemetry';
@@ -192,6 +201,16 @@ const SPRING_SUB_TABS: Array<{ id: SpringSubTab; label: string; art: EventArtSou
   { id: 'stall', label: 'Market Stall', art: SPRING_ART.stall },
 ];
 
+type SummerSubTab = 'patch' | 'stand' | 'grounds' | 'board';
+
+/** Sections of the Summer Festival tab */
+const SUMMER_SUB_TABS: Array<{ id: SummerSubTab; label: string; art: EventArtSource }> = [
+  { id: 'patch', label: 'Melon Patch', art: SUMMER_ART.patch },
+  { id: 'stand', label: 'Juice Stand', art: SUMMER_ART.juiceStand },
+  { id: 'grounds', label: 'Festival Grounds', art: SUMMER_ART.grounds },
+  { id: 'board', label: 'Challenge Board', art: SUMMER_ART.board },
+];
+
 /** One line for the event log about a pumpkin sale */
 const pumpkinSaleMessage = (variety: string, quantity: number) =>
   variety === 'Pumpkin'
@@ -217,7 +236,21 @@ const marketDayMessage = (bunches: number, goods: number) => {
 };
 
 /** The game's tabs. The open one is kept for the browser session, so a reload returns to it. */
-const GAME_TABS = ['growing', 'canning', 'bees', 'guilds', 'christmas', 'pumpkin', 'spring'] as const;
+/** One line for the event log about a melon sale; no key is Sell all melons */
+const summerSaleMessage = (key: string | null, quantity: number) => {
+  if (key === null) return `Sold ${quantity} melon${quantity === 1 ? '' : 's'}`;
+  const { variety, quality, finish } = parseMelonKey(key);
+  const sugar = quality === 'sugar' ? (quantity === 1 ? ', a Sugar Melon' : ', all Sugar Melons') : '';
+  return `Sold ${melonLabel(variety, finish, quantity)}${sugar}`;
+};
+
+/** The event log line for a melon from the patch, with its weight or sweetness as the details */
+const melonHarvestLine = ({ variety, quality, brix, weight }: MelonHarvest): [string, string] =>
+  variety === 'carolinaCross'
+    ? [`Harvested a ${MELON_VARIETIES.carolinaCross.name}`, `Weighs ${weight} lb`]
+    : [`Harvested a ${quality === 'sugar' ? 'Sugar Melon: ' : ''}${MELON_VARIETIES[variety].name}`, `${brix.toFixed(1)} Brix`];
+
+const GAME_TABS = ['growing', 'canning', 'bees', 'guilds', 'christmas', 'pumpkin', 'spring', 'summer'] as const;
 type GameTab = typeof GAME_TABS[number];
 const rememberedTab = (): GameTab => {
   try {
@@ -420,6 +453,33 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // Weather system hook
   const { currentWeather, setCurrentWeather } = useWeatherSystem('Clear');
+
+  // Summer Watermelon Festival. In dev, the Summer Festival Preview flag opens it out of season.
+  // A Heatwave in the main game sells cold goods for more.
+  const summerPreview = useFeatureFlag('summerPreview') && import.meta.env.DEV;
+  const summerEvent = useSummerEvent({
+    initialState: loaded?.summerEventState,
+    forceActive: summerPreview,
+    isHeatwave: currentWeather === 'Heatwave',
+    onMelonsSold: (key, quantity, tickets) => {
+      eventLogCallbacks.onSummerEvent(summerSaleMessage(key, quantity), `Earned ${tickets} Tickets`);
+    },
+    onGiantSold: (weight, tickets) => {
+      eventLogCallbacks.onSummerEvent(`Sold a ${weight} lb ${MELON_VARIETIES.carolinaCross.name}`, `Earned ${tickets} Tickets`);
+    },
+    onMelonHarvested: (harvest) => {
+      eventLogCallbacks.onSummerEvent(...melonHarvestLine(harvest));
+    },
+    onItemCrafted: (itemName, quantity) => {
+      eventLogCallbacks.onSummerEvent(`Made ${quantity}x ${itemName}`);
+    },
+    onUpgradePurchased: (upgradeName, cost) => {
+      eventLogCallbacks.onSummerEvent(`Purchased upgrade: ${upgradeName}`, `Cost ${cost} Tickets`);
+    },
+    onChallengeEnded: (result) => {
+      eventLogCallbacks.onSummerEvent(resultSummary(result));
+    },
+  });
   
   // Season system hook
   const { season } = useSeasonSystem(day);
@@ -515,6 +575,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const christmasEventRef = useLatestRef(christmasEvent);
   const pumpkinEventRef = useLatestRef(pumpkinEvent);
   const springEventRef = useLatestRef(springEvent);
+  const summerEventRef = useLatestRef(summerEvent);
   const experienceRef = useLatestRef(experience);
   const autoSellOwnedRef = useLatestRef(autoSellOwned);
   const merchantDaysRef = useLatestRef(getMerchantDays(guildState));
@@ -546,7 +607,8 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
       permanentBonuses,
       christmasEvent,
       pumpkinEvent,
-      springEvent
+      springEvent,
+      summerEvent
     },
     isPaused,
     setVeggies,
@@ -719,6 +781,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     christmasEventRef,
     pumpkinEventRef,
     springEventRef,
+    summerEventRef,
     isPausedRef,
     handleSell
   });
@@ -739,7 +802,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
-    christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    christmasEvent, pumpkinEvent, springEvent, summerEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
     guildState, setGuildState, isPaused, setIsPaused
   }), [
     veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge,
@@ -754,7 +817,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     farmTier, setFarmTier, irrigationOwned, setIrrigationOwned, irrigationCost, irrigationKnCost,
     handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie,
     setHighestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost,
-    christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
+    christmasEvent, pumpkinEvent, springEvent, summerEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus,
     guildState, setGuildState, isPaused, setIsPaused
   ]);
 
@@ -823,6 +886,8 @@ function App() {
   const pumpkinEventFlag = useFeatureFlag('pumpkinEvent');
   const springEventFlag = useFeatureFlag('springEvent');
   const springPreviewFlag = useFeatureFlag('springPreview');
+  const summerEventFlag = useFeatureFlag('summerEvent');
+  const summerPreviewFlag = useFeatureFlag('summerPreview');
   const { setFlag } = useFeatureFlags();
   const achievementSystemFlag = useFeatureFlag('achievementSystem');
   const archieCharacterFlag = useFeatureFlag('archieCharacter');
@@ -836,6 +901,8 @@ function App() {
   const pumpkinEventEnabled = (isDev ? pumpkinEventFlag : true) && isPumpkinSeason();
   // Spring Market tab only during the season (Mar 20 through Memorial Day), or in dev with the preview flag
   const springEventEnabled = (isDev ? springEventFlag : true) && (isSpringSeason() || (isDev && springPreviewFlag));
+  // Summer Festival tab only during the season (Jun 21 through Labor Day), or in dev with the preview flag
+  const summerEventEnabled = (isDev ? summerEventFlag : true) && (isSummerSeason() || (isDev && summerPreviewFlag));
   const achievementSystemEnabled = isDev ? achievementSystemFlag : true;
   const archieCharacterEnabled = isDev ? archieCharacterFlag : true;
   const devToolsEnabled = isDev ? devToolsFlag : false;
@@ -890,7 +957,8 @@ function App() {
     'bees',
     'christmas',
     'pumpkin',
-    'spring'
+    'spring',
+    'summer'
   ]);
 
   // Toast state for magical register bonus
@@ -924,6 +992,7 @@ function App() {
   const [christmasSubTab, setChristmasSubTab] = useState<ChristmasSubTab>('farm');
   const [pumpkinSubTab, setPumpkinSubTab] = useState<PumpkinSubTab>('patch');
   const [springSubTab, setSpringSubTab] = useState<SpringSubTab>('beds');
+  const [summerSubTab, setSummerSubTab] = useState<SummerSubTab>('patch');
   
   // Guild UI state (guild data state is in GameProvider context)
   const [guildIntroShown, setGuildIntroShown] = useState(
@@ -987,7 +1056,7 @@ function App() {
     [beeState?.upgrades]
   );
 
-  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, handleHostileTakeover, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, springEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
+  const { resetGame, veggies, setVeggies, money, setMoney, experience, setExperience, knowledge, setKnowledge, activeVeggie, day, setDay, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, setActiveVeggie, handleHarvest, handleToggleSell, handleToggleAutoHarvester, handleSell, handleRitualHarvestAll, handleBuyFertilizer, handleBuyHarvester, handleBuyBetterSeeds, greenhouseOwned, handleBuyGreenhouse, handleBuyHarvesterSpeed, heirloomOwned, handleBuyHeirloom, autoSellOwned, handleBuyAutoSell, almanacLevel, almanacCost, handleBuyAlmanac, handleBuyAdditionalPlot, maxPlots, farmCost, handleBuyLargerFarm, handleHostileTakeover, farmTier, irrigationOwned, irrigationCost, irrigationKnCost, handleBuyIrrigation, currentWeather, setCurrentWeather, highestUnlockedVeggie, handleBuyAutoPurchaser, heirloomMoneyCost, heirloomKnowledgeCost, christmasEvent, pumpkinEvent, springEvent, summerEvent, permanentBonuses, setPermanentBonuses, beeYieldBonus, setBeeYieldBonus, guildState, setGuildState, isPaused, setIsPaused } = useGame();
 
 
   // Guild system handlers. Stable, so they never hold an old render's scope: memoized handlers
@@ -1143,6 +1212,12 @@ function App() {
       const petals = achievement.reward?.petals ?? 0;
       if (petals > 0) {
         springEvent.earnPetals(petals);
+      }
+
+      // Summer Festival achievements pay Tickets
+      const tickets = achievement.reward?.tickets ?? 0;
+      if (tickets > 0) {
+        summerEvent.earnTickets(tickets);
       }
       
       // ── Telemetry: achievement_unlocked ──
@@ -1335,6 +1410,9 @@ function App() {
       },
       onSpringEvent: (message: string, details?: string) => {
         addEvent('spring', message, { details });
+      },
+      onSummerEvent: (message: string, details?: string) => {
+        addEvent('summer', message, { details });
       }
     });
 
@@ -1530,13 +1608,14 @@ function App() {
       christmasEventState: christmasEvent?.eventState,
       pumpkinEventState: pumpkinEvent.eventState,
       springEventState: springEvent.eventState,
+      summerEventState: summerEvent.eventState,
       beeState: beeState || undefined,
       harvestTutorialShown,
       guildIntroShown,
       guildState,
       isPaused
     };
-  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, pumpkinEvent, springEvent, beeState, harvestTutorialShown, guildIntroShown, guildState, isPaused]);
+  }, [canningState, veggies, money, experience, knowledge, activeVeggie, day, totalDaysElapsed, totalHarvests, globalAutoPurchaseTimer, greenhouseOwned, heirloomOwned, autoSellOwned, almanacLevel, almanacCost, maxPlots, farmTier, farmCost, irrigationOwned, currentWeather, highestUnlockedVeggie, permanentBonuses, uiPreferences, achievements, totalUnlocked, lastUnlockedId, eventLog, christmasEvent, pumpkinEvent, springEvent, summerEvent, beeState, harvestTutorialShown, guildIntroShown, guildState, isPaused]);
 
   // Saves at most every 30 seconds, and always on page unload
   useAutoSave({ getGameState: buildSaveState });
@@ -1574,6 +1653,9 @@ function App() {
     const heaviestGiant = pumpkinEvent?.eventState.weighOff.personalBest ?? 0;
     const flowersSold = springEvent.totalFlowersSold;
     const mothersDayBouquets = springEvent.eventState.mothersDayBouquets.sold;
+    const melonsSold = summerEvent.totalMelonsSold;
+    const heaviestMelon = summerEvent.eventState.personalBest.weight;
+    const summerSweepKinds = summerEvent.board.sweep.kinds.length;
 
     checkAchievements({
       money,
@@ -1588,11 +1670,14 @@ function App() {
       heaviestGiant,
       flowersSold,
       mothersDayBouquets,
+      melonsSold,
+      heaviestMelon,
+      summerSweepKinds,
       beeState,
       canningState,
       guildState
     });
-  }, [veggies, canningState, christmasEvent, pumpkinEvent, springEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, guildState]);
+  }, [veggies, canningState, christmasEvent, pumpkinEvent, springEvent, summerEvent, checkAchievements, money, experience, knowledge, farmTier, totalHarvests, beeState, guildState]);
 
   // A tab that's locked or out of season falls back to Growing: after a reset, when an
   // event ends, or when the tab remembered across a reload isn't open any more
@@ -1605,7 +1690,8 @@ function App() {
     guilds: guildsTabOpen,
     christmas: christmasEventEnabled && !!christmasEvent?.isEventActive,
     pumpkin: pumpkinEventEnabled && pumpkinEvent.isEventActive,
-    spring: springEventEnabled && springEvent.isEventActive
+    spring: springEventEnabled && springEvent.isEventActive,
+    summer: summerEventEnabled && summerEvent.isEventActive
   }[activeTab];
   useEffect(() => {
     if (!activeTabOpen) {
@@ -1777,6 +1863,21 @@ function App() {
     }
   }, [springEvent.lastRegularsTip, regularsIcon]);
 
+  // Show a toast for each Dunk Tank tip at the Summer Festival
+  const lastDunkTipTimestamp = useRef(0);
+  const dunkTankIcon = summerEvent.eventState.upgrades.find(u => u.id === 'dunk_tank')?.icon;
+  useEffect(() => {
+    const tip = summerEvent.lastDunkTip;
+    if (tip.amount > 0 && tip.timestamp > lastDunkTipTimestamp.current) {
+      setMagicalRegisterToast({
+        visible: true,
+        message: `Dunk Tank tip! +${tip.amount} Tickets`,
+        icon: dunkTankIcon,
+      });
+      lastDunkTipTimestamp.current = tip.timestamp;
+    }
+  }, [summerEvent.lastDunkTip, dunkTankIcon]);
+
   // Preload all images to prevent loading delays when switching tabs
   useEffect(() => {
     // Preload using both methods for maximum browser compatibility
@@ -1837,6 +1938,9 @@ function App() {
         isSpringEventActive={springEventEnabled && springEvent.isEventActive}
         flowersSold={springEvent.totalFlowersSold}
         earnPetals={springEvent.earnPetals}
+        isSummerEventActive={summerEventEnabled && summerEvent.isEventActive}
+        melonsSold={summerEvent.totalMelonsSold}
+        earnTickets={summerEvent.earnTickets}
         isPaused={isPaused}
       />
     )}
@@ -1906,6 +2010,8 @@ function App() {
             isPumpkinEventActive={pumpkinEventEnabled && pumpkinEvent.isEventActive}
             petals={springEvent.petals}
             isSpringEventActive={springEventEnabled && springEvent.isEventActive}
+            tickets={summerEvent.tickets}
+            isSummerEventActive={summerEventEnabled && summerEvent.isEventActive}
             guildState={guildState}
           />
         </aside>
@@ -2067,6 +2173,22 @@ function App() {
                 <div className={styles.tabButtonContent}>
                   <EventArt art={SPRING_ART.tulip} size={20} />
                   Spring Market
+                </div>
+              </button>
+            )}
+            {summerEventEnabled && summerEvent.isEventActive && (
+              <button
+                role="tab"
+                id="tab-summer"
+                aria-selected={activeTab === 'summer'}
+                aria-controls="panel-summer"
+                onClick={() => setActiveTab('summer')}
+                className={activeTab === 'summer' ? styles.tabButtonSummerActive : styles.tabButtonSummer}
+                title="Summer Watermelon Festival (Jun 21 through Labor Day)"
+              >
+                <div className={styles.tabButtonContent}>
+                  <EventArt art={SUMMER_ART.slice} size={20} />
+                  Summer Festival
                 </div>
               </button>
             )}
@@ -2321,6 +2443,41 @@ function App() {
           </PerformanceWrapper>
         </div>
       )}
+
+      {/* Summer Watermelon Festival Tab Content */}
+      {summerEventEnabled && summerEvent.isEventActive && (
+        <div
+          role="tabpanel"
+          id="panel-summer"
+          aria-labelledby="tab-summer"
+          className={activeTab !== 'summer' ? styles.tabPanelHidden : undefined}
+        >
+          <PerformanceWrapper id="SummerTab">
+            <div role="tablist" aria-label="Summer Festival sections" className={styles.summerSubTabList}>
+              {SUMMER_SUB_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  id={`tab-summer-${tab.id}`}
+                  aria-selected={summerSubTab === tab.id}
+                  aria-controls={`panel-summer-${tab.id}`}
+                  onClick={() => setSummerSubTab(tab.id)}
+                  className={summerSubTab === tab.id ? styles.summerSubTabActive : styles.summerSubTab}
+                >
+                  <EventArt art={tab.art} size={20} />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div role="tabpanel" id={`panel-summer-${summerSubTab}`} aria-labelledby={`tab-summer-${summerSubTab}`}>
+              {summerSubTab === 'patch' && <MelonPatchTab event={summerEvent} formatNumber={formatNumber} />}
+              {summerSubTab === 'stand' && <JuiceStandTab event={summerEvent} formatNumber={formatNumber} />}
+              {summerSubTab === 'grounds' && <FestivalGroundsTab event={summerEvent} formatNumber={formatNumber} />}
+              {summerSubTab === 'board' && <ChallengeBoardTab event={summerEvent} formatNumber={formatNumber} />}
+            </div>
+          </PerformanceWrapper>
+        </div>
+      )}
       </main>
       </div>
     </div>
@@ -2430,6 +2587,12 @@ function App() {
           springOpen={springEventEnabled && springEvent.isEventActive}
           onAddPetals={springEvent.earnPetals}
           onGrowSpring={springEvent.processSpringGrowth}
+          summerPreview={summerPreviewFlag}
+          onSetSummerPreview={(on) => setFlag('summerPreview', on)}
+          summerOpen={summerEventEnabled && summerEvent.isEventActive}
+          onAddTickets={summerEvent.earnTickets}
+          onGrowSummer={summerEvent.processSummerGrowth}
+          onRunChallenges={summerEvent.processChallenges}
           onAddTreeMaterials={() => {
             if (christmasEvent?.eventState) {
               // Add 100 of each material type

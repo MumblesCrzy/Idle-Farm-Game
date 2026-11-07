@@ -202,6 +202,8 @@ export interface ChristmasEventState {
   // Tree farming
   treePlots: TreePlot[];
   maxPlots: number; // Default 6, expandable to 12
+  /** The tree chosen to plant, kept across tab switches and reloads */
+  chosenTree?: TreeType;
   
   // Materials & Inventory
   materials: CraftingMaterials;

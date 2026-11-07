@@ -2,6 +2,7 @@
  * Tests for the County Fair tab, driven by the real pumpkin event hook.
  */
 
+import { RIVAL_NAMES } from '../data/rivals';
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import CountyFairTab from '../components/CountyFairTab';
@@ -121,7 +122,10 @@ describe('CountyFairTab', () => {
     const result = region('Last weigh-off');
     expect(within(result).getByText('1st place')).toBeInTheDocument();
     expect(within(result).getAllByRole('listitem')[0]).toHaveTextContent('Your giant2,000 lb');
-    expect(within(result).getAllByText(/^Rival \d$/)).toHaveLength(RIVAL_COUNT);
+    // The same three rivals as the Summer Festival's Challenge Board
+    for (const name of RIVAL_NAMES) {
+      expect(within(result).getByText(name)).toBeInTheDocument();
+    }
     expect(result).toHaveTextContent(`Prize: +${weighOffPrize(1, 2000)}`);
     expect(candyCorn()).toBe(weighOffPrize(1, 2000));
 

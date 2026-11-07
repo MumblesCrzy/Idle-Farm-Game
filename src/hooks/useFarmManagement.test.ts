@@ -50,6 +50,7 @@ function createMockEventLogCallbacks(): EventLogCallbacks {
     onMilestoneClaimed: vi.fn(),
     onPumpkinEvent: vi.fn(),
     onSpringEvent: vi.fn(),
+    onSummerEvent: vi.fn(),
     registerCallbacks: vi.fn()
   };
 }

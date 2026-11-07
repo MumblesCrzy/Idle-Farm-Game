@@ -8,11 +8,12 @@ import {
   SPECIAL_ARCHIE_SWEATER,
   SPECIAL_ARCHIE_REINDEER,
   SPECIAL_ARCHIE_FALL_SWEATER,
-  SPECIAL_ARCHIE_WARLOCK
+  SPECIAL_ARCHIE_WARLOCK,
+  SPECIAL_ARCHIE_SPRING
 } from '../config/assetPaths';
 import { INITIAL_ACHIEVEMENTS } from './achievements';
 
-export type ArchieAppearance = 'default' | 'pinecones' | 'sweater' | 'reindeer' | 'fallSweater' | 'warlock';
+export type ArchieAppearance = 'default' | 'pinecones' | 'sweater' | 'reindeer' | 'fallSweater' | 'warlock' | 'gardener';
 
 export interface ArchieLook {
   id: ArchieAppearance;
@@ -32,7 +33,8 @@ export const ARCHIE_LOOKS: readonly ArchieLook[] = [
   { id: 'sweater', label: 'Sweater', description: "Archie's winter sweater", image: SPECIAL_ARCHIE_SWEATER, achievementId: 'winter_sweater' },
   { id: 'reindeer', label: 'Reindeer', description: "Archie's reindeer hat", image: SPECIAL_ARCHIE_REINDEER, achievementId: 'reindeer_hat' },
   { id: 'fallSweater', label: 'Fall Sweater', description: "Archie's fall sweater", image: SPECIAL_ARCHIE_FALL_SWEATER, achievementId: 'pumpkin_50_sold' },
-  { id: 'warlock', label: 'Warlock', description: "Archie's warlock costume", image: SPECIAL_ARCHIE_WARLOCK, achievementId: 'pumpkin_2500_sold' }
+  { id: 'warlock', label: 'Warlock', description: "Archie's warlock costume", image: SPECIAL_ARCHIE_WARLOCK, achievementId: 'pumpkin_2500_sold' },
+  { id: 'gardener', label: 'Gardener', description: "Archie's gardener outfit", image: SPECIAL_ARCHIE_SPRING, achievementId: 'spring_50_sold' }
 ];
 
 /** Whether a saved setting names one of Archie's looks */

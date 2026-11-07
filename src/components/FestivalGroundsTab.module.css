@@ -1,0 +1,420 @@
+/* Festival Grounds Tab Styles (Summer Watermelon Festival), the Market Stall's mockup B
+   without the Cart. The frame, palette and contrast notes are in SummerSections.module.css;
+   the variables come from its .container. Here also: Disabled Light #E3E7DE with muted
+   text (4.9) for disabled buttons, Heat #F2E3B3 with Heat Ink #5A3A1E (8.0); empty rows keep
+   Muted text on the ice and basket tints (5.5, 5.0). */
+
+.currencyIcon {
+  vertical-align: middle;
+}
+
+/* =================================================================== */
+/* STALL BAR: title, demand, the Heatwave, the Parade Route and the Carousel */
+/* =================================================================== */
+
+.stallBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 0.3rem 0.6rem;
+  background: var(--rind);
+  border: 2px solid var(--deep-rind);
+  border-radius: 8px;
+  color: var(--cream);
+}
+
+.stallBar button:focus-visible {
+  outline-color: var(--sun);
+}
+
+.demand {
+  display: flex;
+  flex-direction: column;
+  padding: 0.2rem 0.6rem;
+  background: var(--deep-rind);
+  border-radius: 6px;
+}
+
+.demandMultiplier {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.demandHint {
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.heatwave {
+  display: flex;
+  flex-direction: column;
+  padding: 0.2rem 0.6rem;
+  background: var(--sun-tint);
+  border: 2px solid var(--sun);
+  border-radius: 6px;
+  color: #5A3A1E;
+}
+
+.barTiles {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.35rem;
+  background: var(--cream);
+  border: 2px solid var(--sun);
+  border-radius: 6px;
+  color: var(--deep-rind);
+}
+
+.barText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.barTitle {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.barHint {
+  margin: 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.claimButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem 0.6rem;
+  background: var(--melon);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  animation: pulseClaim 2s ease-in-out infinite;
+}
+
+.claimButton:hover:not(:disabled) {
+  background: var(--melon-dark);
+  animation: none;
+}
+
+.claimButton:disabled {
+  background: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+  animation: none;
+}
+
+@keyframes pulseClaim {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(224, 75, 75, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(224, 75, 75, 0.7);
+  }
+}
+
+/* =================================================================== */
+/* MELON CARDS AND THE GIANT SHELF */
+/* =================================================================== */
+
+.melonCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.melonCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 2px solid var(--sun);
+}
+
+.cardName {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--deep-rind);
+}
+
+.cardStock {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.finishRows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finishRow,
+.giantRow {
+  display: grid;
+  align-items: center;
+  gap: 0.35rem;
+  height: 44px;
+  padding: 0 0.25rem;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #EFE6D2;
+}
+
+.finishRow {
+  grid-template-columns: 20px minmax(0, 1fr) 46px 50px auto;
+}
+
+.giantRow {
+  grid-template-columns: 20px minmax(0, 1fr) 70px auto;
+}
+
+.finishRow:last-child,
+.giantRow:last-child {
+  border-bottom: none;
+}
+
+.coldRow {
+  background: var(--ice-tint);
+}
+
+.basketRow {
+  background: var(--flesh-tint);
+}
+
+.finishName {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heatNote {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ice);
+}
+
+.finishCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 700;
+}
+
+.sugarChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 0.3rem;
+  background: var(--sugar);
+  color: var(--cream);
+  border-radius: 999px;
+  font-size: 0.68rem;
+}
+
+.finishPrice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  font-weight: 700;
+  color: var(--melon-dark);
+  white-space: nowrap;
+}
+
+/* Nothing of this finish in stock: the row stays, quieter */
+.emptyRow .finishName,
+.emptyRow .finishCount,
+.emptyRow .finishPrice {
+  color: var(--muted);
+}
+
+.shelfEmpty,
+.shelfNote {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.shelfNote {
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+
+.sellButton {
+  min-height: 32px;
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--rind);
+  color: var(--cream);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sellButton:hover:not(:disabled) {
+  background: var(--deep-rind);
+}
+
+.sellButton:disabled {
+  background: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* =================================================================== */
+/* SELL ALL MELONS, AND THE CUSTOMER LINE */
+/* =================================================================== */
+
+.sellAllRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sellEverythingButton {
+  padding: 0.6rem 1.2rem;
+  background: var(--melon);
+  color: var(--cream);
+  border: 2px solid var(--sun);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sellEverythingButton:hover:not(:disabled) {
+  background: var(--melon-dark);
+}
+
+.sellEverythingButton:disabled {
+  background: #E3E7DE;
+  border-color: #E3E7DE;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* On the page's dark background: light text */
+.customerLine {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #E8E8E8;
+}
+
+/* =================================================================== */
+/* GOODS, FIVE TO A ROW */
+/* =================================================================== */
+
+.goodsRow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.goodCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--cream);
+  border: 2px solid var(--leaf);
+  border-radius: 6px;
+}
+
+.goodHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.goodTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--deep-rind);
+  line-height: 1.15;
+}
+
+.goodPrice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--melon-dark);
+  white-space: nowrap;
+}
+
+.goodStock {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.goodHint {
+  font-weight: 500;
+  color: var(--ice);
+}
+
+.emptyGood .goodStock {
+  color: var(--muted);
+}
+
+.goodCard .sellButton {
+  margin-top: auto;
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .claimButton {
+    animation: none;
+  }
+
+  .sellButton,
+  .sellEverythingButton {
+    transition: none;
+  }
+}

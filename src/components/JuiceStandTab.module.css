@@ -1,0 +1,441 @@
+/* Juice Stand Tab Styles (Summer Watermelon Festival). The frame, palette and
+   contrast notes are in SummerSections.module.css; the variables come from its .container.
+   Here also: Cream Muted #F1F4EC for cards that can't craft, Disabled #636E5C (cream text: 5.1),
+   Table #F3EBD8 for finishing rows (ink text: 11.6). */
+
+/* =================================================================== */
+/* ICE HOUSE AND FINISHING TABLE, SIDE BY SIDE */
+/* =================================================================== */
+
+.iceAndFinish {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 0.6rem;
+}
+
+.iceHouse {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-sizing: border-box;
+  min-height: 214px;
+  padding: 0.6rem 0.75rem;
+  background: var(--ice-tint);
+  border: 3px solid var(--ice-border);
+  border-radius: 10px;
+  color: var(--ink);
+}
+
+.iceTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  color: var(--ice);
+}
+
+.iceCount {
+  margin-left: auto;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.iceBlocks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.3rem;
+  justify-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* With Sawdust Packing, 25 smaller blocks */
+.iceBlocks.iceBlocksSmall {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0.15rem;
+}
+
+.iceBlock {
+  display: flex;
+}
+
+.iceEmpty {
+  opacity: 0.25;
+}
+
+.iceNote {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+}
+
+/* Build the Ice House, Buy the Melon Baller: sun, like Plant All */
+.buildButton,
+.unlockButton {
+  margin-top: auto;
+  min-height: 40px;
+  padding: 0.45rem;
+  background: var(--sun);
+  color: var(--ink);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buildButton:hover:not(:disabled),
+.unlockButton:hover:not(:disabled) {
+  background: var(--sun-tint);
+  transform: translateY(-1px);
+}
+
+.buildButton:disabled,
+.unlockButton:disabled {
+  background: var(--disabled);
+  color: var(--cream);
+  cursor: not-allowed;
+}
+
+.finishingTable {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-sizing: border-box;
+  min-height: 214px;
+  padding: 0.6rem 0.75rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 10px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--deep-rind);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.finishRow {
+  display: grid;
+  grid-template-columns: 170px repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.5rem;
+  background: #F3EBD8;
+  border-radius: 6px;
+}
+
+.finishMelon {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.finishMelon > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.finishCount {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.finishButton {
+  min-height: 44px;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.chillButton {
+  background: var(--ice-tint);
+  color: var(--ice);
+  border: 2px solid #4F8FAD;
+}
+
+.chillButton:hover:not(:disabled) {
+  background: #D5EDF7;
+}
+
+.carveButton {
+  background: var(--rind-tint);
+  color: var(--deep-rind);
+  border: 2px solid var(--rind);
+}
+
+.carveButton:hover:not(:disabled) {
+  background: #D6EBC6;
+}
+
+.basketButton {
+  background: var(--melon);
+  color: var(--cream);
+  border: 2px solid var(--melon);
+}
+
+.basketButton:hover:not(:disabled) {
+  background: var(--melon-dark);
+  border-color: var(--melon-dark);
+}
+
+.finishButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.finishButton:disabled {
+  background: var(--disabled);
+  border-color: var(--disabled);
+  color: var(--cream);
+  cursor: not-allowed;
+}
+
+.finishNote {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+}
+
+/* =================================================================== */
+/* RECIPES */
+/* =================================================================== */
+
+.section {
+  background: var(--cream);
+  border: 2px solid var(--leaf);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.quantityPicker {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.quantityButton {
+  min-width: 2.75rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--rind);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quantityButton:hover {
+  background: var(--sun-tint);
+}
+
+.quantityButton[aria-pressed='true'] {
+  background: var(--rind);
+  color: var(--cream);
+}
+
+.recipesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipeCard {
+  position: relative; /* For the crew indicator */
+  background: var(--cream);
+  border: 2px solid var(--rind);
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.2s;
+}
+
+.recipeCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(47, 107, 58, 0.25);
+}
+
+.recipeCard.cantCraft,
+.recipeCard.locked {
+  border-color: var(--disabled);
+  background: #F1F4EC;
+}
+
+.recipeCard.locked {
+  border-style: dashed;
+}
+
+/* The Picnic Crew is working on this recipe */
+.recipeCard.active {
+  border-color: var(--sugar);
+  box-shadow: 0 0 0 2px rgba(140, 109, 31, 0.25), 0 0 14px rgba(140, 109, 31, 0.35);
+}
+
+.recipeName {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--deep-rind);
+  font-weight: 700;
+  text-align: center;
+}
+
+.recipeDescription {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.recipeIO {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
+  background: var(--sun-tint);
+  border: 1px solid var(--sun);
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.chip.insufficient {
+  background: var(--cream);
+  border-color: var(--melon);
+  color: var(--melon-dark);
+}
+
+.outputChip {
+  background: var(--flesh-tint);
+  border-color: var(--flesh);
+}
+
+.arrow {
+  color: var(--rind);
+  font-weight: bold;
+}
+
+.stockLine {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.lockNote {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sugar);
+  text-align: center;
+}
+
+.craftButton {
+  margin-top: auto;
+  padding: 0.45rem;
+  background: var(--rind);
+  color: var(--cream);
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.craftButton:hover:not(:disabled) {
+  background: var(--deep-rind);
+  transform: translateY(-1px);
+}
+
+.craftButton:disabled {
+  background: var(--disabled);
+  cursor: not-allowed;
+}
+
+/* A crew member on the recipe the crew is working on */
+.crewIndicator {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px;
+  background: var(--cream);
+  border: 2px solid var(--sugar);
+  border-radius: 50%;
+  z-index: 10;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: crewBob 2.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes crewBob {
+  0%, 100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .crewIndicator {
+    animation: none;
+  }
+
+  .recipeCard,
+  .craftButton,
+  .buildButton,
+  .unlockButton,
+  .quantityButton,
+  .finishButton {
+    transition: none;
+  }
+
+  .recipeCard:hover,
+  .craftButton:hover:not(:disabled),
+  .finishButton:hover:not(:disabled) {
+    transform: none;
+  }
+}

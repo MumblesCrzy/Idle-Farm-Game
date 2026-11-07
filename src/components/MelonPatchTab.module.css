@@ -1,0 +1,298 @@
+/* Melon Patch Tab Styles (Summer Watermelon Festival). The frame, palette and
+   contrast notes are in SummerSections.module.css; the variables come from its .container. */
+
+/* =================================================================== */
+/* MELON SELECTION */
+/* =================================================================== */
+
+.melonRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--deep-rind);
+  border: 2px solid var(--rind);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--cream);
+}
+
+.melonRow button:focus-visible {
+  outline-color: var(--sun);
+}
+
+.melonGroup {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.melonSelector {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--sun);
+  border-radius: 6px;
+  background: var(--rind);
+  color: var(--cream);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.melonSelector:hover:not(:disabled) {
+  background: var(--sun-tint);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.melonSelector.selected {
+  background: var(--sun-tint);
+  border-color: var(--melon);
+  color: var(--ink);
+  font-weight: bold;
+}
+
+.melonSelector.locked {
+  border-style: dashed;
+}
+
+/* The cost on a rind button; the selected tint never shows on a locked melon */
+.melonSelector.locked .melonCost {
+  color: var(--sun-tint);
+}
+
+.melonSelector.locked:hover:not(:disabled) .melonCost {
+  color: var(--ink);
+}
+
+.melonSelector.cantAfford {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.melonName {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.melonCost {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.melonHint {
+  flex: 1;
+  min-width: 260px;
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* PLOTS */
+/* =================================================================== */
+
+.plotsGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plot {
+  position: relative;
+  box-sizing: border-box;
+  height: 140px;
+  padding: 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--cream);
+  border: 3px solid var(--leaf);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.plot.empty {
+  border-style: dashed;
+  background: #F3EBD8;
+}
+
+.plot.ready {
+  border-color: var(--melon);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.plot.giant {
+  background: linear-gradient(135deg, var(--rind-tint) 0%, var(--cream) 100%);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(224, 75, 75, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(224, 75, 75, 0.6);
+  }
+}
+
+.giantBadge {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.3rem;
+  background: var(--rind);
+  color: var(--cream);
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.emptyArt {
+  opacity: 0.35;
+}
+
+.plotName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.plot.empty .plotName {
+  color: var(--muted);
+}
+
+.plotNote {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.readyText {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--melon);
+}
+
+.progressBarWrapper {
+  width: 100%;
+  max-width: 120px;
+}
+
+.plantButton,
+.harvestButton {
+  margin-top: auto;
+  padding: 0.35rem 0.9rem;
+  border: none;
+  border-radius: 5px;
+  color: var(--cream);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plantButton {
+  background: var(--rind);
+}
+
+.plantButton:hover {
+  background: var(--deep-rind);
+  transform: translateY(-2px);
+}
+
+.harvestButton {
+  background: var(--melon);
+}
+
+.harvestButton:hover {
+  background: var(--melon-dark);
+  transform: scale(1.05);
+}
+
+/* =================================================================== */
+/* LAST HARVESTS */
+/* =================================================================== */
+
+.lastHarvests {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 0.35rem 0.75rem;
+  background: var(--deep-rind);
+  border: 2px solid var(--rind);
+  border-radius: 8px;
+  color: var(--cream);
+  font-size: 0.85rem;
+}
+
+.lastTitle {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.lastEmpty {
+  font-style: italic;
+}
+
+.lastList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lastItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--cream);
+  border-radius: 4px;
+  color: var(--ink);
+}
+
+.lastItem.sugarItem {
+  background: var(--sun-tint);
+  font-weight: 700;
+}
+
+.bestLine {
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* =================================================================== */
+/* MOTION */
+/* =================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .plot.ready {
+    animation: none;
+  }
+
+  .melonSelector,
+  .plantButton,
+  .harvestButton,
+  .plot {
+    transition: none;
+  }
+
+  .melonSelector:hover:not(:disabled),
+  .plantButton:hover,
+  .harvestButton:hover {
+    transform: none;
+  }
+}

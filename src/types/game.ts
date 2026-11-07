@@ -9,6 +9,7 @@ import type { WeatherType } from '../config/gameConstants';
 import type { UseChristmasEventReturn } from '../hooks/useChristmasEvent';
 import type { UsePumpkinEventReturn } from '../hooks/usePumpkinEvent';
 import type { UseSpringEventReturn } from '../hooks/useSpringEvent';
+import type { UseSummerEventReturn } from '../hooks/useSummerEvent';
 
 // ============================================================================
 // AUTO-PURCHASE SYSTEM TYPES
@@ -213,6 +214,9 @@ export interface GameState {
   // Spring Farmer's Market (seasonal)
   springEvent: UseSpringEventReturn;
 
+  // Summer Watermelon Festival (seasonal)
+  summerEvent: UseSummerEventReturn;
+
   
   // Pause control
   isPaused: boolean;
@@ -228,7 +232,7 @@ export interface BaseTabProps {
   active: boolean;
 }
 
-export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'pumpkin' | 'spring' | 'bees' | 'guilds';
+export type InfoCategory = 'seasons' | 'farm' | 'veggies' | 'upgrades' | 'autopurchase' | 'canning' | 'christmas' | 'pumpkin' | 'spring' | 'summer' | 'bees' | 'guilds';
 
 export type RecipeFilter = 'all' | 'simple' | 'complex' | 'gourmet' | 'honey' | 'cellar';
 export type RecipeSort = 'name' | 'profit' | 'time' | 'difficulty';
@@ -252,6 +256,7 @@ export type EventCategory =
   | 'christmas'     // Christmas Tree Shop event activities (harvest, sell, craft, upgrades)
   | 'pumpkin'       // Fall Pumpkin Rush event activities (harvest, sell, craft, weigh-off)
   | 'spring'        // Spring Farmer's Market event activities (harvest, sell, craft, Market Day)
+  | 'summer'        // Summer Watermelon Festival event activities (harvest, sell, craft, challenges)
   | 'upgrade';      // Farm upgrades (fertilizer, harvester, seeds, etc.)
 
 /**
