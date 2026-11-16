@@ -69,6 +69,7 @@ function createDefaultDeps(overrides: Partial<UseFarmManagementDeps> = {}): UseF
     FARM_BASE_COST: 500,
     setActiveVeggie: vi.fn(),
     setVeggies: vi.fn(),
+    setHighestUnlockedVeggie: vi.fn(),
     setMoney: vi.fn(),
     setExperience: vi.fn(),
     setKnowledge: vi.fn(),

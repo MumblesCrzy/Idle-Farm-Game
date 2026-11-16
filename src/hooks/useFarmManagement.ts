@@ -4,6 +4,7 @@ import type { EventLogCallbacks } from '../context/EventLogContext';
 import type { GuildState } from '../types/guilds';
 import { createAllCrops, calculateExpRequirement, formatNumber } from '../utils/gameCalculations';
 import { getHostileTakeoverPrice, recordTakeover } from '../utils/guildCalculations';
+import { processUnlocks } from '../utils/unlockSystem';
 
 /**
  * Dependencies required for the farm management hook
@@ -21,6 +22,7 @@ export interface UseFarmManagementDeps {
   // State setters
   setActiveVeggie: React.Dispatch<React.SetStateAction<number>>;
   setVeggies: React.Dispatch<React.SetStateAction<Veggie[]>>;
+  setHighestUnlockedVeggie: React.Dispatch<React.SetStateAction<number>>;
   setMoney: React.Dispatch<React.SetStateAction<number>>;
   setExperience: React.Dispatch<React.SetStateAction<number>>;
   setKnowledge: React.Dispatch<React.SetStateAction<number>>;
@@ -86,6 +88,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     FARM_BASE_COST,
     setActiveVeggie,
     setVeggies,
+    setHighestUnlockedVeggie,
     setMoney,
     setExperience,
     setKnowledge,
@@ -112,7 +115,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
    * 2. Keeps money above farmCost and all knowledge
    * 3. Resets veggies, upgrades, and most game state
    * 4. Increments farm tier and updates farm cost
-   * 5. Sets starting experience based on new tier
+   * 5. Sets starting experience based on new tier, and opens the crops it earns
    */
   const handleBuyLargerFarm = useCallback(() => {
     // Calculate new maxPlots (capped at twice the current max): one extra plot per 100 experience
@@ -133,12 +136,14 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     // Tier 1: Radish (0 exp), Tier 2: + Lettuce (95 exp), Tier 3: + Green Beans (180 exp), etc.
     const startingExperience = newFarmTier > 1 ? calculateExpRequirement(newFarmTier - 1) : 0;
     
-    // Fresh crops (vegetables and fruits), including fresh auto-purchasers
-    const resetVeggies = createAllCrops();
+    // Fresh crops (vegetables and fruits), including fresh auto-purchasers. The crops the
+    // starting experience earns open now: the game otherwise checks unlocks only on a harvest
+    const { veggies: resetVeggies, highestUnlockedIndex } = processUnlocks(createAllCrops(), startingExperience, newMaxPlots);
     
     // Set activeVeggie to 0 FIRST to prevent rendering issues
     setActiveVeggie(0);
     setVeggies(resetVeggies);
+    setHighestUnlockedVeggie(current => Math.max(current, highestUnlockedIndex));
     setMoney(moneyKept > 0 ? moneyKept : 0);
     setExperience(startingExperience);
     setKnowledge(knowledgeKept);
@@ -171,6 +176,7 @@ export function useFarmManagement(deps: UseFarmManagementDeps): UseFarmManagemen
     FARM_BASE_COST,
     setActiveVeggie,
     setVeggies,
+    setHighestUnlockedVeggie,
     setMoney,
     setExperience,
     setKnowledge,

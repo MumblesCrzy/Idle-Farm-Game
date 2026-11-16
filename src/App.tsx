@@ -753,6 +753,7 @@ const GameProvider: FC<{ children: ReactNode }> = ({ children }) => {
     FARM_BASE_COST,
     setActiveVeggie,
     setVeggies,
+    setHighestUnlockedVeggie,
     setMoney,
     setExperience,
     setKnowledge,
